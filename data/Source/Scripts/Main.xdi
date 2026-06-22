@@ -33,7 +33,10 @@ function Main:new(params, environment)
 	self._lblJumps = Static(self._frame, "Jumps: 0")
 	self._lblPickups = Static(self._frame, "Pickups: 0")
 	self._lblEnemies = Static(self._frame, "Enemies: 0 attacking / 0 patrolling")
-	self._lblHealth = Static(self._frame, "Health: 100")
+	self._healthBar = ProgressBar(self._frame)
+	self._healthBar:setFrontColor(Color4f(0.2, 0.8, 0.2, 1.0))
+	self._healthBar:setBackColor(Color4f(0.25, 0.0, 0.0, 1.0))
+	self._healthBar:setValue(1.0)
 
 	-- Full-screen overlay carrying the centered "GAME OVER" banner (empty until death).
 	-- The UI virtual size is 640x360.
@@ -379,7 +382,7 @@ function Main:update(info)
 	self._lblJumps:setText("Jumps: " .. tostring(self._jumps))
 	self._lblPickups:setText("Pickups: " .. tostring(self._pickups))
 	self._lblEnemies:setText("Enemies: " .. tostring(self._enemyAttack) .. " attacking / " .. tostring(self._enemyPatrol) .. " patrolling")
-	self._lblHealth:setText("Health: " .. tostring(math.floor(self._health + 0.5)))
+	self._healthBar:setValue(self._health / self._maxHealth)
 end
 ]]></text>
 </object>

@@ -65,8 +65,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 		return
 	end
 
-	-- Freeze all enemy logic once the game is over (context is the Stage).
-	if context._gameOver then
+	-- Freeze all enemy logic once the game is over or paused (context is the Stage).
+	if context._gameOver or context._paused then
 		return
 	end
 

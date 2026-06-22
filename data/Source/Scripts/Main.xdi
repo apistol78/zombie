@@ -70,6 +70,35 @@ function Main:new(params, environment)
 	self._gameOver = false
 	self._hurtRange = 1.2   -- enemies within this distance (m) deal damage
 	self._enemyDps = 20.0   -- health drained per second per touching enemy
+
+	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
+	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
+	self._paused = false
+	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0 }, 24, 24, 0, 16))
+	local pauseTitle = Static(self._pauseDialog, "PAUSED")
+	pauseTitle:setTextSize(40)
+	pauseTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._resumeButton = PushButton(self._pauseDialog, "Resume")
+	self._resumeButton:setOnClick(function() self:_setPaused(false) end)
+
+	environment.input.inputSystem:setExclusive(true)
+end
+
+-- Enter/leave pause. Toggles the menu, frees/recaptures the mouse cursor (so it can
+-- click the menu, then return to mouse-look), and flips the freeze flag that
+-- Main:update and every EnemyController honour.
+function Main:_setPaused(paused)
+	if self._gameOver then
+		return
+	end
+	self._paused = paused
+	if paused then
+		self._pauseDialog:show()
+		self.environment.input.inputSystem:setExclusive(false)
+	else
+		self._pauseDialog:hide()
+		self.environment.input.inputSystem:setExclusive(true)
+	end
 end
 
 -- Called by each enemy's ScriptComponent during its update (context is this Stage).
@@ -92,6 +121,10 @@ function Main:reportEnemyState(t, state)
 end
 
 function Main:finalize()
+	if self._pauseDialog ~= nil then
+		self._pauseDialog:remove()
+		self._pauseDialog = nil
+	end
 	self._frame:remove()
 	self._frame = nil
 	if self._overlay ~= nil then
@@ -140,19 +173,38 @@ function Main:update(info)
 		return
 	end
 
-	-- STATE_MOVE_X turns the character (yaw); STATE_MOVE_Z moves forward/back along its facing.
+	-- Escape toggles pause (edge-triggered). The input mapping keeps updating while
+	-- paused, so Escape also resumes. While paused, freeze the rest of the frame;
+	-- enemies freeze too (they read context._paused).
+	do
+		local mapping = self.environment.input.inputMapping
+		if mapping ~= nil and mapping:isStatePressed("STATE_PAUSE") then
+			self:_setPaused(not self._paused)
+		end
+	end
+	if self._paused then
+		return
+	end
+
+	-- Mouse X turns the character (yaw); W/S (STATE_MOVE_Z) move forward/back and
+	-- A/D (STATE_MOVE_X) strafe left/right, both relative to the current facing.
 	if self._character ~= nil then
 		local mapping = self.environment.input.inputMapping
 		if mapping ~= nil then
-			local turn = mapping:getStateValue("STATE_MOVE_X")
+			local strafe = mapping:getStateValue("STATE_MOVE_X")
 			local move = mapping:getStateValue("STATE_MOVE_Z")
-			local turnRate = -4.5
+			local look = mapping:getStateValue("STATE_LOOK_X")
 			local speed = 3.0
-			self._heading = self._heading + turn * turnRate * dt
+			local lookSensitivity = 0.005   -- radians per pixel of mouse motion
+			-- STATE_LOOK_X is already a per-frame mouse delta (pixels) -- do NOT scale by dt.
+			self._heading = self._heading + look * lookSensitivity
 			self._character.headAngle = self._heading
 			local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
 			local forward = heading * Vector4(0.0, 0.0, 1.0, 0.0)
-			self._character:move(forward * (move * speed), false)
+			local right = heading * Vector4(1.0, 0.0, 0.0, 0.0)
+			-- STATE_MOVE_X is A(+1)/D(-1); negate so D strafes right, A strafes left.
+			local velocity = forward * (move * speed) + right * (-strafe * speed)
+			self._character:move(velocity, false)
 			local jumped = false
 				if mapping:isStatePressed("STATE_JUMP") then
 				if self._character:jump() then
@@ -161,7 +213,7 @@ function Main:update(info)
 				end
 			end
 			if self._poseController ~= nil then
-				local moving = move > 0.1 or move < -0.1 or turn > 0.1 or turn < -0.1
+				local moving = move > 0.1 or move < -0.1 or strafe > 0.1 or strafe < -0.1
 				self._poseController:setParameterValue("moving", moving)
 					self._poseController:setParameterValue("jump", jumped)
 			end

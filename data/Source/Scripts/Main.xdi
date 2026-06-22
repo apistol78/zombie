@@ -70,6 +70,8 @@ function Main:new(params, environment)
 	self._gameOver = false
 	self._hurtRange = 1.2   -- enemies within this distance (m) deal damage
 	self._enemyDps = 20.0   -- health drained per second per touching enemy
+	self._healAmount = 35.0 -- health restored per health pickup (capped at max)
+	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
 
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
 	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
@@ -159,6 +161,9 @@ function Main:resolve()
 		if skeleton ~= nil then
 			self._poseController = skeleton.poseController
 		end
+	end
+	if self._blood == nil and self._humanoid ~= nil then
+		self._blood = self._humanoid:getComponent(traktor.spray.EffectComponent)
 	end
 end
 
@@ -251,7 +256,7 @@ function Main:update(info)
 		end
 
 		local currentPos = self._camera.transform.translation
-		local k = 6.0 * dt
+		local k = 12.0 * dt
 		if k > 1.0 then
 			k = 1.0
 		end
@@ -297,6 +302,33 @@ function Main:update(info)
 		end
 	end
 
+	-- Health pickup collection: walking over a "HealthPickup" restores health (capped
+	-- at max) and removes it. Only collected while below max so a pickup is never wasted.
+	-- Same one-per-frame scan as score pickups (removeEntity shifts remaining indices).
+	if self._humanoid ~= nil and self._health < self._maxHealth then
+		local world = self.world.world
+		if world ~= nil then
+			local pp = self._humanoid.transform.translation
+			local i = 0
+			while true do
+				local hp = world:getEntity("HealthPickup", i)
+				if hp == nil then
+					break
+				end
+				local q = hp.transform.translation
+				local dx = q.x - pp.x
+				local dy = q.y - pp.y
+				local dz = q.z - pp.z
+				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
+					world:removeEntity(hp)
+					self._health = math.min(self._maxHealth, self._health + self._healAmount)
+					break
+				end
+				i = i + 1
+			end
+		end
+	end
+
 	-- Enemy contact damage: every enemy within hurt range drains health, and
 	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
 	if self._humanoid ~= nil then
@@ -321,11 +353,22 @@ function Main:update(info)
 			end
 			if dps > 0.0 then
 				self._health = self._health - dps * dt
+				-- Spurt blood while being eaten: the splatter effect is a short, non-looping
+				-- burst, so re-trigger it on a timer for as long as an enemy is in contact.
+				if self._blood ~= nil then
+					self._biteTimer = self._biteTimer - dt
+					if self._biteTimer <= 0.0 then
+						self._blood:reset()
+						self._biteTimer = 0.3
+					end
+				end
 				if self._health <= 0.0 then
 					self._health = 0.0
 					self._gameOver = true
 					self._overlay:setVisible(true) -- Show game over overlay.
 				end
+			else
+				self._biteTimer = 0.0   -- reset so the next bite spurts immediately
 			end
 		end
 	end

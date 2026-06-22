@@ -30,7 +30,7 @@ function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
 	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
-	self._avoidRadius = 1.0   -- start avoiding other agents within this distance (m)
+	self._avoidRadius = 2.0   -- start avoiding other agents within this distance (m)
 	self._separation = 1.5    -- how strongly avoidance overrides path following
 
 	-- State machine.

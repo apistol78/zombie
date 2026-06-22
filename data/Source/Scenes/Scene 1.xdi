@@ -365,7 +365,11 @@
 								<translation>8.69536, 1.549975, 8.484768, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
-							<components/>
+							<components>
+								<item type="traktor.spray.EffectComponentData">
+									<effect>{B966DF7D-D625-0344-BADD-9B27BCFA12FF}</effect>
+								</item>
+							</components>
 							<entityData>{BCF74021-58D3-B24A-8E73-BEC797740D24}</entityData>
 						</item>
 						<item type="traktor.world.EntityData" version="2">
@@ -975,6 +979,96 @@
 							</transform>
 							<components/>
 							<entityData>{B1CCEE00-0000-4000-8000-0000000000FF}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A1000001-0000-4000-8000-000000000001}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-10.159328, 0.3, -12, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A1000002-0000-4000-8000-000000000002}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-12, 0.3, 5.896928, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A1000003-0000-4000-8000-000000000003}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>5.205656, 0.3, 0, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A1000004-0000-4000-8000-000000000004}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>4, 0.3, -6.216229, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A1000005-0000-4000-8000-000000000005}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>12, 0.3, 10.296212, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A1000006-0000-4000-8000-000000000006}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>13.716379, 0.3, -14.199991, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
 						</item>
 					</entityData>
 				</item>

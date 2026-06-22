@@ -1,0 +1,2231 @@
+{
+ "nodes": [
+  {
+   "id": "n0",
+   "guid": "{049C6FDD-6C3D-4216-A876-C503BF713C26}",
+   "type": "Variable",
+   "info": "L_Roughness",
+   "position": [
+    -547,
+    -1228
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Roughness"
+   }
+  },
+  {
+   "id": "n1",
+   "guid": "{D9E8CB02-8318-F444-9A5F-908C730E682F}",
+   "type": "Variable",
+   "info": "L_ViewNormal",
+   "position": [
+    -547,
+    -1274
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewNormal"
+   }
+  },
+  {
+   "id": "n2",
+   "guid": "{BB778728-7ACA-BB4A-A941-7A0B045C4234}",
+   "type": "Variable",
+   "info": "L_ViewPosition",
+   "position": [
+    -547,
+    -1320
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewPosition"
+   }
+  },
+  {
+   "id": "n3",
+   "guid": "{B5DD9B67-57CD-114C-A182-2FE0234CB9B3}",
+   "type": "Swizzle",
+   "info": "xyz",
+   "position": [
+    -756,
+    -1361
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz"
+   }
+  },
+  {
+   "id": "n4",
+   "guid": "{74D309C3-371D-451E-877C-3EFCE94DFEB7}",
+   "type": "Script",
+   "position": [
+    637,
+    -1407
+   ],
+   "inputs": [
+    {
+     "name": "ViewPosition",
+     "type": "Void"
+    },
+    {
+     "name": "ViewNormal",
+     "type": "Void"
+    },
+    {
+     "name": "Projection",
+     "type": "Matrix"
+    },
+    {
+     "name": "DepthMap",
+     "type": "Texture2D"
+    },
+    {
+     "name": "DepthMapState",
+     "type": "State"
+    },
+    {
+     "name": "Random",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Hit",
+     "type": "Vector"
+    }
+   ],
+   "domain": "Undefined",
+   "properties": {
+    "name": "Trace",
+    "technique": "",
+    "useRayTracing": false,
+    "script": "\n// Screen-space reflection trace (perspective-correct DDA).\nvec3 P0 = $ViewPosition.xyz;\nvec3 N = normalize($ViewNormal.xyz);\nvec3 R = reflect(normalize(P0), N);\n\nconst float kMaxDistance = 70.0f;   // max view-space march distance\nconst int   kSteps = 64;            // screen-space march samples\nconst int   kRefine = 4;            // binary-search refinement iterations\nconst float kBias = 0.05f;           // depth bias to avoid self-intersection (view units)\nconst float kThickness = 0.1f;      // max depth-behind accepted as a hit (view units)\nconst float kZMin = 0.05f;          // keep the ray in front of the camera\n\n// March end point in view space, clamped to stay in front of the near plane.\nvec3 P1 = P0 + R * kMaxDistance;\nif (P1.z < kZMin)\n\tP1 = mix(P0, P1, (kZMin - P0.z) / (P1.z - P0.z));\n\n// Project the segment to screen UV; interpolate UV linearly and 1/z\n// perspective-correctly in screen space.\nvec4 c0 = $Projection * vec4(P0, 1.0f);\nvec4 c1 = $Projection * vec4(P1, 1.0f);\nvec2 uv0 = (c0.xy / c0.w) * vec2(0.5f, -0.5f) + vec2(0.5f, 0.5f);\nvec2 uv1 = (c1.xy / c1.w) * vec2(0.5f, -0.5f) + vec2(0.5f, 0.5f);\nfloat iz0 = 1.0f / P0.z;\nfloat iz1 = 1.0f / P1.z;\n\nfloat jitter = $Random.x;\n\n$Hit = vec4(0.0f);\n\nbool prevBehind = false;\nfloat prevJ = 0.0f;\nfor (int i = 1; i <= kSteps; ++i)\n{\n\tfloat j = (float(i) - 0.5f + jitter) / float(kSteps);\n\tvec2 uv = mix(uv0, uv1, j);\n\tif (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f)\n\t\tbreak; // ray left the screen.\n\n\tfloat rayZ = 1.0f / mix(iz0, iz1, j);\n\tfloat sceneZ = texture(sampler2D($DepthMap, $DepthMapState), uv).x;\n\tbool behind = (rayZ - sceneZ) > kBias;\n\n\t// First transition from in-front to behind the surface is a candidate hit.\n\tif (behind && !prevBehind && i > 1)\n\t{\n\t\tfloat a = prevJ;\n\t\tfloat b = j;\n\t\tfor (int k = 0; k < kRefine; ++k)\n\t\t{\n\t\t\tfloat m = 0.5f * (a + b);\n\t\t\tfloat rzm = 1.0f / mix(iz0, iz1, m);\n\t\t\tfloat szm = texture(sampler2D($DepthMap, $DepthMapState), mix(uv0, uv1, m)).x;\n\t\t\tif (rzm - szm > kBias) b = m; else a = m;\n\t\t}\n\t\tvec2 fuv = mix(uv0, uv1, b);\n\t\tfloat fdiff = (1.0f / mix(iz0, iz1, b)) - texture(sampler2D($DepthMap, $DepthMapState), fuv).x;\n\t\tif (fdiff <= kThickness)\n\t\t{\n\t\t\t// Edge attenuation.\n\t\t\tfloat att = fuv.x * (1.0f - fuv.x) * fuv.y * (1.0f - fuv.y);\n\t\t\tatt = clamp(att * 256.0f, 0.0f, 1.0f);\n\t\t\t$Hit = vec4(fuv, att, 1.0f);\n\t\t\tbreak;\n\t\t}\n\t\t// Otherwise the ray is occluded by foreground geometry; keep marching.\n\t}\n\n\tprevBehind = behind;\n\tprevJ = j;\n}\n"
+   }
+  },
+  {
+   "id": "n5",
+   "guid": "{FEDCD6A4-7031-4964-9A6E-36888684E1A9}",
+   "type": "Variable",
+   "info": "L_ViewPosition",
+   "position": [
+    388,
+    -1471
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewPosition"
+   }
+  },
+  {
+   "id": "n6",
+   "guid": "{A0D5DCB3-6AFB-4917-86FA-36053528E9A0}",
+   "type": "Variable",
+   "info": "L_ViewNormal",
+   "position": [
+    388,
+    -1422
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewNormal"
+   }
+  },
+  {
+   "id": "n7",
+   "guid": "{C00BC9BD-A0F3-4E87-9ED1-3C8B086CBEAC}",
+   "type": "TextureState",
+   "position": [
+    390,
+    -1275
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "State"
+    }
+   ],
+   "properties": {
+    "mipBias": 0,
+    "ignoreMips": true,
+    "useAnisotropic": false
+   }
+  },
+  {
+   "id": "n8",
+   "guid": "{5A303AB2-8932-4D7F-87D5-135804F43B8C}",
+   "type": "Scalar",
+   "info": "0",
+   "position": [
+    1024,
+    -1425
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "value": 0
+   }
+  },
+  {
+   "id": "n9",
+   "guid": "{1BA70F8C-E7FC-45F9-92DC-2AE20D4CD0E2}",
+   "type": "Sampler",
+   "position": [
+    1229,
+    -1493
+   ],
+   "inputs": [
+    {
+     "name": "Texture",
+     "type": "Texture2D"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Scalar2"
+    },
+    {
+     "name": "Mip",
+     "optional": true,
+     "type": "Scalar1"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ],
+   "properties": {
+    "mipBias": 0,
+    "ignoreMips": true,
+    "useAnisotropic": false
+   }
+  },
+  {
+   "id": "n10",
+   "guid": "{B1F40F4A-B3F6-40FD-B295-8E87C0573303}",
+   "type": "PixelOutput",
+   "info": "Default",
+   "position": [
+    6092,
+    -1357
+   ],
+   "inputs": [
+    {
+     "name": "Enable",
+     "optional": true,
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input1",
+     "optional": true,
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "optional": true,
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input3",
+     "optional": true,
+     "type": "Scalar4"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [],
+   "properties": {
+    "technique": "Default",
+    "blendEnable": false,
+    "depthEnable": false,
+    "depthWriteEnable": false,
+    "alphaTestEnable": false,
+    "alphaTestReference": 128,
+    "alphaToCoverageEnable": false,
+    "wireframe": false,
+    "stencilEnable": false,
+    "stencilReference": 0,
+    "stencilMask": 2147483648
+   }
+  },
+  {
+   "id": "n11",
+   "guid": "{3764C2E4-8EFB-442B-81AC-1CC816B8947E}",
+   "type": "Swizzle",
+   "info": "xy",
+   "position": [
+    1014,
+    -1476
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar2"
+    }
+   ],
+   "properties": {
+    "swizzle": "xy"
+   }
+  },
+  {
+   "id": "n12",
+   "guid": "{89F17B5C-2A32-4F64-A539-A8802692D343}",
+   "type": "Mul",
+   "position": [
+    1733,
+    -1391
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n13",
+   "guid": "{4BF1EBDF-2BDA-419A-BEC3-18D2339B0B7D}",
+   "type": "Swizzle",
+   "info": "z",
+   "position": [
+    1264,
+    -1303
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "swizzle": "z"
+   }
+  },
+  {
+   "id": "n14",
+   "guid": "{3FCF8FB2-14D3-4238-85A4-72C8219D3150}",
+   "type": "Variable",
+   "info": "L_Roughness",
+   "position": [
+    5290,
+    -1474
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Roughness"
+   }
+  },
+  {
+   "id": "n15",
+   "guid": "{9AF24C39-E70C-4964-9BEE-5D6D968C3626}",
+   "type": "Scalar",
+   "info": "0.5",
+   "position": [
+    5581,
+    -1363
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "value": 0.5
+   }
+  },
+  {
+   "id": "n16",
+   "guid": "{453DEA23-A89C-474F-8476-D96B0F96A631}",
+   "type": "Swizzle",
+   "info": "xyz1",
+   "position": [
+    1465,
+    -1437
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz1"
+   }
+  },
+  {
+   "id": "n17",
+   "guid": "{2BC6C1F9-5E1E-7F45-9DBD-14E4F5BD033B}",
+   "type": "External",
+   "info": "{B8A2B203-34E6-3543-8502-522D0F16791C}",
+   "position": [
+    -979,
+    -1308
+   ],
+   "inputs": [
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{B8A2B203-34E6-3543-8502-522D0F16791C}",
+   "fragmentName": "GBufferReadNormal"
+  },
+  {
+   "id": "n18",
+   "guid": "{92AC2C64-36D2-B14C-8C0C-881E12EA0174}",
+   "type": "External",
+   "info": "{FDCA9563-2389-4B43-A8E5-5262EC02EC1F}",
+   "position": [
+    -979,
+    -1217
+   ],
+   "inputs": [
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{FDCA9563-2389-4B43-A8E5-5262EC02EC1F}",
+   "fragmentName": "GBufferReadRoughness"
+  },
+  {
+   "id": "n19",
+   "guid": "{05F7BA81-98C2-8649-97D4-E2129F9DDBEA}",
+   "type": "External",
+   "info": "{F5F800CD-4CF7-524E-AC4F-2AF7591871E0}",
+   "position": [
+    -979,
+    -1126
+   ],
+   "inputs": [
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{F5F800CD-4CF7-524E-AC4F-2AF7591871E0}",
+   "fragmentName": "GBufferReadSpecular"
+  },
+  {
+   "id": "n20",
+   "guid": "{796E693E-08F8-9744-A616-D0BB2785766E}",
+   "type": "Variable",
+   "info": "L_Specular",
+   "position": [
+    -547,
+    -1182
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Specular"
+   }
+  },
+  {
+   "id": "n21",
+   "guid": "{1D1E1329-9CDA-E747-95A8-0AF3897F6ECB}",
+   "type": "Variable",
+   "info": "L_Specular",
+   "position": [
+    5290,
+    -1416
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Specular"
+   }
+  },
+  {
+   "id": "n22",
+   "guid": "{295C719A-6EEA-FD4E-94E7-B57C33BEC162}",
+   "type": "Script",
+   "position": [
+    5513,
+    -1463
+   ],
+   "inputs": [
+    {
+     "name": "Roughness",
+     "type": "Void"
+    },
+    {
+     "name": "Specular",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar"
+    }
+   ],
+   "domain": "Undefined",
+   "properties": {
+    "name": "Should discard",
+    "technique": "",
+    "useRayTracing": false,
+    "script": "\n\t\t\t\n$Output = ($Roughness < 0.4f && $Specular > 0.1f) ? 1.0f : 0.0f;\n\t\t\t\n\t\t\t"
+   }
+  },
+  {
+   "id": "n23",
+   "guid": "{76322821-8C2E-4F79-8B75-BC3CBC32EA11}",
+   "type": "Swizzle",
+   "info": "x",
+   "position": [
+    147,
+    -1177
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "swizzle": "x"
+   }
+  },
+  {
+   "id": "n24",
+   "guid": "{9BA00BAB-6FFE-4C51-ACA8-91867B2B6BFE}",
+   "type": "Script",
+   "position": [
+    378,
+    -1226
+   ],
+   "inputs": [
+    {
+     "name": "Time",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar"
+    }
+   ],
+   "domain": "Undefined",
+   "properties": {
+    "name": "Random",
+    "technique": "",
+    "useRayTracing": false,
+    "script": "\n\t\t\t\nuvec2 seed = uvec2(gl_FragCoord.xy);\nseed += uvec2($Time * 1543, $Time * 543);\n$Output = BlueNoise(seed);\n\t\t\t\n\t\t\t"
+   }
+  },
+  {
+   "id": "n25",
+   "guid": "{8FF79AD3-90F4-4BCD-AFA7-0B2A25085776}",
+   "type": "Conditional",
+   "info": ">",
+   "position": [
+    5797,
+    -1381
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar1"
+    },
+    {
+     "name": "Reference",
+     "type": "Scalar1"
+    },
+    {
+     "name": "CaseTrue",
+     "type": "Scalar4"
+    },
+    {
+     "name": "CaseFalse",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n26",
+   "guid": "{04BE2161-6BA4-462D-B2A1-D9562D9CCECA}",
+   "type": "Color",
+   "info": "0, 0, 0, 0 (EV 0)",
+   "position": [
+    5533,
+    -1239
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "color": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "properties": {
+    "linear": true
+   }
+  },
+  {
+   "id": "n27",
+   "guid": "{E7E12492-3120-4608-81E0-1F928116984D}",
+   "type": "Variable",
+   "info": "L_Reflection0",
+   "position": [
+    3784,
+    -1388
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Reflection0"
+   }
+  },
+  {
+   "id": "n28",
+   "guid": "{CAF565E5-C516-45FB-AA96-52299C36EE65}",
+   "type": "Lerp",
+   "position": [
+    4034,
+    -1437
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Blend",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n29",
+   "guid": "{043C2DAD-2099-434C-AA20-242B6CE7A57D}",
+   "type": "Script",
+   "position": [
+    3774,
+    -1301
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar"
+    }
+   ],
+   "domain": "Undefined",
+   "properties": {
+    "name": "IsClipped",
+    "technique": "",
+    "useRayTracing": false,
+    "script": "const vec2 uv = $Input.xy;\n\nif (uv.x < 0.0f || uv.x > 1.0f)\n\t$Output = 1.0f;\nelse if (uv.y < 0.0f || uv.y > 1.0f)\n\t$Output = 1.0f;\nelse\n\t$Output = 0.0f;\n\t"
+   }
+  },
+  {
+   "id": "n30",
+   "guid": "{8A0A44C1-D856-4FA7-9251-FD8E0DB5BEDC}",
+   "type": "Sub",
+   "position": [
+    3373,
+    -1409
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n31",
+   "guid": "{4A7FCC56-2A76-4263-8951-91099FEFFB0D}",
+   "type": "Vector",
+   "info": "-0.5, 0.5, 0, 0",
+   "position": [
+    2825,
+    -1217
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "value": [
+    -0.5,
+    0.5,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "n32",
+   "guid": "{BBF6F7CB-AD9C-44B0-A60B-C5D986399496}",
+   "type": "Mul",
+   "position": [
+    3083,
+    -1293
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n33",
+   "guid": "{7E8B329D-2801-4B9B-BFC5-DC67F89A118C}",
+   "type": "Sampler",
+   "position": [
+    2828,
+    -1344
+   ],
+   "inputs": [
+    {
+     "name": "Texture",
+     "type": "Texture2D"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Scalar2"
+    },
+    {
+     "name": "Mip",
+     "optional": true,
+     "type": "Scalar1"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "mipBias": 0,
+    "ignoreMips": false,
+    "useAnisotropic": false
+   }
+  },
+  {
+   "id": "n34",
+   "guid": "{5863EC68-EC89-4151-9169-42F438910E0F}",
+   "type": "Sampler",
+   "position": [
+    3726,
+    -1545
+   ],
+   "inputs": [
+    {
+     "name": "Texture",
+     "type": "Texture2D"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Scalar2"
+    },
+    {
+     "name": "Mip",
+     "optional": true,
+     "type": "Scalar1"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "mipBias": 0,
+    "ignoreMips": false,
+    "useAnisotropic": false
+   }
+  },
+  {
+   "id": "n35",
+   "guid": "{1F30EADE-FD61-441B-9358-251ECA5ABEDA}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    -561,
+    -1530
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n36",
+   "guid": "{D3801F9C-1EE4-4D74-96DD-C78EA0F334F8}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    3159,
+    -1414
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n37",
+   "guid": "{8770E4F9-8D5C-4A68-887C-6A604337C63A}",
+   "type": "Variable",
+   "info": "L_ReflectionN",
+   "position": [
+    4301,
+    -1397
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ReflectionN"
+   }
+  },
+  {
+   "id": "n38",
+   "guid": "{480E5D52-35BB-41CE-9572-7D9A5612E545}",
+   "type": "Variable",
+   "info": "L_Reflection0",
+   "position": [
+    2019,
+    -1343
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Reflection0"
+   }
+  },
+  {
+   "id": "n39",
+   "guid": "{D8A169B0-CA03-400A-A145-6398D657719A}",
+   "type": "Scalar",
+   "info": "0.3",
+   "position": [
+    4301,
+    -1184
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "value": 0.3
+   }
+  },
+  {
+   "id": "n40",
+   "guid": "{741CB9CC-3D3C-471E-8E6E-B50589AC5329}",
+   "type": "Lerp",
+   "position": [
+    4565,
+    -1251
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Void"
+    },
+    {
+     "name": "Input2",
+     "type": "Void"
+    },
+    {
+     "name": "Blend",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ]
+  },
+  {
+   "id": "n41",
+   "guid": "{2BB5922B-4B37-47A4-9325-88ADA47C5A8F}",
+   "type": "Variable",
+   "info": "L_Reflection0",
+   "position": [
+    4291,
+    -1231
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Reflection0"
+   }
+  },
+  {
+   "id": "n42",
+   "guid": "{74055EE9-11C9-4B8C-968C-CF97F7B04C5F}",
+   "type": "Variable",
+   "info": "L_ReflectionN",
+   "position": [
+    4291,
+    -1278
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ReflectionN"
+   }
+  },
+  {
+   "id": "n43",
+   "guid": "{99A38518-07E9-417D-8BDF-51C123C91DE8}",
+   "type": "Variable",
+   "info": "L_Reflection",
+   "position": [
+    4814,
+    -1274
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Reflection"
+   }
+  },
+  {
+   "id": "n44",
+   "guid": "{50BC58F9-E5FB-4932-AAEA-3DAB86F68B3E}",
+   "type": "Variable",
+   "info": "L_Reflection",
+   "position": [
+    5571,
+    -1301
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Reflection"
+   }
+  },
+  {
+   "id": "n45",
+   "guid": "{3A01222A-F81E-4C9C-814A-EDF6611309C8}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    -1165,
+    -1104
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n46",
+   "guid": "{029240DE-79E7-4E76-995B-2E7B25817C00}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    -1165,
+    -1195
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n47",
+   "guid": "{D85159D8-E0ED-4ECB-93B9-7A9E9C3908A1}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    -1165,
+    -1286
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n48",
+   "guid": "{D901D3FB-AF71-44B4-A9B0-7DCB71499BE0}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    2594,
+    -1275
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n49",
+   "guid": "{B4B5E766-1A5A-5847-A0E2-CF29A746CCEC}",
+   "type": "External",
+   "info": "{9242C87C-F61C-0F4D-9EDC-DC1BD46DB468}",
+   "position": [
+    -979,
+    -1399
+   ],
+   "inputs": [
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{9242C87C-F61C-0F4D-9EDC-DC1BD46DB468}",
+   "fragmentName": "ViewPosition"
+  },
+  {
+   "id": "n50",
+   "guid": "{4B90C1F9-8274-3043-816E-EB0C5BB04CB4}",
+   "type": "Variable",
+   "info": "UV",
+   "position": [
+    -1165,
+    -1377
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "UV"
+   }
+  },
+  {
+   "id": "n51",
+   "guid": "{7947A516-8517-8043-8B06-5C4597A27B12}",
+   "type": "External",
+   "info": "{6DE0FC81-3E61-0D45-81F4-8FB4B950B941}",
+   "position": [
+    -1149,
+    -1616
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Position",
+     "type": "Void"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{6DE0FC81-3E61-0D45-81F4-8FB4B950B941}",
+   "fragmentName": "Screen"
+  },
+  {
+   "id": "n52",
+   "guid": "{D7D28C94-F4D8-B74E-9C75-6E3862F03230}",
+   "type": "Interpolator",
+   "position": [
+    -935,
+    -1572
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ]
+  },
+  {
+   "id": "n53",
+   "guid": "{72C6A12E-00C8-3A47-B58E-63A9DE7E2D4A}",
+   "type": "Swizzle",
+   "info": "zw",
+   "position": [
+    -1010,
+    -1520
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar2"
+    }
+   ],
+   "properties": {
+    "swizzle": "zw"
+   }
+  },
+  {
+   "id": "n54",
+   "guid": "{98412058-4E01-F04B-ACEA-CCBDC0ACCDC0}",
+   "type": "Sub",
+   "position": [
+    -811,
+    -1574
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar2"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar2"
+    }
+   ]
+  },
+  {
+   "id": "n55",
+   "guid": "{CED2A361-6E40-7147-866C-B535B686FF03}",
+   "type": "Parameter",
+   "position": [
+    388,
+    -1373
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Matrix"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Matrix"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{284FF359-2F08-6A40-B256-AC194478040A}"
+   }
+  },
+  {
+   "id": "n56",
+   "guid": "{76727696-C2A3-564A-957E-7EC4C0F74BBD}",
+   "type": "Parameter",
+   "position": [
+    1014,
+    -1527
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Texture2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Texture2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{53A631D9-EE23-B74D-A6AE-0711FA956671}"
+   }
+  },
+  {
+   "id": "n57",
+   "guid": "{6C21C54A-2CAA-D74C-97A9-F54D9D2EFE38}",
+   "type": "Parameter",
+   "position": [
+    372,
+    -1324
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Texture2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Texture2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{1B7EE70B-CFE2-EF44-A21B-13A748CEAC26}"
+   }
+  },
+  {
+   "id": "n58",
+   "guid": "{7DAA3BCF-EE48-9441-BF2C-B488A6A7163C}",
+   "type": "Parameter",
+   "position": [
+    -77,
+    -1150
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{41C095E8-1A66-A249-A474-349B74E9CC2D}"
+   }
+  },
+  {
+   "id": "n59",
+   "guid": "{76D5EAF5-7022-AB4B-9B50-0A3EA6CEFF51}",
+   "type": "Parameter",
+   "position": [
+    2594,
+    -1349
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Texture2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Texture2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{ED2D7CE2-93AC-5B4D-921E-FBDDA67245B3}"
+   }
+  },
+  {
+   "id": "n60",
+   "guid": "{F0279B2B-94F9-264E-A8C7-3E12832F1A23}",
+   "type": "Parameter",
+   "position": [
+    3471,
+    -1569
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Texture2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Texture2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{3D6323D8-2B64-3349-881E-BABBC0587A3B}"
+   }
+  },
+  {
+   "id": "n61",
+   "guid": "{43F3DB6B-D2CC-914E-A2B2-02D4DF5655C2}",
+   "type": "Parameter",
+   "position": [
+    -1231,
+    -1490
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{B8AE6C9B-745D-ED43-AB69-5814E56BF99B}"
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": {
+    "node": "n3",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n5",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "ViewPosition"
+   }
+  },
+  {
+   "from": {
+    "node": "n6",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "ViewNormal"
+   }
+  },
+  {
+   "from": {
+    "node": "n7",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "DepthMapState"
+   }
+  },
+  {
+   "from": {
+    "node": "n8",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n9",
+    "pin": "Mip"
+   }
+  },
+  {
+   "from": {
+    "node": "n4",
+    "pin": "Hit"
+   },
+   "to": {
+    "node": "n11",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n11",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n9",
+    "pin": "TexCoord"
+   }
+  },
+  {
+   "from": {
+    "node": "n4",
+    "pin": "Hit"
+   },
+   "to": {
+    "node": "n13",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n13",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n12",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n16",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n12",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n17",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n1",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n18",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n0",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n9",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n16",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n19",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n20",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n21",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n22",
+    "pin": "Specular"
+   }
+  },
+  {
+   "from": {
+    "node": "n14",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n22",
+    "pin": "Roughness"
+   }
+  },
+  {
+   "from": {
+    "node": "n23",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n24",
+    "pin": "Time"
+   }
+  },
+  {
+   "from": {
+    "node": "n24",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "Random"
+   }
+  },
+  {
+   "from": {
+    "node": "n22",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n25",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n15",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n25",
+    "pin": "Reference"
+   }
+  },
+  {
+   "from": {
+    "node": "n26",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n25",
+    "pin": "CaseFalse"
+   }
+  },
+  {
+   "from": {
+    "node": "n33",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n32",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n30",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n34",
+    "pin": "TexCoord"
+   }
+  },
+  {
+   "from": {
+    "node": "n32",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n30",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n30",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n29",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n29",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n28",
+    "pin": "Blend"
+   }
+  },
+  {
+   "from": {
+    "node": "n34",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n28",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n27",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n28",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n36",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n30",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n28",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n37",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n12",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n38",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n42",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n40",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n41",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n40",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n39",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n40",
+    "pin": "Blend"
+   }
+  },
+  {
+   "from": {
+    "node": "n40",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n43",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n45",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n19",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n46",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n18",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n47",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n17",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n48",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n33",
+    "pin": "TexCoord"
+   }
+  },
+  {
+   "from": {
+    "node": "n31",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n32",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n50",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n49",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n49",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n3",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n51",
+    "pin": "TexCoord"
+   },
+   "to": {
+    "node": "n52",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n52",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n54",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n53",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n54",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n54",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n35",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n44",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n25",
+    "pin": "CaseTrue"
+   }
+  },
+  {
+   "from": {
+    "node": "n55",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "Projection"
+   }
+  },
+  {
+   "from": {
+    "node": "n56",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n9",
+    "pin": "Texture"
+   }
+  },
+  {
+   "from": {
+    "node": "n57",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "DepthMap"
+   }
+  },
+  {
+   "from": {
+    "node": "n58",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n23",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n59",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n33",
+    "pin": "Texture"
+   }
+  },
+  {
+   "from": {
+    "node": "n60",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n34",
+    "pin": "Texture"
+   }
+  },
+  {
+   "from": {
+    "node": "n61",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n53",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n25",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n10",
+    "pin": "Input"
+   }
+  }
+ ],
+ "guid": "{F04EEA34-85E0-974F-BE97-79D24C6ACFBD}",
+ "name": "SS reflections",
+ "graphType": "fragment",
+ "resolved": false,
+ "typesResolved": true
+}

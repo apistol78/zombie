@@ -1,0 +1,2424 @@
+{
+ "nodes": [
+  {
+   "id": "n0",
+   "guid": "{C97EB7D2-CC39-9746-B033-8C5C4DAEA851}",
+   "type": "External",
+   "info": "{18AC659A-8AB8-5C45-8FBF-BC2B344BFE87}",
+   "position": [
+    -1999,
+    -3292
+   ],
+   "inputs": [
+    {
+     "name": "DepthMap",
+     "type": "Texture2D"
+    },
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{18AC659A-8AB8-5C45-8FBF-BC2B344BFE87}",
+   "fragmentName": "ViewPosition"
+  },
+  {
+   "id": "n1",
+   "guid": "{3D50CF75-A955-0245-B615-AE93498C4EB0}",
+   "type": "Variable",
+   "info": "L_TexCoord",
+   "position": [
+    -2202,
+    -3248
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord"
+   }
+  },
+  {
+   "id": "n2",
+   "guid": "{A2614290-ECF4-BF44-8401-C15462032879}",
+   "type": "Script",
+   "info": "Default",
+   "position": [
+    -1445,
+    -1733
+   ],
+   "inputs": [
+    {
+     "name": "AS",
+     "type": "Void"
+    },
+    {
+     "name": "Origin",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Direction",
+     "type": "Void"
+    },
+    {
+     "name": "Random",
+     "type": "Scalar1"
+    },
+    {
+     "name": "Lights",
+     "type": "StructBuffer"
+    },
+    {
+     "name": "LightCount",
+     "type": "Scalar1"
+    },
+    {
+     "name": "ViewInverse",
+     "type": "Matrix"
+    },
+    {
+     "name": "Reservoir",
+     "type": "StructBuffer"
+    },
+    {
+     "name": "ReservoirOutput",
+     "type": "StructBuffer"
+    },
+    {
+     "name": "Output",
+     "type": "Image2D"
+    },
+    {
+     "name": "Velocity",
+     "type": "Void"
+    },
+    {
+     "name": "Depth",
+     "type": "Void"
+    },
+    {
+     "name": "Roughness",
+     "type": "Void"
+    },
+    {
+     "name": "Sky",
+     "type": "Void"
+    }
+   ],
+   "outputs": [],
+   "domain": "Compute",
+   "properties": {
+    "name": "Raytracing",
+    "technique": "Default",
+    "useRayTracing": true,
+    "script": "\n#define USE_TEMPORAL_FILTER 0\n#define USE_SPATIAL_FILTER 0\n\nconst int N = 4;\nconst int Ndisclose = 16;\nconst int Nspatial = 16;\nconst int K = 8;\nconst float NormalThreshold = 0.95f;\nconst float DepthThreshold = 10.0f;\nconst float Far = 20.0f;\nconst float SpatialFilterRadius = 0.005f;\nconst float SpatialFilterCoeff = 0.75f;\nconst float Ambient = 0.1f;\n\nconst ivec2 sz = imageSize($Output);\nconst ivec2 pt = ivec2(gl_GlobalInvocationID.xy);\nconst int index = pt.x + pt.y * sz.x;\nconst vec2 hdv = sign($Velocity.xy) * 0.5f;\nconst ivec2 uvpt = pt - ivec2($Velocity.xy * vec2(sz) + hdv);\nconst ivec2 cvpt = clamp(uvpt, ivec2(0), sz - 1);\nconst int lastIndex = cvpt.x + cvpt.y * sz.x;\nconst bool lastIndexOutside = (uvpt != cvpt);\n\nint rndState = int($Random * 54312.0f);\n\nif (pt.x < sz.x && pt.y < sz.y)\n{\n\t$typeof(Reservoir) reservoir;\n\tReservoir_Empty(reservoir);\n\n\tbool temporalValid = !lastIndexOutside;\n\n\t// 1. Temporal filtering.\n#if USE_TEMPORAL_FILTER\n\tif (!lastIndexOutside)\n\t{\n\t\t$typeof(Reservoir) lastR = $Reservoir[lastIndex];\n\n\t\ttemporalValid =\n\t\t\t!Reservoir_IsEmpty(lastR) &&\n\t\t\tdot(lastR.normal, $Direction.xyz) >= NormalThreshold &&\n\t\t\tabs(lastR.depth - $Depth) < DepthThreshold;\n\n\t\tif (temporalValid)\n\t\t{\n\t\t\tconst float P_hat = Reservoir_CalculateProbability(lastR.radiance);\n\t\t\tconst float m = min(lastR.M, K);\n\n\t\t\tconst float w =\n\t\t\t\t(P_hat > 0.0f) ?\n\t\t\t\t(1.0f / P_hat) * (lastR.W_sum / lastR.M) :\n\t\t\t\t0.0f;\n\n\t\t\tconst vec3 v = lastR.radiance * w;\n\t\t\tconst float p = 1.0f;\n\t\t\t\n\t\t\treservoir.W_sum = (Reservoir_CalculateProbability(v) / p) * m;\n\t\t\treservoir.M = m;\n\t\t\treservoir.normal = lastR.normal;\n\t\t\treservoir.depth = $Depth;\n\t\t\treservoir.radiance = v;\n\t\t}\n\t}\n#endif\n\n\t// 2. Spatial filtering.\n#if USE_SPATIAL_FILTER\n\tif (!lastIndexOutside)\n\t{\n\t\tfor (int i = 0; i < Nspatial; ++i)\n\t\t{\n\t\t\tconst vec2 offset = 2.0f * vec2(\n\t\t\t\tHash(rndState++),\n\t\t\t\tHash(rndState++)\n\t\t\t) - 1.0f;\n\n\t\t\tconst float ratio = float(sz.y) / sz.x;\n\t\t\tconst vec2 radius = vec2(SpatialFilterRadius, SpatialFilterRadius * ratio);\n\t\t\tconst ivec2 spt = uvpt - ivec2(offset * sz * radius);\n\t\t\t\n\t\t\tif (spt.x >= 0 && spt.y >= 0 && spt.x < sz.x && spt.y < sz.y)\n\t\t\t{\n\t\t\t\tconst int spatIndex = spt.x + spt.y * sz.x;\n\t\t\t\t$typeof(Reservoir) spatR = $Reservoir[spatIndex];\n\n\t\t\t\tconst bool valid =\n\t\t\t\t\t!Reservoir_IsEmpty(spatR) &&\n\t\t\t\t\tdot(spatR.normal, $Direction.xyz) >= NormalThreshold &&\n\t\t\t\t\tabs(spatR.depth - $Depth) < DepthThreshold;\n\t\t\n\t\t\t\tif (valid)\n\t\t\t\t{\n\t\t\t\t\tconst vec3 r1 = Reservoir_GetRadiance(reservoir);\n\t\t\t\t\tconst vec3 r2 = Reservoir_GetRadiance(spatR);\n\n\t\t\t\t\tconst vec3 r = mix(r1, r2, SpatialFilterCoeff);\n\n\t\t\t\t\tconst float w = Reservoir_CalculateProbability(r);\n\t\t\t\t\tReservoir_Update(\n\t\t\t\t\t\treservoir,\n\t\t\t\t\t\tw,\n\t\t\t\t\t\t$Direction.xyz,\n\t\t\t\t\t\t$Depth,\n\t\t\t\t\t\tr,\n\t\t\t\t\t\tHash(rndState++)\n\t\t\t\t\t);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n#endif\n\n\t// 3. Sample generation.\n\tif ($Roughness < 0.4f)\n\t{\n\t\tvec3 u, v;\n\t\tOrthogonalFrame($Direction.xyz, u, v);\n\t\t\n\t\tmat3 R = Rotate($Direction.xyz, Hash(rndState++) * TWO_PI);\n\t\tu = R * u;\n\t\tv = R * v;\n\n\t\tconst int sampleN = (reservoir.M > K) ? N : Ndisclose;\n\t\n\t\tfor (int I = 0; I < sampleN; I += N)\n\t\t{\n\t\t\tvec3 Nacc = vec3(0.0f);\n\t\t\tfor (int i = 0; i < N; ++i)\n\t\t\t{\n\t\t\t\tconst float roughness = $Roughness;\n\t\t\t\tconst vec2 jitter = vec2(Hash(rndState++), Hash(rndState++)) * 0.125f;\n\n\t\t\t\tconst vec2 ruv = Hammersley(i, N) + jitter;\n\t\t\t\tconst vec2 r = UniformDisc(roughness * roughness, ruv);\n\t\n\t\t\t\tconst vec3 rayOrigin = $Origin.xyz;\n\t\t\t\tconst vec3 rayDir = normalize($Direction.xyz + u * r.x + v * r.y);\n\n\t\t\t\tconst float phi = 0.5f;\n\t\t\n\t\t\t\tHWRT_Material m;\n\t\t\t\tfloat t;\n\t\t\n\t\t\t\tif (HWRT_Trace($AS, rayOrigin, rayDir, Far, m, t))\n\t\t\t\t{\n\t\t\t\t\tconst vec3 hit = rayOrigin + rayDir * t;\n\t\t\t\t\tconst float attenuate = LightAttenuation(t);\n\t\t\t\t\t\n\t\t\t\t\tvec3 Tincident = vec3(0.0f);\n\t\t\t\t\tfor (int lightIndex = 0; lightIndex < $LightCount; ++lightIndex)\n\t\t\t\t\t{\n\t\t\t\t\t\tconst $typeof(Lights) light = $Lights[lightIndex];\n\t\t\t\t\t\tconst vec4 incident = HWRT_Light_CalculateIncidentLight(\n\t\t\t\t\t\t\t$AS,\n\t\t\t\t\t\t\t$ViewInverse,\n\t\t\t\t\t\t\tlight,\n\t\t\t\t\t\t\thit,\n\t\t\t\t\t\t\tm.normal.xyz,\n\t\t\t\t\t\t\ttrue\n\t\t\t\t\t\t);\n\t\t\t\t\t\tTincident += (incident.xyz * attenuate * phi * PI).xyz;\n\t\t\t\t\t}\n\t\t\n\t\t\t\t\tTincident += m.emissive * attenuate * phi * PI;\n\t\t\t\t\tTincident += Ambient;\n\n\t\t\t\t\tNacc += m.albedo * Tincident;\n\t\t\t\t}\n\t\t\t\telse\n\t\t\t\t\tNacc += $Sky.xyz;\n\t\t\t}\n\n\t\t\tNacc /= N;\n\t\t\n\t\t\tfloat w = Reservoir_CalculateProbability(Nacc);\n\t\t\tw = clamp(w, 0.0f, 4.0f);\n\n\t\t\tReservoir_Update(\n\t\t\t\treservoir,\n\t\t\t\tw,\n\t\t\t\t$Direction.xyz,\n\t\t\t\t$Depth,\n\t\t\t\tNacc,\n\t\t\t\tHash(rndState++)\n\t\t\t);\n\t\t}\n\t}\n\telse\n\t{\n\t\tconst float w = Reservoir_CalculateProbability($Sky.xyz);\n\t\tReservoir_Update(\n\t\t\treservoir,\n\t\t\tw,\n\t\t\t$Direction.xyz,\n\t\t\t$Depth,\n\t\t\t$Sky.xyz,\n\t\t\tHash(rndState++)\n\t\t);\n\t}\n\n\t// 3. Calculate lighting.\n\tvec4 acc = vec4(0.0f.xxx, 1.0f);\n\tif (!Reservoir_IsEmpty(reservoir))\n\t\tacc += vec4(Reservoir_GetRadiance(reservoir), 1.0f);\n\n#if 0\n\tacc = temporalValid ? \n\t\tvec4(0.0f, 1.0f, 0.0f, 1.0f) :\n\t\tvec4(1.0f, 0.0f, 0.0f, 1.0f);\n#endif\n\n\timageStore($Output, pt, acc);\n\n\t$ReservoirOutput[index] = reservoir;\n}\n\n"
+   }
+  },
+  {
+   "id": "n3",
+   "guid": "{5BEE009D-B02A-1F4A-8750-96A71317E437}",
+   "type": "Transform",
+   "position": [
+    -1802,
+    -1850
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Transform",
+     "type": "Matrix"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n4",
+   "guid": "{3BA6EB62-E020-4741-ACF1-092F80E54484}",
+   "type": "Swizzle",
+   "info": "xyz1",
+   "position": [
+    -2031,
+    -1851
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz1"
+   }
+  },
+  {
+   "id": "n5",
+   "guid": "{D8635802-0711-0745-8205-9E9969F9D8C1}",
+   "type": "Variable",
+   "info": "L_ViewPosition",
+   "position": [
+    -2213,
+    -1853
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewPosition"
+   }
+  },
+  {
+   "id": "n6",
+   "guid": "{7DAF8C2E-13E4-9147-9791-042F945AC0F2}",
+   "type": "Script",
+   "position": [
+    -1754,
+    -1597
+   ],
+   "inputs": [
+    {
+     "name": "Time",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar"
+    }
+   ],
+   "domain": "Undefined",
+   "properties": {
+    "name": "Random",
+    "technique": "",
+    "useRayTracing": false,
+    "script": "uvec2 seed = uvec2(gl_GlobalInvocationID.xy);\nseed += uvec2($Time * 1543, $Time * 543);\n$Output = BlueNoise(seed);\n\t\t\t"
+   }
+  },
+  {
+   "id": "n7",
+   "guid": "{7046980C-A69C-E14A-A3AD-F047AEB093D3}",
+   "type": "Swizzle",
+   "info": "x",
+   "position": [
+    -1968,
+    -1559
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "swizzle": "x"
+   }
+  },
+  {
+   "id": "n8",
+   "guid": "{CC2A4AFF-D178-AE4C-9B50-E5BD1B65E5C4}",
+   "type": "Variable",
+   "info": "L_ViewNormal",
+   "position": [
+    -1540,
+    -3178
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewNormal"
+   }
+  },
+  {
+   "id": "n9",
+   "guid": "{DA5252B1-349D-D04A-863A-BF29A178CF06}",
+   "type": "Swizzle",
+   "info": "yzw",
+   "position": [
+    -1749,
+    -3138
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ],
+   "properties": {
+    "swizzle": "yzw"
+   }
+  },
+  {
+   "id": "n10",
+   "guid": "{1BE87E1A-2CF0-E446-A191-E5FA85538778}",
+   "type": "Sampler",
+   "position": [
+    -1999,
+    -3199
+   ],
+   "inputs": [
+    {
+     "name": "Texture",
+     "type": "Texture2D"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Scalar2"
+    },
+    {
+     "name": "Mip",
+     "optional": true,
+     "type": "Scalar1"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "mipBias": 0,
+    "ignoreMips": true,
+    "useAnisotropic": false
+   }
+  },
+  {
+   "id": "n11",
+   "guid": "{020BF8BE-8777-C948-A11E-96EE73E24142}",
+   "type": "Variable",
+   "info": "L_TexCoord",
+   "position": [
+    -2202,
+    -3113
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord"
+   }
+  },
+  {
+   "id": "n12",
+   "guid": "{AF2DDBB5-B05D-074E-8D9C-3FB20F016DC2}",
+   "type": "Variable",
+   "info": "L_ViewPosition",
+   "position": [
+    -1540,
+    -3256
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewPosition"
+   }
+  },
+  {
+   "id": "n13",
+   "guid": "{CF7F4CB4-F01A-6C44-9249-3E1965068322}",
+   "type": "Swizzle",
+   "info": "xyz",
+   "position": [
+    -1751,
+    -3254
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz"
+   }
+  },
+  {
+   "id": "n14",
+   "guid": "{035621F7-F77D-AB49-A8DC-212E7164EEB1}",
+   "type": "Script",
+   "position": [
+    -2008,
+    -3771
+   ],
+   "inputs": [
+    {
+     "name": "Target",
+     "type": "Image2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "TexCoord",
+     "type": "Vector"
+    }
+   ],
+   "domain": "Undefined",
+   "properties": {
+    "name": "Screen",
+    "technique": "",
+    "useRayTracing": false,
+    "script": "const ivec2 sz = imageSize($Target);\nconst ivec2 pt = ivec2(gl_GlobalInvocationID.xy);\n$TexCoord = vec4(\n\tvec2(pt + 0.5f) / sz,\n\tvec2(pt) / sz\n);\n\n"
+   }
+  },
+  {
+   "id": "n15",
+   "guid": "{B53AAEFC-4796-294B-8742-674E6A616965}",
+   "type": "Variable",
+   "info": "L_TexCoord",
+   "position": [
+    -1550,
+    -3703
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord"
+   }
+  },
+  {
+   "id": "n16",
+   "guid": "{745AAD1D-1DF2-0D41-8935-E90E61B5457B}",
+   "type": "Vector",
+   "info": "-0.5, 0.5, 0, 0",
+   "position": [
+    -1766,
+    -2899
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "value": [
+    -0.5,
+    0.5,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "n17",
+   "guid": "{38F9007C-8A25-E643-9E13-6F593FDFA16A}",
+   "type": "Sampler",
+   "position": [
+    -1999,
+    -3041
+   ],
+   "inputs": [
+    {
+     "name": "Texture",
+     "type": "Texture2D"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Scalar2"
+    },
+    {
+     "name": "Mip",
+     "optional": true,
+     "type": "Scalar1"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar2"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "mipBias": 0,
+    "ignoreMips": true,
+    "useAnisotropic": false
+   }
+  },
+  {
+   "id": "n18",
+   "guid": "{64A9D8C6-A665-1544-9A86-7E58B8BF99C8}",
+   "type": "Mul",
+   "position": [
+    -1518,
+    -2975
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n19",
+   "guid": "{96E43E42-C56E-5D4A-8713-38864DDF779D}",
+   "type": "Variable",
+   "info": "L_Velocity",
+   "position": [
+    -1307,
+    -3007
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Velocity"
+   }
+  },
+  {
+   "id": "n20",
+   "guid": "{279609DA-272A-904D-A567-BD21284B8704}",
+   "type": "Variable",
+   "info": "L_Velocity",
+   "position": [
+    -1744,
+    -1288
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Velocity"
+   }
+  },
+  {
+   "id": "n21",
+   "guid": "{1FEAF236-E59C-3E4A-B413-A4C2F0122B66}",
+   "type": "Variable",
+   "info": "L_TexCoord",
+   "position": [
+    -2202,
+    -2993
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord"
+   }
+  },
+  {
+   "id": "n22",
+   "guid": "{3B5D2E37-41E3-4E41-ADBB-BBF6297284B3}",
+   "type": "Swizzle",
+   "info": "zw",
+   "position": [
+    -1966,
+    -3646
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar2"
+    }
+   ],
+   "properties": {
+    "swizzle": "zw"
+   }
+  },
+  {
+   "id": "n23",
+   "guid": "{D72A35DD-E3C3-E149-B963-34A6CA50DF2E}",
+   "type": "Sub",
+   "position": [
+    -1767,
+    -3700
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n24",
+   "guid": "{4786AA5E-D0A6-754E-A4D0-E04DE915BC03}",
+   "type": "Variable",
+   "info": "L_Depth",
+   "position": [
+    -1540,
+    -3100
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Depth"
+   }
+  },
+  {
+   "id": "n25",
+   "guid": "{C7A2ECF5-F85E-874C-BAB6-23FCE917BE17}",
+   "type": "Swizzle",
+   "info": "x",
+   "position": [
+    -1749,
+    -3090
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "swizzle": "x"
+   }
+  },
+  {
+   "id": "n26",
+   "guid": "{0DF01388-1F5A-3746-B2D8-C9970E434CF4}",
+   "type": "Variable",
+   "info": "L_Depth",
+   "position": [
+    -1744,
+    -1247
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Depth"
+   }
+  },
+  {
+   "id": "n27",
+   "guid": "{6186748E-D6BE-2247-9D66-D97F5B2C9827}",
+   "type": "Variable",
+   "info": "L_TexCoord_NoJitter",
+   "position": [
+    -1766,
+    -3764
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord_NoJitter"
+   }
+  },
+  {
+   "id": "n28",
+   "guid": "{478A50FF-715A-FE4E-A779-14B4923E161A}",
+   "type": "Swizzle",
+   "info": "xyz",
+   "position": [
+    -2197,
+    -2412
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz"
+   }
+  },
+  {
+   "id": "n29",
+   "guid": "{19435FEF-1901-2843-A15E-FC3A94BC8177}",
+   "type": "Reflect",
+   "position": [
+    -1991,
+    -2394
+   ],
+   "inputs": [
+    {
+     "name": "Normal",
+     "type": "Scalar3"
+    },
+    {
+     "name": "Direction",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ]
+  },
+  {
+   "id": "n30",
+   "guid": "{D6856F00-9309-744D-9FE3-9014B6F3C9E8}",
+   "type": "Swizzle",
+   "info": "xyz",
+   "position": [
+    -2503,
+    -2305
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz"
+   }
+  },
+  {
+   "id": "n31",
+   "guid": "{95F17426-30E0-2044-A536-742B69033602}",
+   "type": "Normalize",
+   "position": [
+    -2207,
+    -2348
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar3"
+    }
+   ]
+  },
+  {
+   "id": "n32",
+   "guid": "{AA90A73E-96B3-3845-AC9E-28B651711B44}",
+   "type": "Swizzle",
+   "info": "xyz0",
+   "position": [
+    -1672,
+    -2349
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar3"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "swizzle": "xyz0"
+   }
+  },
+  {
+   "id": "n33",
+   "guid": "{F6CEEC3A-A303-EB44-90DB-E03DE78ECEEC}",
+   "type": "Variable",
+   "info": "L_ViewNormal",
+   "position": [
+    -2505,
+    -2435
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewNormal"
+   }
+  },
+  {
+   "id": "n34",
+   "guid": "{049E4BE2-9E58-7446-81FB-4F09A101EEF9}",
+   "type": "Transform",
+   "position": [
+    -1450,
+    -2341
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Transform",
+     "type": "Matrix"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  },
+  {
+   "id": "n35",
+   "guid": "{52178F0B-E72E-514B-80E8-FE137B81D337}",
+   "type": "Variable",
+   "info": "L_ViewPosition",
+   "position": [
+    -2749,
+    -2262
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_ViewPosition"
+   }
+  },
+  {
+   "id": "n36",
+   "guid": "{DCBA457C-88EC-354F-B83B-AED9448E1AE7}",
+   "type": "External",
+   "info": "{FDCA9563-2389-4B43-A8E5-5262EC02EC1F}",
+   "position": [
+    -1999,
+    -3505
+   ],
+   "inputs": [
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{FDCA9563-2389-4B43-A8E5-5262EC02EC1F}",
+   "fragmentName": "GBufferReadRoughness"
+  },
+  {
+   "id": "n37",
+   "guid": "{631A5DBA-8B20-7548-B964-4DBA11153ED9}",
+   "type": "Variable",
+   "info": "L_Roughness",
+   "position": [
+    -1738,
+    -3483
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Roughness"
+   }
+  },
+  {
+   "id": "n38",
+   "guid": "{A94D63BE-AC77-744A-B6B3-D24AF28292B4}",
+   "type": "Variable",
+   "info": "L_TexCoord",
+   "position": [
+    -2216,
+    -3505
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord"
+   }
+  },
+  {
+   "id": "n39",
+   "guid": "{5C197609-2152-3441-AB55-463CACCB137F}",
+   "type": "Variable",
+   "info": "L_Roughness",
+   "position": [
+    -1744,
+    -1206
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Roughness"
+   }
+  },
+  {
+   "id": "n40",
+   "guid": "{00F5C6D9-5835-D34A-9D2A-CB519EA88DEB}",
+   "type": "Parameter",
+   "position": [
+    -2266,
+    -3287
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Texture2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Texture2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{6025A87F-C360-C14D-8B20-F6D989D05434}"
+   }
+  },
+  {
+   "id": "n41",
+   "guid": "{49BE29F2-586C-1A44-93FC-343990FDB0BF}",
+   "type": "Parameter",
+   "position": [
+    -1744,
+    -1891
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{C651B846-F51A-CB49-BBAB-10C2A527DE97}"
+   }
+  },
+  {
+   "id": "n42",
+   "guid": "{9B39E600-7A36-2644-A149-86D76C098745}",
+   "type": "Parameter",
+   "position": [
+    -2063,
+    -1801
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Matrix"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Matrix"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{C1FFA687-8FE7-C54E-AA46-23305604D4F5}"
+   }
+  },
+  {
+   "id": "n43",
+   "guid": "{545079D8-D96B-7E4F-AD0F-42C080A7EBC9}",
+   "type": "Parameter",
+   "position": [
+    -2216,
+    -1535
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{46B1D101-2690-4E45-B38B-963CA9440B66}"
+   }
+  },
+  {
+   "id": "n44",
+   "guid": "{5D50DD1B-ACE5-764B-8102-5B6B931A300C}",
+   "type": "Parameter",
+   "position": [
+    -1760,
+    -1493
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Scalar1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{1527F0C9-DD5E-5C47-8A6B-5B7932CFD43D}"
+   }
+  },
+  {
+   "id": "n45",
+   "guid": "{09E44AA7-6673-1E4D-A5B4-7F9D8F0603C4}",
+   "type": "Parameter",
+   "position": [
+    -1776,
+    -1452
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Matrix"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Matrix"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{C1FFA687-8FE7-C54E-AA46-23305604D4F5}"
+   }
+  },
+  {
+   "id": "n46",
+   "guid": "{54BA0B66-6A2E-A74D-B27C-D4D0D8CE6880}",
+   "type": "Parameter",
+   "position": [
+    -1808,
+    -1329
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Image2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Image2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{18C69B12-0FE8-5C46-ABC8-38E25A3BD13E}"
+   }
+  },
+  {
+   "id": "n47",
+   "guid": "{CEDFC2CC-9EC9-D24D-B295-23BC3CC021FF}",
+   "type": "Parameter",
+   "position": [
+    -2234,
+    -3045
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Texture2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Texture2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{69CC271D-2BC6-B845-9896-C3E15BE08E58}"
+   }
+  },
+  {
+   "id": "n48",
+   "guid": "{04F3D47B-E19F-EC48-887B-B0822A2C1CF0}",
+   "type": "Parameter",
+   "position": [
+    -2187,
+    -3616
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{B8AE6C9B-745D-ED43-AB69-5814E56BF99B}"
+   }
+  },
+  {
+   "id": "n49",
+   "guid": "{8F7B6B38-E81B-A141-99E3-EF9359E0CF0E}",
+   "type": "Parameter",
+   "position": [
+    -2279,
+    -3781
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Image2D"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Image2D"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{18C69B12-0FE8-5C46-ABC8-38E25A3BD13E}"
+   }
+  },
+  {
+   "id": "n50",
+   "guid": "{1E677AF3-F87A-9A4E-970B-5D48A477FF44}",
+   "type": "Parameter",
+   "position": [
+    -1704,
+    -2283
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "Matrix"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Matrix"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{C1FFA687-8FE7-C54E-AA46-23305604D4F5}"
+   }
+  },
+  {
+   "id": "n51",
+   "guid": "{73508BBA-E0E1-634F-A174-C2FA3DD21B99}",
+   "type": "Parameter",
+   "position": [
+    -1776,
+    -1534
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "StructBuffer"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "StructBuffer"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{3C048EC4-ED6A-0847-B08D-95F74407200F}"
+   }
+  },
+  {
+   "id": "n52",
+   "guid": "{A6D5B4E0-F9E2-B946-8C39-B8E5448C4E0A}",
+   "type": "Parameter",
+   "position": [
+    -1760,
+    -1411
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "StructBuffer"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "StructBuffer"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{8B5D917E-016B-B847-82D9-873D43916888}"
+   }
+  },
+  {
+   "id": "n53",
+   "guid": "{B03050ED-8FA5-7745-AD49-7D111F647496}",
+   "type": "Parameter",
+   "position": [
+    -1792,
+    -1370
+   ],
+   "inputs": [
+    {
+     "name": "Initial",
+     "optional": true,
+     "type": "StructBuffer"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "StructBuffer"
+    }
+   ],
+   "properties": {
+    "parameterDeclaration": "{1EA8D019-E2CB-F14E-806E-39E74AFAB00E}"
+   }
+  },
+  {
+   "id": "n54",
+   "guid": "{71AAE554-5E9A-C14C-BC4E-887C1EA0C2C4}",
+   "type": "Variable",
+   "info": "L_Sky",
+   "position": [
+    -1292,
+    -796
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Sky"
+   }
+  },
+  {
+   "id": "n55",
+   "guid": "{23314B6D-2779-1646-937E-EFDD55320BB8}",
+   "type": "Variable",
+   "info": "L_Sky",
+   "position": [
+    -1744,
+    -1165
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Sky"
+   }
+  },
+  {
+   "id": "n56",
+   "guid": "{3EA9AA87-F2E7-2C42-AF35-60D59E617461}",
+   "type": "Variable",
+   "info": "L_Roughness",
+   "position": [
+    -2297,
+    -771
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Roughness"
+   }
+  },
+  {
+   "id": "n57",
+   "guid": "{93C07AD1-D967-3F41-9DAB-3AF6F1B950D4}",
+   "type": "External",
+   "info": "{2231E81B-359A-3149-B2EB-26BE4588529B}",
+   "position": [
+    -2049,
+    -830
+   ],
+   "inputs": [
+    {
+     "name": "Direction",
+     "type": "Void"
+    },
+    {
+     "name": "Roughness",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{2231E81B-359A-3149-B2EB-26BE4588529B}",
+   "fragmentName": "ProbeSample"
+  },
+  {
+   "id": "n58",
+   "guid": "{71B25A57-542E-7C4C-840F-2B7456C44E6F}",
+   "type": "Variable",
+   "info": "ReflectionDirection",
+   "position": [
+    -1129,
+    -2279
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "ReflectionDirection"
+   }
+  },
+  {
+   "id": "n59",
+   "guid": "{01E7EF38-CDCD-F641-A735-A563629A1B4E}",
+   "type": "Variable",
+   "info": "ReflectionDirection",
+   "position": [
+    -1776,
+    -1696
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "ReflectionDirection"
+   }
+  },
+  {
+   "id": "n60",
+   "guid": "{20542F94-57FC-7746-8A0D-BB2977B88A48}",
+   "type": "Variable",
+   "info": "ReflectionDirection",
+   "position": [
+    -2321,
+    -831
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "ReflectionDirection"
+   }
+  },
+  {
+   "id": "n61",
+   "guid": "{3732C5D2-E474-4547-9686-D2B23F90D892}",
+   "type": "External",
+   "info": "{F5F800CD-4CF7-524E-AC4F-2AF7591871E0}",
+   "position": [
+    -1997,
+    -3410
+   ],
+   "inputs": [
+    {
+     "name": "UV",
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{F5F800CD-4CF7-524E-AC4F-2AF7591871E0}",
+   "fragmentName": "GBufferReadSpecular"
+  },
+  {
+   "id": "n62",
+   "guid": "{60D9A3FC-17FD-A14E-9D34-444B30120643}",
+   "type": "Variable",
+   "info": "L_TexCoord",
+   "position": [
+    -2222,
+    -3426
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_TexCoord"
+   }
+  },
+  {
+   "id": "n63",
+   "guid": "{12C958C6-595D-4244-B597-3D71FF1AF00A}",
+   "type": "Variable",
+   "info": "L_Specular",
+   "position": [
+    -1736,
+    -3377
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Specular"
+   }
+  },
+  {
+   "id": "n64",
+   "guid": "{603F5BFD-1B45-7C4E-A936-EC683B65DD83}",
+   "type": "Vector",
+   "info": "0, 0, 0, 0",
+   "position": [
+    -1863,
+    -753
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "value": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "n65",
+   "guid": "{2F62C7D4-8CBD-F645-A4B8-D31DCF52DFEC}",
+   "type": "Variable",
+   "info": "L_Specular",
+   "position": [
+    -1841,
+    -895
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Void"
+    }
+   ],
+   "properties": {
+    "name": "L_Specular"
+   }
+  },
+  {
+   "id": "n66",
+   "guid": "{FD8167D7-0B23-4E4E-B65D-27F6D3001708}",
+   "type": "Scalar",
+   "info": "0.01",
+   "position": [
+    -1847,
+    -847
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar1"
+    }
+   ],
+   "properties": {
+    "value": 0.01
+   }
+  },
+  {
+   "id": "n67",
+   "guid": "{C559B84B-F5A8-C84F-876B-A3DE487AB29F}",
+   "type": "Conditional",
+   "info": ">=",
+   "position": [
+    -1581,
+    -865
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar1"
+    },
+    {
+     "name": "Reference",
+     "type": "Scalar1"
+    },
+    {
+     "name": "CaseTrue",
+     "type": "Scalar4"
+    },
+    {
+     "name": "CaseFalse",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "from": {
+    "node": "n3",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Origin"
+   }
+  },
+  {
+   "from": {
+    "node": "n4",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n3",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n5",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n6",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Random"
+   }
+  },
+  {
+   "from": {
+    "node": "n7",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n6",
+    "pin": "Time"
+   }
+  },
+  {
+   "from": {
+    "node": "n9",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n8",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n10",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n9",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n13",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n12",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n0",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n13",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n18",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n19",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n16",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n18",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n20",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Velocity"
+   }
+  },
+  {
+   "from": {
+    "node": "n22",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n23",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n14",
+    "pin": "TexCoord"
+   },
+   "to": {
+    "node": "n23",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n10",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n25",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n25",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n24",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n14",
+    "pin": "TexCoord"
+   },
+   "to": {
+    "node": "n27",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n21",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n17",
+    "pin": "TexCoord"
+   }
+  },
+  {
+   "from": {
+    "node": "n17",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n18",
+    "pin": "Input1"
+   }
+  },
+  {
+   "from": {
+    "node": "n26",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Depth"
+   }
+  },
+  {
+   "from": {
+    "node": "n32",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n34",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n30",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n31",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n33",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n28",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n31",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n29",
+    "pin": "Direction"
+   }
+  },
+  {
+   "from": {
+    "node": "n28",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n29",
+    "pin": "Normal"
+   }
+  },
+  {
+   "from": {
+    "node": "n29",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n32",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n35",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n30",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n38",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n36",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n39",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Roughness"
+   }
+  },
+  {
+   "from": {
+    "node": "n1",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n0",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n11",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n10",
+    "pin": "TexCoord"
+   }
+  },
+  {
+   "from": {
+    "node": "n23",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n15",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n40",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n0",
+    "pin": "DepthMap"
+   }
+  },
+  {
+   "from": {
+    "node": "n40",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n10",
+    "pin": "Texture"
+   }
+  },
+  {
+   "from": {
+    "node": "n41",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "AS"
+   }
+  },
+  {
+   "from": {
+    "node": "n42",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n3",
+    "pin": "Transform"
+   }
+  },
+  {
+   "from": {
+    "node": "n43",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n7",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n44",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "LightCount"
+   }
+  },
+  {
+   "from": {
+    "node": "n45",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "ViewInverse"
+   }
+  },
+  {
+   "from": {
+    "node": "n46",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Output"
+   }
+  },
+  {
+   "from": {
+    "node": "n47",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n17",
+    "pin": "Texture"
+   }
+  },
+  {
+   "from": {
+    "node": "n48",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n22",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n49",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n14",
+    "pin": "Target"
+   }
+  },
+  {
+   "from": {
+    "node": "n50",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n34",
+    "pin": "Transform"
+   }
+  },
+  {
+   "from": {
+    "node": "n51",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Lights"
+   }
+  },
+  {
+   "from": {
+    "node": "n52",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Reservoir"
+   }
+  },
+  {
+   "from": {
+    "node": "n53",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "ReservoirOutput"
+   }
+  },
+  {
+   "from": {
+    "node": "n55",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Sky"
+   }
+  },
+  {
+   "from": {
+    "node": "n56",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n57",
+    "pin": "Roughness"
+   }
+  },
+  {
+   "from": {
+    "node": "n34",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n58",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n59",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n2",
+    "pin": "Direction"
+   }
+  },
+  {
+   "from": {
+    "node": "n60",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n57",
+    "pin": "Direction"
+   }
+  },
+  {
+   "from": {
+    "node": "n62",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n61",
+    "pin": "UV"
+   }
+  },
+  {
+   "from": {
+    "node": "n61",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n63",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n66",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n67",
+    "pin": "Reference"
+   }
+  },
+  {
+   "from": {
+    "node": "n65",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n67",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n64",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n67",
+    "pin": "CaseFalse"
+   }
+  },
+  {
+   "from": {
+    "node": "n57",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n67",
+    "pin": "CaseTrue"
+   }
+  },
+  {
+   "from": {
+    "node": "n67",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n54",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n36",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n37",
+    "pin": "Input"
+   }
+  }
+ ],
+ "guid": "{64878605-942D-6247-BA36-3D035727E2AE}",
+ "name": "Reflections Compute",
+ "graphType": "program",
+ "resolved": false,
+ "typesResolved": true
+}

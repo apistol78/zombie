@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- EnemyController: a ScriptComponent state machine that drives the owner entity's
+-- character controller across the scene nav mesh.
+--
+--   * PATROL - wander between random nav-mesh points (slow, blue tint).
+--   * ATTACK - chase the player (fast, red tint). Entered the moment the player is
+--              "spotted": within sight range AND with a clear physics line of sight.
+--
+-- Losing sight does not drop ATTACK instantly; the enemy keeps chasing for a short
+-- memory window first. That feels natural ("I just saw you go that way") and also
+-- damps mode flicker when another agent briefly crosses the view ray.
+--
+-- The current mode is shown by tinting the mesh: a MeshParameterComponent overrides
+-- the standard "World_MaterialDiffuseColor" uniform per-instance, so no per-mode
+-- material is needed and each enemy is coloured independently.
+--
+-- Line-of-sight needs a PhysicsManager, but ScriptComponents have no environment
+-- access, so the player Stage publishes it to the global EnemyShared.pm.
+--
+-- Attach to an entity that has a CharacterComponent, an (animated/skinned) mesh and
+-- a MeshParameterComponent. Inherits the native ScriptComponent (self.owner/.world).
+
+EnemyController = EnemyController or class("EnemyController", traktor.world.ScriptComponent)
+
+function EnemyController:new()
+	self._repathTimer = 0.0
+	self._heading = nil       -- current facing (radians)
+	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
+	self._avoidRadius = 1.0   -- start avoiding other agents within this distance (m)
+	self._separation = 1.5    -- how strongly avoidance overrides path following
+
+	-- State machine.
+	self._state = "patrol"    -- "patrol" | "attack"
+	self._lostTimer = 0.0     -- remaining ATTACK memory after losing sight (s)
+	self._patrolTarget = nil  -- current wander destination (Vector4)
+	self._sightRange = 14.0   -- furthest the player can be spotted (m)
+	self._attackMemory = 2.5  -- keep chasing this long after losing sight (s)
+	self._patrolSpeed = 0.55
+	self._attackSpeed = 1.2
+
+	-- Mode colours (linear). Patrol blue matches the material's default tint.
+	self._colorPatrol = Vector4(0.05, 0.1, 0.6, 1.0)
+	self._colorAttack = Vector4(0.75, 0.05, 0.05, 1.0)
+end
+
+-- Push the tint for the current state into the mesh parameter override.
+function EnemyController:_applyColor()
+	if self._meshParam ~= nil and self._tint ~= nil then
+		if self._state == "attack" then
+			self._meshParam:setVectorParameter(self._tint, self._colorAttack)
+		else
+			self._meshParam:setVectorParameter(self._tint, self._colorPatrol)
+		end
+	end
+end
+
+function EnemyController:update(context, totalTime, deltaTime)
+	local enemy = self.owner
+	local world = self.world
+	if context == nil or enemy == nil or world == nil then
+		return
+	end
+
+	-- Freeze all enemy logic once the game is over (context is the Stage).
+	if context._gameOver then
+		return
+	end
+
+	-- Resolve and cache dependencies.
+	if self._character == nil then
+		self._character = enemy:getComponent(traktor.physics.CharacterComponent)
+		if self._character ~= nil then
+			self._character.maxVelocity = self._attackSpeed
+		end
+	end
+	if self._pose == nil then
+		local skeleton = enemy:getComponent(traktor.animation.SkeletonComponent)
+		if skeleton ~= nil then
+			self._pose = skeleton.poseController
+		end
+	end
+	if self._meshParam == nil then
+		self._meshParam = enemy:getComponent(traktor.mesh.MeshParameterComponent)
+		self._tint = traktor.render.IRenderSystem.getParameterHandle("World_MaterialDiffuseColor")
+		self:_applyColor()   -- start in patrol blue
+	end
+	if self._navMesh == nil then
+		local navComponent = world:getComponent(traktor.ai.NavMeshComponent)
+		if navComponent ~= nil then
+			self._navMesh = navComponent:get()
+		end
+	end
+	if self._player == nil then
+		self._player = world:getEntity("Humanoid")
+	end
+	if self._character == nil or self._navMesh == nil or self._player == nil then
+		return
+	end
+	if self._heading == nil then
+		self._heading = self._character.headAngle
+	end
+
+	local enemyPos = enemy.transform.translation
+	local playerPos = self._player.transform.translation
+
+	-- ---- Perception: is the player spotted? (in range + clear line of sight) ----
+	local dpx = playerPos.x - enemyPos.x
+	local dpy = playerPos.y - enemyPos.y
+	local dpz = playerPos.z - enemyPos.z
+	local pdist = math.sqrt(dpx * dpx + dpy * dpy + dpz * dpz)
+	local spotted = false
+	if pdist < self._sightRange then
+		local pm = context.environment.physics.physicsManager
+		if pm ~= nil then
+			-- Ray from the enemy's eye to the player's chest. The player's own capsule
+			-- sits at ~pdist, so a hit well before that means a wall blocks the view.
+			local ex, ey, ez = enemyPos.x, enemyPos.y + 1.6, enemyPos.z
+			local tx, ty, tz = playerPos.x, playerPos.y + 1.2, playerPos.z
+			local rx, ry, rz = tx - ex, ty - ey, tz - ez
+			local rl = math.sqrt(rx * rx + ry * ry + rz * rz)
+			if rl > 0.01 then
+				local hit = pm:queryRay(Vector4(ex, ey, ez, 1.0), Vector4(rx / rl, ry / rl, rz / rl, 0.0), rl, traktor.physics.QueryFilter(), true)
+				if hit == nil or hit.distance >= rl - 0.8 then
+					spotted = true
+				end
+			end
+		else
+			spotted = true   -- no physics published yet: fall back to range-only
+		end
+	end
+
+	-- ---- State transitions ----
+	if spotted then
+		self._lostTimer = self._attackMemory
+		if self._state ~= "attack" then
+			self._state = "attack"
+			self:_applyColor()
+		end
+	elseif self._state == "attack" then
+		self._lostTimer = self._lostTimer - deltaTime
+		if self._lostTimer <= 0.0 then
+			self._state = "patrol"
+			self._patrolTarget = nil
+			self._repathTimer = 0.0
+			self:_applyColor()
+		end
+	end
+
+	-- Report this frame's mode to the Stage (context) so it can tally attacking
+	-- vs patrolling enemies for the HUD. totalTime tags the frame so the tally
+	-- knows when to roll over.
+	if context.reportEnemyState ~= nil then
+		context:reportEnemyState(totalTime, self._state)
+	end
+
+	local speed = self._patrolSpeed
+	if self._state == "attack" then
+		speed = self._attackSpeed
+	end
+
+	-- ---- Choose a destination and (re)issue an async path query ----
+	self._repathTimer = self._repathTimer - deltaTime
+	if self._state == "attack" then
+		if self._repathTimer <= 0.0 then
+			self._repathTimer = 0.5
+			-- Jitter around the player, then snap onto the nav mesh so it stays reachable.
+			local jitter = 1.5
+			local target = Vector4(
+				playerPos.x + (math.random() * 2.0 - 1.0) * jitter,
+				playerPos.y,
+				playerPos.z + (math.random() * 2.0 - 1.0) * jitter,
+				1.0
+			)
+			target = self._navMesh:findClosestPoint(target)
+			self._pathResult = self._navMesh:createMoveQuery(enemyPos, target)
+		end
+	else
+		-- Patrol: take a fresh random nav point when we have none, on arrival, or
+		-- every few seconds (so an enemy that gets stuck re-routes).
+		local needNew = self._patrolTarget == nil
+		if not needNew then
+			local ax = self._patrolTarget.x - enemyPos.x
+			local az = self._patrolTarget.z - enemyPos.z
+			if ax * ax + az * az < 1.2 * 1.2 then
+				needNew = true
+			end
+		end
+		if needNew or self._repathTimer <= 0.0 then
+			self._repathTimer = 1.5
+			if needNew then
+				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 12.0)
+			end
+			self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
+		end
+	end
+
+	-- Adopt the async result only once it is ready (get() blocks on wait()).
+	if self._pathResult ~= nil and self._pathResult.ready then
+		local query = self._pathResult:get()
+		if query ~= nil then
+			self._pathQuery = query
+			self._pathResult = nil
+		end
+	end
+
+	-- Desired direction toward the next waypoint (zero when there is no path / arrived).
+	local targetX, targetZ = 0.0, 0.0
+	if self._pathQuery ~= nil then
+		local moveTo = self._pathQuery:update(enemyPos, 0.5)
+		if moveTo ~= nil then
+			local dx = moveTo.x - enemyPos.x
+			local dz = moveTo.z - enemyPos.z
+			local len = math.sqrt(dx * dx + dz * dz)
+			if len > 0.01 then
+				targetX = dx / len
+				targetZ = dz / len
+			end
+		end
+	end
+
+	-- Collision avoidance: accumulate a push away from nearby agents (other enemies
+	-- and the player). This enemy is in the "Enemy" list too, but its own delta is zero.
+	local sepX, sepZ = 0.0, 0.0
+	local function avoid(px, pz)
+		local ax = enemyPos.x - px
+		local az = enemyPos.z - pz
+		local d = math.sqrt(ax * ax + az * az)
+		if d > 0.001 and d < self._avoidRadius then
+			local w = (self._avoidRadius - d) / self._avoidRadius
+			sepX = sepX + (ax / d) * w
+			sepZ = sepZ + (az / d) * w
+		end
+	end
+	local i = 0
+	while true do
+		local other = world:getEntity("Enemy", i)
+		if other == nil then
+			break
+		end
+		local p = other.transform.translation
+		avoid(p.x, p.z)
+		i = i + 1
+	end
+	avoid(playerPos.x, playerPos.z)
+
+	-- Blend separation into the desired direction, then renormalise to a unit heading.
+	targetX = targetX + sepX * self._separation
+	targetZ = targetZ + sepZ * self._separation
+	local tl = math.sqrt(targetX * targetX + targetZ * targetZ)
+	if tl > 0.001 then
+		targetX = targetX / tl
+		targetZ = targetZ / tl
+	else
+		targetX = 0.0
+		targetZ = 0.0
+	end
+
+	-- Rotate facing toward the desired direction at a limited angular rate (shortest
+	-- way around), so turns - including reversals - happen gradually, never instantly.
+	if tl > 0.001 then
+		local desired = (math.atan2 or math.atan)(targetX, targetZ)
+		local delta = desired - self._heading
+		while delta > math.pi do delta = delta - 2.0 * math.pi end
+		while delta < -math.pi do delta = delta + 2.0 * math.pi end
+		local maxStep = self._turnRate * deltaTime
+		if delta > maxStep then delta = maxStep end
+		if delta < -maxStep then delta = -maxStep end
+		self._heading = self._heading + delta
+	end
+
+	-- Move forward along the current facing, scaled by how well it points at the
+	-- target, so the enemy pivots toward a target behind it before advancing.
+	local fx = math.sin(self._heading)
+	local fz = math.cos(self._heading)
+	local moving = false
+	if tl > 0.001 then
+		local align = fx * targetX + fz * targetZ
+		if align > 0.05 then
+			self._character:move(Vector4(fx * speed * align, 0.0, fz * speed * align, 0.0), false)
+			moving = true
+		end
+	end
+	self._character.headAngle = self._heading
+	if self._pose ~= nil then
+		self._pose:setParameterValue("moving", moving)
+	end
+end
+]]></text>
+</object>

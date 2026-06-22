@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.animation.StateGraph">
+	<states>
+		<item type="traktor.animation.StateNodeAnimation">
+			<name>Idle</name>
+			<position>
+				<first>129</first>
+				<second>192</second>
+			</position>
+			<animation>{D3CD74E4-505F-F647-AECB-99B29EE6B168}</animation>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation">
+			<name>Walk</name>
+			<position>
+				<first>438</first>
+				<second>39</second>
+			</position>
+			<animation>{7B0E0001-0000-4000-8000-000000000001}</animation>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation">
+			<name>Jump</name>
+			<position>
+				<first>300</first>
+				<second>340</second>
+			</position>
+			<animation>{A4119909-1111-2222-3333-444455556666}</animation>
+		</item>
+	</states>
+	<transitions>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item"/>
+			<to ref="/object/states/item[1]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>moving</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>!moving</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item[1]"/>
+			<duration>0</duration>
+			<moment>End</moment>
+			<condition>moving</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item"/>
+			<to ref="/object/states/item[2]"/>
+			<duration>0.1</duration>
+			<moment>Immediately</moment>
+			<condition>jump</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item[2]"/>
+			<duration>0.1</duration>
+			<moment>Immediately</moment>
+			<condition>jump</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[2]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.15</duration>
+			<moment>End</moment>
+			<condition/>
+		</item>
+	</transitions>
+	<rootState ref="/object/states/item"/>
+	<previewSkeleton>{1E9C2788-505E-6C43-BB3D-527228721118}</previewSkeleton>
+	<previewMesh>{8E459F05-82A8-694D-9B2B-1B85AD2B9459}</previewMesh>
+	<previewPosition>0.175001, -2, 3.474987, 1</previewPosition>
+	<previewAngles>4.334998, -0.165, 0, 0</previewAngles>
+</object>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{2DA779E4-C3A7-455D-A1EF-4EDB283FC9DD}</id>
+	<name>Humanoid</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.animation.SkeletonComponentData">
+			<skeleton>{1E9C2788-505E-6C43-BB3D-527228721118}</skeleton>
+			<poseController type="traktor.animation.AnimationGraphPoseControllerData">
+				<stateGraph>{8541E05B-0000-4000-8000-0000000000E1}</stateGraph>
+				<transformTime/>
+			</poseController>
+		</item>
+		<item type="traktor.animation.AnimatedMeshComponentData" version="3">
+			<mesh>{8E459F05-0000-694D-9B2B-1B85AD2B0001}</mesh>
+		</item>
+		<item type="traktor.physics.CharacterComponentData" version="4">
+			<collisionGroup>
+				<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+			</collisionGroup>
+			<collisionMask>
+				<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+			</collisionMask>
+			<traceInclude>
+				<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+			</traceInclude>
+			<traceIgnore/>
+			<radius>0.3</radius>
+			<height>1.8</height>
+			<step>0.5</step>
+			<jumpImpulse>4.5</jumpImpulse>
+			<maxVelocity>2</maxVelocity>
+			<velocityDamping>1</velocityDamping>
+		</item>
+		<item type="traktor.world.ScriptComponentData" version="2">
+			<class>{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}</class>
+			<properties/>
+			<editorSupport>false</editorSupport>
+		</item>
+		<item type="traktor.mesh.MeshParameterComponentData" version="1">
+			<textures/>
+		</item>
+	</components>
+</object>

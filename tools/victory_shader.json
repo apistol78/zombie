@@ -1,0 +1,213 @@
+{
+ "nodes": [
+  {
+   "id": "n0",
+   "guid": "{EE79E440-16B9-104E-8540-FCDF48765D1E}",
+   "type": "External",
+   "info": "{B973ACD6-9F20-024A-97E4-89242B52CA91}",
+   "position": [
+    -405,
+    -42
+   ],
+   "inputs": [
+    {
+     "name": "DepthFade",
+     "optional": true,
+     "type": "Void"
+    },
+    {
+     "name": "Offset",
+     "optional": true,
+     "type": "Void"
+    },
+    {
+     "name": "Scale",
+     "optional": true,
+     "type": "Void"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Age",
+     "type": "Void"
+    },
+    {
+     "name": "Alpha",
+     "type": "Void"
+    },
+    {
+     "name": "Orientation",
+     "type": "Void"
+    },
+    {
+     "name": "Random",
+     "type": "Void"
+    },
+    {
+     "name": "TexCoord",
+     "type": "Void"
+    },
+    {
+     "name": "View",
+     "type": "Void"
+    },
+    {
+     "name": "World",
+     "type": "Void"
+    }
+   ],
+   "fragment": "{B973ACD6-9F20-024A-97E4-89242B52CA91}",
+   "fragmentName": "EmitterPoint"
+  },
+  {
+   "id": "n1",
+   "guid": "{5AC98149-B7B7-CD40-86B9-B69F6DBD2A51}",
+   "type": "Color",
+   "info": "255, 209, 22, 255 (EV 0)",
+   "position": [
+    -419,
+    140
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ],
+   "color": [
+    1,
+    0.819608,
+    0.090196,
+    1
+   ],
+   "properties": {
+    "linear": true
+   }
+  },
+  {
+   "id": "n2",
+   "guid": "{DDC5ECB2-D718-9648-9CAE-CC8DC75C8BE4}",
+   "type": "PixelState",
+   "position": [
+    -103,
+    100
+   ],
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "State"
+    }
+   ],
+   "properties": {
+    "blendEnable": true,
+    "depthEnable": true,
+    "depthWriteEnable": false,
+    "alphaTestEnable": false,
+    "alphaTestReference": 128,
+    "alphaToCoverageEnable": false,
+    "wireframe": false,
+    "stencilEnable": false,
+    "stencilReference": 0,
+    "stencilMask": 2147483648
+   }
+  },
+  {
+   "id": "n3",
+   "guid": "{9FAFFDB4-3444-AA43-8632-92DD2692C695}",
+   "type": "External",
+   "info": "{B5FCD4C3-8052-8140-A2B8-6EC35D4A1C00}",
+   "position": [
+    109,
+    32
+   ],
+   "inputs": [
+    {
+     "name": "Input",
+     "type": "Scalar4"
+    },
+    {
+     "name": "State",
+     "optional": true,
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [],
+   "fragment": "{B5FCD4C3-8052-8140-A2B8-6EC35D4A1C00}",
+   "fragmentName": "Output"
+  },
+  {
+   "id": "n4",
+   "guid": "{BF4E060D-773B-964C-94F4-309E8249A5D4}",
+   "type": "Mul",
+   "position": [
+    -125,
+    -2
+   ],
+   "inputs": [
+    {
+     "name": "Input1",
+     "type": "Scalar4"
+    },
+    {
+     "name": "Input2",
+     "type": "Scalar4"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "Output",
+     "type": "Scalar4"
+    }
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "from": {
+    "node": "n2",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n3",
+    "pin": "State"
+   }
+  },
+  {
+   "from": {
+    "node": "n1",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "Input2"
+   }
+  },
+  {
+   "from": {
+    "node": "n4",
+    "pin": "Output"
+   },
+   "to": {
+    "node": "n3",
+    "pin": "Input"
+   }
+  },
+  {
+   "from": {
+    "node": "n0",
+    "pin": "Alpha"
+   },
+   "to": {
+    "node": "n4",
+    "pin": "Input1"
+   }
+  }
+ ],
+ "guid": "{88B169CE-9732-D44B-9574-B73A1DA81BFD}",
+ "name": "Victory - Shader",
+ "graphType": "fragment",
+ "resolved": false,
+ "typesResolved": true
+}

@@ -1,0 +1,753 @@
+{
+ "guid": "{01CA625F-C336-8C49-88F7-F9DF421D6959}",
+ "path": "Effects/Victory/Victory",
+ "name": "Victory",
+ "type": "traktor.spray.EffectData",
+ "members": [
+  {
+   "name": "duration",
+   "kind": "primitive",
+   "type": "float",
+   "value": 2
+  },
+  {
+   "name": "loopStart",
+   "kind": "primitive",
+   "type": "float",
+   "value": 0
+  },
+  {
+   "name": "loopEnd",
+   "kind": "primitive",
+   "type": "float",
+   "value": 0
+  },
+  {
+   "name": "layers",
+   "kind": "array",
+   "elements": [
+    {
+     "name": "item",
+     "kind": "object",
+     "type": "traktor.spray.EffectLayerData",
+     "members": [
+      {
+       "name": "name",
+       "kind": "primitive",
+       "type": "wstring",
+       "value": "Up"
+      },
+      {
+       "name": "time",
+       "kind": "primitive",
+       "type": "float",
+       "value": 0
+      },
+      {
+       "name": "duration",
+       "kind": "primitive",
+       "type": "float",
+       "value": 0.2
+      },
+      {
+       "name": "emitter",
+       "kind": "object",
+       "type": "traktor.spray.EmitterData",
+       "members": [
+        {
+         "name": "source",
+         "kind": "object",
+         "type": "traktor.spray.ConeSourceData",
+         "members": [
+          {
+           "name": "constantRate",
+           "kind": "primitive",
+           "type": "float",
+           "value": 1000
+          },
+          {
+           "name": "velocityRate",
+           "kind": "primitive",
+           "type": "float",
+           "value": 0
+          },
+          {
+           "name": "position",
+           "kind": "primitive",
+           "type": "vector4",
+           "value": [
+            0,
+            0,
+            0,
+            1
+           ]
+          },
+          {
+           "name": "normal",
+           "kind": "primitive",
+           "type": "vector4",
+           "value": [
+            0,
+            1,
+            0,
+            0
+           ]
+          },
+          {
+           "name": "angle1",
+           "kind": "primitive",
+           "type": "float",
+           "value": 0.320796
+          },
+          {
+           "name": "angle2",
+           "kind": "primitive",
+           "type": "float",
+           "value": 0.120796
+          },
+          {
+           "name": "velocity",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 12
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 14
+            }
+           ]
+          },
+          {
+           "name": "inheritVelocity",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0
+            }
+           ]
+          },
+          {
+           "name": "orientation",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 6.283185
+            }
+           ]
+          },
+          {
+           "name": "angularVelocity",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": -3.4
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 3.65
+            }
+           ]
+          },
+          {
+           "name": "age",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 1.35
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 1.45
+            }
+           ]
+          },
+          {
+           "name": "mass",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.35
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.25
+            }
+           ]
+          },
+          {
+           "name": "size",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.3
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "modifiers",
+         "kind": "array",
+         "elements": [
+          {
+           "name": "item",
+           "kind": "object",
+           "type": "traktor.spray.IntegrateModifierData",
+           "members": [
+            {
+             "name": "timeScale",
+             "kind": "primitive",
+             "type": "float",
+             "value": 1
+            },
+            {
+             "name": "linear",
+             "kind": "primitive",
+             "type": "bool",
+             "value": true
+            },
+            {
+             "name": "angular",
+             "kind": "primitive",
+             "type": "bool",
+             "value": true
+            }
+           ]
+          },
+          {
+           "name": "item",
+           "kind": "object",
+           "type": "traktor.spray.GravityModifierData",
+           "members": [
+            {
+             "name": "gravity",
+             "kind": "primitive",
+             "type": "vector4",
+             "value": [
+              0,
+              -5,
+              0,
+              0
+             ]
+            },
+            {
+             "name": "world",
+             "kind": "primitive",
+             "type": "bool",
+             "value": true
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "shader",
+         "kind": "primitive",
+         "type": "guid",
+         "value": "{61B929ED-DBA8-E642-BFF3-B9F7ED11026C}"
+        },
+        {
+         "name": "mesh",
+         "kind": "primitive",
+         "type": "guid",
+         "value": "{00000000-0000-0000-0000-000000000000}"
+        },
+        {
+         "name": "effect",
+         "kind": "object",
+         "value": null
+        },
+        {
+         "name": "middleAge",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0
+        },
+        {
+         "name": "cullNearDistance",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0.25
+        },
+        {
+         "name": "cullMeshDistance",
+         "kind": "primitive",
+         "type": "float",
+         "value": 100
+        },
+        {
+         "name": "fadeNearRange",
+         "kind": "primitive",
+         "type": "float",
+         "value": 1
+        },
+        {
+         "name": "viewOffset",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0
+        },
+        {
+         "name": "warmUp",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0
+        },
+        {
+         "name": "sort",
+         "kind": "primitive",
+         "type": "bool",
+         "value": false
+        },
+        {
+         "name": "worldSpace",
+         "kind": "primitive",
+         "type": "bool",
+         "value": true
+        },
+        {
+         "name": "meshOrientationFromVelocity",
+         "kind": "primitive",
+         "type": "bool",
+         "value": true
+        },
+        {
+         "name": "gpu",
+         "kind": "primitive",
+         "type": "bool",
+         "value": true
+        },
+        {
+         "name": "capacity",
+         "kind": "primitive",
+         "type": "uint32",
+         "value": 1000
+        }
+       ]
+      },
+      {
+       "name": "trail",
+       "kind": "object",
+       "value": null
+      },
+      {
+       "name": "sequence",
+       "kind": "object",
+       "value": null
+      },
+      {
+       "name": "triggerEnable",
+       "kind": "object",
+       "value": null
+      },
+      {
+       "name": "triggerDisable",
+       "kind": "object",
+       "value": null
+      }
+     ]
+    },
+    {
+     "name": "item",
+     "kind": "object",
+     "type": "traktor.spray.EffectLayerData",
+     "members": [
+      {
+       "name": "name",
+       "kind": "primitive",
+       "type": "wstring",
+       "value": "Fall"
+      },
+      {
+       "name": "time",
+       "kind": "primitive",
+       "type": "float",
+       "value": 0.384
+      },
+      {
+       "name": "duration",
+       "kind": "primitive",
+       "type": "float",
+       "value": 0
+      },
+      {
+       "name": "emitter",
+       "kind": "object",
+       "type": "traktor.spray.EmitterData",
+       "members": [
+        {
+         "name": "source",
+         "kind": "object",
+         "type": "traktor.spray.BoxSourceData",
+         "members": [
+          {
+           "name": "constantRate",
+           "kind": "primitive",
+           "type": "float",
+           "value": 50
+          },
+          {
+           "name": "velocityRate",
+           "kind": "primitive",
+           "type": "float",
+           "value": 0
+          },
+          {
+           "name": "position",
+           "kind": "primitive",
+           "type": "vector4",
+           "value": [
+            0,
+            16,
+            0,
+            1
+           ]
+          },
+          {
+           "name": "extent",
+           "kind": "primitive",
+           "type": "vector4",
+           "value": [
+            16,
+            4,
+            16,
+            0
+           ]
+          },
+          {
+           "name": "velocity",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.95
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.8
+            }
+           ]
+          },
+          {
+           "name": "orientation",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 6.283185
+            }
+           ]
+          },
+          {
+           "name": "angularVelocity",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": -0.8
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.85
+            }
+           ]
+          },
+          {
+           "name": "age",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 1
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 2
+            }
+           ]
+          },
+          {
+           "name": "mass",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.7
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 1.3
+            }
+           ]
+          },
+          {
+           "name": "size",
+           "kind": "compound",
+           "members": [
+            {
+             "name": "min",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.3
+            },
+            {
+             "name": "max",
+             "kind": "primitive",
+             "type": "float",
+             "value": 0.4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "modifiers",
+         "kind": "array",
+         "elements": [
+          {
+           "name": "item",
+           "kind": "object",
+           "type": "traktor.spray.IntegrateModifierData",
+           "members": [
+            {
+             "name": "timeScale",
+             "kind": "primitive",
+             "type": "float",
+             "value": 1
+            },
+            {
+             "name": "linear",
+             "kind": "primitive",
+             "type": "bool",
+             "value": true
+            },
+            {
+             "name": "angular",
+             "kind": "primitive",
+             "type": "bool",
+             "value": true
+            }
+           ]
+          },
+          {
+           "name": "item",
+           "kind": "object",
+           "type": "traktor.spray.GravityModifierData",
+           "members": [
+            {
+             "name": "gravity",
+             "kind": "primitive",
+             "type": "vector4",
+             "value": [
+              0,
+              -9.12,
+              0,
+              0
+             ]
+            },
+            {
+             "name": "world",
+             "kind": "primitive",
+             "type": "bool",
+             "value": true
+            }
+           ]
+          },
+          {
+           "name": "item",
+           "kind": "object",
+           "type": "traktor.spray.BrownianModifierData",
+           "members": [
+            {
+             "name": "factor",
+             "kind": "primitive",
+             "type": "float",
+             "value": 3
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "shader",
+         "kind": "primitive",
+         "type": "guid",
+         "value": "{61B929ED-DBA8-E642-BFF3-B9F7ED11026C}"
+        },
+        {
+         "name": "mesh",
+         "kind": "primitive",
+         "type": "guid",
+         "value": "{00000000-0000-0000-0000-000000000000}"
+        },
+        {
+         "name": "effect",
+         "kind": "object",
+         "value": null
+        },
+        {
+         "name": "middleAge",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0.4
+        },
+        {
+         "name": "cullNearDistance",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0.25
+        },
+        {
+         "name": "cullMeshDistance",
+         "kind": "primitive",
+         "type": "float",
+         "value": 100
+        },
+        {
+         "name": "fadeNearRange",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0
+        },
+        {
+         "name": "viewOffset",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0
+        },
+        {
+         "name": "warmUp",
+         "kind": "primitive",
+         "type": "float",
+         "value": 0
+        },
+        {
+         "name": "sort",
+         "kind": "primitive",
+         "type": "bool",
+         "value": true
+        },
+        {
+         "name": "worldSpace",
+         "kind": "primitive",
+         "type": "bool",
+         "value": true
+        },
+        {
+         "name": "meshOrientationFromVelocity",
+         "kind": "primitive",
+         "type": "bool",
+         "value": false
+        },
+        {
+         "name": "gpu",
+         "kind": "primitive",
+         "type": "bool",
+         "value": true
+        },
+        {
+         "name": "capacity",
+         "kind": "primitive",
+         "type": "uint32",
+         "value": 1000
+        }
+       ]
+      },
+      {
+       "name": "trail",
+       "kind": "object",
+       "value": null
+      },
+      {
+       "name": "sequence",
+       "kind": "object",
+       "value": null
+      },
+      {
+       "name": "triggerEnable",
+       "kind": "object",
+       "value": null
+      },
+      {
+       "name": "triggerDisable",
+       "kind": "object",
+       "value": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

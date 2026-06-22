@@ -1,0 +1,14 @@
+# Normalize text line endings in the repo (checked out native on each OS)
+* text=auto
+
+# Traktor source instances are XML/text
+*.xdi text
+*.workspace text
+
+# Binary assets — never apply EOL conversion or diff as text
+*.xdm binary
+*.tmd binary
+*.tga binary
+*.fbx binary
+*.blend binary
+*.png binary

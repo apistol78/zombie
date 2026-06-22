@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- Main
+
+Main = Main or class("Main", Stage)
+
+function Main:new(params, environment)
+	Stage.new(self, params, environment)
+
+	-- Initialize UiKit.
+	Widget.initialize(
+		environment.resource.resourceManager,
+		{ "\{5ABEAE05-EB26-934F-932F-7F3C7C582383}" }
+	)
+
+	-- Create UI frame with virtual size of 1280x720.
+	local root = self.ui.root
+	self._frame = Frame(
+		root,
+		1280 / 2, 720 / 2,
+		TableLayout({ 0 }, { 0 }, 16, 16, 16, 0)
+	)
+
+	-- HUD labels.
+	self._lbl = Static(self._frame, "Time: 0")
+	self._lblDistance = Static(self._frame, "Distance: 0.0 m")
+	self._lblJumps = Static(self._frame, "Jumps: 0")
+	self._lblPickups = Static(self._frame, "Pickups: 0")
+	self._lblEnemies = Static(self._frame, "Enemies: 0 attacking / 0 patrolling")
+	self._lblHealth = Static(self._frame, "Health: 100")
+
+	-- Full-screen overlay carrying the centered "GAME OVER" banner (empty until death).
+	-- The UI virtual size is 640x360.
+	self._overlay = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
+	self._lblGameOver = Static(self._overlay, "GAME OVER")
+	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._lblGameOver:setVerticalAlign(Widget.ALIGN_CENTER)
+	self._lblGameOver:setTextSize(60)
+	self._lblGameOver:setTextColor(Color4f(0.9, 0.05, 0.05, 1.0))
+	self._lblGameOver:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	self._overlay:setVisible(false)
+
+	-- Ensure layouts are updated.
+	self._frame:update()
+	self._overlay:update()
+
+	-- Gameplay counters.
+	self._distance = 0.0
+	self._jumps = 0
+	self._pickups = 0
+
+	-- Enemy mode tally, filled in each frame by EnemyController:reportEnemyState.
+	-- Accumulators (_acc*) gather the current frame; the readable totals
+	-- (_enemyAttack/_enemyPatrol) hold the last fully-counted frame.
+	self._enemyAttack = 0
+	self._enemyPatrol = 0
+	self._accAttack = 0
+	self._accPatrol = 0
+	self._accFrame = -1.0
+
+	-- Player health / game-over.
+	self._health = 100.0
+	self._maxHealth = 100.0
+	self._gameOver = false
+	self._hurtRange = 1.2   -- enemies within this distance (m) deal damage
+	self._enemyDps = 20.0   -- health drained per second per touching enemy
+end
+
+-- Called by each enemy's ScriptComponent during its update (context is this Stage).
+-- "t" is the frame's totalTime: when it changes, the previous frame's accumulation
+-- is complete, so publish it and start a fresh count. This is order-independent
+-- (works whether enemies update before or after Main:update).
+function Main:reportEnemyState(t, state)
+	if self._accFrame ~= t then
+		self._enemyAttack = self._accAttack
+		self._enemyPatrol = self._accPatrol
+		self._accAttack = 0
+		self._accPatrol = 0
+		self._accFrame = t
+	end
+	if state == "attack" then
+		self._accAttack = self._accAttack + 1
+	else
+		self._accPatrol = self._accPatrol + 1
+	end
+end
+
+function Main:finalize()
+	self._frame:remove()
+	self._frame = nil
+	if self._overlay ~= nil then
+		self._overlay:remove()
+		self._overlay = nil
+	end
+end
+
+-- Resolve (and cache) the humanoid entity, its character controller and the camera.
+function Main:resolve()
+	if self._heading == nil then
+		self._heading = 0.0
+	end
+	local world = self.world.world
+	if world == nil then
+		return
+	end
+	if self._humanoid == nil then
+		self._humanoid = world:getEntity("Humanoid")
+	end
+	if self._camera == nil then
+		self._camera = world:getEntity("Camera0")
+	end
+	if self._character == nil and self._humanoid ~= nil then
+		self._character = self._humanoid:getComponent(traktor.physics.CharacterComponent)
+		if self._character ~= nil then
+			self._heading = self._character.headAngle
+		end
+	end
+	if self._poseController == nil and self._humanoid ~= nil then
+		local skeleton = self._humanoid:getComponent(traktor.animation.SkeletonComponent)
+		if skeleton ~= nil then
+			self._poseController = skeleton.poseController
+		end
+	end
+end
+
+function Main:update(info)
+	self:resolve()
+
+	local dt = info.frameDeltaTime
+
+	-- Once dead, freeze gameplay (player control, damage, pickups) and leave the
+	-- Game Over banner up. Enemies freeze too (they read context._gameOver).
+	if self._gameOver then
+		return
+	end
+
+	-- STATE_MOVE_X turns the character (yaw); STATE_MOVE_Z moves forward/back along its facing.
+	if self._character ~= nil then
+		local mapping = self.environment.input.inputMapping
+		if mapping ~= nil then
+			local turn = mapping:getStateValue("STATE_MOVE_X")
+			local move = mapping:getStateValue("STATE_MOVE_Z")
+			local turnRate = -4.5
+			local speed = 3.0
+			self._heading = self._heading + turn * turnRate * dt
+			self._character.headAngle = self._heading
+			local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
+			local forward = heading * Vector4(0.0, 0.0, 1.0, 0.0)
+			self._character:move(forward * (move * speed), false)
+			local jumped = false
+				if mapping:isStatePressed("STATE_JUMP") then
+				if self._character:jump() then
+					self._jumps = self._jumps + 1
+						jumped = true
+				end
+			end
+			if self._poseController ~= nil then
+				local moving = move > 0.1 or move < -0.1 or turn > 0.1 or turn < -0.1
+				self._poseController:setParameterValue("moving", moving)
+					self._poseController:setParameterValue("jump", jumped)
+			end
+		end
+	end
+
+	-- Rubberband follow with line-of-sight: ease Camera0 behind/above the character,
+	-- but pull it in when a wall blocks the view of the player.
+	if self._camera ~= nil and self._humanoid ~= nil then
+		local targetPos = self._humanoid.transform.translation
+		local lookAt = targetPos + Vector4(0.0, 1.7, 0.0, 0.0)
+		local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
+		local offset = heading * Vector4(0.0, 2.5, -4.5, 0.0)
+		local desiredPos = targetPos + offset
+
+		-- Camera collision: ray from the look-at point toward the desired camera spot;
+		-- if it hits geometry, clamp the camera to just in front of the hit.
+		local pm = self.environment.physics.physicsManager
+		if pm ~= nil then
+			local tx = desiredPos.x - lookAt.x
+			local ty = desiredPos.y - lookAt.y
+			local tz = desiredPos.z - lookAt.z
+			local dist = math.sqrt(tx * tx + ty * ty + tz * tz)
+			if dist > 0.6 then
+				local dx, dy, dz = tx / dist, ty / dist, tz / dist
+				-- start 0.5m out so the ray skips the player's own capsule
+				local sx, sy, sz = lookAt.x + dx * 0.5, lookAt.y + dy * 0.5, lookAt.z + dz * 0.5
+				local hit = pm:queryRay(Vector4(sx, sy, sz, 1.0), Vector4(dx, dy, dz, 0.0), dist - 0.5, traktor.physics.QueryFilter(), true)
+				if hit ~= nil then
+					local hd = hit.distance - 0.2
+					if hd < 0.0 then hd = 0.0 end
+					desiredPos = Vector4(sx + dx * hd, sy + dy * hd, sz + dz * hd, 1.0)
+				end
+			end
+		end
+
+		local currentPos = self._camera.transform.translation
+		local k = 6.0 * dt
+		if k > 1.0 then
+			k = 1.0
+		end
+		local newPos = Vector4.lerp(currentPos, desiredPos, k)
+		self._camera.transform = Transform.lookAt(newPos, lookAt, Vector4(0.0, 1.0, 0.0, 0.0))
+	end
+
+	-- Accumulate horizontal distance travelled by the character (ignore vertical so jumps add no distance).
+	if self._humanoid ~= nil then
+		local pos = self._humanoid.transform.translation
+		if self._lastX ~= nil then
+			local dx = pos.x - self._lastX
+			local dz = pos.z - self._lastZ
+			self._distance = self._distance + math.sqrt(dx * dx + dz * dz)
+		end
+		self._lastX = pos.x
+		self._lastZ = pos.z
+	end
+
+	-- Pickup collection: when the player walks over a "Pickup" entity, remove it and tally it.
+	-- One per frame keeps it simple, since removeEntity shifts the remaining indices.
+	if self._humanoid ~= nil then
+		local world = self.world.world
+		if world ~= nil then
+			local pp = self._humanoid.transform.translation
+			local i = 0
+			while true do
+				local pk = world:getEntity("Pickup", i)
+				if pk == nil then
+					break
+				end
+				local q = pk.transform.translation
+				local dx = q.x - pp.x
+				local dy = q.y - pp.y
+				local dz = q.z - pp.z
+				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
+					world:removeEntity(pk)
+					self._pickups = self._pickups + 1
+					break
+				end
+				i = i + 1
+			end
+		end
+	end
+
+	-- Enemy contact damage: every enemy within hurt range drains health, and
+	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
+	if self._humanoid ~= nil then
+		local world = self.world.world
+		if world ~= nil then
+			local pp = self._humanoid.transform.translation
+			local dps = 0.0
+			local i = 0
+			while true do
+				local e = world:getEntity("Enemy", i)
+				if e == nil then
+					break
+				end
+				local ep = e.transform.translation
+				local dx = ep.x - pp.x
+				local dy = ep.y - pp.y
+				local dz = ep.z - pp.z
+				if dx * dx + dy * dy + dz * dz < self._hurtRange * self._hurtRange then
+					dps = dps + self._enemyDps
+				end
+				i = i + 1
+			end
+			if dps > 0.0 then
+				self._health = self._health - dps * dt
+				if self._health <= 0.0 then
+					self._health = 0.0
+					self._gameOver = true
+					self._overlay:setVisible(true) -- Show game over overlay.
+				end
+			end
+		end
+	end
+
+	-- Update HUD.
+	self._lbl:setText("Time: " .. string.format("%.3f", info.simulationTime))
+	self._lblDistance:setText(string.format("Distance: %.1f m", self._distance))
+	self._lblJumps:setText("Jumps: " .. tostring(self._jumps))
+	self._lblPickups:setText("Pickups: " .. tostring(self._pickups))
+	self._lblEnemies:setText("Enemies: " .. tostring(self._enemyAttack) .. " attacking / " .. tostring(self._enemyPatrol) .. " patrolling")
+	self._lblHealth:setText("Health: " .. tostring(math.floor(self._health + 0.5)))
+end
+]]></text>
+</object>

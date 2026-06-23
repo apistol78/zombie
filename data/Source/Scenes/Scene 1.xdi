@@ -3,8 +3,8 @@
 	<worldRenderSettings type="traktor.world.WorldRenderSettings" version="42">
 		<viewNearZ>0.1</viewNearZ>
 		<viewFarZ>10000</viewFarZ>
-		<exposureMode>Fixed</exposureMode>
-		<exposure>0</exposure>
+		<exposureMode>Adaptive</exposureMode>
+		<exposure>0.2</exposure>
 		<shadowSettings>
 			<disabled>
 				<farZ>0</farZ>
@@ -169,8 +169,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 3.7, -10, 1</translation>
-								<rotation>1, 0, 0, 0</rotation>
+								<translation>-10, 3.7, -10, 0</translation>
+								<rotation>1, -0, -0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -196,8 +196,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6, 3.7, -10, 1</translation>
-								<rotation>1, 0, 0, 0</rotation>
+								<translation>6, 3.7, -10, 0</translation>
+								<rotation>1, -0, -0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -223,8 +223,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2, 3.7, -2, 1</translation>
-								<rotation>1, 0, 0, 0</rotation>
+								<translation>-2, 3.7, -2, 0</translation>
+								<rotation>1, -0, -0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -250,8 +250,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 3.7, 6, 1</translation>
-								<rotation>1, 0, 0, 0</rotation>
+								<translation>-10, 3.7, 6, 0</translation>
+								<rotation>1, -0, -0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -277,8 +277,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6, 3.7, 6, 1</translation>
-								<rotation>1, 0, 0, 0</rotation>
+								<translation>6, 3.7, 6, 0</translation>
+								<rotation>1, -0, -0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -315,24 +315,6 @@
 				<item type="traktor.world.GroupComponentData">
 					<entityData>
 						<item type="traktor.world.EntityData" version="2">
-							<id>{D1E2F3A4-5566-7788-99AA-BBCCDDEEFF00}</id>
-							<name>Crate</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>3.435576, 0.613673, -0.457767, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
-							</transform>
-							<components>
-								<item type="traktor.mesh.MeshComponentData" version="1">
-									<mesh>{C8A7E1B2-2C3D-4E5F-8011-223344556677}</mesh>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
 							<id>{05E46EDA-5D04-1B49-9F07-F8B1464F6CAD}</id>
 							<name>Camera0</name>
 							<state>
@@ -342,7 +324,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -365,11 +347,7 @@
 								<translation>8.69536, 1.549975, 8.484768, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
-							<components>
-								<item type="traktor.spray.EffectComponentData">
-									<effect>{B966DF7D-D625-0344-BADD-9B27BCFA12FF}</effect>
-								</item>
-							</components>
+							<components/>
 							<entityData>{BCF74021-58D3-B24A-8E73-BEC797740D24}</entityData>
 						</item>
 						<item type="traktor.world.EntityData" version="2">
@@ -381,7 +359,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>0, -0.5, 0, 1</translation>
+								<translation>0, -0.5, 0, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -423,7 +401,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>0, 0, 0, 1</translation>
+								<translation>0, 0, 0, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -539,7 +517,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14, 1.55, -14, 1</translation>
+								<translation>-14, 1.55, -14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -554,7 +532,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14, 1.55, -6, 1</translation>
+								<translation>-14, 1.55, -6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -569,7 +547,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14, 1.55, 2, 1</translation>
+								<translation>-14, 1.55, 2, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -584,7 +562,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14, 1.55, 10, 1</translation>
+								<translation>-14, 1.55, 10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -599,7 +577,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 1.55, -10, 1</translation>
+								<translation>-10, 1.55, -10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -614,7 +592,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 1.55, 6, 1</translation>
+								<translation>-10, 1.55, 6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -629,7 +607,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 1.55, 14, 1</translation>
+								<translation>-10, 1.55, 14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -644,7 +622,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-6, 1.55, -6, 1</translation>
+								<translation>-6, 1.55, -6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -659,7 +637,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-6, 1.55, 10, 1</translation>
+								<translation>-6, 1.55, 10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -674,7 +652,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-6, 1.55, -14, 1</translation>
+								<translation>-6, 1.55, -14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -689,7 +667,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2, 1.55, -10, 1</translation>
+								<translation>-2, 1.55, -10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -704,7 +682,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2, 1.55, 6, 1</translation>
+								<translation>-2, 1.55, 6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -719,7 +697,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2, 1.55, 14, 1</translation>
+								<translation>-2, 1.55, 14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -734,7 +712,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>2, 1.55, -14, 1</translation>
+								<translation>2, 1.55, -14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -749,7 +727,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>2, 1.55, -6, 1</translation>
+								<translation>2, 1.55, -6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -764,7 +742,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>2, 1.55, 10, 1</translation>
+								<translation>2, 1.55, 10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -779,7 +757,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6, 1.55, -10, 1</translation>
+								<translation>6, 1.55, -10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -794,7 +772,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6, 1.55, 6, 1</translation>
+								<translation>6, 1.55, 6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -809,7 +787,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>10, 1.55, -14, 1</translation>
+								<translation>10, 1.55, -14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -824,7 +802,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>10, 1.55, 2, 1</translation>
+								<translation>10, 1.55, 2, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -839,7 +817,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14, 0.3, 6, 1</translation>
+								<translation>-14, 0.3, 6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -854,7 +832,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14, 0.3, -10, 1</translation>
+								<translation>-14, 0.3, -10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -869,7 +847,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 0.3, -6, 1</translation>
+								<translation>-10, 0.3, -6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -884,7 +862,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10, 0.3, 2, 1</translation>
+								<translation>-10, 0.3, 2, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -899,7 +877,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-6, 0.3, -10, 1</translation>
+								<translation>-6, 0.3, -10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -914,7 +892,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2, 0.3, 10, 1</translation>
+								<translation>-2, 0.3, 10, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -929,7 +907,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>2, 0.3, 6, 1</translation>
+								<translation>2, 0.3, 6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -944,7 +922,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6, 0.3, -14, 1</translation>
+								<translation>6, 0.3, -14, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -959,7 +937,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>10, 0.3, 6, 1</translation>
+								<translation>10, 0.3, 6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -974,7 +952,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>14, 0.3, -6, 1</translation>
+								<translation>14, 0.3, -6, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>

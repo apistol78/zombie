@@ -165,15 +165,15 @@ function Main:resolve()
 			self._poseController = skeleton.poseController
 		end
 	end
-	if self._blood == nil and self._humanoid ~= nil then
-		self._blood = self._humanoid:getComponent(traktor.spray.EffectComponent)
+	if self._bloodEvents == nil and self._humanoid ~= nil then
+		self._bloodEvents = self._humanoid:getComponent(traktor.world.EventSetComponent)
 	end
 end
 
 function Main:update(info)
 	self:resolve()
 
-	local dt = info.frameDeltaTime
+	local dt < const > = info.frameDeltaTime
 
 	-- Once dead, freeze gameplay (player control, damage, pickups) and leave the
 	-- Game Over banner up. Enemies freeze too (they read context._gameOver).
@@ -226,45 +226,6 @@ function Main:update(info)
 					self._poseController:setParameterValue("jump", jumped)
 			end
 		end
-	end
-
-	-- Rubberband follow with line-of-sight: ease Camera0 behind/above the character,
-	-- but pull it in when a wall blocks the view of the player.
-	if self._camera ~= nil and self._humanoid ~= nil then
-		local targetPos = self._humanoid.transform.translation
-		local lookAt = targetPos + Vector4(0.0, 1.7, 0.0, 0.0)
-		local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
-		local offset = heading * Vector4(0.0, 2.5, -4.5, 0.0)
-		local desiredPos = targetPos + offset
-
-		-- Camera collision: ray from the look-at point toward the desired camera spot;
-		-- if it hits geometry, clamp the camera to just in front of the hit.
-		local pm = self.environment.physics.physicsManager
-		if pm ~= nil then
-			local tx = desiredPos.x - lookAt.x
-			local ty = desiredPos.y - lookAt.y
-			local tz = desiredPos.z - lookAt.z
-			local dist = math.sqrt(tx * tx + ty * ty + tz * tz)
-			if dist > 0.6 then
-				local dx, dy, dz = tx / dist, ty / dist, tz / dist
-				-- start 0.5m out so the ray skips the player's own capsule
-				local sx, sy, sz = lookAt.x + dx * 0.5, lookAt.y + dy * 0.5, lookAt.z + dz * 0.5
-				local hit = pm:queryRay(Vector4(sx, sy, sz, 1.0), Vector4(dx, dy, dz, 0.0), dist - 0.5, traktor.physics.QueryFilter(), true)
-				if hit ~= nil then
-					local hd = hit.distance - 0.2
-					if hd < 0.0 then hd = 0.0 end
-					desiredPos = Vector4(sx + dx * hd, sy + dy * hd, sz + dz * hd, 1.0)
-				end
-			end
-		end
-
-		local currentPos = self._camera.transform.translation
-		local k = 12.0 * dt
-		if k > 1.0 then
-			k = 1.0
-		end
-		local newPos = Vector4.lerp(currentPos, desiredPos, k)
-		self._camera.transform = Transform.lookAt(newPos, lookAt, Vector4(0.0, 1.0, 0.0, 0.0))
 	end
 
 	-- Accumulate horizontal distance travelled by the character (ignore vertical so jumps add no distance).
@@ -356,12 +317,12 @@ function Main:update(info)
 			end
 			if dps > 0.0 then
 				self._health = self._health - dps * dt
-				-- Spurt blood while being eaten: the splatter effect is a short, non-looping
-				-- burst, so re-trigger it on a timer for as long as an enemy is in contact.
-				if self._blood ~= nil then
+				-- Spurt blood while being eaten: raise the Humanoid's "blood" event on a
+				-- timer, each raise spawning a short blood-splatter effect at the player.
+				if self._bloodEvents ~= nil then
 					self._biteTimer = self._biteTimer - dt
 					if self._biteTimer <= 0.0 then
-						self._blood:reset()
+						self._bloodEvents:raise("blood")
 						self._biteTimer = 0.3
 					end
 				end
@@ -384,5 +345,55 @@ function Main:update(info)
 	self._lblEnemies:setText("Enemies: " .. tostring(self._enemyAttack) .. " attacking / " .. tostring(self._enemyPatrol) .. " patrolling")
 	self._healthBar:setValue(self._health / self._maxHealth)
 end
+
+-- postUpdate runs after every entity has updated this frame, so the camera follows the
+-- player's *post-update* position -- no one-frame lag behind the character.
+function Main:postUpdate(info)
+	if self._gameOver or self._paused then
+		return
+	end
+
+	local dt < const > = info.frameDeltaTime
+
+	-- Rubberband follow with line-of-sight: ease Camera0 behind/above the character,
+	-- but pull it in when a wall blocks the view of the player.
+	if self._camera ~= nil and self._humanoid ~= nil then
+		local targetPos = self._humanoid.transform.translation
+		local lookAt = targetPos + Vector4(0.0, 1.7, 0.0, 0.0)
+		local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
+		local offset = heading * Vector4(0.0, 2.5, -4.5, 0.0)
+		local desiredPos = targetPos + offset
+
+		-- Camera collision: ray from the look-at point toward the desired camera spot;
+		-- if it hits geometry, clamp the camera to just in front of the hit.
+		local pm = self.environment.physics.physicsManager
+		if pm ~= nil then
+			local tx = desiredPos.x - lookAt.x
+			local ty = desiredPos.y - lookAt.y
+			local tz = desiredPos.z - lookAt.z
+			local dist = math.sqrt(tx * tx + ty * ty + tz * tz)
+			if dist > 0.6 then
+				local dx, dy, dz = tx / dist, ty / dist, tz / dist
+				-- start 0.5m out so the ray skips the player's own capsule
+				local sx, sy, sz = lookAt.x + dx * 0.5, lookAt.y + dy * 0.5, lookAt.z + dz * 0.5
+				local hit = pm:queryRay(Vector4(sx, sy, sz, 1.0), Vector4(dx, dy, dz, 0.0), dist - 0.5, traktor.physics.QueryFilter(), true)
+				if hit ~= nil then
+					local hd = hit.distance - 0.2
+					if hd < 0.0 then hd = 0.0 end
+					desiredPos = Vector4(sx + dx * hd, sy + dy * hd, sz + dz * hd, 1.0)
+				end
+			end
+		end
+
+		local currentPos = self._camera.transform.translation
+		local k = 8.0 * dt
+		if k > 1.0 then
+			k = 1.0
+		end
+		local newPos = Vector4.lerp(currentPos, desiredPos, k)
+		self._camera.transform = Transform.lookAt(newPos, lookAt, Vector4(0.0, 1.0, 0.0, 0.0))
+	end
+end
+
 ]]></text>
 </object>

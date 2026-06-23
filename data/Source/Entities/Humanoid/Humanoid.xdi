@@ -40,5 +40,21 @@
 			<maxVelocity>4</maxVelocity>
 			<velocityDamping>1</velocityDamping>
 		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>blood</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{B966DF7D-D625-0344-BADD-9B27BCFA12FF}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>true</follow>
+						<useRotation>true</useRotation>
+					</second>
+				</item>
+			</eventData>
+		</item>
 	</components>
 </object>

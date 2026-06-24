@@ -21,7 +21,12 @@
 	<shaderFade>{00000000-0000-0000-0000-000000000000}</shaderFade>
 	<fadeOutUpdate>false</fadeOutUpdate>
 	<fadeRate>1.5</fadeRate>
-	<transitions/>
+	<transitions>
+		<item>
+			<first>STARTUP</first>
+			<second>{54FD784B-C583-48D8-92AD-E5B3F45D1D79}</second>
+		</item>
+	</transitions>
 	<resourceBundle>{00000000-0000-0000-0000-000000000000}</resourceBundle>
 	<properties/>
 </object>

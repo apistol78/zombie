@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- Startup
+--
+-- A worldless stage: no scene, just a UiKit menu that lets the player pick
+-- which gameplay stage to enter. Each button triggers a named transition
+-- (declared in this stage's StageData) which is loaded asynchronously and
+-- switched to once ready.
+
+Startup = Startup or class("Startup", Stage)
+
+function Startup:new(params, environment)
+	Stage.new(self, params, environment)
+
+	-- Initialize UiKit (same resource bundle the HUD/menus use).
+	Widget.initialize(
+		environment.resource.resourceManager,
+		{ "\{5ABEAE05-EB26-934F-932F-7F3C7C582383}" }
+	)
+
+	-- Full-screen frame (virtual 640x360) hosting a centered menu dialog.
+	local root = self.ui.root
+	self._frame = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
+
+	-- Menu: a title over one button per selectable stage, then Exit. The Dialog
+	-- auto-centers on its parent Frame; one column, four auto-height rows.
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
+
+	local title = Static(self._dialog, "SELECT STAGE")
+	title:setTextSize(40)
+	title:setHorizontalAlign(Widget.ALIGN_CENTER)
+
+	local buttonMain = PushButton(self._dialog, "Main")
+	buttonMain:setMinimumWidth(220)
+	buttonMain:setOnClick(function() self:_select("MAIN") end)
+
+	local buttonTerrain = PushButton(self._dialog, "Terrain")
+	buttonTerrain:setMinimumWidth(220)
+	buttonTerrain:setOnClick(function() self:_select("TERRAIN") end)
+
+	-- Exit: quit the application.
+	local buttonExit = PushButton(self._dialog, "Exit")
+	buttonExit:setMinimumWidth(220)
+	buttonExit:setOnClick(function() self:terminate() end)
+
+	self._frame:update()
+	self._dialog:show()
+
+	-- Release the mouse cursor so the menu buttons are clickable.
+	environment.input.inputSystem:setExclusive(false)
+end
+
+-- Kick off loading the chosen stage. Guard so a second click while a load is
+-- already in flight is ignored.
+function Startup:_select(transition)
+	if self._loader ~= nil then
+		return
+	end
+	self._loader = self:loadStageAsync(transition, nil)
+end
+
+function Startup:finalize()
+	if self._dialog ~= nil then
+		self._dialog:remove()
+		self._dialog = nil
+	end
+	if self._frame ~= nil then
+		self._frame:remove()
+		self._frame = nil
+	end
+end
+
+function Startup:update(info)
+	-- Poll the async loader; once the chosen stage is ready, switch to it.
+	if self._loader ~= nil then
+		if self._loader.ready then
+			if self._loader.succeeded then
+				self:gotoStage(self._loader:get())
+			end
+			self._loader = nil
+		end
+	end
+end
+]]></text>
+</object>

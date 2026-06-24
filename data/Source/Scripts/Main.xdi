@@ -71,7 +71,7 @@ function Main:new(params, environment)
 	self._health = 100.0
 	self._maxHealth = 100.0
 	self._gameOver = false
-	self._hurtRange = 1.2   -- enemies within this distance (m) deal damage
+	self._hurtRange = 1.0   -- enemies within this distance (m) deal damage
 	self._enemyDps = 20.0   -- health drained per second per touching enemy
 	self._healAmount = 35.0 -- health restored per health pickup (capped at max)
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
@@ -79,12 +79,15 @@ function Main:new(params, environment)
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
 	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
 	self._paused = false
-	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0 }, 24, 24, 0, 16))
+	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
 	local pauseTitle = Static(self._pauseDialog, "PAUSED")
 	pauseTitle:setTextSize(40)
 	pauseTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._resumeButton = PushButton(self._pauseDialog, "Resume")
 	self._resumeButton:setOnClick(function() self:_setPaused(false) end)
+	-- Exit back to the startup stage (the "STARTUP" transition on this Stage's StageData).
+	self._exitButton = PushButton(self._pauseDialog, "Exit")
+	self._exitButton:setOnClick(function() self:_exitToStartup() end)
 
 	environment.input.inputSystem:setExclusive(true)
 end
@@ -104,6 +107,16 @@ function Main:_setPaused(paused)
 		self._pauseDialog:hide()
 		self.environment.input.inputSystem:setExclusive(true)
 	end
+end
+
+-- Begin loading the Startup stage, then switch to it once ready. Triggered from the
+-- pause menu's Exit button; the actual goto happens in Main:update, which polls the
+-- loader before its paused/game-over early-returns.
+function Main:_exitToStartup()
+	if self._loader ~= nil then
+		return
+	end
+	self._loader = self:loadStageAsync("STARTUP", nil)
 end
 
 -- Called by each enemy's ScriptComponent during its update (context is this Stage).
@@ -172,6 +185,19 @@ end
 
 function Main:update(info)
 	self:resolve()
+
+	-- If an exit-to-startup load is in flight, switch to it the moment it is ready.
+	-- Checked before the game-over / paused early-returns below, because Exit is
+	-- triggered from the paused menu (where the rest of the frame is frozen).
+	if self._loader ~= nil then
+		if self._loader.ready then
+			if self._loader.succeeded then
+				self:gotoStage(self._loader:get())
+			end
+			self._loader = nil
+		end
+		return
+	end
 
 	local dt < const > = info.frameDeltaTime
 
@@ -257,6 +283,12 @@ function Main:update(info)
 				local dy = q.y - pp.y
 				local dz = q.z - pp.z
 				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
+					-- Gold sparkle pop at the pickup. follow=false on the event, so the
+					-- spawned effect lingers in place after we remove the entity below.
+					local fx = pk:getComponent(traktor.world.EventSetComponent)
+					if fx ~= nil then
+						fx:raise("sparkle")
+					end
 					world:removeEntity(pk)
 					self._pickups = self._pickups + 1
 					break

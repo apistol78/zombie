@@ -15,5 +15,21 @@
 		<item type="traktor.mesh.MeshComponentData" version="1">
 			<mesh>{D9A9E2FE-39F3-6640-9E86-066321CC22B4}</mesh>
 		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>sparkle</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{460B33C8-81D2-4168-9F66-558B18628CF1}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>false</follow>
+						<useRotation>false</useRotation>
+					</second>
+				</item>
+			</eventData>
+		</item>
 	</components>
 </object>

@@ -236,25 +236,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 		end
 	end
 
-	-- Check all other enemies; cache list of enemies also.
-	if self._enemies == nil then
-		self._enemies = {}
-		local i = 0
-		while true do
-			local other = world:getEntity("Enemy", i)
-			if other == nil then
-				break
-			end
-			table.insert(self._enemies, other)
-			i = i + 1
-		end
+	-- Avoid close enemies.
+	local enemies = world:getEntitiesWithinRange("Enemy", enemyPos, 4)
+	for i = 0, enemies.size - 1 do
+		local other = enemies:get(i)
+		local p = other.transform.translation
+		avoid(p.x, p.z)
 	end
-	-- Check a single random enemy only.
-	local ri = math.random(1, #self._enemies)
-	local other = self._enemies[ri]
-	local p = other.transform.translation
-	avoid(p.x, p.z)
 
+	-- Avoid player.
 	avoid(playerPos.x, playerPos.z)
 
 	-- Blend separation into the desired direction, then renormalise to a unit heading.

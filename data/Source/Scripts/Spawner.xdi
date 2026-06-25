@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+local ENEMY < const > = Guid("\{E0E0E0E0-1111-2222-3333-444455556666}")
+
+Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
+
+-- Tuning.
+local MAX_ENEMIES < const > = 100     -- keep at most this many spawned alive
+local SPAWN_MIN < const > = 18.0      -- nearest a spawn may appear to the player (m)
+local SPAWN_MAX < const > = 40.0      -- farthest a spawn may appear (m)
+local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
+local SPAWN_INTERVAL < const > = 0.2  -- seconds between spawn attempts
+local CANDIDATES < const > = 8        -- spawn-point tries per attempt
+
+function Spawner:new()
+	self._spawned = {}   -- enemies this spawner created (its managed population)
+	self._timer = 0.0
+end
+
+function Spawner:update(context, totalTime, deltaTime)
+	if context == nil then
+		return
+	end
+
+	-- Freeze together with the rest of the game (the Stage owns these flags).
+	if context._gameOver or context._paused then
+		return
+	end
+
+	local environment < const > = context.environment
+
+	if self._player == nil then
+		self._player = self.world:getEntity("Humanoid")
+	end
+	if self._player == nil then
+		return
+	end
+
+	-- Resolve (once) the nav mesh and the world layer used to spawn entities.
+	if self._navMesh == nil then
+		local navComponent = self.world:getComponent(traktor.ai.NavMeshComponent)
+		if navComponent ~= nil then
+			self._navMesh = navComponent:get()
+		end
+	end
+	if self._navMesh == nil then
+		return
+	end
+
+	local pm < const > = environment.physics.physicsManager
+	local playerPos < const > = self._player.transform.translation
+
+	-- 1) Unspawn enemies that have wandered too far from the player.
+	local kept = {}
+	for _, e in ipairs(self._spawned) do
+		local ep = e.transform.translation
+		local dx, dy, dz = ep.x - playerPos.x, ep.y - playerPos.y, ep.z - playerPos.z
+		if dx * dx + dy * dy + dz * dz > DESPAWN_DIST * DESPAWN_DIST then
+			self.world:removeEntity(e)
+		else
+			kept[#kept + 1] = e
+		end
+	end
+	self._spawned = kept
+
+	-- 3) Only spawn while under the cap, and throttle attempts.
+	self._timer = self._timer - deltaTime
+	if #self._spawned >= MAX_ENEMIES or self._timer > 0.0 then
+		return
+	end
+	self._timer = SPAWN_INTERVAL
+
+	-- Player facing, so we can prefer spawning in front of the player.
+	local heading = 0.0
+	local character = self._player:getComponent(traktor.physics.CharacterComponent)
+	if character ~= nil then
+		heading = character.headAngle
+	end
+	local forward < const > = traktor.Quaternion.fromEulerAngles(heading, 0.0, 0.0) * traktor.Vector4(0.0, 0.0, 1.0, 0.0)
+
+	-- 2) + 8) Pick a spawn point: a random nav-mesh point in the spawn ring (so it is on
+	-- the ground at ~player elevation), hidden from the player (a physics ray from the
+	-- player's eye is blocked by terrain before reaching it), preferring points in front.
+	local best, bestInFront = nil, false
+	for _ = 1, CANDIDATES do
+		local p = self._navMesh:findRandomPoint(playerPos, SPAWN_MAX)   -- (0,0,0,0) on failure
+		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
+			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
+			if dx * dx + dz * dz >= SPAWN_MIN * SPAWN_MIN then
+				local eye < const > = traktor.Vector4(playerPos.x, playerPos.y + 1.6, playerPos.z, 1.0)
+				local rx, ry, rz = p.x - eye.x, (p.y + 1.0) - eye.y, p.z - eye.z
+				local rl = math.sqrt(rx * rx + ry * ry + rz * rz)
+				if rl > 0.5 then
+					local hit = pm:queryRay(eye, traktor.Vector4(rx / rl, ry / rl, rz / rl, 0.0), rl - 0.5, traktor.physics.QueryFilter(), true)
+					if hit ~= nil then
+						-- Occluded => hidden. Keep the first hidden point; upgrade to an
+						-- in-front one as soon as we find it.
+						local inFront = (rx * forward.x + rz * forward.z) > 0.0
+						if best == nil or (inFront and not bestInFront) then
+							best, bestInFront = p, inFront
+							if inFront then
+								break
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	if best == nil then
+		return   -- nowhere hidden to spawn this attempt; try again next interval
+	end
+
+	-- 4) + 5) + 7) Spawn the enemy. WorldLayer:createEntity builds it from the entity
+	-- data AND adds it to the world (via the entity builder), so no explicit addEntity is
+	-- needed. Drop it on the chosen nav-mesh point, facing the player.
+	local enemy = context.world:createEntity(ENEMY)
+	if enemy == nil then
+		return
+	end
+	local yaw < const > = (math.atan2 or math.atan)(playerPos.x - best.x, playerPos.z - best.z)
+	enemy.transform = traktor.Transform(traktor.Vector4(best.x, best.y, best.z, 1.0), traktor.Quaternion.fromEulerAngles(yaw, 0.0, 0.0))
+	self._spawned[#self._spawned + 1] = enemy
+end
+]]></text>
+</object>

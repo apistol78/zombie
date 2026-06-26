@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="26">
-	<fileName>Models/Humanoid.tmd</fileName>
+	<fileName>Models/PineFoliage.tmd</fileName>
 	<importFilter/>
-	<meshType>MtSkinned</meshType>
+	<meshType>MtInstance</meshType>
 	<materialShaders>
 		<item>
-			<first>HumanoidMat</first>
-			<second>{D14A9C31-34CC-4F08-A361-D5C894CA4CBF}</second>
+			<first>Foliage</first>
+			<second>{F35B9830-8E7C-EB4B-BCA7-A01C1AA7CB01}</second>
 		</item>
 	</materialShaders>
 	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
-	<renormalize>true</renormalize>
+	<renormalize>false</renormalize>
 	<center>None</center>
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>

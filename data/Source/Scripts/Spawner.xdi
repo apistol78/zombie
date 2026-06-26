@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
-	<text><![CDATA[
+	<text><![CDATA[import(traktor)
+
 local ENEMY < const > = Guid("\{E0E0E0E0-1111-2222-3333-444455556666}")
 
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
 
 -- Tuning.
 local MAX_ENEMIES < const > = 100     -- keep at most this many spawned alive
-local SPAWN_MIN < const > = 18.0      -- nearest a spawn may appear to the player (m)
-local SPAWN_MAX < const > = 40.0      -- farthest a spawn may appear (m)
+local SPAWN_MIN < const > = 8.0      -- nearest a spawn may appear to the player (m)
+local SPAWN_MAX < const > = 20.0      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
 local SPAWN_INTERVAL < const > = 0.2  -- seconds between spawn attempts
 local CANDIDATES < const > = 8        -- spawn-point tries per attempt
@@ -88,15 +89,15 @@ function Spawner:update(context, totalTime, deltaTime)
 		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
 			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
 			if dx * dx + dz * dz >= SPAWN_MIN * SPAWN_MIN then
-				local eye < const > = traktor.Vector4(playerPos.x, playerPos.y + 1.6, playerPos.z, 1.0)
-				local rx, ry, rz = p.x - eye.x, (p.y + 1.0) - eye.y, p.z - eye.z
-				local rl = math.sqrt(rx * rx + ry * ry + rz * rz)
+				local eye < const > = playerPos.xyz1 + Vector4(0.0, 1.6, 0.0)
+				local r < const > = p + Vector4(0.0, 1.6, 0.0) - eye
+				local rl < const > = r.length
 				if rl > 0.5 then
-					local hit = pm:queryRay(eye, traktor.Vector4(rx / rl, ry / rl, rz / rl, 0.0), rl - 0.5, traktor.physics.QueryFilter(), true)
+					local hit < const > = pm:queryRay(eye, r / rl, rl - 0.5, physics.QueryFilter(), true)
 					if hit ~= nil then
 						-- Occluded => hidden. Keep the first hidden point; upgrade to an
 						-- in-front one as soon as we find it.
-						local inFront = (rx * forward.x + rz * forward.z) > 0.0
+						local inFront = (r.x * forward.x + r.z * forward.z) > 0.0
 						if best == nil or (inFront and not bestInFront) then
 							best, bestInFront = p, inFront
 							if inFront then

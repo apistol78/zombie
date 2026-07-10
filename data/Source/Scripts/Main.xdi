@@ -90,6 +90,13 @@ function Main:new(params, environment)
 	self._pitchMax = 1.15        -- clamp high (~ +66 deg)
 	self._invertPitch = false    -- set true for inverted (flight-style) vertical look
 
+	-- Knockback: impulse imparted to a zombie's rag doll when shot. Distributed across
+	-- the limbs by RagDollPoseController:addImpulse, so this is total momentum: with ~11
+	-- unit-mass limbs an impulse of 18 is roughly a 1.6 m/s whole-body shove.
+	self._knockback = 50.0       -- impulse magnitude along the shot direction
+	self._knockbackLift = 10.0    -- extra upward impulse so the corpse flops back, not just slides
+	self._pendingImpulse = {}    -- enemy -> impulse to apply once its rag doll turns active
+
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
 	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
 	self._paused = false
@@ -278,6 +285,14 @@ function Main:_fireWeapon()
 	end
 ]]
 	self._deadEnemies[bestEnemy] = self._corpseLifetime
+	-- Record the shot's impact point (along the aim, at the target's range) and the
+	-- knockback impulse (+ a little lift). Applied later, in update(), once the zombie's
+	-- rag doll pose controller has become active (the graph blends into "dead" first),
+	-- via addImpulseAt so the corpse reacts from where it was hit.
+	self._pendingImpulse[bestEnemy] = {
+		point = origin + dir * bestT,
+		impulse = dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
+	}
 	self._kills = self._kills + 1
 end
 
@@ -492,6 +507,21 @@ function Main:update(info)
 		end
 	end
 
+	-- Apply each fresh kill's knockback the moment its rag doll controller becomes active.
+	-- activePoseController is the RagDollPoseController while the "dead" state is current
+	-- (nil during the blend / for living zombies), so this naturally waits for the right
+	-- frame, then applies the impulse once and forgets it.
+	do
+		for e, rec in pairs(self._pendingImpulse) do
+			local skeleton = e:getComponent(traktor.animation.SkeletonComponent)
+			local pc = skeleton ~= nil and skeleton.activePoseController or nil
+			if pc ~= nil then
+				pc:addImpulseAt(rec.point, rec.impulse)
+				self._pendingImpulse[e] = nil
+			end
+		end
+	end
+
 	-- Despawn ragdoll corpses once their lifetime elapses (also frees their physics bodies).
 	do
 		local world = self.world.world
@@ -505,9 +535,16 @@ function Main:update(info)
 			end
 		end
 		for k = 1, #remove do
-			self._deadEnemies[remove[k]] = nil
+			local corpse = remove[k]
+			self._deadEnemies[corpse] = nil
+			self._pendingImpulse[corpse] = nil
 			if world ~= nil then
-				world:removeEntity(remove[k])
+				world:removeEntity(corpse)
+				-- removeEntity only detaches the entity from the world; it does NOT tear
+				-- down its components. Dynamic physics bodies (the rag doll limbs) keep
+				-- simulating until Body::destroy runs, which only happens when the entity
+				-- is destroyed. So destroy it explicitly to free the bodies immediately.
+				corpse:destroy()
 			end
 		end
 	end
@@ -543,17 +580,20 @@ function Main:postUpdate(info)
 		local lookAt = eye + fwd * 6.0
 		local desiredPos = eye + aim * Vector4(0.0, 1.6, -4.5, 0.0)
 
-		-- Camera collision: ray from the look-at point toward the desired camera spot;
-		-- if it hits geometry, clamp the camera to just in front of the hit.
+		-- Camera collision: ray from the player's eye (the boom pivot) toward the desired
+		-- camera spot; if it hits geometry, clamp the camera to just in front of the hit.
+		-- NB: cast from "eye", not "lookAt" -- lookAt is the aim point 6m in FRONT of the
+		-- player, so using it here sweeps the ray back through the player and can snap the
+		-- camera in front of it.
 		local pm = self.environment.physics.physicsManager
 		if pm ~= nil then
-			local t = desiredPos - lookAt
+			local t = desiredPos - eye
 			local dist = t.length
 			if dist > 0.6 then
 				local d = t / dist
 
 				-- start 0.5m out so the ray skips the player's own capsule
-				local s = lookAt + d * 0.5
+				local s = eye + d * 0.5
 				local hit = pm:queryRay(s.xyz1, d.xyz0, dist - 0.5, traktor.physics.QueryFilter(), true)
 				if hit ~= nil then
 					local hd = hit.distance - 0.2
@@ -563,12 +603,21 @@ function Main:postUpdate(info)
 			end
 		end
 
+		-- Follow the player, filtering the axes separately. Horizontal orbit / rubber-band
+		-- keeps a pleasant lag; the vertical axis is filtered far less so up/down aiming
+		-- tracks the mouse responsively (the look-at pitches instantly, so a laggy camera
+		-- height is what made vertical aim feel floaty).
 		local currentPos = self._camera.transform.translation
-		local k = 8.0 * dt
-		if k > 1.0 then
-			k = 1.0
-		end
-		local newPos = Vector4.lerp(currentPos, desiredPos, k)
+		local kh = 8.0 * dt    -- horizontal follow rate
+		if kh > 1.0 then kh = 1.0 end
+		local kv = 30.0 * dt   -- vertical follow rate (snappier = less filtering)
+		if kv > 1.0 then kv = 1.0 end
+		local newPos = Vector4(
+			currentPos.x + (desiredPos.x - currentPos.x) * kh,
+			currentPos.y + (desiredPos.y - currentPos.y) * kv,
+			currentPos.z + (desiredPos.z - currentPos.z) * kh,
+			1.0
+		)
 		self._camera.transform = Transform.lookAt(newPos, lookAt, Vector4(0.0, 1.0, 0.0, 0.0))
 	end
 end

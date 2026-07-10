@@ -42,10 +42,6 @@ function EnemyController:new()
 	self._patrolSpeed = 0.55
 	self._attackSpeed = 1.2
 
-	-- Mode colours (linear). Patrol blue matches the material's default tint.
-	self._colorPatrol = Vector4(0.05, 0.1, 0.6, 1.0)
-	self._colorAttack = Vector4(0.75, 0.05, 0.05, 1.0)
-
 	self._dead = false   -- set once shot by the player; switches the body to rag doll
 end
 
@@ -74,17 +70,6 @@ function EnemyController:_enterRagDoll()
 	end
 	if character ~= nil then
 		character.enabled = false
-	end
-end
-
--- Push the tint for the current state into the mesh parameter override.
-function EnemyController:_applyColor()
-	if self._meshParam ~= nil and self._tint ~= nil then
-		if self._state == "attack" then
-			self._meshParam:setVectorParameter(self._tint, self._colorAttack)
-		else
-			self._meshParam:setVectorParameter(self._tint, self._colorPatrol)
-		end
 	end
 end
 
@@ -122,11 +107,6 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if skeleton ~= nil then
 			self._pose = skeleton.poseController
 		end
-	end
-	if self._meshParam == nil then
-		self._meshParam = enemy:getComponent(traktor.mesh.MeshParameterComponent)
-		self._tint = traktor.render.IRenderSystem.getParameterHandle("World_MaterialDiffuseColor")
-		self:_applyColor()   -- start in patrol blue
 	end
 	if self._navMesh == nil then
 		local navComponent = world:getComponent(traktor.ai.NavMeshComponent)
@@ -178,7 +158,6 @@ function EnemyController:update(context, totalTime, deltaTime)
 		self._lostTimer = self._attackMemory
 		if self._state ~= "attack" then
 			self._state = "attack"
-			self:_applyColor()
 		end
 	elseif self._state == "attack" then
 		self._lostTimer = self._lostTimer - deltaTime
@@ -186,7 +165,6 @@ function EnemyController:update(context, totalTime, deltaTime)
 			self._state = "patrol"
 			self._patrolTarget = nil
 			self._repathTimer = 0.0
-			self:_applyColor()
 		end
 	end
 

@@ -341,7 +341,7 @@ function Main:update(info)
 			local strafe = mapping:getStateValue("STATE_MOVE_X")
 			local move = mapping:getStateValue("STATE_MOVE_Z")
 			local look = mapping:getStateValue("STATE_LOOK_X")
-			local lookY = mapping:getStateValue("STATE_LOOK_Y")
+			local lookY = -mapping:getStateValue("STATE_LOOK_Y")
 			local speed = 3.0
 			local lookSensitivity = 0.005   -- radians per pixel of mouse motion
 			-- STATE_LOOK_* are per-frame mouse deltas (pixels) -- do NOT scale by dt.
@@ -357,14 +357,6 @@ function Main:update(info)
 			local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
 			local forward = heading * Vector4(0.0, 0.0, 1.0, 0.0)
 			local right = heading * Vector4(1.0, 0.0, 0.0, 0.0)
-
-			-- Orient the weapon (a child entity) by heading+pitch so the gun and its
-			-- muzzle bolt follow the aim; keep it mounted at the shoulder (yaw only).
-			if self._weapon ~= nil then
-				local shoulder = self._humanoid.transform.translation + heading * Vector4(0.28, 1.2, 0.15, 0.0)
-				local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-				self._weapon.transform = Transform(shoulder, aim)
-			end
 
 			-- STATE_MOVE_X is A(+1)/D(-1); negate so D strafes right, A strafes left.
 			local velocity = forward * (move * speed) + right * (-strafe * speed)
@@ -566,59 +558,23 @@ function Main:postUpdate(info)
 		return
 	end
 
-	local dt < const > = info.frameDeltaTime
-
-	-- Rubberband follow with line-of-sight: ease Camera0 behind/above the character,
-	-- but pull it in when a wall blocks the view of the player.
+	-- First-person: the camera sits at the eye and looks along the aim (heading+pitch).
+	-- It rides the player rigidly (position is already smooth via the character controller)
+	-- so there is no boom, no follow smoothing and no view-blocking ray to worry about.
 	if self._camera ~= nil and self._humanoid ~= nil then
-		local targetPos = self._humanoid.transform.translation
-		local eye = targetPos + Vector4(0.0, 1.6, 0.0, 0.0)
-		-- Aim (heading + pitch) drives both the boom (so looking up/down tilts the
-		-- camera) and the look-at point (which rides forward along the view).
+		local eye = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
 		local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
 		local fwd = aim * Vector4(0.0, 0.0, 1.0, 0.0)
-		local lookAt = eye + fwd * 6.0
-		local desiredPos = eye + aim * Vector4(0.0, 1.6, -4.5, 0.0)
+		self._camera.transform = Transform.lookAt(eye, eye + fwd, Vector4(0.0, 1.0, 0.0, 0.0))
+	end
 
-		-- Camera collision: ray from the player's eye (the boom pivot) toward the desired
-		-- camera spot; if it hits geometry, clamp the camera to just in front of the hit.
-		-- NB: cast from "eye", not "lookAt" -- lookAt is the aim point 6m in FRONT of the
-		-- player, so using it here sweeps the ray back through the player and can snap the
-		-- camera in front of it.
-		local pm = self.environment.physics.physicsManager
-		if pm ~= nil then
-			local t = desiredPos - eye
-			local dist = t.length
-			if dist > 0.6 then
-				local d = t / dist
-
-				-- start 0.5m out so the ray skips the player's own capsule
-				local s = eye + d * 0.5
-				local hit = pm:queryRay(s.xyz1, d.xyz0, dist - 0.5, traktor.physics.QueryFilter(), true)
-				if hit ~= nil then
-					local hd = hit.distance - 0.2
-					if hd < 0.0 then hd = 0.0 end
-					desiredPos = (s + d * hd).xyz1
-				end
-			end
-		end
-
-		-- Follow the player, filtering the axes separately. Horizontal orbit / rubber-band
-		-- keeps a pleasant lag; the vertical axis is filtered far less so up/down aiming
-		-- tracks the mouse responsively (the look-at pitches instantly, so a laggy camera
-		-- height is what made vertical aim feel floaty).
-		local currentPos = self._camera.transform.translation
-		local kh = 8.0 * dt    -- horizontal follow rate
-		if kh > 1.0 then kh = 1.0 end
-		local kv = 30.0 * dt   -- vertical follow rate (snappier = less filtering)
-		if kv > 1.0 then kv = 1.0 end
-		local newPos = Vector4(
-			currentPos.x + (desiredPos.x - currentPos.x) * kh,
-			currentPos.y + (desiredPos.y - currentPos.y) * kv,
-			currentPos.z + (desiredPos.z - currentPos.z) * kh,
-			1.0
-		)
-		self._camera.transform = Transform.lookAt(newPos, lookAt, Vector4(0.0, 1.0, 0.0, 0.0))
+	-- First-person view-model: hold the weapon just in front of the eye, offset to
+	-- the lower right, rotated by the full aim (heading+pitch) so it (and its muzzle
+	-- bolt) track exactly where the camera looks.
+	if self._weapon ~= nil then
+		local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
+		local eye = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
+		self._weapon.transform = Transform(eye + aim * Vector4(0.18, -0.22, 0.35, 0.0), aim)
 	end
 end
 

@@ -19,7 +19,7 @@
 			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
 				<shape type="traktor.physics.CylinderShapeDesc" version="6,traktor.physics.ShapeDesc:6">
 					<localTransform>
-						<translation>0, 2, 0, 0</translation>
+						<translation>0, 10, 0, 0</translation>
 						<rotation>0.707107, 0, 0, 0.707107</rotation>
 					</localTransform>
 					<collisionGroup>
@@ -31,7 +31,7 @@
 					</collisionMask>
 					<material>0</material>
 					<radius>1</radius>
-					<length>5</length>
+					<length>20</length>
 				</shape>
 				<friction>0.75</friction>
 				<restitution>0</restitution>

@@ -84,6 +84,12 @@ function Main:new(params, environment)
 	self._fireRange = 40.0       -- max shot distance (m)
 	self._fireRadius = 0.9       -- aim-assist radius around the shot ray (m)
 
+	-- Aiming: mouse Y pitches the view/weapon up and down (mouse X yaws, in update).
+	self._pitch = 0.0            -- current aim pitch (radians; + = up)
+	self._pitchMin = -1.15       -- clamp low (~ -66 deg)
+	self._pitchMax = 1.15        -- clamp high (~ +66 deg)
+	self._invertPitch = false    -- set true for inverted (flight-style) vertical look
+
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
 	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
 	self._paused = false
@@ -192,6 +198,17 @@ function Main:resolve()
 	if self._bloodEvents == nil and self._humanoid ~= nil then
 		self._bloodEvents = self._humanoid:getComponent(traktor.world.EventSetComponent)
 	end
+	-- The gun is a child entity of the player (via GroupComponent). Cache it and its
+	-- event set so aiming can orient it and firing can raise its "fire" (muzzle bolt).
+	if self._weapon == nil and self._humanoid ~= nil then
+		local group = self._humanoid:getComponent(traktor.world.GroupComponent)
+		if group ~= nil then
+			self._weapon = group:getEntity("Weapon", 0)
+			if self._weapon ~= nil then
+				self._fireEvents = self._weapon:getComponent(traktor.world.EventSetComponent)
+			end
+		end
+	end
 end
 
 -- Fire the weapon: hitscan a ray out of the player's eye along the current facing,
@@ -203,9 +220,17 @@ function Main:_fireWeapon()
 		return
 	end
 
+	-- Muzzle: spawn the projectile particle bolt from the weapon along the current
+	-- aim. Raised on every shot (before target selection) so firing always shows the
+	-- projectile, hit or miss. The "fire" event lives on the Weapon child entity, whose
+	-- transform the aiming code orients by heading+pitch, so the bolt follows the aim.
+	if self._fireEvents ~= nil then
+		self._fireEvents:raise("fire")
+	end
+
 	local origin = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-	local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
-	local dir = heading * Vector4(0.0, 0.0, 1.0, 0.0)
+	local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
+	local dir = aim * Vector4(0.0, 0.0, 1.0, 0.0)
 
 	local bestT = self._fireRange
 	local bestEnemy = nil
@@ -301,14 +326,30 @@ function Main:update(info)
 			local strafe = mapping:getStateValue("STATE_MOVE_X")
 			local move = mapping:getStateValue("STATE_MOVE_Z")
 			local look = mapping:getStateValue("STATE_LOOK_X")
+			local lookY = mapping:getStateValue("STATE_LOOK_Y")
 			local speed = 3.0
 			local lookSensitivity = 0.005   -- radians per pixel of mouse motion
-			-- STATE_LOOK_X is already a per-frame mouse delta (pixels) -- do NOT scale by dt.
+			-- STATE_LOOK_* are per-frame mouse deltas (pixels) -- do NOT scale by dt.
 			self._heading = self._heading + look * lookSensitivity
+			-- Mouse Y pitches the aim. Screen-Y grows downward, so moving the mouse up
+			-- (negative delta) should aim up: subtract. Clamp so you cannot over-rotate.
+			local pitchDelta = lookY * lookSensitivity
+			if self._invertPitch then pitchDelta = -pitchDelta end
+			self._pitch = self._pitch - pitchDelta
+			if self._pitch < self._pitchMin then self._pitch = self._pitchMin end
+			if self._pitch > self._pitchMax then self._pitch = self._pitchMax end
 			self._character.headAngle = self._heading
 			local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
 			local forward = heading * Vector4(0.0, 0.0, 1.0, 0.0)
 			local right = heading * Vector4(1.0, 0.0, 0.0, 0.0)
+
+			-- Orient the weapon (a child entity) by heading+pitch so the gun and its
+			-- muzzle bolt follow the aim; keep it mounted at the shoulder (yaw only).
+			if self._weapon ~= nil then
+				local shoulder = self._humanoid.transform.translation + heading * Vector4(0.28, 1.2, 0.15, 0.0)
+				local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
+				self._weapon.transform = Transform(shoulder, aim)
+			end
 
 			-- STATE_MOVE_X is A(+1)/D(-1); negate so D strafes right, A strafes left.
 			local velocity = forward * (move * speed) + right * (-strafe * speed)
@@ -494,10 +535,13 @@ function Main:postUpdate(info)
 	-- but pull it in when a wall blocks the view of the player.
 	if self._camera ~= nil and self._humanoid ~= nil then
 		local targetPos = self._humanoid.transform.translation
-		local lookAt = targetPos + Vector4(0.0, 1.7, 0.0, 0.0)
-		local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
-		local offset = heading * Vector4(0.0, 2.5, -4.5, 0.0)
-		local desiredPos = targetPos + offset
+		local eye = targetPos + Vector4(0.0, 1.6, 0.0, 0.0)
+		-- Aim (heading + pitch) drives both the boom (so looking up/down tilts the
+		-- camera) and the look-at point (which rides forward along the view).
+		local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
+		local fwd = aim * Vector4(0.0, 0.0, 1.0, 0.0)
+		local lookAt = eye + fwd * 6.0
+		local desiredPos = eye + aim * Vector4(0.0, 1.6, -4.5, 0.0)
 
 		-- Camera collision: ray from the look-at point toward the desired camera spot;
 		-- if it hits geometry, clamp the camera to just in front of the hit.
@@ -532,6 +576,8 @@ end
 function Main:reload()
 	self._humanoid = nil
 	self._camera = nil
+	self._weapon = nil
+	self._fireEvents = nil
 end
 
 ]]></text>

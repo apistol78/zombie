@@ -56,5 +56,43 @@
 				</item>
 			</eventData>
 		</item>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5EAA}</id>
+					<name>Weapon</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0.28, 1.2, 0.15, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{C76A6187-C664-48AD-A4D7-785110CA8444}</mesh>
+						</item>
+						<item type="traktor.world.EventSetComponentData">
+							<eventData>
+								<item>
+									<first>fire</first>
+									<second type="traktor.spray.SpawnEffectEventData" version="3">
+										<effect>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E02}</effect>
+										<transform>
+											<translation>0, 0.01, 0.56, 0</translation>
+											<rotation>0, 0, 0, 1</rotation>
+										</transform>
+										<follow>false</follow>
+										<useRotation>true</useRotation>
+									</second>
+								</item>
+							</eventData>
+						</item>
+					</components>
+				</item>
+			</entityData>
+		</item>
 	</components>
 </object>

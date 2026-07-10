@@ -32,6 +32,7 @@ function Main:new(params, environment)
 	self._lblDistance = Static(self._frame, "Distance: 0.0 m")
 	self._lblJumps = Static(self._frame, "Jumps: 0")
 	self._lblPickups = Static(self._frame, "Pickups: 0")
+	self._lblKills = Static(self._frame, "Kills: 0")
 	self._lblEnemies = Static(self._frame, "Enemies: 0 attacking / 0 patrolling")
 	self._healthBar = ProgressBar(self._frame)
 	self._healthBar:setFrontColor(Color4f(0.2, 0.8, 0.2, 1.0))
@@ -76,6 +77,13 @@ function Main:new(params, environment)
 	self._healAmount = 35.0 -- health restored per health pickup (capped at max)
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
 
+	-- Shooting: left mouse fires a hitscan that ragdolls the nearest zombie in front.
+	self._deadEnemies = {}       -- live set: enemy entity -> remaining corpse lifetime (s)
+	self._kills = 0
+	self._corpseLifetime = 6.0   -- how long a ragdoll corpse lingers before it despawns
+	self._fireRange = 40.0       -- max shot distance (m)
+	self._fireRadius = 0.9       -- aim-assist radius around the shot ray (m)
+
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
 	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
 	self._paused = false
@@ -90,6 +98,7 @@ function Main:new(params, environment)
 	self._exitButton:setOnClick(function() self:_exitToStartup() end)
 
 	environment.input.inputSystem:setExclusive(true)
+	environment.render.renderView:hideCursor()
 end
 
 -- Enter/leave pause. Toggles the menu, frees/recaptures the mouse cursor (so it can
@@ -103,9 +112,11 @@ function Main:_setPaused(paused)
 	if paused then
 		self._pauseDialog:show()
 		self.environment.input.inputSystem:setExclusive(false)
+		self.environment.render.renderView:showCursor()
 	else
 		self._pauseDialog:hide()
 		self.environment.input.inputSystem:setExclusive(true)
+		self.environment.render.renderView:hideCursor()
 	end
 end
 
@@ -183,6 +194,68 @@ function Main:resolve()
 	end
 end
 
+-- Fire the weapon: hitscan a ray out of the player's eye along the current facing,
+-- pick the nearest live zombie close to the ray (with clear line of sight) and mark
+-- it dead. Its EnemyController switches to rag doll; Main despawns the corpse later.
+function Main:_fireWeapon()
+	local world = self.world.world
+	if self._humanoid == nil or world == nil then
+		return
+	end
+
+	local origin = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
+	local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
+	local dir = heading * Vector4(0.0, 0.0, 1.0, 0.0)
+
+	local bestT = self._fireRange
+	local bestEnemy = nil
+	local i = 0
+	while true do
+		local e = world:getEntity("Enemy", i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		if self._deadEnemies[e] == nil then
+			-- Aim at the zombie's chest; project onto the ray and keep the closest one
+			-- whose perpendicular distance is within the aim-assist radius.
+			local rel = (e.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
+			local t = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
+			if t > 0.0 and t < bestT then
+				local hx = rel.x - dir.x * t
+				local hy = rel.y - dir.y * t
+				local hz = rel.z - dir.z * t
+				if hx * hx + hy * hy + hz * hz < self._fireRadius * self._fireRadius then
+					bestT = t
+					bestEnemy = e
+				end
+			end
+		end
+	end
+
+	if bestEnemy == nil then
+		return
+	end
+--[[
+	-- Reject the shot if geometry blocks the line of sight to the target.
+	local pm = self.environment.physics.physicsManager
+	if pm ~= nil then
+		local to = (bestEnemy.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
+		local dist = to.length
+		if dist > 0.6 then
+			local d = to / dist
+			local s = origin + d * 0.5
+			local hit = pm:queryRay(s.xyz1, d.xyz0, dist - 0.7, traktor.physics.QueryFilter(), true)
+			if hit ~= nil then
+				return
+			end
+		end
+	end
+]]
+	self._deadEnemies[bestEnemy] = self._corpseLifetime
+	self._kills = self._kills + 1
+end
+
 function Main:update(info)
 	self:resolve()
 
@@ -236,20 +309,28 @@ function Main:update(info)
 			local heading = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
 			local forward = heading * Vector4(0.0, 0.0, 1.0, 0.0)
 			local right = heading * Vector4(1.0, 0.0, 0.0, 0.0)
+
 			-- STATE_MOVE_X is A(+1)/D(-1); negate so D strafes right, A strafes left.
 			local velocity = forward * (move * speed) + right * (-strafe * speed)
 			self._character:move(velocity, false)
+
 			local jumped = false
-				if mapping:isStatePressed("STATE_JUMP") then
+			if mapping:isStatePressed("STATE_JUMP") then
 				if self._character:jump() then
 					self._jumps = self._jumps + 1
-						jumped = true
+					jumped = true
 				end
 			end
+
+			-- Left mouse button fires (edge-triggered, one shot per click).
+			if mapping:isStatePressed("STATE_FIRE") then
+				self:_fireWeapon()
+			end
+
 			if self._poseController ~= nil then
 				local moving = move > 0.1 or move < -0.1 or strafe > 0.1 or strafe < -0.1
 				self._poseController:setParameterValue("moving", moving)
-					self._poseController:setParameterValue("jump", jumped)
+				self._poseController:setParameterValue("jump", jumped)
 			end
 		end
 	end
@@ -338,12 +419,13 @@ function Main:update(info)
 				if e == nil then
 					break
 				end
-				local ep = e.transform.translation
-				local dx = ep.x - pp.x
-				local dy = ep.y - pp.y
-				local dz = ep.z - pp.z
-				if dx * dx + dy * dy + dz * dz < self._hurtRange * self._hurtRange then
-					dps = dps + self._enemyDps
+				-- Dead (ragdolling) zombies no longer bite.
+				if self._deadEnemies[e] == nil then
+					local ep = e.transform.translation
+					local d = ep - pp
+					if d.length < self._hurtRange * self._hurtRange then
+						dps = dps + self._enemyDps
+					end
 				end
 				i = i + 1
 			end
@@ -369,11 +451,32 @@ function Main:update(info)
 		end
 	end
 
+	-- Despawn ragdoll corpses once their lifetime elapses (also frees their physics bodies).
+	do
+		local world = self.world.world
+		local remove = {}
+		for e, life in pairs(self._deadEnemies) do
+			life = life - dt
+			if life <= 0.0 then
+				remove[#remove + 1] = e
+			else
+				self._deadEnemies[e] = life
+			end
+		end
+		for k = 1, #remove do
+			self._deadEnemies[remove[k]] = nil
+			if world ~= nil then
+				world:removeEntity(remove[k])
+			end
+		end
+	end
+
 	-- Update HUD.
 	self._lbl:setText("Time: " .. string.format("%.3f", info.simulationTime))
 	self._lblDistance:setText(string.format("Distance: %.1f m", self._distance))
 	self._lblJumps:setText("Jumps: " .. tostring(self._jumps))
 	self._lblPickups:setText("Pickups: " .. tostring(self._pickups))
+	self._lblKills:setText("Kills: " .. tostring(self._kills))
 	self._lblEnemies:setText("Enemies: " .. tostring(self._enemyAttack) .. " attacking / " .. tostring(self._enemyPatrol) .. " patrolling")
 	self._healthBar:setValue(self._health / self._maxHealth)
 end
@@ -400,19 +503,18 @@ function Main:postUpdate(info)
 		-- if it hits geometry, clamp the camera to just in front of the hit.
 		local pm = self.environment.physics.physicsManager
 		if pm ~= nil then
-			local tx = desiredPos.x - lookAt.x
-			local ty = desiredPos.y - lookAt.y
-			local tz = desiredPos.z - lookAt.z
-			local dist = math.sqrt(tx * tx + ty * ty + tz * tz)
+			local t = desiredPos - lookAt
+			local dist = t.length
 			if dist > 0.6 then
-				local dx, dy, dz = tx / dist, ty / dist, tz / dist
+				local d = t / dist
+
 				-- start 0.5m out so the ray skips the player's own capsule
-				local sx, sy, sz = lookAt.x + dx * 0.5, lookAt.y + dy * 0.5, lookAt.z + dz * 0.5
-				local hit = pm:queryRay(Vector4(sx, sy, sz, 1.0), Vector4(dx, dy, dz, 0.0), dist - 0.5, traktor.physics.QueryFilter(), true)
+				local s = lookAt + d * 0.5
+				local hit = pm:queryRay(s.xyz1, d.xyz0, dist - 0.5, traktor.physics.QueryFilter(), true)
 				if hit ~= nil then
 					local hd = hit.distance - 0.2
 					if hd < 0.0 then hd = 0.0 end
-					desiredPos = Vector4(sx + dx * hd, sy + dy * hd, sz + dz * hd, 1.0)
+					desiredPos = (s + d * hd).xyz1
 				end
 			end
 		end
@@ -425,6 +527,11 @@ function Main:postUpdate(info)
 		local newPos = Vector4.lerp(currentPos, desiredPos, k)
 		self._camera.transform = Transform.lookAt(newPos, lookAt, Vector4(0.0, 1.0, 0.0, 0.0))
 	end
+end
+
+function Main:reload()
+	self._humanoid = nil
+	self._camera = nil
 end
 
 ]]></text>

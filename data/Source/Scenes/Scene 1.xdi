@@ -128,14 +128,9 @@
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ProbeComponentData">
+								<item type="traktor.world.ProbeComponentData" version="1">
 									<texture>{00000000-0000-0000-0000-000000000000}</texture>
 									<intensity>1</intensity>
-									<local>false</local>
-									<volume>
-										<mn>0, 0, 0, 1</mn>
-										<mx>0, 0, 0, 1</mx>
-									</volume>
 								</item>
 							</components>
 						</item>
@@ -170,7 +165,7 @@
 							</state>
 							<transform>
 								<translation>-10, 3.7, -10, 0</translation>
-								<rotation>1, -0, -0, 0</rotation>
+								<rotation>1, 0, 0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -197,7 +192,7 @@
 							</state>
 							<transform>
 								<translation>6, 3.7, -10, 0</translation>
-								<rotation>1, -0, -0, 0</rotation>
+								<rotation>1, 0, 0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -224,7 +219,7 @@
 							</state>
 							<transform>
 								<translation>-2, 3.7, -2, 0</translation>
-								<rotation>1, -0, -0, 0</rotation>
+								<rotation>1, 0, 0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -251,7 +246,7 @@
 							</state>
 							<transform>
 								<translation>-10, 3.7, 6, 0</translation>
-								<rotation>1, -0, -0, 0</rotation>
+								<rotation>1, 0, 0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -278,7 +273,7 @@
 							</state>
 							<transform>
 								<translation>6, 3.7, 6, 0</translation>
-								<rotation>1, -0, -0, 0</rotation>
+								<rotation>1, 0, 0, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
@@ -324,7 +319,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, -0</rotation>
+								<rotation>0, 0.990216, -0.139543, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -1047,6 +1042,30 @@
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{5FFAD808-75D6-4BDA-A674-B5C66618316F}</id>
+							<name>Humanoid</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>19.285721, 2.03071, 18.98185, 0</translation>
+								<rotation>0.109778, 0, 0, 0.993956</rotation>
+							</transform>
+							<components>
+								<item type="traktor.animation.SkeletonComponentData">
+									<skeleton>{1E9C2788-505E-6C43-BB3D-527228721118}</skeleton>
+									<poseController type="traktor.animation.RagDollPoseControllerData" version="7">
+										<skeleton>{26279F0C-9C09-406D-9F1D-F3A1EB5C6FF5}</skeleton>
+									</poseController>
+								</item>
+								<item type="traktor.animation.AnimatedMeshComponentData" version="3">
+									<mesh>{8E459F05-82A8-694D-9B2B-1B85AD2B9459}</mesh>
+								</item>
+							</components>
 						</item>
 					</entityData>
 				</item>

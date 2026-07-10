@@ -45,6 +45,36 @@ function EnemyController:new()
 	-- Mode colours (linear). Patrol blue matches the material's default tint.
 	self._colorPatrol = Vector4(0.05, 0.1, 0.6, 1.0)
 	self._colorAttack = Vector4(0.75, 0.05, 0.05, 1.0)
+
+	self._dead = false   -- set once shot by the player; switches the body to rag doll
+end
+
+-- Drive the enemy's animation graph into its "dead" rag doll state by setting the
+-- "dead" parameter on its pose controller (SG - Enemy handles the transition).
+function EnemyController:_enterRagDoll()
+	local pose = self._pose
+	if pose == nil then
+		local skeleton = self.owner:getComponent(traktor.animation.SkeletonComponent)
+		if skeleton ~= nil then
+			pose = skeleton.poseController
+		end
+	end
+	if pose ~= nil then
+		pose:setParameterValue("dead", true)
+	end
+
+	-- Hand the body over to the rag doll: disable the character controller so it
+	-- stops driving (and fighting over) the entity transform and removes its
+	-- collision capsule. Without this the controller keeps re-positioning the
+	-- entity for a frame or two after death, and because the rag doll pose is
+	-- expressed relative to that transform the limbs visibly pop before settling.
+	local character = self._character
+	if character == nil then
+		character = self.owner:getComponent(traktor.physics.CharacterComponent)
+	end
+	if character ~= nil then
+		character.enabled = false
+	end
 end
 
 -- Push the tint for the current state into the mesh parameter override.
@@ -67,6 +97,16 @@ function EnemyController:update(context, totalTime, deltaTime)
 
 	-- Freeze all enemy logic once the game is over or paused (context is the Stage).
 	if context._gameOver or context._paused then
+		return
+	end
+
+	-- Shot by the player? Switch to rag doll once, then stop all behaviour so the
+	-- corpse is driven purely by physics (Main despawns it after a delay).
+	if not self._dead and context._deadEnemies ~= nil and context._deadEnemies[enemy] ~= nil then
+		self:_enterRagDoll()
+		self._dead = true
+	end
+	if self._dead then
 		return
 	end
 

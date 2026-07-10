@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="26">
+	<fileName>Models/Trees/Pine 01.glb</fileName>
+	<importFilter/>
+	<meshType>MtInstance</meshType>
+	<materialShaders>
+		<item>
+			<first>branches</first>
+			<second>{E962A07D-D656-4CB9-AD4D-8F1009462AD9}</second>
+		</item>
+		<item>
+			<first>leaves</first>
+			<second>{35627C96-0FE1-4142-A3BA-7EA8DC939149}</second>
+		</item>
+	</materialShaders>
+	<materialTextures>
+		<item>
+			<first>base_color_texture_1</first>
+			<second>{4AEFA5CB-DAC2-4B81-BF04-02CA9BF26656}</second>
+		</item>
+		<item>
+			<first>base_color_texture_4</first>
+			<second>{1D907D66-8DAA-47E4-8566-11FDC8CDE29B}</second>
+		</item>
+		<item>
+			<first>metallic_roughness_texture_0_M</first>
+			<second>{089C1306-C5FA-4060-9C6E-575971DBCE42}</second>
+		</item>
+		<item>
+			<first>metallic_roughness_texture_0_R</first>
+			<second>{3D1BED1F-A43C-49FF-A94F-71BBA9CA0426}</second>
+		</item>
+		<item>
+			<first>normal_texture_2</first>
+			<second>{72E8CBD0-4E0C-4282-BFE4-AA27A42B5B2A}</second>
+		</item>
+	</materialTextures>
+	<scaleFactor>0.4, 0.4, 0.4, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<reduce>1</reduce>
+	<previewAngle>0</previewAngle>
+</object>

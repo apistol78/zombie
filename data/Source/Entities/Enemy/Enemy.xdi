@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.world.EntityData" version="2">
 	<id>{2DA779E4-C3A7-455D-A1EF-4EDB283FC9DD}</id>
-	<name>Humanoid</name>
+	<name>Enemy</name>
 	<state>
 		<visible>true</visible>
 		<dynamic>false</dynamic>
@@ -20,7 +20,7 @@
 			</poseController>
 		</item>
 		<item type="traktor.animation.AnimatedMeshComponentData" version="3">
-			<mesh>{8E459F05-0000-694D-9B2B-1B85AD2B0001}</mesh>
+			<mesh>{8E459F05-82A8-694D-9B2B-1B85AD2B9459}</mesh>
 		</item>
 		<item type="traktor.physics.CharacterComponentData" version="4">
 			<collisionGroup>

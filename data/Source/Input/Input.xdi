@@ -58,6 +58,9 @@
 		<item type="traktor.input.InReadValue">
 			<valueId>ID_MOUSE_Y</valueId>
 		</item>
+		<item type="traktor.input.InReadValue">
+			<valueId>ID_KEY_SHIFT</valueId>
+		</item>
 	</inputNodes>
 	<positions>
 		<item>
@@ -200,6 +203,22 @@
 				<y>1280</y>
 			</position>
 		</item>
+		<item>
+			<object ref="/object/inputNodes/item[11]"/>
+			<position>
+				<x>120</x>
+				<y>1420</y>
+			</position>
+		</item>
+		<item>
+			<object type="traktor.input.InputStateData">
+				<source ref="/object/inputNodes/item[11]"/>
+			</object>
+			<position>
+				<x>820</x>
+				<y>1420</y>
+			</position>
+		</item>
 	</positions>
 	<sourceData type="traktor.input.InputMappingSourceData">
 		<sourceData>
@@ -232,6 +251,14 @@
 				<second type="traktor.input.KeyboardInputSourceData" version="1">
 					<controlTypes>
 						<item>KeyS</item>
+					</controlTypes>
+				</second>
+			</item>
+			<item>
+				<first>ID_KEY_SHIFT</first>
+				<second type="traktor.input.KeyboardInputSourceData" version="1">
+					<controlTypes>
+						<item>KeyLeftShift</item>
 					</controlTypes>
 				</second>
 			</item>
@@ -312,6 +339,10 @@
 			<item>
 				<first>STATE_PAUSE</first>
 				<second ref="/object/positions/item[13]/object"/>
+			</item>
+			<item>
+				<first>STATE_SPRINT</first>
+				<second ref="/object/positions/item[19]/object"/>
 			</item>
 		</stateData>
 	</stateData>

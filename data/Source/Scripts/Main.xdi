@@ -77,6 +77,11 @@ function Main:new(params, environment)
 	self._healAmount = 35.0 -- health restored per health pickup (capped at max)
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
 
+	-- Movement: WASD to move; hold Shift (STATE_SPRINT) to sprint. maxVelocity is set to
+	-- the current speed each frame so the character controller's velocity clamp permits it.
+	self._walkSpeed = 3.0
+	self._sprintSpeed = 6.0
+
 	-- Shooting: left mouse fires a hitscan that ragdolls the nearest zombie in front.
 	self._deadEnemies = {}       -- live set: enemy entity -> remaining corpse lifetime (s)
 	self._kills = 0
@@ -342,7 +347,13 @@ function Main:update(info)
 			local move = mapping:getStateValue("STATE_MOVE_Z")
 			local look = mapping:getStateValue("STATE_LOOK_X")
 			local lookY = -mapping:getStateValue("STATE_LOOK_Y")
-			local speed = 3.0
+			-- Hold Shift to sprint. maxVelocity tracks the target speed so the character
+			-- controller's clamp doesn't cap the sprint.
+			local speed = self._walkSpeed
+			if mapping:isStateDown("STATE_SPRINT") then
+				speed = self._sprintSpeed
+			end
+			self._character.maxVelocity = speed
 			local lookSensitivity = 0.005   -- radians per pixel of mouse motion
 			-- STATE_LOOK_* are per-frame mouse deltas (pixels) -- do NOT scale by dt.
 			self._heading = self._heading + look * lookSensitivity
@@ -500,16 +511,21 @@ function Main:update(info)
 	end
 
 	-- Apply each fresh kill's knockback the moment its rag doll controller becomes active.
-	-- activePoseController is the RagDollPoseController while the "dead" state is current
-	-- (nil during the blend / for living zombies), so this naturally waits for the right
-	-- frame, then applies the impulse once and forgets it.
+	-- getPoseControllersOf only descends the state graph's *current* state, so the list is
+	-- empty for living zombies and during the blend, and becomes non-empty once the "dead"
+	-- state is current (after reset). That naturally waits for the right frame; we then
+	-- impulse every rag doll controller found and forget the pending entry.
 	do
 		for e, rec in pairs(self._pendingImpulse) do
 			local skeleton = e:getComponent(traktor.animation.SkeletonComponent)
-			local pc = skeleton ~= nil and skeleton.activePoseController or nil
-			if pc ~= nil then
-				pc:addImpulseAt(rec.point, rec.impulse)
-				self._pendingImpulse[e] = nil
+			if skeleton ~= nil then
+				local ragdolls = skeleton:getPoseControllersOf(traktor.animation.RagDollPoseController)
+				if ragdolls.size > 0 then
+					for i = 0, ragdolls.size - 1 do
+						ragdolls:get(i):addImpulseAt(rec.point, rec.impulse)
+					end
+					self._pendingImpulse[e] = nil
+				end
 			end
 		end
 	end

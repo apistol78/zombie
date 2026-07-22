@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.render.ShaderGraph" version="traktor.render.Graph:1">
+	<nodes>
+		<item type="traktor.render.External" version="3,traktor.render.Node:1">
+			<id>{425C1979-97A1-4430-A058-856B20A970B6}</id>
+			<comment/>
+			<position>
+				<first>404</first>
+				<second>587</second>
+			</position>
+			<fragmentGuid>{C49D9623-FD46-1D40-A9CD-D1AF89FCE8F9}</fragmentGuid>
+			<inputPins>
+				<item>
+					<id>{91664123-488B-4201-B963-CD3C0FDD3B48}</id>
+					<name>Albedo</name>
+					<optional>false</optional>
+				</item>
+				<item>
+					<id>{3F9A0E84-F0E0-41E2-947F-4EA18A59E5C9}</id>
+					<name>AlphaMap</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{3925ADBC-B51C-6C4F-A2BD-F68A28CDECD1}</id>
+					<name>Aspect</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{CEAD241F-4CC9-1E44-AACA-15BFD5015FDB}</id>
+					<name>DiffuseMap</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{67E00646-AEFF-3F40-B0F2-D7F56ECBC0C1}</id>
+					<name>Ground color influence</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{E3F868E3-B7D7-2245-9A8D-842916880B0E}</id>
+					<name>Ground normal influence</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{6D3FBFB2-BFA0-B34F-8F38-D0A00C6EF359}</id>
+					<name>NormalMap</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{F6A68CB1-2842-3F40-B554-4A039A3F1617}</id>
+					<name>Random rotation</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{D4413A9E-C91F-304F-81FC-602C714FDD7D}</id>
+					<name>Wave amount</name>
+					<optional>true</optional>
+				</item>
+			</inputPins>
+			<outputPins/>
+		</item>
+		<item type="traktor.render.Color" version="2,traktor.render.Node:1">
+			<id>{C4B67C0C-2842-48AB-A36D-9F301AB0DD62}</id>
+			<comment/>
+			<position>
+				<first>33</first>
+				<second>511</second>
+			</position>
+			<color>1, 1, 1, 1</color>
+			<linear>true</linear>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{F0BB2B65-3137-443C-BEF5-97F6FD507B91}</id>
+			<comment/>
+			<position>
+				<first>116</first>
+				<second>838</second>
+			</position>
+			<value>0.1</value>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{204C8338-0EF4-4B3D-91BA-76170ECA9A81}</id>
+			<comment/>
+			<position>
+				<first>116</first>
+				<second>704</second>
+			</position>
+			<value>1</value>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{16C898E0-5594-4E15-BCA8-978EA6E4F897}</id>
+			<comment/>
+			<position>
+				<first>116</first>
+				<second>754</second>
+			</position>
+			<value>0.9</value>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{DC221259-6A20-4D76-82FB-32B14F042487}</id>
+			<comment/>
+			<position>
+				<first>116</first>
+				<second>794</second>
+			</position>
+			<value>0.4</value>
+		</item>
+		<item type="traktor.render.Texture" version="1,traktor.render.Node:1">
+			<id>{00E36ED0-6DFD-4F4E-8FB4-46350BB087FC}</id>
+			<comment><![CDATA[Grass straws (diffuse + alpha)]]></comment>
+			<position>
+				<first>107</first>
+				<second>564</second>
+			</position>
+			<external>{85E1CD72-B2FD-4860-B375-77B9FD708C49}</external>
+			<type>Texture2D</type>
+		</item>
+	</nodes>
+	<edges>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[1]"/>
+				<id>{4B2822D0-4D9A-4BBB-9956-A996493EE672}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{91664123-488B-4201-B963-CD3C0FDD3B48}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[2]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{D4413A9E-C91F-304F-81FC-602C714FDD7D}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[3]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{3925ADBC-B51C-6C4F-A2BD-F68A28CDECD1}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[5]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{F6A68CB1-2842-3F40-B554-4A039A3F1617}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[6]"/>
+				<id>{FFE19E4E-24A8-47A4-AE80-307495E31066}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{3F9A0E84-F0E0-41E2-947F-4EA18A59E5C9}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[4]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{67E00646-AEFF-3F40-B0F2-D7F56ECBC0C1}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[6]"/>
+				<id>{FFE19E4E-24A8-47A4-AE80-307495E31066}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{CEAD241F-4CC9-1E44-AACA-15BFD5015FDB}</id>
+			</destination>
+		</item>
+	</edges>
+	<groups/>
+</object>

@@ -39,15 +39,24 @@ function Main:new(params, environment)
 	self._healthBar:setBackColor(Color4f(0.25, 0.0, 0.0, 1.0))
 	self._healthBar:setValue(1.0)
 
-	-- Full-screen overlay carrying the centered "GAME OVER" banner (empty until death).
-	-- The UI virtual size is 640x360.
+	-- Full-screen overlay hosting the centered Game Over menu (hidden until death):
+	-- the "GAME OVER" banner plus Restart / Exit buttons. UI virtual size is 640x360.
+	-- The Dialog auto-centers on its parent Frame (one column: title, then two buttons).
 	self._overlay = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
-	self._lblGameOver = Static(self._overlay, "GAME OVER")
+	self._gameOverDialog = Dialog(self._overlay, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
+	self._lblGameOver = Static(self._gameOverDialog, "GAME OVER")
 	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self._lblGameOver:setVerticalAlign(Widget.ALIGN_CENTER)
 	self._lblGameOver:setTextSize(60)
 	self._lblGameOver:setTextColor(Color4f(0.9, 0.05, 0.05, 1.0))
 	self._lblGameOver:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	-- Restart: reload this stage from scratch via its "RESTART" self-transition.
+	self._restartButton = PushButton(self._gameOverDialog, "Restart")
+	self._restartButton:setMinimumWidth(220)
+	self._restartButton:setOnClick(function() self:_restart() end)
+	-- Exit: back to the Startup menu (this Stage's "STARTUP" transition).
+	self._gameOverExitButton = PushButton(self._gameOverDialog, "Exit")
+	self._gameOverExitButton:setMinimumWidth(220)
+	self._gameOverExitButton:setOnClick(function() self:_exitToStartup() end)
 	self._overlay:setVisible(false)
 
 	-- Ensure layouts are updated.
@@ -148,6 +157,17 @@ function Main:_exitToStartup()
 	self._loader = self:loadStageAsync("STARTUP", nil)
 end
 
+-- Restart: reload this gameplay stage from scratch via its "RESTART" self-transition
+-- (declared on this Stage's StageData, pointing back at itself). Loaded async and
+-- switched to in Main:update, exactly like _exitToStartup -- a brand-new stage/scene/
+-- world is created, so all game state (health, kills, enemies, ...) resets.
+function Main:_restart()
+	if self._loader ~= nil then
+		return
+	end
+	self._loader = self:loadStageAsync("RESTART", nil)
+end
+
 -- Called by each enemy's ScriptComponent during its update (context is this Stage).
 -- "t" is the frame's totalTime: when it changes, the previous frame's accumulation
 -- is complete, so publish it and start a fresh count. This is order-independent
@@ -174,6 +194,10 @@ function Main:finalize()
 	end
 	self._frame:remove()
 	self._frame = nil
+	if self._gameOverDialog ~= nil then
+		self._gameOverDialog:remove()
+		self._gameOverDialog = nil
+	end
 	if self._overlay ~= nil then
 		self._overlay:remove()
 		self._overlay = nil
@@ -502,7 +526,12 @@ function Main:update(info)
 				if self._health <= 0.0 then
 					self._health = 0.0
 					self._gameOver = true
-					self._overlay:setVisible(true) -- Show game over overlay.
+					-- Show the Game Over menu and free the mouse cursor so its
+					-- Restart / Exit buttons are clickable (as the pause menu does).
+					self._overlay:setVisible(true)
+					self._gameOverDialog:show()
+					self.environment.input.inputSystem:setExclusive(false)
+					self.environment.render.renderView:showCursor()
 				end
 			else
 				self._biteTimer = 0.0   -- reset so the next bite spurts immediately

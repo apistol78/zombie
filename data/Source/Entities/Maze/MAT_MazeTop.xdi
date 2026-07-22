@@ -30,59 +30,64 @@
 			<fragmentGuid>{0524A94E-4377-42AC-8A13-26FFE3491CC3}</fragmentGuid>
 			<inputPins>
 				<item>
-					<id>{D1A64987-9C42-554B-8524-6345465A903B}</id>
+					<id>{AAB0F959-D4F8-42B4-95ED-08AE1EABD898}</id>
 					<name>Albedo</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{6383D92E-98E1-C642-8B6C-E3947B941929}</id>
+					<id>{851EEB8C-0FDE-4133-8821-8AFDCA63A98E}</id>
 					<name>Alpha</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{76A0D476-8050-E249-BC63-B9A58CB9BCF1}</id>
+					<id>{D7F0FE21-607C-48DB-98F1-BEA2607C6733}</id>
 					<name>Decal response</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{0628CA1E-21F5-2B45-B393-14EED4FA748F}</id>
+					<id>{69D2DC0A-88A3-6B47-BFD0-2417B8C08B41}</id>
 					<name>Emissive</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{CBDCBB3A-70BA-C64D-B6EB-60FCB5BB1202}</id>
+					<id>{5E226B83-0061-4026-B5B7-ED42DBF63446}</id>
 					<name>Inherit</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{F5AADA04-495A-234A-A234-C3E7B726111F}</id>
+					<id>{E2BC6128-4B47-45F2-90DD-EAB08727C84C}</id>
 					<name>Metalness</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{6BCF603E-0B67-7C4C-A7F6-3B7ED002F3CB}</id>
+					<id>{5D56B51C-EF42-4669-9F88-07D446673255}</id>
 					<name>Normal</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{7F793EE0-902C-224B-9157-B923AE89A021}</id>
+					<id>{778D0A8C-73B5-0241-8911-91FC33A40DA0}</id>
 					<name>Opaque</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{B8302D9E-E957-CB42-B57C-AA91A8973D57}</id>
+					<id>{90D3E596-1415-4837-89CF-F3507AAAE050}</id>
 					<name>Roughness</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{5BE710B6-9285-5649-8229-0474651C09A0}</id>
+					<id>{B3745189-7FD6-48F0-A2AC-E5769DA17166}</id>
 					<name>Specular</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 				<item>
-					<id>{EB71C8AB-71D7-AA46-8588-D8C527C8A59D}</id>
+					<id>{ECADF42E-FB90-4F53-9B99-7129FF825B9A}</id>
+					<name>VertexAttributes</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{E17C87D4-085A-409D-9642-1926DBAADBBC}</id>
 					<name>World position offset</name>
-					<optional>false</optional>
+					<optional>true</optional>
 				</item>
 			</inputPins>
 			<outputPins>
@@ -309,12 +314,32 @@
 		</item>
 		<item type="traktor.render.Edge" version="1">
 			<source>
+				<node ref="/object/nodes/item[2]"/>
+				<id>{6DA168F2-0A33-2C49-A8A8-06DAFBCF4239}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[1]"/>
+				<id>{731844D4-AFDC-4EAA-8B41-C4BA2455898F}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[2]"/>
+				<id>{ECADF42E-FB90-4F53-9B99-7129FF825B9A}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
 				<node ref="/object/nodes/item[11]"/>
 				<id>{0D78442F-AA88-4B95-A497-E86A86E07FB8}</id>
 			</source>
 			<destination>
 				<node ref="/object/nodes/item[2]"/>
-				<id>{D1A64987-9C42-554B-8524-6345465A903B}</id>
+				<id>{AAB0F959-D4F8-42B4-95ED-08AE1EABD898}</id>
 			</destination>
 		</item>
 		<item type="traktor.render.Edge" version="1">
@@ -324,17 +349,7 @@
 			</source>
 			<destination>
 				<node ref="/object/nodes/item[2]"/>
-				<id>{6BCF603E-0B67-7C4C-A7F6-3B7ED002F3CB}</id>
-			</destination>
-		</item>
-		<item type="traktor.render.Edge" version="1">
-			<source>
-				<node ref="/object/nodes/item[2]"/>
-				<id>{6DA168F2-0A33-2C49-A8A8-06DAFBCF4239}</id>
-			</source>
-			<destination>
-				<node ref="/object/nodes/item[1]"/>
-				<id>{731844D4-AFDC-4EAA-8B41-C4BA2455898F}</id>
+				<id>{5D56B51C-EF42-4669-9F88-07D446673255}</id>
 			</destination>
 		</item>
 	</edges>

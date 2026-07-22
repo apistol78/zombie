@@ -49,14 +49,14 @@
 				<shader>{E9F5281A-BC6D-41D3-905C-CCCDE2A2EBEB}</shader>
 				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
 				<effect/>
-				<middleAge>0.1</middleAge>
+				<middleAge>0</middleAge>
 				<cullNearDistance>0.001</cullNearDistance>
 				<cullMeshDistance>100</cullMeshDistance>
 				<fadeNearRange>0.01</fadeNearRange>
 				<viewOffset>0</viewOffset>
 				<warmUp>0</warmUp>
-				<sort>true</sort>
-				<worldSpace>true</worldSpace>
+				<sort>false</sort>
+				<worldSpace>false</worldSpace>
 				<meshOrientationFromVelocity>true</meshOrientationFromVelocity>
 				<gpu>false</gpu>
 				<capacity>1000</capacity>

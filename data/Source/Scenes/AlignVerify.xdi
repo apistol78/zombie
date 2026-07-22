@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.scene.SceneAsset" version="10">
+	<worldRenderSettings type="traktor.world.WorldRenderSettings" version="42">
+		<viewNearZ>0.1</viewNearZ>
+		<viewFarZ>1000</viewFarZ>
+		<exposureMode>Adaptive</exposureMode>
+		<exposure>-0.15</exposure>
+		<shadowSettings>
+			<disabled>
+				<farZ>0</farZ>
+				<resolution>128</resolution>
+				<bias>0</bias>
+				<cascadingSlices>1</cascadingSlices>
+				<cascadingLambda>1</cascadingLambda>
+				<quantizeProjection>false</quantizeProjection>
+			</disabled>
+			<low>
+				<farZ>40</farZ>
+				<resolution>256</resolution>
+				<bias>0.001</bias>
+				<cascadingSlices>4</cascadingSlices>
+				<cascadingLambda>1</cascadingLambda>
+				<quantizeProjection>false</quantizeProjection>
+			</low>
+			<medium>
+				<farZ>40</farZ>
+				<resolution>512</resolution>
+				<bias>0.001</bias>
+				<cascadingSlices>4</cascadingSlices>
+				<cascadingLambda>1</cascadingLambda>
+				<quantizeProjection>true</quantizeProjection>
+			</medium>
+			<high>
+				<farZ>50</farZ>
+				<resolution>1024</resolution>
+				<bias>0.001</bias>
+				<cascadingSlices>4</cascadingSlices>
+				<cascadingLambda>1</cascadingLambda>
+				<quantizeProjection>true</quantizeProjection>
+			</high>
+			<ultra>
+				<farZ>50</farZ>
+				<resolution>2048</resolution>
+				<bias>0.001</bias>
+				<cascadingSlices>4</cascadingSlices>
+				<cascadingLambda>1</cascadingLambda>
+				<quantizeProjection>true</quantizeProjection>
+			</ultra>
+		</shadowSettings>
+		<imageProcess>
+			<disabled>{00000000-0000-0000-0000-000000000000}</disabled>
+			<low>{00000000-0000-0000-0000-000000000000}</low>
+			<medium>{00000000-0000-0000-0000-000000000000}</medium>
+			<high>{00000000-0000-0000-0000-000000000000}</high>
+			<ultra>{00000000-0000-0000-0000-000000000000}</ultra>
+		</imageProcess>
+		<colorGrading>{3DEEC673-EDF5-364A-B796-BAC7EF575258}</colorGrading>
+	</worldRenderSettings>
+	<worldComponents>
+		<item type="traktor.ai.NavMeshComponentData">
+			<navMesh>{3ACC5150-E8BE-4242-A315-A07FB0AF1B31}</navMesh>
+		</item>
+	</worldComponents>
+	<layers>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{2FE794AA-EF51-6449-A41A-B01ADD08DF11}</id>
+			<name>Environment</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{AB5EEBDE-BF2C-8F4C-A687-853E798C91F5}</id>
+							<name>Sky</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0, 0, 0, 0</translation>
+								<rotation>-0.406247, 0.249812, 0.116489, 0.871199</rotation>
+							</transform>
+							<components>
+								<item type="traktor.weather.SkyComponentData" version="8">
+									<shader>{4CF929EB-3A8B-C340-AA0A-0C5C80625BF1}</shader>
+									<texture>{00000000-0000-0000-0000-000000000000}</texture>
+									<intensity>1</intensity>
+									<saturation>0</saturation>
+									<skyOverHorizon>0.2, 0.5, 0.85, 0</skyOverHorizon>
+									<skyUnderHorizon>0.07451, 0.2, 0.352941, 0</skyUnderHorizon>
+									<clouds>true</clouds>
+									<cloudAmbientTop>0.99, 0.98, 1.18, 1</cloudAmbientTop>
+									<cloudAmbientBottom>0.23, 0.39, 0.51, 1</cloudAmbientBottom>
+								</item>
+								<item type="traktor.world.LightComponentData" version="12">
+									<lightType>Directional</lightType>
+									<color>0.996078, 0.94902, 0.878431, 0</color>
+									<intensity>5</intensity>
+									<castShadow>true</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>20</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0</flickerAmount>
+									<flickerFilter>0</flickerFilter>
+									<bakeMode>LbmIndirect</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{F12FE303-129E-334A-8CF6-565E78953CF7}</id>
+							<name>Reflections</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0, 10, 0, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ProbeComponentData" version="1">
+									<texture>{00000000-0000-0000-0000-000000000000}</texture>
+									<intensity>1</intensity>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{37DB6293-4272-624D-BA9F-02E83C0219DA}</id>
+							<name>Camera</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-1.562719, 43.045929, -1.110929, 0</translation>
+								<rotation>0.04456, 0.45232, -0.022635, 0.890454</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.CameraComponentData">
+									<projection>Perspective</projection>
+									<fov>1.221731</fov>
+									<width>1</width>
+									<height>1</height>
+								</item>
+							</components>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{2A6F4160-FEDA-604F-8432-93AB86D7F244}</id>
+			<name>Entity</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{E2218030-E15C-E24D-B3BF-05BF628A5B92}</id>
+							<name>Terrain</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0, 0, 0, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.terrain.TerrainComponentData">
+									<terrain>{ACC0FE33-A2F2-3C4C-AA63-90991D052A96}</terrain>
+									<patchLodDistance>100</patchLodDistance>
+									<patchLodBias>0</patchLodBias>
+									<patchLodExponent>1</patchLodExponent>
+									<surfaceLodDistance>100</surfaceLodDistance>
+									<surfaceLodBias>0</surfaceLodBias>
+									<surfaceLodExponent>1</surfaceLodExponent>
+								</item>
+								<item type="traktor.physics.RigidBodyComponentData" version="1">
+									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+										<shape type="traktor.physics.HeightfieldShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+											<localTransform>
+												<translation>0, 0, 0, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</localTransform>
+											<collisionGroup>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionGroup>
+											<collisionMask>
+												<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionMask>
+											<material>0</material>
+											<heightfield>{FE7175C9-600E-D84D-BD15-7D04E66C7BD3}</heightfield>
+										</shape>
+										<friction>0.75</friction>
+										<restitution>0</restitution>
+										<kinematic>false</kinematic>
+									</bodyDesc>
+									<eventCollide/>
+									<transformFilter>0</transformFilter>
+								</item>
+							</components>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{4ACEAC70-8FF8-414C-9409-B01DDFF0982C}</id>
+			<name>Trees</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{098FE92C-BDEC-45E7-93A3-274F708B942E}</id>
+							<name>Pine_0</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-40, 70, -40, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{64484479-CC4A-42FD-A01C-5689F642640D}</id>
+							<name>Pine_1</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0, 70, -40, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{7BF27F70-CFF3-40AD-BFD1-CA9752AF89EA}</id>
+							<name>Pine_2</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>40, 70, -40, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{3EFBB359-E16D-4AED-A057-6154DBBE7AC8}</id>
+							<name>Pine_3</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-40, 70, 0, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{EE9B4CDB-5727-47EE-927A-184711D1F73B}</id>
+							<name>Pine_4</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>10.159572, 30.500929, 8.982331, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{4AF153ED-498D-4782-A73B-1F742181A102}</id>
+							<name>Pine_5</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>33.905426, 22.53553, 16.634724, 0</translation>
+								<rotation>-0.019999, 0, 0, 0.9998</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{971FC160-716B-44BB-8304-500EABF281E5}</id>
+							<name>Pine_6</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-13.106024, 23.269722, -10.052305, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{2CA6A358-710B-421E-84D0-4C03E505B696}</id>
+							<name>Pine_7</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0, 70, 40, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{67B8AEFB-0EF0-4F7A-91B3-A506F2B30210}</id>
+							<name>Pine_8</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>37.707424, 30.374708, 1.979126, 0</translation>
+								<rotation>0.034697, -0.231582, -0.187355, 0.953973</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
+								</item>
+							</components>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+	</layers>
+	<operationData>
+		<item type="traktor.terrain.AlignToTerrainOperationData">
+			<layers>
+				<item>Trees</item>
+			</layers>
+			<alignOrientation>true</alignOrientation>
+			<upness>0.7</upness>
+			<offset>-1</offset>
+		</item>
+	</operationData>
+</object>

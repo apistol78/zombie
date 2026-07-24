@@ -2,9 +2,9 @@
 <object type="traktor.scene.SceneAsset" version="10">
 	<worldRenderSettings type="traktor.world.WorldRenderSettings" version="42">
 		<viewNearZ>0.1</viewNearZ>
-		<viewFarZ>10000</viewFarZ>
-		<exposureMode>Fixed</exposureMode>
-		<exposure>0</exposure>
+		<viewFarZ>1000</viewFarZ>
+		<exposureMode>Adaptive</exposureMode>
+		<exposure>-0.05</exposure>
 		<shadowSettings>
 			<disabled>
 				<farZ>0</farZ>
@@ -184,7 +184,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, -0</rotation>
+								<rotation>0, 0.990216, -0.139543, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -381,7 +381,7 @@
 							</state>
 							<transform>
 								<translation>-19.7321, 23.811398, 28.067101, 0</translation>
-								<rotation>0, 0.997303, 0, -0.073399</rotation>
+								<rotation>0, -0.997303, 0, 0.073399</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -422,7 +422,7 @@
 							</state>
 							<transform>
 								<translation>-37.774502, 23.648058, 1.5622, 0</translation>
-								<rotation>0, -0.911175, 0, -0.412019</rotation>
+								<rotation>0, 0.911175, 0, 0.412019</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -10867,7 +10867,7 @@
 							</state>
 							<transform>
 								<translation>39.375, 47.159752, 84.217003, 0</translation>
-								<rotation>0.043031, -0, 0.24456, 0.968679</rotation>
+								<rotation>0.043031, 0, 0.24456, 0.968679</rotation>
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
@@ -11081,7 +11081,7 @@
 							</state>
 							<transform>
 								<translation>0.829858, 11.698442, -31.69632, 0</translation>
-								<rotation>0.007811, -0, -0.007811, 0.999939</rotation>
+								<rotation>0.007811, 0, -0.007811, 0.999939</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>

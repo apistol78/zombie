@@ -104,7 +104,7 @@
 								<item type="traktor.world.LightComponentData" version="12">
 									<lightType>Directional</lightType>
 									<color>1, 0.58, 0.32, 1</color>
-									<intensity>3</intensity>
+									<intensity>8</intensity>
 									<castShadow>true</castShadow>
 									<nearRange>0</nearRange>
 									<farRange>20</farRange>
@@ -381,7 +381,7 @@
 							</state>
 							<transform>
 								<translation>-19.7321, 23.811398, 28.067101, 0</translation>
-								<rotation>0, 0.747481, 0, 0.664283</rotation>
+								<rotation>0, 0.997303, 0, -0.073399</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -422,7 +422,7 @@
 							</state>
 							<transform>
 								<translation>-37.774502, 23.648058, 1.5622, 0</translation>
-								<rotation>0, -0.990857, 0, 0.134918</rotation>
+								<rotation>0, -0.911175, 0, -0.412019</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1151,88 +1151,6 @@
 							</components>
 						</item>
 						<item type="traktor.world.EntityData" version="2">
-							<id>{5041B1CF-5E47-4A0F-8DEC-B5038EEDF022}</id>
-							<name>Fence</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-23.3573, 23.1681, 22.957501, 0</translation>
-								<rotation>0, -0.99827, 0, 0.058798</rotation>
-							</transform>
-							<components>
-								<item type="traktor.mesh.MeshComponentData" version="1">
-									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
-								</item>
-								<item type="traktor.physics.RigidBodyComponentData" version="1">
-									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
-										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
-											<localTransform>
-												<translation>0, 0, 0, 0</translation>
-												<rotation>0, 0, 0, 1</rotation>
-											</localTransform>
-											<collisionGroup>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionGroup>
-											<collisionMask>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionMask>
-											<material>0</material>
-											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
-										</shape>
-										<friction>0.75</friction>
-										<restitution>0</restitution>
-										<kinematic>false</kinematic>
-									</bodyDesc>
-									<eventCollide/>
-									<transformFilter>0</transformFilter>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
-							<id>{CD35FB81-03E2-472A-BB1B-52295A35B410}</id>
-							<name>Fence</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-17.398899, 23.202499, 22.2528, 0</translation>
-								<rotation>0, -0.99827, 0, 0.058798</rotation>
-							</transform>
-							<components>
-								<item type="traktor.mesh.MeshComponentData" version="1">
-									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
-								</item>
-								<item type="traktor.physics.RigidBodyComponentData" version="1">
-									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
-										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
-											<localTransform>
-												<translation>0, 0, 0, 0</translation>
-												<rotation>0, 0, 0, 1</rotation>
-											</localTransform>
-											<collisionGroup>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionGroup>
-											<collisionMask>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionMask>
-											<material>0</material>
-											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
-										</shape>
-										<friction>0.75</friction>
-										<restitution>0</restitution>
-										<kinematic>false</kinematic>
-									</bodyDesc>
-									<eventCollide/>
-									<transformFilter>0</transformFilter>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
 							<id>{E6E09D52-C360-454D-A31E-05736AFEA583}</id>
 							<name>Fence</name>
 							<state>
@@ -1241,8 +1159,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-39.306801, 23.0965, 7.6369, 0</translation>
-								<rotation>0, 0.125794, 0, 0.992056</rotation>
+								<translation>-37.244633, 23.0965, 8.925242, 0</translation>
+								<rotation>0, 0.376605, 0, 0.926374</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1282,8 +1200,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-33.4967, 22.896799, 6.1394, 0</translation>
-								<rotation>0, 0.125794, 0, 0.992056</rotation>
+								<translation>-32.22086, 22.896799, 7.447272, 0</translation>
+								<rotation>0, -0.133472, 0, 0.991053</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1323,8 +1241,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-43.849201, 23.069, 0.0299, 0</translation>
-								<rotation>0, 0.790444, 0, 0.612534</rotation>
+								<translation>-45.156815, 23.069, 0.816999, 0</translation>
+								<rotation>0, 0.847647, 0, 0.530561</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1365,88 +1283,6 @@
 							</state>
 							<transform>
 								<translation>-42.3517, 23.1588, 5.84, 0</translation>
-								<rotation>0, 0.790444, 0, 0.612534</rotation>
-							</transform>
-							<components>
-								<item type="traktor.mesh.MeshComponentData" version="1">
-									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
-								</item>
-								<item type="traktor.physics.RigidBodyComponentData" version="1">
-									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
-										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
-											<localTransform>
-												<translation>0, 0, 0, 0</translation>
-												<rotation>0, 0, 0, 1</rotation>
-											</localTransform>
-											<collisionGroup>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionGroup>
-											<collisionMask>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionMask>
-											<material>0</material>
-											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
-										</shape>
-										<friction>0.75</friction>
-										<restitution>0</restitution>
-										<kinematic>false</kinematic>
-									</bodyDesc>
-									<eventCollide/>
-									<transformFilter>0</transformFilter>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
-							<id>{9D492047-1846-404B-8712-C8D2E026085C}</id>
-							<name>Fence</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-33.1973, 22.727501, -2.7156, 0</translation>
-								<rotation>0, 0.790444, 0, 0.612534</rotation>
-							</transform>
-							<components>
-								<item type="traktor.mesh.MeshComponentData" version="1">
-									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
-								</item>
-								<item type="traktor.physics.RigidBodyComponentData" version="1">
-									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
-										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
-											<localTransform>
-												<translation>0, 0, 0, 0</translation>
-												<rotation>0, 0, 0, 1</rotation>
-											</localTransform>
-											<collisionGroup>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionGroup>
-											<collisionMask>
-												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-											</collisionMask>
-											<material>0</material>
-											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
-										</shape>
-										<friction>0.75</friction>
-										<restitution>0</restitution>
-										<kinematic>false</kinematic>
-									</bodyDesc>
-									<eventCollide/>
-									<transformFilter>0</transformFilter>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
-							<id>{3F080A3D-07CF-4C82-BD59-EC406B0A23C4}</id>
-							<name>Fence</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-31.699801, 22.7887, 3.0945, 0</translation>
 								<rotation>0, 0.790444, 0, 0.612534</rotation>
 							</transform>
 							<components>
@@ -10820,8 +10656,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-34.036366, 23.094999, -1.451935, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>-31.462097, 22.85434, 2.565524, 0</translation>
+								<rotation>0.015106, 0.908827, -0.015783, 0.416601</rotation>
 							</transform>
 							<components/>
 							<entityData>{B1CCEE00-0000-4000-8000-0000000000FF}</entityData>
@@ -11543,23 +11379,23 @@
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
-			<upness>0</upness>
+			<upness>0.65</upness>
 			<offset>0</offset>
 		</item>
 		<item type="traktor.shape.BakeOperationData">
 			<enableLightmaps>false</enableLightmaps>
-			<primarySampleCount>20</primarySampleCount>
-			<secondarySampleCount>10</secondarySampleCount>
-			<shadowSampleCount>4</shadowSampleCount>
-			<maxPathDistance>5</maxPathDistance>
+			<primarySampleCount>10</primarySampleCount>
+			<secondarySampleCount>5</secondarySampleCount>
+			<shadowSampleCount>2</shadowSampleCount>
+			<maxPathDistance>10</maxPathDistance>
 			<pointLightShadowRadius>0.1</pointLightShadowRadius>
 			<lumelDensity>16</lumelDensity>
 			<irradianceGridDensity>0.2, 0.2, 0.2, 0</irradianceGridDensity>
 			<minimumLightMapSize>16</minimumLightMapSize>
 			<maximumLightMapSize>1024</maximumLightMapSize>
 			<enableDenoise>true</enableDenoise>
-			<analyticalLightAttenuation>1</analyticalLightAttenuation>
-			<ambientOcclusionFactor>0.5</ambientOcclusionFactor>
+			<analyticalLightAttenuation>1.5</analyticalLightAttenuation>
+			<ambientOcclusionFactor>1</ambientOcclusionFactor>
 		</item>
 	</operationData>
 </object>

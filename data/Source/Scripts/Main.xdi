@@ -39,11 +39,20 @@ function Main:new(params, environment)
 	self._healthBar:setBackColor(Color4f(0.25, 0.0, 0.0, 1.0))
 	self._healthBar:setValue(1.0)
 
-	-- Full-screen overlay hosting the centered Game Over menu (hidden until death):
-	-- the "GAME OVER" banner plus Restart / Exit buttons. UI virtual size is 640x360.
-	-- The Dialog auto-centers on its parent Frame (one column: title, then two buttons).
-	self._overlay = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
-	self._gameOverDialog = Dialog(self._overlay, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
+	-- Game Over menu (hidden until death): the "GAME OVER" banner plus Restart / Exit
+	-- buttons, as a modal Dialog auto-centered over the HUD (one column: title, then
+	-- two buttons). Dialog is ILayout.FLOAT, so it is excluded from the HUD's layout
+	-- and does not disturb the labels above.
+	--
+	-- It MUST be parented to self._frame -- this stage's one and only Frame -- and not
+	-- to a second full-screen Frame of its own. Each Frame is a separate widget tree
+	-- (Frame is built with parent = nil), but UiKit's "event masks are stale" flag,
+	-- Widget._eventMaskDirty, is global: Widget:_dispatchEvent refreshes only
+	-- self:getAncestor()'s subtree and then clears that shared flag. With two sibling
+	-- Frames the always-visible HUD dispatches first, refreshes itself and clears the
+	-- flag, so the other tree's _eventFilter stays at its initial 0x00000000 and every
+	-- event fails the mask test -- its buttons silently never receive a click.
+	self._gameOverDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
 	self._lblGameOver = Static(self._gameOverDialog, "GAME OVER")
 	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblGameOver:setTextSize(60)
@@ -57,11 +66,11 @@ function Main:new(params, environment)
 	self._gameOverExitButton = PushButton(self._gameOverDialog, "Exit")
 	self._gameOverExitButton:setMinimumWidth(220)
 	self._gameOverExitButton:setOnClick(function() self:_exitToStartup() end)
-	self._overlay:setVisible(false)
+	-- No explicit hide needed: Dialog starts hidden (Dialog:_initialize ends in
+	-- setVisible(false)), exactly as the pause dialog below relies on.
 
 	-- Ensure layouts are updated.
 	self._frame:update()
-	self._overlay:update()
 
 	-- Gameplay counters.
 	self._distance = 0.0
@@ -192,16 +201,12 @@ function Main:finalize()
 		self._pauseDialog:remove()
 		self._pauseDialog = nil
 	end
-	self._frame:remove()
-	self._frame = nil
 	if self._gameOverDialog ~= nil then
 		self._gameOverDialog:remove()
 		self._gameOverDialog = nil
 	end
-	if self._overlay ~= nil then
-		self._overlay:remove()
-		self._overlay = nil
-	end
+	self._frame:remove()
+	self._frame = nil
 end
 
 -- Resolve (and cache) the humanoid entity, its character controller and the camera.
@@ -218,6 +223,19 @@ function Main:resolve()
 	end
 	if self._camera == nil then
 		self._camera = world:getEntity("Camera0")
+		-- Bind the WorldLayer's render camera explicitly, rather than relying on the
+		-- layer to find "Camera0" by itself. It only does that inside its
+		-- m_scene.changed() branch, and a *same-scene* stage transition -- exactly our
+		-- Game Over -> Restart, which re-enters Main via the RESTART self-transition --
+		-- consumes that flag in WorldLayer::transition to keep the world renderer it
+		-- inherits from the outgoing layer. So the fresh layer never resolves a camera:
+		-- postUpdate stops sampling one, preSetup stops updating the view, and the
+		-- inherited render view stays frozen wherever the old camera died, while this
+		-- script still happily moves the Camera0 entity nobody is looking through.
+		-- Assigning it here is authoritative and survives any transition.
+		if self._camera ~= nil then
+			self.world.camera = self._camera
+		end
 	end
 	if self._character == nil and self._humanoid ~= nil then
 		self._character = self._humanoid:getComponent(traktor.physics.CharacterComponent)
@@ -313,6 +331,15 @@ function Main:_fireWeapon()
 		end
 	end
 ]]
+	-- Blood splatter on the hit zombie: raise its own "blood" event, which spawns the
+	-- splatter burst at its chest (the same point the aim assist targets above). The
+	-- event uses follow=false, so the burst stays where the zombie was hit while its
+	-- corpse ragdolls away -- and outlives the corpse when Main despawns it.
+	local hitEvents = bestEnemy:getComponent(traktor.world.EventSetComponent)
+	if hitEvents ~= nil then
+		hitEvents:raise("blood")
+	end
+
 	self._deadEnemies[bestEnemy] = self._corpseLifetime
 	-- Record the shot's impact point (along the aim, at the target's range) and the
 	-- knockback impulse (+ a little lift). Applied later, in update(), once the zombie's
@@ -528,7 +555,6 @@ function Main:update(info)
 					self._gameOver = true
 					-- Show the Game Over menu and free the mouse cursor so its
 					-- Restart / Exit buttons are clickable (as the pause menu does).
-					self._overlay:setVisible(true)
 					self._gameOverDialog:show()
 					self.environment.input.inputSystem:setExclusive(false)
 					self.environment.render.renderView:showCursor()

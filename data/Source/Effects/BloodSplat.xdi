@@ -7,14 +7,14 @@
 		<item type="traktor.spray.EffectLayerData" version="4">
 			<name>Blood</name>
 			<time>0</time>
-			<duration>1</duration>
+			<duration>0</duration>
 			<emitter type="traktor.spray.EmitterData" version="9">
 				<source type="traktor.spray.PointSourceData">
 					<constantRate>70</constantRate>
 					<velocityRate>0</velocityRate>
 					<position>0, 1, 0, 1</position>
 					<velocity>
-						<min>0.5</min>
+						<min>1</min>
 						<max>2</max>
 					</velocity>
 					<orientation>
@@ -34,8 +34,8 @@
 						<max>0.18</max>
 					</mass>
 					<size>
-						<min>0.1</min>
-						<max>0.2</max>
+						<min>0.05</min>
+						<max>0.1</max>
 					</size>
 				</source>
 				<modifiers>
@@ -45,8 +45,12 @@
 						<angular>true</angular>
 					</item>
 					<item type="traktor.spray.GravityModifierData">
-						<gravity>0, -3, 0, 0</gravity>
+						<gravity>0, -2, 0, 0</gravity>
 						<world>true</world>
+					</item>
+					<item type="traktor.spray.DragModifierData">
+						<linearDrag>4.1</linearDrag>
+						<angularDrag>0</angularDrag>
 					</item>
 				</modifiers>
 				<shader>{66E0BAD1-A5F6-4148-A80E-4433AB22F3F8}</shader>

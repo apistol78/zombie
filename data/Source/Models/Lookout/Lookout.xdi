@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{0A4D8F12-1E61-4E4A-94E2-4B7F21C0FF5D}</id>
+	<name>Lookout</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{694AFC8F-8E66-478B-96C1-ABC4050775D1}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{13F66E43-45D0-488E-ADFE-DE6548C048ED}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+	</components>
+</object>

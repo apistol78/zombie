@@ -2,7 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[import(traktor)
 
-local ENEMY < const > = Guid("\{E0E0E0E0-1111-2222-3333-444455556666}")
+local ENEMY < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
 

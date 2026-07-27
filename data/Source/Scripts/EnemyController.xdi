@@ -14,6 +14,14 @@ import(traktor)
 -- memory window first. That feels natural ("I just saw you go that way") and also
 -- damps mode flicker when another agent briefly crosses the view ray.
 --
+-- Both modes are held off for the first _spawnDelay seconds of a zombie's life: it
+-- stands still and its "moving" parameter is left alone, so it reads as getting up
+-- instead of sliding off the instant it appears.
+--
+-- Biting is separate from the ATTACK mode above (which is only "chase"): the "attack"
+-- animation parameter tracks whether this zombie is close enough to actually drain the
+-- player's health, i.e. it mirrors the Stage's contact-damage test.
+--
 -- The current mode is shown by tinting the mesh: a MeshParameterComponent overrides
 -- the standard "World_MaterialDiffuseColor" uniform per-instance, so no per-mode
 -- material is needed and each enemy is coloured independently.
@@ -43,6 +51,11 @@ function EnemyController:new()
 	self._attackSpeed = 1.2
 
 	self._dead = false   -- set once shot by the player; switches the body to rag doll
+
+	-- Zombies rise before they walk: stay put this long after spawning, and leave
+	-- "moving" untouched meanwhile so the graph holds its stand-up state. Perception
+	-- and path finding keep running, so the first step lands the moment it expires.
+	self._spawnDelay = 2.5   -- (s) counted from the controller's first live update
 end
 
 -- Drive the enemy's animation graph into its "dead" rag doll state by setting the
@@ -57,6 +70,9 @@ function EnemyController:_enterRagDoll()
 	end
 	if pose ~= nil then
 		pose:setParameterValue("dead", true)
+		-- Stop biting; update() returns early from now on, so this would otherwise stay
+		-- latched and fire straight into the attack state if the corpse ever revived.
+		pose:setParameterValue("attack", false)
 	end
 
 	-- Hand the body over to the rag doll: disable the character controller so it
@@ -294,6 +310,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- target, so the enemy pivots toward a target behind it before advancing.
 	local fx = math.sin(self._heading)
 	local fz = math.cos(self._heading)
+	self._character.headAngle = self._heading
+
+	-- Freshly spawned: keep turning toward the target but take no step, and do not
+	-- set "moving" yet, so the animation graph is left in its stand-up state.
+	if self._spawnDelay > 0.0 then
+		self._spawnDelay = self._spawnDelay - deltaTime
+		return
+	end
+
 	local moving = false
 	if tl > 0.001 then
 		local align = fx * targetX + fz * targetZ
@@ -302,9 +327,18 @@ function EnemyController:update(context, totalTime, deltaTime)
 			moving = true
 		end
 	end
-	self._character.headAngle = self._heading
+
+	-- Biting: the Stage applies the contact damage and owns the range, so read it from
+	-- there instead of keeping a second copy - the attack animation then runs exactly
+	-- while this zombie is draining the player's health. Distance is measured the same
+	-- way Main does it (origin to origin, all three axes), and deliberately ignores
+	-- line of sight and the patrol/attack mode, because the damage ignores them too.
+	local hurtRange = context._hurtRange or 1.0
+	local attacking = pdist < hurtRange
+
 	if self._pose ~= nil then
 		self._pose:setParameterValue("moving", moving)
+		self._pose:setParameterValue("attack", attacking)
 	end
 end
 ]]></text>

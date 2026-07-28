@@ -34,6 +34,14 @@ function Main:new(params, environment)
 	self._lblPickups = Static(self._frame, "Pickups: 0")
 	self._lblKills = Static(self._frame, "Kills: 0")
 	self._lblEnemies = Static(self._frame, "Enemies: 0 attacking / 0 patrolling")
+	-- Leak watch. Read "excess" (see the block at the end of update): it is the non-static
+	-- body count minus the 13 that each zombie entity in the world legitimately owns, so
+	-- it should be a constant no matter how the population swings. A climbing excess means
+	-- bodies are outliving their entities. Remove this label and that block when done.
+	self._lblBodies = Static(self._frame, "Bodies: 0")
+	-- Blank unless god mode is on; the text is set by the toggle rather than each frame.
+	self._lblGodMode = Static(self._frame, "")
+	self._lblGodMode:setTextColor(Color4f(1.0, 0.85, 0.1, 1.0))
 	self._healthBar = ProgressBar(self._frame)
 	self._healthBar:setFrontColor(Color4f(0.2, 0.8, 0.2, 1.0))
 	self._healthBar:setBackColor(Color4f(0.25, 0.0, 0.0, 1.0))
@@ -94,6 +102,7 @@ function Main:new(params, environment)
 	self._enemyDps = 20.0   -- health drained per second per touching enemy
 	self._healAmount = 35.0 -- health restored per health pickup (capped at max)
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
+	self._godMode = false   -- G: skip contact damage entirely (zombies still bite, visibly)
 
 	-- Movement: WASD to move; hold Shift (STATE_SPRINT) to sprint. maxVelocity is set to
 	-- the current speed each frame so the character controller's velocity clamp permits it.
@@ -265,6 +274,60 @@ function Main:resolve()
 	end
 end
 
+-- Mark one zombie dead: blood burst at the impact point, hand it over to its
+-- EnemyController (which polls _deadEnemies and switches the body to rag doll), queue
+-- the knockback for the frame its rag doll controller goes active, and tally the kill.
+-- Shared by the weapon and the kill-all shortcut so a zombie only ever dies one way.
+-- Returns false if it was already dead, so a second trigger cannot double-count it.
+function Main:_killEnemy(enemy, point, impulse)
+	if enemy == nil or self._deadEnemies[enemy] ~= nil then
+		return false
+	end
+
+	-- The event uses follow=false, so the burst stays where the zombie was hit while its
+	-- corpse ragdolls away -- and outlives the corpse when Main despawns it.
+	local hitEvents = enemy:getComponent(traktor.world.EventSetComponent)
+	if hitEvents ~= nil then
+		hitEvents:raise("blood")
+	end
+
+	self._deadEnemies[enemy] = self._corpseLifetime
+	self._pendingImpulse[enemy] = { point = point, impulse = impulse }
+	self._kills = self._kills + 1
+	return true
+end
+
+-- Kill every live zombie in the world at once (K). Each one dies through _killEnemy, so
+-- they rag doll, spray blood, count as kills and get despawned on the usual corpse timer
+-- -- no separate teardown path that could leak them. The impulse points radially away
+-- from the player so the pile scatters outward instead of every corpse taking the same
+-- shove. Safe to iterate by index: _killEnemy only marks, it never removes entities.
+function Main:_killAllEnemies()
+	local world = self.world.world
+	if world == nil or self._humanoid == nil then
+		return
+	end
+
+	local origin = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
+	local i = 0
+	while true do
+		local e = world:getEntity("Enemy", i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		local chest = e.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)
+		local away = chest - origin
+		local len = away.length
+		if len > 0.01 then
+			away = away / len
+		else
+			away = Vector4(0.0, 0.0, 1.0, 0.0)   -- standing exactly on the eye; shove forward
+		end
+		self:_killEnemy(e, chest, away * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0))
+	end
+end
+
 -- Fire the weapon: hitscan a ray out of the player's eye along the current facing,
 -- pick the nearest live zombie close to the ray (with clear line of sight) and mark
 -- it dead. Its EnemyController switches to rag doll; Main despawns the corpse later.
@@ -331,25 +394,13 @@ function Main:_fireWeapon()
 		end
 	end
 ]]
-	-- Blood splatter on the hit zombie: raise its own "blood" event, which spawns the
-	-- splatter burst at its chest (the same point the aim assist targets above). The
-	-- event uses follow=false, so the burst stays where the zombie was hit while its
-	-- corpse ragdolls away -- and outlives the corpse when Main despawns it.
-	local hitEvents = bestEnemy:getComponent(traktor.world.EventSetComponent)
-	if hitEvents ~= nil then
-		hitEvents:raise("blood")
-	end
-
-	self._deadEnemies[bestEnemy] = self._corpseLifetime
-	-- Record the shot's impact point (along the aim, at the target's range) and the
-	-- knockback impulse (+ a little lift). Applied later, in update(), once the zombie's
-	-- rag doll pose controller has become active (the graph blends into "dead" first),
-	-- via addImpulseAt so the corpse reacts from where it was hit.
-	self._pendingImpulse[bestEnemy] = {
-		point = origin + dir * bestT,
-		impulse = dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
-	}
-	self._kills = self._kills + 1
+	-- Kill it at the shot's impact point (along the aim, at the target's range), knocked
+	-- back along the aim with a little lift.
+	self:_killEnemy(
+		bestEnemy,
+		origin + dir * bestT,
+		dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
+	)
 end
 
 function Main:update(info)
@@ -387,6 +438,24 @@ function Main:update(info)
 	end
 	if self._paused then
 		return
+	end
+
+	-- Cheat shortcuts: G toggles god mode, K kills every zombie in the world. Both are
+	-- edge-triggered, so holding the key fires once. Deliberately below the game-over and
+	-- paused returns above, so neither does anything while the frame is frozen. Not tied
+	-- to the movement block below either, since they work with or without a character.
+	do
+		local mapping = self.environment.input.inputMapping
+		if mapping ~= nil then
+			if mapping:isStatePressed("STATE_GOD_MODE") then
+				self._godMode = not self._godMode
+				self._biteTimer = 0.0   -- so the next real bite spurts immediately
+				self._lblGodMode:setText(self._godMode and "GOD MODE" or "")
+			end
+			if mapping:isStatePressed("STATE_KILL_ALL") then
+				self:_killAllEnemies()
+			end
+		end
 	end
 
 	-- Mouse X turns the character (yaw); W/S (STATE_MOVE_Z) move forward/back and
@@ -518,7 +587,10 @@ function Main:update(info)
 
 	-- Enemy contact damage: every enemy within hurt range drains health, and
 	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
-	if self._humanoid ~= nil then
+	-- God mode (G) skips the whole thing -- the scan's only output is the drain, so
+	-- there is nothing to compute. Zombies still crowd and still play their bite
+	-- animation, which EnemyController drives off context._hurtRange independently.
+	if self._humanoid ~= nil and not self._godMode then
 		local world = self.world.world
 		if world ~= nil then
 			local pp = self._humanoid.transform.translation
@@ -533,7 +605,13 @@ function Main:update(info)
 				if self._deadEnemies[e] == nil then
 					local ep = e.transform.translation
 					local d = ep - pp
-					if d.length < self._hurtRange * self._hurtRange then
+					-- Compare a distance against a distance: _hurtRange is in metres, so
+					-- squaring it here would silently scale the bite range by _hurtRange
+					-- for any value other than 1. Both operands are translations (w = 1),
+					-- so d.w is 0 and length is the plain origin-to-origin distance across
+					-- all three axes -- the same measure EnemyController reads back off
+					-- context._hurtRange to decide when to play its attack animation.
+					if d.length < self._hurtRange then
 						dps = dps + self._enemyDps
 					end
 				end
@@ -620,6 +698,47 @@ function Main:update(info)
 	self._lblKills:setText("Kills: " .. tostring(self._kills))
 	self._lblEnemies:setText("Enemies: " .. tostring(self._enemyAttack) .. " attacking / " .. tostring(self._enemyPatrol) .. " patrolling")
 	self._healthBar:setValue(self._health / self._maxHealth)
+
+	-- Leak watch (see the label in :new). Sampled twice a second rather than every frame,
+	-- because reading the body list hands back a copy of the whole thing and we then walk
+	-- it. The point of the breakdown is "excess": every zombie entity in the world, live
+	-- or ragdolling, accounts for 13 non-static bodies (the character controller's two
+	-- capsules plus the eleven rag doll limbs, all built when the entity is instanced).
+	-- Subtract that from the non-static total and what remains is the player, the scene's
+	-- own dynamic props, and anything stranded. That remainder is a *constant* if teardown
+	-- is working. If it climbs, bodies are outliving their entities and the leak is real;
+	-- if it holds steady while the total swings, the total is just a big live population.
+	self._statsTimer = (self._statsTimer or 0.0) - dt
+	if self._statsTimer <= 0.0 then
+		self._statsTimer = 0.5
+
+		local world = self.world.world
+		local pm = self.environment.physics.physicsManager
+		if world ~= nil and pm ~= nil then
+			-- Every entity still named "Enemy" in the world, including corpses waiting out
+			-- their lifetime -- they keep all 13 bodies until Main destroys them.
+			local enemies = world:getEntities("Enemy").size
+
+			local corpses = 0
+			for _ in pairs(self._deadEnemies) do
+				corpses = corpses + 1
+			end
+
+			local bodies = pm.bodies
+			local total = bodies.size
+			local nonStatic = 0
+			for i = 0, total - 1 do
+				local b = bodies:get(i)
+				if not b.static then
+					nonStatic = nonStatic + 1
+				end
+			end
+
+			self._lblBodies:setText(string.format(
+				"Bodies: %d (%d non-static)  Enemies: %d (%d dead)  excess: %d",
+				total, nonStatic, enemies, corpses, nonStatic - enemies * 13))
+		end
+	end
 end
 
 -- postUpdate runs after every entity has updated this frame, so the camera follows the

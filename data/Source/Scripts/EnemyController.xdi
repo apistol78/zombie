@@ -29,7 +29,7 @@ import(traktor)
 -- Line-of-sight needs a PhysicsManager, but ScriptComponents have no environment
 -- access, so the player Stage publishes it to the global EnemyShared.pm.
 --
--- Attach to an entity that has a CharacterComponent, an (animated/skinned) mesh and
+-- Attach to an entity that has a AiCharacterComponent, an (animated/skinned) mesh and
 -- a MeshParameterComponent. Inherits the native ScriptComponent (self.owner/.world).
 
 EnemyController = EnemyController or class("EnemyController", traktor.world.ScriptComponent)
@@ -82,7 +82,7 @@ function EnemyController:_enterRagDoll()
 	-- expressed relative to that transform the limbs visibly pop before settling.
 	local character = self._character
 	if character == nil then
-		character = self.owner:getComponent(traktor.physics.CharacterComponent)
+		character = self.owner:getComponent(traktor.physics.AiCharacterComponent)
 	end
 	if character ~= nil then
 		character.enabled = false
@@ -113,7 +113,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 
 	-- Resolve and cache dependencies.
 	if self._character == nil then
-		self._character = enemy:getComponent(traktor.physics.CharacterComponent)
+		self._character = enemy:getComponent(traktor.physics.AiCharacterComponent)
 		if self._character ~= nil then
 			self._character.maxVelocity = self._attackSpeed
 		end
@@ -196,10 +196,29 @@ function EnemyController:update(context, totalTime, deltaTime)
 		speed = self._attackSpeed
 	end
 
-	-- ---- Choose a destination and (re)issue an async path query ----
+	-- ---- Collect the finished path query, then choose a destination and issue the next ----
+
+	-- Adopt the async result once it is ready (get() blocks on wait()). Clear the slot
+	-- either way: a query that found no route also reports ready, and the code below
+	-- skips while a query is in flight, so a failed one parked here would stop this
+	-- zombie from ever re-pathing again.
+	if self._pathResult ~= nil and self._pathResult.ready then
+		local query = self._pathResult:get()
+		if query ~= nil then
+			self._pathQuery = query
+		end
+		self._pathResult = nil
+	end
+
+	-- Never let path queries stack up: each createMoveQuery posts a job that allocates
+	-- its own 2048-node Detour query and runs a full A*, so with a hundred zombies
+	-- asking twice a second, issuing another while the previous is still in flight lets
+	-- the job queue grow faster than the workers drain it -- and the backlog only ever
+	-- gets worse. The timer is deliberately not reset when we skip, so the query goes
+	-- out the moment the slot frees.
 	self._repathTimer = self._repathTimer - deltaTime
 	if self._state == "attack" then
-		if self._repathTimer <= 0.0 then
+		if self._repathTimer <= 0.0 and self._pathResult == nil then
 			self._repathTimer = 0.5
 			-- Jitter around the player, then snap onto the nav mesh so it stays reachable.
 			local jitter = 1.5
@@ -223,21 +242,12 @@ function EnemyController:update(context, totalTime, deltaTime)
 				needNew = true
 			end
 		end
-		if needNew or self._repathTimer <= 0.0 then
+		if (needNew or self._repathTimer <= 0.0) and self._pathResult == nil then
 			self._repathTimer = 1.5
 			if needNew then
 				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 12.0)
 			end
 			self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
-		end
-	end
-
-	-- Adopt the async result only once it is ready (get() blocks on wait()).
-	if self._pathResult ~= nil and self._pathResult.ready then
-		local query = self._pathResult:get()
-		if query ~= nil then
-			self._pathQuery = query
-			self._pathResult = nil
 		end
 	end
 

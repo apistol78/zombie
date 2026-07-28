@@ -7,11 +7,11 @@ local ENEMY < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
 
 -- Tuning.
-local MAX_ENEMIES < const > = 100     -- keep at most this many spawned alive
-local SPAWN_MIN < const > = 8.0      -- nearest a spawn may appear to the player (m)
+local MAX_ENEMIES < const > = 40      -- keep at most this many spawned alive
+local SPAWN_MIN < const > = 8.0       -- nearest a spawn may appear to the player (m)
 local SPAWN_MAX < const > = 20.0      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
-local SPAWN_INTERVAL < const > = 0.3  -- seconds between spawn attempts
+local SPAWN_INTERVAL < const > = 0.5  -- seconds between spawn attempts
 local CANDIDATES < const > = 8        -- spawn-point tries per attempt
 
 function Spawner:new()
@@ -52,15 +52,44 @@ function Spawner:update(context, totalTime, deltaTime)
 	local pm < const > = environment.physics.physicsManager
 	local playerPos < const > = self._player.transform.translation
 
-	-- 1) Unspawn enemies that have wandered too far from the player.
+	-- 1) Prune the managed population, then unspawn enemies that have wandered too far
+	-- from the player.
+	--
+	-- The list has to shed entries whose entity has left the world, or it grows for as
+	-- long as the game runs: nothing else here ever hears about a zombie the player shot,
+	-- so once Main has rag dolled it and destroyed the corpse the entry would sit here
+	-- forever, pinning a dead entity in memory *and* burning one of the MAX_ENEMIES slots.
+	-- That is what eventually starves spawning near a spot you have been fighting in.
+	--
+	-- A zombie Main has taken over but not yet destroyed (still counting down its corpse
+	-- lifetime) deliberately keeps its slot: it is still an entity in the world holding a
+	-- full set of physics bodies, so counting it against the cap is what keeps the live
+	-- population -- and the body count -- bounded.
+	local dead < const > = context._deadEnemies
 	local kept = {}
 	for _, e in ipairs(self._spawned) do
-		local ep = e.transform.translation
-		local dx, dy, dz = ep.x - playerPos.x, ep.y - playerPos.y, ep.z - playerPos.z
-		if dx * dx + dy * dy + dz * dz > DESPAWN_DIST * DESPAWN_DIST then
-			self.world:removeEntity(e)
-		else
+		if e.world == nil then
+			-- Gone: Main destroyed the corpse. Drop the entry (do not keep it).
+		elseif dead ~= nil and dead[e] ~= nil then
+			-- Dying, but still an entity in the world: keep the slot occupied.
 			kept[#kept + 1] = e
+		else
+			local ep = e.transform.translation
+			local dx, dy, dz = ep.x - playerPos.x, ep.y - playerPos.y, ep.z - playerPos.z
+			if dx * dx + dy * dy + dz * dz > DESPAWN_DIST * DESPAWN_DIST then
+				self.world:removeEntity(e)
+				-- removeEntity only detaches the entity from the world; it does NOT tear
+				-- down its components, and the physics manager keeps owning their bodies
+				-- until it does. A zombie carries thirteen of them -- the character
+				-- controller's two capsules plus the eleven rag doll limbs, which are
+				-- built when the animation graph is instanced rather than on death --
+				-- and every one keeps being simulated and keeps blocking line-of-sight
+				-- rays. They outlive the stage too, because the physics manager is
+				-- global, so not even a restart clears them. Destroy it explicitly.
+				e:destroy()
+			else
+				kept[#kept + 1] = e
+			end
 		end
 	end
 	self._spawned = kept

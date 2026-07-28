@@ -11,7 +11,7 @@ local MAX_ENEMIES < const > = 100     -- keep at most this many spawned alive
 local SPAWN_MIN < const > = 8.0      -- nearest a spawn may appear to the player (m)
 local SPAWN_MAX < const > = 20.0      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
-local SPAWN_INTERVAL < const > = 0.2  -- seconds between spawn attempts
+local SPAWN_INTERVAL < const > = 0.3  -- seconds between spawn attempts
 local CANDIDATES < const > = 8        -- spawn-point tries per attempt
 
 function Spawner:new()

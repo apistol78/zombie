@@ -62,7 +62,19 @@
 				<capacity>1000</capacity>
 			</emitter>
 			<trail/>
-			<sequence/>
+			<sequence type="traktor.spray.SequenceData">
+				<keys>
+					<item>
+						<T>0</T>
+						<event type="traktor.spray.SoundEventData" version="1">
+							<sound>{171797FB-CA0E-4D92-91EC-DCFF00242AAD}</sound>
+							<positional>false</positional>
+							<follow>false</follow>
+							<autoStopFar>false</autoStopFar>
+						</event>
+					</item>
+				</keys>
+			</sequence>
 			<triggerEnable/>
 			<triggerDisable/>
 		</item>

@@ -2,7 +2,7 @@
 <object type="traktor.scene.SceneAsset" version="10">
 	<worldRenderSettings type="traktor.world.WorldRenderSettings" version="42">
 		<viewNearZ>0.1</viewNearZ>
-		<viewFarZ>1000</viewFarZ>
+		<viewFarZ>90</viewFarZ>
 		<exposureMode>Adaptive</exposureMode>
 		<exposure>-0.05</exposure>
 		<shadowSettings>
@@ -15,35 +15,35 @@
 				<quantizeProjection>false</quantizeProjection>
 			</disabled>
 			<low>
-				<farZ>100</farZ>
+				<farZ>90</farZ>
 				<resolution>256</resolution>
-				<bias>0.0005</bias>
+				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
-				<cascadingLambda>2.3</cascadingLambda>
+				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>false</quantizeProjection>
 			</low>
 			<medium>
-				<farZ>150</farZ>
+				<farZ>90</farZ>
 				<resolution>512</resolution>
 				<bias>0.0005</bias>
 				<cascadingSlices>4</cascadingSlices>
-				<cascadingLambda>2.3</cascadingLambda>
+				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
 			</medium>
 			<high>
-				<farZ>170</farZ>
+				<farZ>90</farZ>
 				<resolution>1024</resolution>
 				<bias>0.0005</bias>
 				<cascadingSlices>4</cascadingSlices>
-				<cascadingLambda>2.3</cascadingLambda>
+				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
 			</high>
 			<ultra>
-				<farZ>200</farZ>
-				<resolution>1024</resolution>
+				<farZ>90</farZ>
+				<resolution>2048</resolution>
 				<bias>0.0005</bias>
 				<cascadingSlices>4</cascadingSlices>
-				<cascadingLambda>2.3</cascadingLambda>
+				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
 			</ultra>
 		</shadowSettings>
@@ -59,6 +59,16 @@
 	<worldComponents>
 		<item type="traktor.ai.NavMeshComponentData">
 			<navMesh>{03ED7DDA-4F01-384B-9FF8-31DCDC775D3F}</navMesh>
+		</item>
+		<item type="traktor.world.FogComponentData" version="2">
+			<mediumColor>0.25098, 0.294118, 0.145098, 1</mediumColor>
+			<mediumDensity>0.02</mediumDensity>
+			<distanceFogEnable>true</distanceFogEnable>
+			<fogDistance>0</fogDistance>
+			<fogElevation>35</fogElevation>
+			<volumetricFogEnable>false</volumetricFogEnable>
+			<maxDistance>100</maxDistance>
+			<maxScattering>10</maxScattering>
 		</item>
 	</worldComponents>
 	<layers>
@@ -87,14 +97,14 @@
 							</state>
 							<transform>
 								<translation>0, 0, 0, 0</translation>
-								<rotation>0.169727, -0.757474, 0.591804, 0.217241</rotation>
+								<rotation>0.140133, -0.8278, 0.488616, 0.237411</rotation>
 							</transform>
 							<components>
 								<item type="traktor.weather.SkyComponentData" version="8">
 									<shader>{4CF929EB-3A8B-C340-AA0A-0C5C80625BF1}</shader>
 									<texture>{00000000-0000-0000-0000-000000000000}</texture>
-									<intensity>0.8</intensity>
-									<saturation>0.72</saturation>
+									<intensity>1</intensity>
+									<saturation>1</saturation>
 									<skyOverHorizon>0.22, 0.2, 0.34, 1</skyOverHorizon>
 									<skyUnderHorizon>0.24, 0.11, 0.09, 0</skyUnderHorizon>
 									<clouds>true</clouds>
@@ -165,7 +175,7 @@
 			<state>
 				<visible>true</visible>
 				<dynamic>false</dynamic>
-				<locked>false</locked>
+				<locked>true</locked>
 			</state>
 			<transform>
 				<translation>0, 0, 0, 0</translation>
@@ -180,11 +190,11 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>true</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -201,7 +211,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>true</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>8.695, 22.766001, 8.485, 0</translation>
@@ -216,7 +226,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>0, 0, 0, 0</translation>
@@ -275,7 +285,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>true</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>0, 0, 0, 0</translation>
@@ -295,11 +305,11 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>12.29, 10.914776, -26.2631, 0</translation>
-								<rotation>-0.00828, -0.827929, 0.005608, 0.560744</rotation>
+								<translation>8.453646, 10.914776, -28.938339, 0</translation>
+								<rotation>0.009997, 0.999645, 0.000247, 0.024678</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -336,7 +346,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>9.1018, 23.820805, 29.017799, 0</translation>
@@ -377,7 +387,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-19.7321, 23.811398, 28.067101, 0</translation>
@@ -418,7 +428,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-37.774502, 23.648058, 1.5622, 0</translation>
@@ -459,7 +469,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-26.290596, 10.978554, -32.021622, 0</translation>
@@ -500,11 +510,52 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>19.753868, 10.2307, -27.713211, 0</translation>
-								<rotation>0, -0.12515, 0, 0.992138</rotation>
+								<translation>17.239019, 10.2307, -32.990418, 0</translation>
+								<rotation>0, 0.064476, 0, 0.997919</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
+								</item>
+								<item type="traktor.physics.RigidBodyComponentData" version="1">
+									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+											<localTransform>
+												<translation>0, 0, 0, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</localTransform>
+											<collisionGroup>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionGroup>
+											<collisionMask>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionMask>
+											<material>0</material>
+											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
+										</shape>
+										<friction>0.75</friction>
+										<restitution>0</restitution>
+										<kinematic>false</kinematic>
+									</bodyDesc>
+									<eventCollide/>
+									<transformFilter>0</transformFilter>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{3CB9E69B-EDEC-41D7-B302-52BCBA07C536}</id>
+							<name>Fence</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>true</locked>
+							</state>
+							<transform>
+								<translation>17.434082, 10.2307, -26.782002, 0</translation>
+								<rotation>0, -0.045463, 0, 0.998966</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -541,10 +592,10 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>11.991875, 10.2479, -34.116516, 0</translation>
+								<translation>3.449295, 10.2479, -35.738865, 0</translation>
 								<rotation>0, 0.572812, 0, 0.819687</rotation>
 							</transform>
 							<components>
@@ -582,11 +633,11 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>17.545546, 10.2831, -32.601975, 0</translation>
-								<rotation>0, -0.852976, 0, 0.52195</rotation>
+								<translation>13.719394, 10.2831, -35.466942, 0</translation>
+								<rotation>0, -0.590486, 0, 0.807048</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -623,7 +674,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>15.034092, 22.925699, 31.854969, 0</translation>
@@ -664,7 +715,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>11.047351, 23.102301, 36.559475, 0</translation>
@@ -705,7 +756,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>15.420091, 22.899, 27.10824, 0</translation>
@@ -746,7 +797,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>10.84101, 22.795, 23.196987, 0</translation>
@@ -787,7 +838,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>6.956179, 23.188499, 37.06171, 0</translation>
@@ -828,7 +879,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>2.49158, 23.1457, 32.543552, 0</translation>
@@ -869,7 +920,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-25.329914, 23.191601, 32.352272, 0</translation>
@@ -910,7 +961,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-26.592732, 23.1847, 25.966572, 0</translation>
@@ -951,7 +1002,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-21.051441, 23.181299, 34.589024, 0</translation>
@@ -992,7 +1043,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-15.17632, 23.191601, 32.99921, 0</translation>
@@ -1033,7 +1084,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-36.422825, 23.0965, 9.550243, 0</translation>
@@ -1074,7 +1125,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-32.22086, 22.896799, 7.447272, 0</translation>
@@ -1115,7 +1166,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-45.881268, 23.069, 1.104316, 0</translation>
@@ -1156,7 +1207,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-42.329552, 23.1588, 6.938447, 0</translation>
@@ -1197,7 +1248,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-21.458611, 10.8025, -28.493433, 0</translation>
@@ -1238,7 +1289,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-35.953846, 10.2636, -33.097736, 0</translation>
@@ -1279,11 +1330,11 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>-33.641262, 10.6442, -27.911022, 0</translation>
-								<rotation>0, -0.952747, 0, 0.303764</rotation>
+								<translation>-31.822008, 10.6442, -27.96496, 0</translation>
+								<rotation>0, -0.887622, 0, 0.460573</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1320,7 +1371,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>-19.659281, 10.3125, -33.220284, 0</translation>
@@ -1361,7 +1412,7 @@
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>false</locked>
+								<locked>true</locked>
 							</state>
 							<transform>
 								<translation>6.168223, 22.226257, 7.065803, 0</translation>
@@ -1369,6 +1420,21 @@
 							</transform>
 							<components/>
 							<entityData>{958E4557-7765-41AD-871E-043B1A381B47}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0A104F35-6AB2-410E-B865-C4C8EE817BBA}</id>
+							<name>Well</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-11.732744, 23.707233, 15.93699, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{BD4C4C71-9966-4C1F-B051-9EAC64C081B3}</entityData>
 						</item>
 					</entityData>
 				</item>
@@ -1968,8 +2034,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>-15.0575, 16.481922, -21.1597, 0</translation>
-								<rotation>-0.362191, -0.308219, 0.006077, 0.879649</rotation>
+								<translation>-40.154083, 17.810493, -10.067793, 0</translation>
+								<rotation>0.040185, -0.126422, 0.078344, 0.988061</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -2103,8 +2169,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>1.1761, 10.238544, -46.930302, 0</translation>
-								<rotation>-0.002308, -0.955031, 0.007435, 0.296404</rotation>
+								<translation>0.943318, 9.730736, -48.043732, 0</translation>
+								<rotation>-0.002106, -0.842025, 0.003288, 0.539424</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -2418,8 +2484,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>-69.305603, 34.395248, 20.867399, 0</translation>
-								<rotation>-0.282324, 0.54753, -0.469303, 0.63266</rotation>
+								<translation>-69.305603, 30.897375, 17.248081, 0</translation>
+								<rotation>-0.001763, 0.300434, -0.001142, 0.9538</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -2628,8 +2694,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>9.2023, 10.367669, -39.928902, 0</translation>
-								<rotation>-0.008091, -0.660542, -0.003251, 0.750739</rotation>
+								<translation>10.724542, 10.07045, -42.280128, 0</translation>
+								<rotation>0.036634, 0.930268, 0.038026, 0.363061</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -3528,8 +3594,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>4.9218, 10.351059, -36.52, 0</translation>
-								<rotation>0.007412, 0.310551, 0.002381, 0.950525</rotation>
+								<translation>5.085618, 9.859024, -43.617813, 0</translation>
+								<rotation>0.003437, 0.716548, 0.002845, 0.697524</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -10677,7 +10743,7 @@
 							</state>
 							<transform>
 								<translation>39.375, 47.159752, 84.217003, 0</translation>
-								<rotation>0.043031, 0, 0.24456, 0.968679</rotation>
+								<rotation>0.043031, -0, 0.24456, 0.968679</rotation>
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
@@ -10875,8 +10941,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-18.7911, 11.7939, -26.524, 0</translation>
-								<rotation>-0.119219, 0.877612, -0.436066, 0.159469</rotation>
+								<translation>-18.082191, 11.712479, -35.339893, 0</translation>
+								<rotation>-0.057584, -0.899635, 0.206191, 0.380561</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -10891,7 +10957,7 @@
 							</state>
 							<transform>
 								<translation>0.829858, 11.698442, -31.69632, 0</translation>
-								<rotation>0.007811, 0, -0.007811, 0.999939</rotation>
+								<rotation>0.007811, -0, -0.007811, 0.999939</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -10920,8 +10986,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-39.536099, 12.7452, -20.439199, 0</translation>
-								<rotation>-0.482145, 0.600311, -0.273322, 0.576591</rotation>
+								<translation>-40.476223, 12.858597, -29.376221, 0</translation>
+								<rotation>-0.026989, 0.439645, -0.005235, 0.897751</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -10995,8 +11061,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>14.7698, 13.4347, -17.4769, 0</translation>
-								<rotation>-0.31015, -0.795492, 0.290161, 0.43221</rotation>
+								<translation>20.278763, 13.104233, -28.777586, 0</translation>
+								<rotation>-0.000612, 0.981433, 0.011121, 0.191482</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11085,8 +11151,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>2.6767, 12.639, -22.526899, 0</translation>
-								<rotation>-0.285671, -0.814111, 0.315677, 0.394922</rotation>
+								<translation>2.120537, 12.306831, -29.107275, 0</translation>
+								<rotation>-0.002647, 0.932158, -0.024854, 0.361187</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11115,8 +11181,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-19.8934, 14.7478, -23.1661, 0</translation>
-								<rotation>-0.358743, 0.73268, -0.401423, 0.416345</rotation>
+								<translation>-25.42877, 16.287148, -11.492566, 0</translation>
+								<rotation>-0.028987, -0.678661, 0.010281, 0.733807</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11132,6 +11198,36 @@
 							<transform>
 								<translation>-17.540701, 10.6651, -37.3349, 0</translation>
 								<rotation>0.007986, 0.904788, 0.000154, 0.425787</rotation>
+							</transform>
+							<components/>
+							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0C0C64CB-010A-4305-88DA-3C841886996F}</id>
+							<name>Log</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-24.361271, 10.365051, -45.90126, 0</translation>
+								<rotation>0.001507, 0.126801, -0.002273, 0.991924</rotation>
+							</transform>
+							<components/>
+							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2C718FC4-9116-434F-8678-25E5CA96CCCB}</id>
+							<name>Log</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-21.695868, 10.387131, -47.71006, 0</translation>
+								<rotation>-0.006201, 0.377786, -0.005481, 0.925856</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11196,6 +11292,51 @@
 							<transform>
 								<translation>9.83, 23.1155, 47.894199, 0</translation>
 								<rotation>-0.062388, -0.410996, -0.029703, 0.909015</rotation>
+							</transform>
+							<components/>
+							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{20105F33-C94B-457F-812B-92F7AD988180}</id>
+							<name>Boulder Large</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0.451973, 22.540821, 76.822784, 0</translation>
+								<rotation>-0.016264, 0.412691, 0.025514, 0.910369</rotation>
+							</transform>
+							<components/>
+							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{85E8A7BA-FE6F-43EF-A68C-E9B2A6E16465}</id>
+							<name>Boulder Large</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-20.400761, 22.796177, 86.692444, 0</translation>
+								<rotation>-0.028217, -0.291465, 0.023416, 0.955879</rotation>
+							</transform>
+							<components/>
+							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8CF5A963-14AD-466F-A62B-888057B8F8E8}</id>
+							<name>Boulder Large</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-41.28656, 22.915386, 66.601769, 0</translation>
+								<rotation>-0.13392, -0.490649, 0.035962, 0.860253</rotation>
 							</transform>
 							<components/>
 							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
@@ -11329,8 +11470,38 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2.2256, 10.3501, -26.4858, 0</translation>
-								<rotation>0.014161, -0.565676, 0.003576, 0.824498</rotation>
+								<translation>-4.557466, 18.891735, -26.412832, 0</translation>
+								<rotation>-0.018008, 0.822784, 0.047048, 0.566117</rotation>
+							</transform>
+							<components/>
+							<entityData>{93FABD6D-E5DA-477F-B854-626F3CE77995}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{732E8694-D727-4CB2-8DD5-4FC0198F46B3}</id>
+							<name>Boulder Small</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-0.560628, 20.218563, -8.553462, 0</translation>
+								<rotation>-0.130804, 0.296136, -0.138469, 0.93596</rotation>
+							</transform>
+							<components/>
+							<entityData>{93FABD6D-E5DA-477F-B854-626F3CE77995}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CE80408F-CF8C-4539-B72E-FEE0FD8B6A34}</id>
+							<name>Boulder Small</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-1.143815, 20.139336, -9.079832, 0</translation>
+								<rotation>-0.099344, -0.972588, 0.151913, 0.145349</rotation>
 							</transform>
 							<components/>
 							<entityData>{93FABD6D-E5DA-477F-B854-626F3CE77995}</entityData>
@@ -11465,7 +11636,7 @@
 							</state>
 							<transform>
 								<translation>-26.340519, 21.877506, -1.379575, 0</translation>
-								<rotation>0.023127, 0.109742, 0.075037, -0.990854</rotation>
+								<rotation>-0.023127, -0.109742, -0.075037, 0.990854</rotation>
 							</transform>
 							<components/>
 							<entityData>{93FABD6D-E5DA-477F-B854-626F3CE77995}</entityData>
@@ -11480,7 +11651,7 @@
 							</state>
 							<transform>
 								<translation>-25.469288, 21.877506, -0.687512, 0</translation>
-								<rotation>0.018801, 0.101131, 0.057203, -0.993049</rotation>
+								<rotation>-0.018801, -0.101131, -0.057203, 0.993049</rotation>
 							</transform>
 							<components/>
 							<entityData>{93FABD6D-E5DA-477F-B854-626F3CE77995}</entityData>
@@ -11636,6 +11807,51 @@
 							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{F724E5B6-1BD7-4F91-906F-9FCD68A86817}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>1.780808, 9.548678, -42.874825, 0</translation>
+								<rotation>-0.011687, 0.969822, 0.010785, 0.243296</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C0DF0592-3425-46F6-8BA7-ACE8BA98AA7F}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-2.330898, 9.542697, -46.516792, 0</translation>
+								<rotation>-0.022956, 0.345904, -0.009988, 0.937936</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0D82A249-2370-46D6-9EE6-3AC556DB6B2B}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-17.199677, 9.433291, -45.576748, 0</translation>
+								<rotation>-0.015195, -0.261599, -0.010553, 0.964999</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{10F06D53-E82C-42D5-836E-43776A0FBE9D}</id>
 							<name>Boulder Medium</name>
 							<state>
@@ -11747,9 +11963,9 @@
 		</item>
 		<item type="traktor.shape.BakeOperationData">
 			<enableLightmaps>false</enableLightmaps>
-			<primarySampleCount>10</primarySampleCount>
-			<secondarySampleCount>5</secondarySampleCount>
-			<shadowSampleCount>2</shadowSampleCount>
+			<primarySampleCount>35</primarySampleCount>
+			<secondarySampleCount>20</secondarySampleCount>
+			<shadowSampleCount>4</shadowSampleCount>
 			<maxPathDistance>10</maxPathDistance>
 			<pointLightShadowRadius>0.1</pointLightShadowRadius>
 			<lumelDensity>16</lumelDensity>

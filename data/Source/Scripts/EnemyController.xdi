@@ -45,7 +45,7 @@ function EnemyController:new()
 	self._state = "patrol"    -- "patrol" | "attack"
 	self._lostTimer = 0.0     -- remaining ATTACK memory after losing sight (s)
 	self._patrolTarget = nil  -- current wander destination (Vector4)
-	self._sightRange = 14.0   -- furthest the player can be spotted (m)
+	self._sightRange = 20.0   -- furthest the player can be spotted (m)
 	self._attackMemory = 2.5  -- keep chasing this long after losing sight (s)
 	self._patrolSpeed = 0.55
 	self._attackSpeed = 1.2

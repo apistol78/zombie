@@ -34,6 +34,9 @@ import(traktor)
 
 EnemyController = EnemyController or class("EnemyController", traktor.world.ScriptComponent)
 
+local COLLISION_DEFAULT = 0x00000001
+local COLLISION_INTERACTABLE = 0x00000002
+
 function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
@@ -142,45 +145,43 @@ function EnemyController:update(context, totalTime, deltaTime)
 
 	local enemyPos = enemy.transform.translation
 	local playerPos = self._player.transform.translation
+	local dp = playerPos - enemyPos
+	local pdist = dp.length
 
-	-- ---- Perception: is the player spotted? (in range + clear line of sight) ----
-	local dpx = playerPos.x - enemyPos.x
-	local dpy = playerPos.y - enemyPos.y
-	local dpz = playerPos.z - enemyPos.z
-	local pdist = math.sqrt(dpx * dpx + dpy * dpy + dpz * dpz)
-	local spotted = false
-	if pdist < self._sightRange then
-		local pm = context.environment.physics.physicsManager
-		if pm ~= nil then
+	-- Do not check perception every update since it involves ray queries.
+	if math.random() < 0.25 then
+		-- ---- Perception: is the player spotted? (in range + clear line of sight) ----
+		local spotted = false
+		if pdist < self._sightRange then
+			local pm < const > = context.environment.physics.physicsManager
+	
 			-- Ray from the enemy's eye to the player's chest. The player's own capsule
 			-- sits at ~pdist, so a hit well before that means a wall blocks the view.
-			local ex, ey, ez = enemyPos.x, enemyPos.y + 1.6, enemyPos.z
-			local tx, ty, tz = playerPos.x, playerPos.y + 1.2, playerPos.z
-			local rx, ry, rz = tx - ex, ty - ey, tz - ez
-			local rl = math.sqrt(rx * rx + ry * ry + rz * rz)
+			local e = enemyPos + Vector4(0.0, 1.6, 0.0)
+			local t = playerPos + Vector4(0.0, 1.2, 0.0)
+			local r = t - e
+			local rl = r.length
 			if rl > 0.01 then
-				local hit = pm:queryRay(Vector4(ex, ey, ez, 1.0), Vector4(rx / rl, ry / rl, rz / rl, 0.0), rl, traktor.physics.QueryFilter(), true)
+				local hit = pm:queryRay(e, r / rl, rl, physics.QueryFilter(COLLISION_DEFAULT), true)
 				if hit == nil or hit.distance >= rl - 0.8 then
 					spotted = true
 				end
 			end
-		else
-			spotted = true   -- no physics published yet: fall back to range-only
 		end
-	end
-
-	-- ---- State transitions ----
-	if spotted then
-		self._lostTimer = self._attackMemory
-		if self._state ~= "attack" then
-			self._state = "attack"
-		end
-	elseif self._state == "attack" then
-		self._lostTimer = self._lostTimer - deltaTime
-		if self._lostTimer <= 0.0 then
-			self._state = "patrol"
-			self._patrolTarget = nil
-			self._repathTimer = 0.0
+	
+		-- ---- State transitions ----
+		if spotted then
+			self._lostTimer = self._attackMemory
+			if self._state ~= "attack" then
+				self._state = "attack"
+			end
+		elseif self._state == "attack" then
+			self._lostTimer = self._lostTimer - deltaTime
+			if self._lostTimer <= 0.0 then
+				self._state = "patrol"
+				self._patrolTarget = nil
+				self._repathTimer = 0.0
+			end
 		end
 	end
 

@@ -25,7 +25,7 @@
 			<medium>
 				<farZ>90</farZ>
 				<resolution>512</resolution>
-				<bias>0.0005</bias>
+				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -33,7 +33,7 @@
 			<high>
 				<farZ>90</farZ>
 				<resolution>1024</resolution>
-				<bias>0.0005</bias>
+				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -41,7 +41,7 @@
 			<ultra>
 				<farZ>90</farZ>
 				<resolution>2048</resolution>
-				<bias>0.0005</bias>
+				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -194,7 +194,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -214,8 +214,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>8.695, 22.766001, 8.485, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>8.945933, 24.139828, 28.901915, 0</translation>
+								<rotation>0, -0.912764, 0, 0.408488</rotation>
 							</transform>
 							<components/>
 							<entityData>{BCF74021-58D3-B24A-8E73-BEC797740D24}</entityData>
@@ -1435,6 +1435,36 @@
 							</transform>
 							<components/>
 							<entityData>{BD4C4C71-9966-4C1F-B051-9EAC64C081B3}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{ED40D9BB-0909-4756-9B43-8093120D0CC3}</id>
+							<name>Table</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>9.412939, 24.554863, 31.237917, 0</translation>
+								<rotation>0, -0.361615, 0, 0.932327</rotation>
+							</transform>
+							<components/>
+							<entityData>{B893E965-0ABB-4257-B322-1738A05D0A43}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{82E4F5B2-5BBB-4389-B495-530179E26EC9}</id>
+							<name>Table</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-22.900705, 23.952278, 18.467165, 0</translation>
+								<rotation>0, -0.361615, 0, 0.932328</rotation>
+							</transform>
+							<components/>
+							<entityData>{B893E965-0ABB-4257-B322-1738A05D0A43}</entityData>
 						</item>
 					</entityData>
 				</item>
@@ -7619,7 +7649,7 @@
 							</state>
 							<transform>
 								<translation>-13.709682, 23.228737, 23.233747, 0</translation>
-								<rotation>0.045462, 0.880974, -0.051543, -0.468147</rotation>
+								<rotation>-0.045462, -0.880974, 0.051543, 0.468147</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -7679,7 +7709,7 @@
 							</state>
 							<transform>
 								<translation>-10.569475, 23.56723, 19.223833, 0</translation>
-								<rotation>0.001167, 0.797678, -0.008528, -0.603023</rotation>
+								<rotation>-0.001167, -0.797678, 0.008528, 0.603023</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -7844,7 +7874,7 @@
 							</state>
 							<transform>
 								<translation>0.305111, 23.158249, 28.930233, 0</translation>
-								<rotation>0.005656, 0.530759, 0.002387, -0.847501</rotation>
+								<rotation>-0.005656, -0.530759, -0.002387, 0.847501</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -7859,7 +7889,7 @@
 							</state>
 							<transform>
 								<translation>1.076798, 23.522316, 30.183117, 0</translation>
-								<rotation>-0.013814, 0.814521, -0.097003, -0.5718</rotation>
+								<rotation>0.013814, -0.814521, 0.097003, 0.5718</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -10818,7 +10848,7 @@
 							</state>
 							<transform>
 								<translation>39.375, 47.159752, 84.217003, 0</translation>
-								<rotation>0.043031, 0, 0.24456, 0.968679</rotation>
+								<rotation>0.043031, -0, 0.24456, 0.968679</rotation>
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
@@ -11017,7 +11047,7 @@
 							</state>
 							<transform>
 								<translation>-18.077045, 10.363716, -34.230392, 0</translation>
-								<rotation>0.002218, 0.445484, -0.001104, -0.895287</rotation>
+								<rotation>-0.002218, -0.445484, 0.001104, 0.895287</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11032,7 +11062,7 @@
 							</state>
 							<transform>
 								<translation>0.829858, 11.698442, -31.69632, 0</translation>
-								<rotation>0.007811, 0, -0.007811, 0.999939</rotation>
+								<rotation>0.007811, -0, -0.007811, 0.999939</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11107,7 +11137,7 @@
 							</state>
 							<transform>
 								<translation>-22.36039, 22.051155, -5.872493, 0</translation>
-								<rotation>-0.051699, 0.996086, -0.058476, -0.041486</rotation>
+								<rotation>0.051699, -0.996086, 0.058476, 0.041486</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11852,6 +11882,36 @@
 							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D08823CB-EB69-4762-85D0-B75603B99B7F}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>5.083044, 22.032848, 13.809348, 0</translation>
+								<rotation>0.017085, 0.345938, -0.011857, 0.938027</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5D07468A-58D0-4A5A-872C-FA51CDA206D8}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>4.564508, 22.26965, 15.793285, 0</translation>
+								<rotation>0.003754, -0.261509, -0.031805, 0.96467</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{BA17DE03-0000-4000-8000-00000000001A}</id>
 							<name>Boulder Medium</name>
 							<state>
@@ -12038,18 +12098,18 @@
 		</item>
 		<item type="traktor.shape.BakeOperationData">
 			<enableLightmaps>false</enableLightmaps>
-			<primarySampleCount>35</primarySampleCount>
+			<primarySampleCount>45</primarySampleCount>
 			<secondarySampleCount>20</secondarySampleCount>
-			<shadowSampleCount>4</shadowSampleCount>
-			<maxPathDistance>10</maxPathDistance>
+			<shadowSampleCount>60</shadowSampleCount>
+			<maxPathDistance>20</maxPathDistance>
 			<pointLightShadowRadius>0.1</pointLightShadowRadius>
 			<lumelDensity>16</lumelDensity>
 			<irradianceGridDensity>0.2, 0.2, 0.2, 0</irradianceGridDensity>
 			<minimumLightMapSize>16</minimumLightMapSize>
 			<maximumLightMapSize>1024</maximumLightMapSize>
 			<enableDenoise>true</enableDenoise>
-			<analyticalLightAttenuation>1.5</analyticalLightAttenuation>
-			<ambientOcclusionFactor>1</ambientOcclusionFactor>
+			<analyticalLightAttenuation>1</analyticalLightAttenuation>
+			<ambientOcclusionFactor>0</ambientOcclusionFactor>
 		</item>
 	</operationData>
 </object>

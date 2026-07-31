@@ -246,7 +246,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if (needNew or self._repathTimer <= 0.0) and self._pathResult == nil then
 			self._repathTimer = 1.5
 			if needNew then
-				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 12.0)
+				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 2.0)
 			end
 			self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
 		end

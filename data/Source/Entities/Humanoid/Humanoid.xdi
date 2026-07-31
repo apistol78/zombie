@@ -14,12 +14,11 @@
 	<components>
 		<item type="traktor.animation.SkeletonComponentData">
 			<skeleton>{1E9C2788-505E-6C43-BB3D-527228721118}</skeleton>
-			<poseController type="traktor.animation.AnimationGraphPoseControllerData">
+			<poseController type="traktor.animation.AnimationGraphPoseControllerData" version="1">
 				<stateGraph>{8541E05B-5C71-8248-A56A-1593784C2CFF}</stateGraph>
-				<transformTime/>
 			</poseController>
 		</item>
-		<item type="traktor.physics.CharacterComponentData" version="4">
+		<item type="traktor.physics.CharacterComponentData" version="5">
 			<collisionGroup>
 				<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
 			</collisionGroup>
@@ -32,7 +31,8 @@
 			<traceIgnore/>
 			<radius>0.3</radius>
 			<height>1.8</height>
-			<step>0.5</step>
+			<step>0.7</step>
+			<maxSlopeAngle>75</maxSlopeAngle>
 			<jumpImpulse>4.5</jumpImpulse>
 			<maxVelocity>4</maxVelocity>
 			<velocityDamping>1</velocityDamping>

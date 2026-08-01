@@ -15,7 +15,7 @@
 				<quantizeProjection>false</quantizeProjection>
 			</disabled>
 			<low>
-				<farZ>90</farZ>
+				<farZ>50</farZ>
 				<resolution>256</resolution>
 				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
@@ -23,7 +23,7 @@
 				<quantizeProjection>false</quantizeProjection>
 			</low>
 			<medium>
-				<farZ>90</farZ>
+				<farZ>50</farZ>
 				<resolution>512</resolution>
 				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
@@ -31,7 +31,7 @@
 				<quantizeProjection>true</quantizeProjection>
 			</medium>
 			<high>
-				<farZ>90</farZ>
+				<farZ>50</farZ>
 				<resolution>1024</resolution>
 				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
@@ -39,7 +39,7 @@
 				<quantizeProjection>true</quantizeProjection>
 			</high>
 			<ultra>
-				<farZ>90</farZ>
+				<farZ>60</farZ>
 				<resolution>2048</resolution>
 				<bias>0.001</bias>
 				<cascadingSlices>4</cascadingSlices>
@@ -60,15 +60,17 @@
 		<item type="traktor.ai.NavMeshComponentData">
 			<navMesh>{03ED7DDA-4F01-384B-9FF8-31DCDC775D3F}</navMesh>
 		</item>
-		<item type="traktor.world.FogComponentData" version="2">
-			<mediumColor>0.168627, 0.141176, 0.058824, 1</mediumColor>
-			<mediumDensity>0.09</mediumDensity>
+		<item type="traktor.world.FogComponentData" version="4">
+			<mediumColor>0.556863, 0.572549, 0.223529, 1</mediumColor>
+			<mediumDensity>0.05</mediumDensity>
 			<distanceFogEnable>true</distanceFogEnable>
-			<fogDistance>60</fogDistance>
-			<fogElevation>50</fogElevation>
+			<fogDistance>30</fogDistance>
+			<fogElevation>45</fogElevation>
 			<volumetricFogEnable>true</volumetricFogEnable>
-			<maxDistance>30</maxDistance>
-			<maxScattering>1</maxScattering>
+			<maxDistance>40</maxDistance>
+			<phaseForward>0.8</phaseForward>
+			<phaseBackward>-0.2</phaseBackward>
+			<phaseBlend>0.5</phaseBlend>
 		</item>
 	</worldComponents>
 	<layers>
@@ -103,7 +105,7 @@
 								<item type="traktor.weather.SkyComponentData" version="8">
 									<shader>{4CF929EB-3A8B-C340-AA0A-0C5C80625BF1}</shader>
 									<texture>{00000000-0000-0000-0000-000000000000}</texture>
-									<intensity>1</intensity>
+									<intensity>0.2</intensity>
 									<saturation>1</saturation>
 									<skyOverHorizon>0.22, 0.2, 0.34, 1</skyOverHorizon>
 									<skyUnderHorizon>0.24, 0.11, 0.09, 0</skyUnderHorizon>
@@ -114,7 +116,7 @@
 								<item type="traktor.world.LightComponentData" version="12">
 									<lightType>Directional</lightType>
 									<color>1, 0.58, 0.32, 1</color>
-									<intensity>9</intensity>
+									<intensity>8</intensity>
 									<castShadow>true</castShadow>
 									<nearRange>0</nearRange>
 									<farRange>20</farRange>
@@ -194,7 +196,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -1475,19 +1477,19 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>10.435598, 13.357355, -32.705109, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>8.980443, 14.58567, -32.705109, 0</translation>
+								<rotation>0.389418, 0, 0, 0.921061</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.LightComponentData" version="12">
-									<lightType>Point</lightType>
+									<lightType>Spot</lightType>
 									<color>1, 0.658824, 0.341176, 0</color>
-									<intensity>20</intensity>
-									<castShadow>false</castShadow>
+									<intensity>100</intensity>
+									<castShadow>true</castShadow>
 									<nearRange>0</nearRange>
-									<farRange>8</farRange>
+									<farRange>10</farRange>
 									<radius>1.570796</radius>
-									<flickerAmount>0.3</flickerAmount>
+									<flickerAmount>0.05</flickerAmount>
 									<flickerFilter>0.2</flickerFilter>
 									<bakeMode>LbmIndirect</bakeMode>
 								</item>
@@ -10875,7 +10877,7 @@
 							</state>
 							<transform>
 								<translation>39.375, 47.159752, 84.217003, 0</translation>
-								<rotation>0.043031, 0, 0.24456, 0.968679</rotation>
+								<rotation>0.043031, -0, 0.24456, 0.968679</rotation>
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
@@ -11074,7 +11076,7 @@
 							</state>
 							<transform>
 								<translation>-18.077045, 10.363716, -34.230392, 0</translation>
-								<rotation>-0.002218, -0.445484, 0.001104, 0.895287</rotation>
+								<rotation>-0.002218, -0.445484, 0.001104, 0.895286</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -11089,7 +11091,7 @@
 							</state>
 							<transform>
 								<translation>0.829858, 11.698442, -31.69632, 0</translation>
-								<rotation>0.007811, 0, -0.007811, 0.999939</rotation>
+								<rotation>0.007811, -0, -0.007811, 0.999939</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -12135,7 +12137,7 @@
 			<minimumLightMapSize>16</minimumLightMapSize>
 			<maximumLightMapSize>1024</maximumLightMapSize>
 			<enableDenoise>true</enableDenoise>
-			<analyticalLightAttenuation>1</analyticalLightAttenuation>
+			<analyticalLightAttenuation>0.2</analyticalLightAttenuation>
 			<ambientOcclusionFactor>0</ambientOcclusionFactor>
 		</item>
 	</operationData>

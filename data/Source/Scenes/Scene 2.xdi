@@ -2,9 +2,9 @@
 <object type="traktor.scene.SceneAsset" version="10">
 	<worldRenderSettings type="traktor.world.WorldRenderSettings" version="42">
 		<viewNearZ>0.1</viewNearZ>
-		<viewFarZ>90</viewFarZ>
+		<viewFarZ>100</viewFarZ>
 		<exposureMode>Adaptive</exposureMode>
-		<exposure>-0.05</exposure>
+		<exposure>0</exposure>
 		<shadowSettings>
 			<disabled>
 				<farZ>0</farZ>
@@ -54,21 +54,21 @@
 			<high>{664AD753-7DA8-3D49-8ED8-4CE4BD56ED6A}</high>
 			<ultra>{664AD753-7DA8-3D49-8ED8-4CE4BD56ED6A}</ultra>
 		</imageProcess>
-		<colorGrading>{692F86A1-8F88-944D-BA47-4750217C8499}</colorGrading>
+		<colorGrading>{00000000-0000-0000-0000-000000000000}</colorGrading>
 	</worldRenderSettings>
 	<worldComponents>
 		<item type="traktor.ai.NavMeshComponentData">
 			<navMesh>{03ED7DDA-4F01-384B-9FF8-31DCDC775D3F}</navMesh>
 		</item>
 		<item type="traktor.world.FogComponentData" version="2">
-			<mediumColor>0.25098, 0.294118, 0.145098, 1</mediumColor>
-			<mediumDensity>0.02</mediumDensity>
+			<mediumColor>0.168627, 0.141176, 0.058824, 1</mediumColor>
+			<mediumDensity>0.09</mediumDensity>
 			<distanceFogEnable>true</distanceFogEnable>
-			<fogDistance>0</fogDistance>
-			<fogElevation>35</fogElevation>
-			<volumetricFogEnable>false</volumetricFogEnable>
-			<maxDistance>100</maxDistance>
-			<maxScattering>10</maxScattering>
+			<fogDistance>60</fogDistance>
+			<fogElevation>50</fogElevation>
+			<volumetricFogEnable>true</volumetricFogEnable>
+			<maxDistance>30</maxDistance>
+			<maxScattering>1</maxScattering>
 		</item>
 	</worldComponents>
 	<layers>
@@ -114,7 +114,7 @@
 								<item type="traktor.world.LightComponentData" version="12">
 									<lightType>Directional</lightType>
 									<color>1, 0.58, 0.32, 1</color>
-									<intensity>8</intensity>
+									<intensity>9</intensity>
 									<castShadow>true</castShadow>
 									<nearRange>0</nearRange>
 									<farRange>20</farRange>
@@ -194,7 +194,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, -0</rotation>
+								<rotation>0, 0.990216, -0.139543, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -1465,6 +1465,33 @@
 							</transform>
 							<components/>
 							<entityData>{B893E965-0ABB-4257-B322-1738A05D0A43}</entityData>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{4835F4E9-3395-40F9-8712-C39559B20AF9}</id>
+							<name/>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>10.435598, 13.357355, -32.705109, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="12">
+									<lightType>Point</lightType>
+									<color>1, 0.658824, 0.341176, 0</color>
+									<intensity>20</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>8</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.3</flickerAmount>
+									<flickerFilter>0.2</flickerFilter>
+									<bakeMode>LbmIndirect</bakeMode>
+								</item>
+							</components>
 						</item>
 					</entityData>
 				</item>
@@ -10848,7 +10875,7 @@
 							</state>
 							<transform>
 								<translation>39.375, 47.159752, 84.217003, 0</translation>
-								<rotation>0.043031, -0, 0.24456, 0.968679</rotation>
+								<rotation>0.043031, 0, 0.24456, 0.968679</rotation>
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
@@ -11062,7 +11089,7 @@
 							</state>
 							<transform>
 								<translation>0.829858, 11.698442, -31.69632, 0</translation>
-								<rotation>0.007811, -0, -0.007811, 0.999939</rotation>
+								<rotation>0.007811, 0, -0.007811, 0.999939</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>

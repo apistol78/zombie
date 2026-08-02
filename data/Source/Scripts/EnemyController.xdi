@@ -185,13 +185,6 @@ function EnemyController:update(context, totalTime, deltaTime)
 		end
 	end
 
-	-- Report this frame's mode to the Stage (context) so it can tally attacking
-	-- vs patrolling enemies for the HUD. totalTime tags the frame so the tally
-	-- knows when to roll over.
-	if context.reportEnemyState ~= nil then
-		context:reportEnemyState(totalTime, self._state)
-	end
-
 	local speed = self._patrolSpeed
 	if self._state == "attack" then
 		speed = self._attackSpeed

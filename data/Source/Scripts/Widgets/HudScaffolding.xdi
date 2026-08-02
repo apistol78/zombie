@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{218D113A-66DC-9049-8424-701FF60F2BC4}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
+#using \{04146358-42A5-463F-9AEC-380D3C1C7F95}
+
+import(traktor)
+
+-- HudScaffolding
+--
+-- Test bed for the custom HUD widgets, in the shape UiKit's own examples use
+-- (System/Examples/UiKit): open the traktor.uikit.Scaffolding instance
+-- "Scripts/Widgets/HudTest" in the editor and this runs live, rebuilding
+-- itself whenever one of the scripts or the art is saved.
+--
+-- The top row is driven by a scripted loop -- repeated hits down to nearly
+-- dead, a pause on empty, then a full heal, with a treasure collected every
+-- couple of seconds -- so every animation path (damage lag, hit flash,
+-- heartbeat, critical rim, collect pop, shimmer) is exercised. The rows below
+-- are held at fixed values to check the colour ramp and the critical state.
+
+HudScaffolding = HudScaffolding or class("HudScaffolding", Scaffolding)
+
+local SAMPLES < const > = { 1.0, 0.62, 0.34, 0.17, 0.0 }
+
+-- Both the widget art and UiKit itself; the widgets look up "MC_HealthBar" /
+-- "MC_TreasureCounter" in the first, Static and Panel come from the second.
+function HudScaffolding:getResourceKits()
+	return {
+		"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
+		"\{5ABEAE05-EB26-934F-932F-7F3C7C582383}"
+	}
+end
+
+function HudScaffolding:setup(frame)
+	self._widgets = {}
+	self._health = 1.0
+	self._found = 0
+	self._hitTimer = 1.5
+	self._popTimer = 2.0
+
+	-- Dark backdrop, roughly the value the HUD sits against in game.
+	local panel < const > = Panel(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 14))
+	panel:setColor(Color4f(0.13, 0.16, 0.12, 1.0))
+
+	self._live, self._liveTreasure = self:_row(panel, "live")
+	for _, v in ipairs(SAMPLES) do
+		local bar, treasure = self:_row(panel, string.format("%d%%", math.floor(v * 100 + 0.5)))
+		bar:setValue(v)
+		treasure:setCount(math.floor(v * 10), 10)
+	end
+end
+
+function HudScaffolding:update()
+	Scaffolding.update(self)
+
+	local dt < const > = 1 / 60
+
+	-- Take a hit every so often; once flat out, heal back to full and repeat.
+	self._hitTimer = self._hitTimer - dt
+	if self._hitTimer <= 0.0 then
+		if self._health > 0.02 then
+			self._health = math.max(0.0, self._health - 0.13)
+			self._hitTimer = 1.2
+		else
+			self._health = 1.0
+			self._hitTimer = 2.5   -- linger on empty first, to show the rim pulse
+		end
+		self._live:setValue(self._health)
+	end
+
+	-- Collect a treasure now and then.
+	self._popTimer = self._popTimer - dt
+	if self._popTimer <= 0.0 then
+		self._popTimer = 2.0
+		self._found = (self._found % 10) + 1
+		self._liveTreasure:setCount(self._found, 10)
+		self._liveTreasure:pop()
+	end
+
+	-- Every widget animates itself, exactly as the stage does in game.
+	for _, w in ipairs(self._widgets) do
+		w:update(dt)
+	end
+end
+
+-- Private
+
+-- One labelled row: caption, health bar, treasure counter.
+function HudScaffolding:_row(parent, caption)
+	local row < const > = Container(parent, TableLayout({ 0, 0, 0 }, { 0 }, 0, 0, 16, 0))
+
+	local label < const > = Static(row, caption)
+	label:setTextColor(Color4f(0.85, 0.87, 0.8, 1.0))
+	label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	label:setVerticalAlign(Widget.ALIGN_CENTER)
+
+	local bar < const > = HealthBar(row)
+	local treasure < const > = TreasureCounter(row)
+
+	table.insert(self._widgets, bar)
+	table.insert(self._widgets, treasure)
+
+	return bar, treasure
+end
+]]></text>
+</object>

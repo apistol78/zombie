@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- TreasureCounter
+--
+-- HUD counter for collected treasure: a faceted gold gem (matching the Pickup
+-- entity's gold material) on a plate, with "found / total" beside it. The art
+-- is the "MC_TreasureCounter" export of the UI/Hud movie, authored in
+-- data/Assets/UI/Hud.svg; the count itself is a plain UiKit Static parented to
+-- this widget, so it uses the same font as the rest of the game's UI.
+--
+-- The plate is a fixed size graphic, so the widget has a fixed preferred size
+-- and the text is centred in the space beside the gem. That keeps the HUD row
+-- from shifting when the tally goes from "9 / 10" to "10 / 10".
+--
+-- As in HealthBar, sprites are scaled about an explicit pivot, because the
+-- importer bakes shapes at absolute movie coordinates.
+
+TreasureCounter = TreasureCounter or class("TreasureCounter", Widget)
+
+TreasureCounter:setStyle("resource", "MC_TreasureCounter")
+
+-- All of these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
+local W < const > = 180
+local H < const > = 56
+local GEM_X < const > = 28
+local GEM_Y < const > = 28
+local SPARK_X < const > = 21
+local SPARK_Y < const > = 21
+local TEXT_X < const > = 50
+local TEXT_W < const > = 120
+
+local C_TEXT < const > = Color4f(1.0, 0.93, 0.72, 1.0)
+local C_OUTLINE < const > = Color4f(0.0, 0.0, 0.0, 1.0)
+
+local function scaleAbout(mc, px, py, s)
+	mc.scale = Vector2(s * 100, s * 100)
+	mc.X = px * (1 - s)
+	mc.Y = py * (1 - s)
+end
+
+function TreasureCounter:new(parent, skin)
+	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
+	assert(mc ~= nil, "TreasureCounter; no such movie resource, is UI/Hud in the resource kits?")
+	self:_initialize(parent, mc)
+end
+
+function TreasureCounter:getPreferredSize()
+	return { width = W, height = H }
+end
+
+function TreasureCounter:place(x, y, width, height)
+	Widget.place(self, x, y, width, height)
+	self:_layoutText()
+end
+
+-- "found" of "total"; total may be nil or 0 while the level is still loading,
+-- in which case just the tally is shown.
+function TreasureCounter:setCount(found, total)
+	if total ~= nil and total > 0 then
+		self._text:setText(tostring(found) .. " / " .. tostring(total))
+	else
+		self._text:setText(tostring(found))
+	end
+	-- Re-centre: the string just changed width, and nothing else will place it
+	-- again -- this widget's own size is fixed, so no layout is re-run.
+	self:_layoutText()
+	return self
+end
+
+-- Kick the collect animation: the gem jumps and the plate flashes.
+function TreasureCounter:pop()
+	self._pop = 1.0
+	return self
+end
+
+function TreasureCounter:update(dt)
+	-- Collect pop, eased so it snaps out and settles back.
+	if self._pop > 0.0 then
+		self._pop = math.max(0.0, self._pop - dt * 2.4)
+		local k < const > = math.sin(self._pop * math.pi)
+		scaleAbout(self._gem_mc, GEM_X, GEM_Y, 1.0 + 0.45 * k)
+		self._glow_mc.alpha = k * 0.3
+	end
+
+	-- Idle shimmer over the gem.
+	self._shimmer = (self._shimmer + dt * 0.7) % 1.0
+	local g < const > = math.max(0.0, math.sin(self._shimmer * math.pi * 2))
+	self._sparkle_mc.alpha = 0.25 + 0.75 * g * g
+	scaleAbout(self._sparkle_mc, SPARK_X, SPARK_Y, 0.7 + 0.5 * g)
+end
+
+-- Private
+
+function TreasureCounter:_initialize(parent, mc)
+	Widget._initialize(self, parent, mc)
+
+	self._halign = Widget.ALIGN_CENTER
+	self._valign = Widget.ALIGN_CENTER
+
+	self._pop = 0.0
+	self._shimmer = 0.0
+
+	self._gem_mc = mc:getMember("gem")
+	self._sparkle_mc = mc:getMember("sparkle")
+	self._glow_mc = mc:getMember("glow")
+	assert(self._gem_mc ~= nil, "TreasureCounter; movie resource is missing its parts")
+
+	self._glow_mc.alpha = 0.0
+
+	-- Created after the art so it ends up on top of it.
+	self._text = Static(self, "0")
+	self._text:setTextSize(22)
+	self._text:setTextColor(C_TEXT)
+	self._text:setTextOutlineColor(C_OUTLINE)
+	self._text:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self:_layoutText()
+
+	self:update(0.0)
+end
+
+-- Centre the count in the space the art leaves beside the gem. Nothing lays it
+-- out for us: this is a Widget, not a Container.
+function TreasureCounter:_layoutText()
+	local ts < const > = self._text:getPreferredSize()
+	self._text:place(TEXT_X, (H - ts.height) / 2, TEXT_W, ts.height)
+end
+]]></text>
+</object>

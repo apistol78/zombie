@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- HealthBar
+--
+-- In game health bar. Its art is authored in data/Assets/UI/Hud.svg and
+-- imported as a Spark movie (UI/Hud); this widget instantiates that movie's
+-- "MC_HealthBar" export and animates the named sprites inside it. The movie
+-- has to be listed in the Widget.initialize resource kits of whoever uses the
+-- widget (see Scripts/Main and Scripts/Widgets/HudScaffolding).
+--
+-- Layers in the SVG, back to front, and how each is driven:
+--
+--   shadow  static
+--   warn    red rim proud of the plate; alpha pulses when health is critical
+--   plate   steel plate and the hexagonal heart badge; static
+--   track   recessed channel the fill runs in; static
+--   ghost   damage lag bar; scaled horizontally
+--   fill    the health fill, drawn greyscale; scaled horizontally and tinted
+--   edge    bright head of the fill; translated, never scaled, so it stays crisp
+--   pips    segment dividers, over the fill; static
+--   flash   white overlay; alpha kicked on every hit
+--   heart   heart icon; scaled by the heartbeat
+--
+-- GOTCHA: the SVG importer bakes every shape at absolute movie coordinates, so
+-- a child sprite's origin is the movie's origin, not the art's. Scaling one
+-- pushes it away from that origin -- hence the two helpers below, which
+-- translate back so a chosen pivot stays put.
+
+HealthBar = HealthBar or class("HealthBar", Widget)
+
+HealthBar:setStyle("resource", "MC_HealthBar")
+
+-- All of these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
+local W < const > = 460
+local H < const > = 56
+local TRACK_X < const > = 62
+local TRACK_W < const > = 388
+local EDGE_W < const > = 3
+local BADGE_X < const > = 28
+local BADGE_Y < const > = 28
+
+local NO_SHIFT < const > = Color4f(0.0, 0.0, 0.0, 0.0)
+
+-- Fill tints. The fill art is greyscale so one colour transform recolours the
+-- whole shaded bar.
+local TINT_GOOD < const > = { 0.28, 0.85, 0.26 }
+local TINT_FAIR < const > = { 0.96, 0.72, 0.12 }
+local TINT_POOR < const > = { 0.93, 0.16, 0.12 }
+
+-- Horizontal scale about the vertical line x = px.
+local function scaleX(mc, px, s)
+	mc.xScale = s * 100
+	mc.X = px * (1 - s)
+end
+
+-- Uniform scale about the point (px, py).
+local function scaleAbout(mc, px, py, s)
+	mc.scale = Vector2(s * 100, s * 100)
+	mc.X = px * (1 - s)
+	mc.Y = py * (1 - s)
+end
+
+-- Two stage heartbeat over a normalized cycle: a big thump, a smaller echo,
+-- then rest.
+local function thump(t)
+	if t < 0.14 then
+		return math.sin((t / 0.14) * math.pi)
+	elseif t >= 0.2 and t < 0.32 then
+		return 0.5 * math.sin(((t - 0.2) / 0.12) * math.pi)
+	end
+	return 0.0
+end
+
+-- Green from 60% up, amber through the middle, fully red by 20% -- so the
+-- colour alone tells you how close to death you are.
+local function healthTint(v)
+	local a, b, k
+	if v >= 0.45 then
+		a, b, k = TINT_FAIR, TINT_GOOD, math.min((v - 0.45) / 0.15, 1.0)
+	else
+		a, b, k = TINT_POOR, TINT_FAIR, math.max(math.min((v - 0.2) / 0.25, 1.0), 0.0)
+	end
+	return
+		a[1] + (b[1] - a[1]) * k,
+		a[2] + (b[2] - a[2]) * k,
+		a[3] + (b[3] - a[3]) * k
+end
+
+function HealthBar:new(parent, skin)
+	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
+	assert(mc ~= nil, "HealthBar; no such movie resource, is UI/Hud in the resource kits?")
+	self:_initialize(parent, mc)
+end
+
+function HealthBar:getPreferredSize()
+	return { width = W, height = H }
+end
+
+-- Set health as a 0..1 fraction. Losing health kicks the hit flash and leaves
+-- the ghost bar behind to drain; gaining it pulls the ghost straight up, so no
+-- lag bar is ever shown for healing.
+function HealthBar:setValue(value)
+	value = math.max(math.min(value, 1.0), 0.0)
+	if value < self._value then
+		self._flash = 1.0
+		self._hold = 0.4
+	elseif value > self._value then
+		self._ghost = value
+	end
+	self._value = value
+	return self
+end
+
+function HealthBar:getValue()
+	return self._value
+end
+
+-- Tick the animations; call once per frame. Safe to keep calling while the
+-- game is paused or over, nothing in here touches gameplay.
+function HealthBar:update(dt)
+	-- Damage lag: hold for a moment after the hit, then drain to the real value.
+	if self._ghost > self._value then
+		if self._hold > 0.0 then
+			self._hold = self._hold - dt
+		else
+			self._ghost = math.max(self._value, self._ghost - dt * 0.45)
+		end
+	else
+		self._ghost = self._value
+	end
+
+	-- Hit flash.
+	if self._flash > 0.0 then
+		self._flash = math.max(0.0, self._flash - dt * 3.5)
+		self._flash_mc.alpha = self._flash * 0.4
+	end
+
+	-- Heartbeat: quicker and deeper the closer to death.
+	local urgency < const > = 1.0 - math.min(self._value / 0.6, 1.0)
+	self._beat = (self._beat + dt * (1.1 + urgency * 1.9)) % 1.0
+	scaleAbout(self._heart_mc, BADGE_X, BADGE_Y,
+		1.0 + (0.09 + urgency * 0.15) * thump(self._beat))
+
+	-- Critical rim, pulsing, fading in over the last quarter of health.
+	local critical < const > = 1.0 - math.min(self._value / 0.25, 1.0)
+	self._pulse = (self._pulse + dt * 2.2) % 1.0
+	self._warn_mc.alpha = critical * (0.3 + 0.7 * (0.5 + 0.5 * math.sin(self._pulse * math.pi * 2)))
+
+	-- Tint the greyscale fill, washed brighter for as long as a hit flash lasts.
+	local r, g, b = healthTint(self._value)
+	local k < const > = 1.0 + self._flash * 0.3
+	self._fill_mc.colorTransform = traktor.spark.ColorTransform(
+		Color4f(r * k, g * k, b * k, 1.0),
+		NO_SHIFT
+	)
+
+	-- Lengths. A zero scale would leave a degenerate transform behind, so the
+	-- bars are hidden rather than scaled to nothing.
+	self:_setLength(self._fill_mc, self._value)
+	self:_setLength(self._ghost_mc, self._ghost)
+
+	-- The bright head rides the end of the fill, and is dropped once the fill
+	-- is too short to carry it.
+	local w < const > = self._value * TRACK_W
+	if w > EDGE_W * 2 then
+		self._edge_mc.visible = true
+		self._edge_mc.X = w - EDGE_W
+	else
+		self._edge_mc.visible = false
+	end
+end
+
+-- Private
+
+function HealthBar:_initialize(parent, mc)
+	Widget._initialize(self, parent, mc)
+
+	-- Fixed size art, so never let a layout stretch the placement past it.
+	self._halign = Widget.ALIGN_CENTER
+	self._valign = Widget.ALIGN_CENTER
+
+	self._value = 1.0
+	self._ghost = 1.0
+	self._hold = 0.0
+	self._flash = 0.0
+	self._beat = 0.0
+	self._pulse = 0.0
+
+	self._ghost_mc = mc:getMember("ghost")
+	self._fill_mc = mc:getMember("fill")
+	self._edge_mc = mc:getMember("edge")
+	self._flash_mc = mc:getMember("flash")
+	self._warn_mc = mc:getMember("warn")
+	self._heart_mc = mc:getMember("heart")
+	assert(self._fill_mc ~= nil, "HealthBar; movie resource is missing its parts")
+
+	self._flash_mc.alpha = 0.0
+	self._warn_mc.alpha = 0.0
+
+	self:update(0.0)
+end
+
+function HealthBar:_setLength(mc, value)
+	if value > 0.002 then
+		mc.visible = true
+		scaleX(mc, TRACK_X, value)
+	else
+		mc.visible = false
+	end
+end
+]]></text>
+</object>

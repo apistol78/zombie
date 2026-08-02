@@ -14,6 +14,43 @@ local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distan
 local SPAWN_INTERVAL < const > = 0.5  -- seconds between spawn attempts
 local CANDIDATES < const > = 8        -- spawn-point tries per attempt
 
+-- Ground trace. The window is deliberately short: it has to cover the nav mesh drifting
+-- off the terrain, not search for a floor several metres away. Tracing far upward would
+-- start the ray above nearby props and drop zombies onto table tops and boulders instead
+-- of the ground the nav point meant.
+local GROUND_UP < const > = 1.0        -- begin the trace this far above the nav point (m)
+local GROUND_DOWN < const > = 3.0      -- ...and look this far below it (m)
+local GROUND_MIN_NORMAL_Y < const > = 0.7   -- reject ground steeper than ~45 degrees
+
+-- Static world only (terrain, boulders, logs, props). The player and the zombies are in
+-- the Interactable group, so this keeps them from being mistaken for ground - without it
+-- a zombie could spawn standing on another zombie's head.
+local COLLISION_DEFAULT < const > = 0x00000001
+
+-- Drop a nav-mesh point onto the surface actually underneath it.
+--
+-- The nav mesh is a voxelised stand-in for the world, not the world: its polygons are
+-- flat where the terrain rolls, and the walkable surface it produces sits slightly off
+-- the heightfield it was baked from. Spawning straight onto a nav point therefore leaves
+-- zombies hovering above a dip or buried to the shin in a rise until the character
+-- controller's step-down pulls them in - which happens over the frames the stand-up
+-- animation is playing, i.e. exactly when the player is most likely to be looking.
+--
+-- Returns the contact point and its normal, or nil when nothing was hit.
+local function traceGround(pm, p)
+	local hit < const > = pm:queryRay(
+		Vector4(p.x, p.y + GROUND_UP, p.z, 1.0),
+		Vector4(0.0, -1.0, 0.0, 0.0),
+		GROUND_UP + GROUND_DOWN,
+		physics.QueryFilter(COLLISION_DEFAULT),
+		true
+	)
+	if hit == nil then
+		return nil, nil
+	end
+	return hit.position, hit.normal
+end
+
 function Spawner:new()
 	self._spawned = {}   -- enemies this spawner created (its managed population)
 	self._timer = 0.0
@@ -109,28 +146,38 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 	local forward < const > = traktor.Quaternion.fromEulerAngles(heading, 0.0, 0.0) * traktor.Vector4(0.0, 0.0, 1.0, 0.0)
 
-	-- 2) + 8) Pick a spawn point: a random nav-mesh point in the spawn ring (so it is on
-	-- the ground at ~player elevation), hidden from the player (a physics ray from the
-	-- player's eye is blocked by terrain before reaching it), preferring points in front.
+	-- 2) + 8) Pick a spawn point: a random nav-mesh point in the spawn ring, dropped onto
+	-- the real ground beneath it, standing on a surface flat enough to stand on, hidden
+	-- from the player (a physics ray from the player's eye is blocked by terrain before
+	-- reaching it), preferring points in front.
 	local best, bestInFront = nil, false
 	for _ = 1, CANDIDATES do
 		local p = self._navMesh:findRandomPoint(playerPos, SPAWN_MAX)   -- (0,0,0,0) on failure
 		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
 			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
 			if dx * dx + dz * dz >= SPAWN_MIN * SPAWN_MIN then
-				local eye < const > = playerPos.xyz1 + Vector4(0.0, 1.6, 0.0)
-				local r < const > = p + Vector4(0.0, 1.6, 0.0) - eye
-				local rl < const > = r.length
-				if rl > 0.5 then
-					local hit < const > = pm:queryRay(eye, r / rl, rl - 0.5, physics.QueryFilter(), true)
-					if hit ~= nil then
-						-- Occluded => hidden. Keep the first hidden point; upgrade to an
-						-- in-front one as soon as we find it.
-						local inFront = (r.x * forward.x + r.z * forward.z) > 0.0
-						if best == nil or (inFront and not bestInFront) then
-							best, bestInFront = p, inFront
-							if inFront then
-								break
+				-- Settle onto the actual surface, and take the ground's own verdict on
+				-- whether this is a place to stand: a near-vertical hit means the nav
+				-- point landed on a cliff face or the side of a boulder, where a zombie
+				-- would spawn half inside the rock and immediately slide. Rejecting the
+				-- candidate costs nothing - there are CANDIDATES-1 more, and failing the
+				-- whole attempt just retries in SPAWN_INTERVAL seconds.
+				local g, gn = traceGround(pm, p)
+				if g ~= nil and gn.y >= GROUND_MIN_NORMAL_Y then
+					local eye < const > = playerPos.xyz1 + Vector4(0.0, 1.6, 0.0)
+					local r < const > = g + Vector4(0.0, 1.6, 0.0) - eye
+					local rl < const > = r.length
+					if rl > 0.5 then
+						local hit < const > = pm:queryRay(eye, r / rl, rl - 0.5, physics.QueryFilter(), true)
+						if hit ~= nil then
+							-- Occluded => hidden. Keep the first hidden point; upgrade to
+							-- an in-front one as soon as we find it.
+							local inFront = (r.x * forward.x + r.z * forward.z) > 0.0
+							if best == nil or (inFront and not bestInFront) then
+								best, bestInFront = g, inFront
+								if inFront then
+									break
+								end
 							end
 						end
 					end
@@ -139,12 +186,18 @@ function Spawner:update(context, totalTime, deltaTime)
 		end
 	end
 	if best == nil then
-		return   -- nowhere hidden to spawn this attempt; try again next interval
+		return   -- nowhere hidden and standable this attempt; try again next interval
 	end
 
 	-- 4) + 5) + 7) Spawn the enemy. WorldLayer:createEntity builds it from the entity
 	-- data AND adds it to the world (via the entity builder), so no explicit addEntity is
-	-- needed. Drop it on the chosen nav-mesh point, facing the player.
+	-- needed. Stand it on the traced ground contact - the entity origin is at the feet,
+	-- since AiCharacterComponent keeps its capsule half a height above the owner - facing
+	-- the player.
+	--
+	-- Only yaw: the body stays upright rather than tipping into the slope. Pitching it to
+	-- match the ground normal would not survive anyway, because the controller rebuilds
+	-- the rotation from headAngle alone on its first update.
 	local enemy = context.world:createEntity(ENEMY)
 	if enemy == nil then
 		return

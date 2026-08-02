@@ -50,8 +50,15 @@ function EnemyController:new()
 	self._patrolTarget = nil  -- current wander destination (Vector4)
 	self._sightRange = 20.0   -- furthest the player can be spotted (m)
 	self._attackMemory = 2.5  -- keep chasing this long after losing sight (s)
-	self._patrolSpeed = 0.55
-	self._attackSpeed = 1.2
+	-- Per-instance pace. A horde whose members all move at exactly the same speed reads
+	-- as one rigid blob: it never spreads out and two zombies that start side by side stay
+	-- glued together forever. Drawn once here and kept for this zombie's lifetime, so an
+	-- individual has a consistent gait rather than jittering frame to frame. The walk
+	-- animation takes its time from distance travelled (TimeFromLocomotion on the Walk
+	-- state), so the cycle rate follows the pace on its own and the feet do not slide.
+	local pace = 0.8 + math.random() * 0.4   -- +/- 20%
+	self._patrolSpeed = 0.55 * pace
+	self._attackSpeed = 1.2 * pace
 
 	self._dead = false   -- set once shot by the player; switches the body to rag doll
 
@@ -118,6 +125,10 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._character == nil then
 		self._character = enemy:getComponent(traktor.physics.AiCharacterComponent)
 		if self._character ~= nil then
+			-- move() only feeds impulses, which the controller accumulates until this
+			-- clamp stops them - a couple of frames of walking - so maxVelocity, not the
+			-- impulse magnitude, is what the enemy actually travels at. It carries this
+			-- zombie's randomised pace (see :new()).
 			self._character.maxVelocity = self._attackSpeed
 		end
 	end

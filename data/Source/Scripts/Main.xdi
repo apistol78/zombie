@@ -78,7 +78,7 @@ function Main:new(params, environment)
 	self._restartButton = PushButton(self._gameOverDialog, "Restart")
 	self._restartButton:setMinimumWidth(220)
 	self._restartButton:setOnClick(function() self:_restart() end)
-	-- Exit: back to the Startup menu (this Stage's "STARTUP" transition).
+	-- Exit: back to the Startup menu, via the loading screen (see _exitToStartup).
 	self._gameOverExitButton = PushButton(self._gameOverDialog, "Exit")
 	self._gameOverExitButton:setMinimumWidth(220)
 	self._gameOverExitButton:setOnClick(function() self:_exitToStartup() end)
@@ -135,7 +135,7 @@ function Main:new(params, environment)
 	pauseTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._resumeButton = PushButton(self._pauseDialog, "Resume")
 	self._resumeButton:setOnClick(function() self:_setPaused(false) end)
-	-- Exit back to the startup stage (the "STARTUP" transition on this Stage's StageData).
+	-- Exit back to the startup stage, via the loading screen (see _exitToStartup).
 	self._exitButton = PushButton(self._pauseDialog, "Exit")
 	self._exitButton:setOnClick(function() self:_exitToStartup() end)
 
@@ -162,14 +162,22 @@ function Main:_setPaused(paused)
 	end
 end
 
--- Begin loading the Startup stage, then switch to it once ready. Triggered from the
--- pause menu's Exit button; the actual goto happens in Main:update, which polls the
+-- Leave the level and go back to the Startup menu. Triggered from the pause and
+-- Game Over menus' Exit buttons.
+--
+-- Routed through the Loading stage rather than straight at Startup: tearing this
+-- world down and building the menu takes long enough to look like a hang, so the
+-- Loading stage puts its panel up first and does the real load behind it. It is
+-- the one named in the params table ("STARTUP", one of Stages/Loading's own
+-- transitions); this stage only ever transitions to LOADING.
+--
+-- The load itself is async and the goto happens in Main:update, which polls the
 -- loader before its paused/game-over early-returns.
 function Main:_exitToStartup()
 	if self._loader ~= nil then
 		return
 	end
-	self._loader = self:loadStageAsync("STARTUP", nil)
+	self._loader = self:loadStageAsync("LOADING", { target = "STARTUP" })
 end
 
 -- Restart: reload this gameplay stage from scratch via its "RESTART" self-transition

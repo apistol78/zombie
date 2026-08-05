@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- Loading
+--
+-- A worldless hand-off stage that stands in front of every slow stage switch: it
+-- puts a "LOADING" panel on screen, streams the stage the caller actually wants
+-- in on a background job, and switches to it once that job reports ready.
+--
+-- Callers therefore never transition straight to their destination; they go to
+-- LOADING and name the destination in the params table:
+--
+--   self:loadStageAsync("LOADING", { target = "MAIN" })
+--
+-- "target" must name one of *this* stage's transitions (MAIN / TERRAIN / STARTUP,
+-- declared in Stages/Loading), since this is the stage that performs the load.
+
+Loading = Loading or class("Loading", Stage)
+
+function Loading:new(params, environment)
+	Stage.new(self, params, environment)
+
+	-- Only UiKit's own movie: the panel is built from stock widgets, no HUD art.
+	Widget.initialize(
+		environment.resource.resourceManager,
+		{ "\{5ABEAE05-EB26-934F-932F-7F3C7C582383}" }
+	)
+
+	-- Same 640x360 virtual frame the Startup menu uses, so the panel lands in the
+	-- same place and at the same scale as the menu it replaces. One Frame per
+	-- stage, everything parented to it (see the note in Scripts/Main).
+	local root = self.ui.root
+	self._frame = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
+
+	-- Centered panel: title over an activity bar. Dialog auto-centers on the Frame.
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0 }, 24, 24, 0, 16))
+
+	local title = Static(self._dialog, "LOADING")
+	title:setTextSize(40)
+	title:setHorizontalAlign(Widget.ALIGN_CENTER)
+
+	-- Activity bar. StageLoader only reports ready / not-ready, so there is no real
+	-- percentage to show: the bar pulses (fills, then drains again) rather than
+	-- repeatedly filling, so it reads as "working" and not as fake progress.
+	self._bar = ProgressBar(self._dialog)
+	self._bar:setBackColor(Color4f(0.1, 0.1, 0.1, 1.0))
+	self._bar:setFrontColor(Color4f(0.75, 0.07, 0.07, 1.0))
+	self._pulse = 0.0
+	self._pulseRate = 0.7   -- fill-or-drain sweeps per second
+
+	self._frame:update()
+	self._dialog:show()
+
+	-- Kick off the real load. Deliberately after the UI is built and placed, so the
+	-- panel is up from the very first frame this stage is shown.
+	--
+	-- Falls back to the main menu if the caller named a transition this stage does
+	-- not have, so a bad param cannot strand the player on the loading screen.
+	local target = (params ~= nil) and params.target or nil
+	if target == nil or not self:haveTransition(target) then
+		target = "STARTUP"
+	end
+	self._loader = self:loadStageAsync(target, nil)
+	self._done = false
+
+	-- Input is left exactly as the calling stage set it up: nothing here is
+	-- clickable, and the stage we hand over to configures it for itself (Main
+	-- captures the mouse, Startup releases it).
+end
+
+function Loading:finalize()
+	if self._dialog ~= nil then
+		self._dialog:remove()
+		self._dialog = nil
+	end
+	if self._frame ~= nil then
+		self._frame:remove()
+		self._frame = nil
+	end
+end
+
+function Loading:update(info)
+	-- Pulse the bar: 0 -> 1 -> 0, looping. Kept above the loader checks so it keeps
+	-- animating for every frame the load is still in flight.
+	self._pulse = self._pulse + info.frameDeltaTime * self._pulseRate
+	while self._pulse >= 2.0 do
+		self._pulse = self._pulse - 2.0
+	end
+	if self._pulse <= 1.0 then
+		self._bar:setValue(self._pulse)
+	else
+		self._bar:setValue(2.0 - self._pulse)
+	end
+
+	-- Already handed over; just keep the panel animating through the fade out.
+	if self._done then
+		return
+	end
+
+	-- No loader at all means the stage graph is misconfigured (not even a STARTUP
+	-- transition to fall back on). Bail rather than sit here forever.
+	if self._loader == nil then
+		self:terminate()
+		return
+	end
+
+	if not self._loader.ready then
+		return
+	end
+
+	if not self._loader.succeeded then
+		self:terminate()
+		return
+	end
+
+	self:gotoStage(self._loader:get())
+	self._loader = nil
+	self._done = true
+end
+]]></text>
+</object>

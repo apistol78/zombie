@@ -61,13 +61,13 @@
 			<navMesh>{03ED7DDA-4F01-384B-9FF8-31DCDC775D3F}</navMesh>
 		</item>
 		<item type="traktor.world.FogComponentData" version="4">
-			<mediumColor>0.556863, 0.572549, 0.223529, 1</mediumColor>
-			<mediumDensity>0.05</mediumDensity>
+			<mediumColor>0.17, 0.21, 0.28, 1</mediumColor>
+			<mediumDensity>0.075</mediumDensity>
 			<distanceFogEnable>true</distanceFogEnable>
-			<fogDistance>30</fogDistance>
+			<fogDistance>22</fogDistance>
 			<fogElevation>45</fogElevation>
 			<volumetricFogEnable>true</volumetricFogEnable>
-			<maxDistance>40</maxDistance>
+			<maxDistance>34</maxDistance>
 			<phaseForward>0.8</phaseForward>
 			<phaseBackward>-0.4</phaseBackward>
 			<phaseBlend>0.5</phaseBlend>
@@ -105,7 +105,7 @@
 								<item type="traktor.weather.SkyComponentData" version="8">
 									<shader>{4CF929EB-3A8B-C340-AA0A-0C5C80625BF1}</shader>
 									<texture>{00000000-0000-0000-0000-000000000000}</texture>
-									<intensity>0.2</intensity>
+									<intensity>0.14</intensity>
 									<saturation>1</saturation>
 									<skyOverHorizon>0.22, 0.2, 0.34, 1</skyOverHorizon>
 									<skyUnderHorizon>0.24, 0.11, 0.09, 0</skyUnderHorizon>
@@ -115,8 +115,8 @@
 								</item>
 								<item type="traktor.world.LightComponentData" version="13">
 									<lightType>Directional</lightType>
-									<color>1, 0.58, 0.32, 1</color>
-									<intensity>8</intensity>
+									<color>0.55, 0.66, 0.95, 1</color>
+									<intensity>3</intensity>
 									<castShadow>true</castShadow>
 									<nearRange>0</nearRange>
 									<farRange>20</farRange>
@@ -196,7 +196,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, -0.990216, 0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -1504,8 +1504,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.32, 23.0387, 55.380001, 1</translation>
-								<rotation>0, -0.035, 0, 0.9994</rotation>
+								<translation>-8.32, 23.0387, 55.380001, 0</translation>
+								<rotation>0, -0.035, 0, 0.999387</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1545,8 +1545,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.0988, 23.002199, 58.7239, 1</translation>
-								<rotation>0, -0.0196, 0, 0.9998</rotation>
+								<translation>-8.0988, 23.002199, 58.7239, 0</translation>
+								<rotation>0, -0.0196, 0, 0.999808</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1586,8 +1586,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.3063, 22.951, 61.9865, 1</translation>
-								<rotation>0, -0.0284, 0, 0.9996</rotation>
+								<translation>-8.3063, 22.951, 61.9865, 0</translation>
+								<rotation>0, -0.0284, 0, 0.999597</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1627,8 +1627,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.186, 22.9814, 65.344704, 1</translation>
-								<rotation>0, -0.0153, 0, 0.9999</rotation>
+								<translation>-8.186, 22.9814, 65.344704, 0</translation>
+								<rotation>0, -0.0153, 0, 0.999883</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1668,8 +1668,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.2303, 23.0965, 68.630699, 1</translation>
-								<rotation>0, -0.0044, 0, 1</rotation>
+								<translation>-8.2303, 23.0965, 68.630699, 0</translation>
+								<rotation>0, -0.0044, 0, 0.99999</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1709,8 +1709,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-3.6112, 23.068899, 55.393501, 1</translation>
-								<rotation>0, -0.0199, 0, 0.9998</rotation>
+								<translation>-3.6112, 23.068899, 55.393501, 0</translation>
+								<rotation>0, -0.0199, 0, 0.999802</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1750,8 +1750,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-3.5697, 23.0718, 58.914002, 1</translation>
-								<rotation>0, -0.0156, 0, 0.9999</rotation>
+								<translation>-3.5697, 23.0718, 58.914002, 0</translation>
+								<rotation>0, -0.0156, 0, 0.999878</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1791,8 +1791,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-3.6803, 23.0511, 62.0093, 1</translation>
-								<rotation>0, -0.0155, 0, 0.9999</rotation>
+								<translation>-3.6803, 23.0511, 62.0093, 0</translation>
+								<rotation>0, -0.0155, 0, 0.99988</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1832,8 +1832,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-3.641, 23.104099, 65.360298, 1</translation>
-								<rotation>0, 0.0264, 0, 0.9997</rotation>
+								<translation>-3.641, 23.104099, 65.360298, 0</translation>
+								<rotation>0, 0.026399, 0, 0.999652</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1873,8 +1873,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-3.5905, 23.311001, 68.800797, 1</translation>
-								<rotation>0, 0.0164, 0, 0.9999</rotation>
+								<translation>-3.5905, 23.311001, 68.800797, 0</translation>
+								<rotation>0, 0.016399, 0, 0.999866</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1914,7 +1914,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>3.7132, 23.1724, 55.555, 1</translation>
+								<translation>3.7132, 23.1724, 55.555, 0</translation>
 								<rotation>0, 0.0007, 0, 1</rotation>
 							</transform>
 							<components>
@@ -1955,8 +1955,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>3.6771, 23.1903, 58.8676, 1</translation>
-								<rotation>0, 0.0256, 0, 0.9997</rotation>
+								<translation>3.6771, 23.1903, 58.8676, 0</translation>
+								<rotation>0, 0.025599, 0, 0.999672</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1996,8 +1996,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>3.523, 23.210699, 62.094601, 1</translation>
-								<rotation>0, -0.0024, 0, 1</rotation>
+								<translation>3.523, 23.210699, 62.094601, 0</translation>
+								<rotation>0, -0.0024, 0, 0.999997</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2037,8 +2037,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>3.7188, 23.259701, 65.346497, 1</translation>
-								<rotation>0, 0.0332, 0, 0.9994</rotation>
+								<translation>3.7188, 23.259701, 65.346497, 0</translation>
+								<rotation>0, 0.033202, 0, 0.999449</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2078,8 +2078,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>3.6758, 23.3508, 68.699501, 1</translation>
-								<rotation>0, -0.031, 0, 0.9995</rotation>
+								<translation>3.6758, 23.3508, 68.699501, 0</translation>
+								<rotation>0, -0.031001, 0, 0.999519</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2119,8 +2119,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>8.186, 23.298599, 55.5285, 1</translation>
-								<rotation>0, -0.0081, 0, 1</rotation>
+								<translation>8.186, 23.298599, 55.5285, 0</translation>
+								<rotation>0, -0.0081, 0, 0.999967</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2160,8 +2160,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>8.3025, 23.384501, 58.914799, 1</translation>
-								<rotation>0, 0.0086, 0, 1</rotation>
+								<translation>8.3025, 23.384501, 58.914799, 0</translation>
+								<rotation>0, 0.0086, 0, 0.999963</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2201,8 +2201,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>8.1842, 23.4258, 62.145302, 1</translation>
-								<rotation>0, -0.0037, 0, 1</rotation>
+								<translation>8.1842, 23.4258, 62.145302, 0</translation>
+								<rotation>0, -0.0037, 0, 0.999993</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2242,8 +2242,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>8.2346, 23.445101, 65.466301, 1</translation>
-								<rotation>0, 0.0021, 0, 1</rotation>
+								<translation>8.2346, 23.445101, 65.466301, 0</translation>
+								<rotation>0, 0.0021, 0, 0.999998</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2283,8 +2283,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>8.1574, 23.4751, 68.789398, 1</translation>
-								<rotation>0, 0.0034, 0, 1</rotation>
+								<translation>8.1574, 23.4751, 68.789398, 0</translation>
+								<rotation>0, 0.0034, 0, 0.999994</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2324,7 +2324,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-6, 23.2416, 71.800003, 1</translation>
+								<translation>-6, 23.2416, 71.800003, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2365,7 +2365,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6, 23.413401, 71.800003, 1</translation>
+								<translation>6, 23.413401, 71.800003, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2406,7 +2406,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>0, 23.343901, 72, 1</translation>
+								<translation>0, 23.343901, 72, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2447,7 +2447,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.875, 22.7843, 53, 1</translation>
+								<translation>-8.875, 22.7843, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2488,7 +2488,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-4.625, 22.8097, 53, 1</translation>
+								<translation>-4.625, 22.8097, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2529,7 +2529,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>4.625, 22.906401, 53, 1</translation>
+								<translation>4.625, 22.906401, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2570,7 +2570,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>8.875, 23.0285, 53, 1</translation>
+								<translation>8.875, 23.0285, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2611,7 +2611,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-9.1667, 22.9357, 75, 1</translation>
+								<translation>-9.1667, 22.9357, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2652,7 +2652,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-5.5, 23.0509, 75, 1</translation>
+								<translation>-5.5, 23.0509, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2693,7 +2693,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-1.8333, 23.1525, 75, 1</translation>
+								<translation>-1.8333, 23.1525, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2734,7 +2734,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>1.8333, 23.2176, 75, 1</translation>
+								<translation>1.8333, 23.2176, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2775,7 +2775,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>5.5, 23.2267, 75, 1</translation>
+								<translation>5.5, 23.2267, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2816,7 +2816,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>9.1667, 23.382999, 75, 1</translation>
+								<translation>9.1667, 23.382999, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -2857,8 +2857,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.7677, 54.833302, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>-11, 22.7677, 54.833302, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2898,8 +2898,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.7267, 58.5, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>-11, 22.7267, 58.5, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2939,8 +2939,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.628401, 62.166698, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>-11, 22.628401, 62.166698, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -2980,8 +2980,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.634899, 65.833298, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>-11, 22.634899, 65.833298, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3021,8 +3021,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.722799, 69.5, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>-11, 22.722799, 69.5, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3062,8 +3062,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.825701, 73.166702, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>-11, 22.825701, 73.166702, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3103,8 +3103,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.2085, 54.833302, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>11, 23.2085, 54.833302, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3144,8 +3144,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.248199, 58.5, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>11, 23.248199, 58.5, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3185,8 +3185,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.2847, 62.166698, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>11, 23.2847, 62.166698, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3226,8 +3226,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.3218, 65.833298, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>11, 23.3218, 65.833298, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3267,8 +3267,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.359501, 69.5, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>11, 23.359501, 69.5, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3308,8 +3308,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.410299, 73.166702, 1</translation>
-								<rotation>0, 0.7071, 0, 0.7071</rotation>
+								<translation>11, 23.410299, 73.166702, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3349,7 +3349,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.9177, 53, 1</translation>
+								<translation>-11, 22.9177, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3390,7 +3390,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.3181, 53, 1</translation>
+								<translation>11, 23.3181, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3431,7 +3431,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 23.031, 75, 1</translation>
+								<translation>-11, 23.031, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3472,7 +3472,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>11, 23.626699, 75, 1</translation>
+								<translation>11, 23.626699, 75, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3513,7 +3513,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2.5, 22.976299, 53, 1</translation>
+								<translation>-2.5, 22.976299, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3554,7 +3554,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>2.5, 23.023199, 53, 1</translation>
+								<translation>2.5, 23.023199, 53, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3595,7 +3595,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-21, 23.059099, 64, 1</translation>
+								<translation>-21, 23.059099, 64, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3636,7 +3636,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-21, 23.059099, 64, 1</translation>
+								<translation>-21, 23.059099, 64, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3677,7 +3677,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-21, 23.059099, 64, 1</translation>
+								<translation>-21, 23.059099, 64, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
@@ -3718,8 +3718,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-21, 22.9228, 57, 1</translation>
-								<rotation>0, 0, -0.0375, 0.9993</rotation>
+								<translation>-21, 22.9228, 57, 0</translation>
+								<rotation>0, 0, -0.0375, 0.999297</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3759,8 +3759,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14.3, 22.9273, 60, 1</translation>
-								<rotation>0, 0.1494, 0, 0.9888</rotation>
+								<translation>-14.3, 22.9273, 60, 0</translation>
+								<rotation>0, 0.149397, 0, 0.988777</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3800,8 +3800,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-13.9, 22.855101, 68, 1</translation>
-								<rotation>0, -0.2474, 0, 0.9689</rotation>
+								<translation>-13.9, 22.855101, 68, 0</translation>
+								<rotation>0, -0.247403, 0, 0.968913</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3841,8 +3841,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14.6, 22.9953, 58.400002, 1</translation>
-								<rotation>0, 0.1987, 0, 0.9801</rotation>
+								<translation>-14.6, 22.9953, 58.400002, 0</translation>
+								<rotation>0, 0.198692, 0, 0.980062</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3882,8 +3882,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-15, 22.7773, 65.199997, 1</translation>
-								<rotation>0, -0.1494, 0, 0.9888</rotation>
+								<translation>-15, 22.7773, 65.199997, 0</translation>
+								<rotation>0, -0.149397, 0, 0.988777</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3923,8 +3923,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-9.6, 23.0348, 54.599998, 1</translation>
-								<rotation>0, 0.3894, 0, 0.9211</rotation>
+								<translation>-9.6, 23.0348, 54.599998, 0</translation>
+								<rotation>0, 0.389389, 0, 0.921073</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -3964,8 +3964,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>9.4, 23.351601, 54.700001, 1</translation>
-								<rotation>0, -0.3429, 0, 0.9394</rotation>
+								<translation>9.4, 23.351601, 54.700001, 0</translation>
+								<rotation>0, -0.342891, 0, 0.939375</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4005,8 +4005,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-15, 22.9105, 71, 1</translation>
-								<rotation>0, 0.6442, 0, 0.7648</rotation>
+								<translation>-15, 22.9105, 71, 0</translation>
+								<rotation>0, 0.644228, 0, 0.764833</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4046,8 +4046,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-13.4, 22.8242, 63, 1</translation>
-								<rotation>0.1064, 0.2459, -0.0272, 0.9631</rotation>
+								<translation>-13.4, 22.8242, 63, 0</translation>
+								<rotation>0.106395, 0.245889, -0.027199, 0.963057</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4087,8 +4087,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-14.6, 22.8043, 66.599998, 1</translation>
-								<rotation>-0.0954, -0.294, -0.0295, 0.9506</rotation>
+								<translation>-14.6, 22.8043, 66.599998, 0</translation>
+								<rotation>-0.095398, -0.293993, -0.029499, 0.950577</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4128,8 +4128,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-19.799999, 22.996401, 55, 1</translation>
-								<rotation>0, 0.2474, 0, 0.9689</rotation>
+								<translation>-19.799999, 22.996401, 55, 0</translation>
+								<rotation>0, 0.247403, 0, 0.968913</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4169,8 +4169,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-15.2, 22.8734, 70.599998, 1</translation>
-								<rotation>0, 0.5227, 0, 0.8525</rotation>
+								<translation>-15.2, 22.8734, 70.599998, 0</translation>
+								<rotation>0, 0.522707, 0, 0.852512</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4210,8 +4210,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11, 22.878799, 66, 1</translation>
-								<rotation>0, 0.0998, 0, 0.995</rotation>
+								<translation>-11, 22.878799, 66, 0</translation>
+								<rotation>0, 0.099801, 0, 0.995007</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4251,8 +4251,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-11.3, 22.915899, 60, 1</translation>
-								<rotation>0, 0.8415, 0, 0.5403</rotation>
+								<translation>-11.3, 22.915899, 60, 0</translation>
+								<rotation>0, 0.841481, 0, 0.540287</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -4280,6 +4280,87 @@
 									</bodyDesc>
 									<eventCollide/>
 									<transformFilter>0</transformFilter>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{2AEDFAF2-30D6-478C-8983-6DE2036D248F}</id>
+							<name>AtmoLight</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-21, 24.288401, 69.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.55, 0.2, 1</color>
+									<intensity>900</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>7</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.45</flickerAmount>
+									<flickerFilter>0.3</flickerFilter>
+									<bakeMode>LbmIndirect</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{97AFE7DD-C5BB-4766-9983-1B83E9B32F0A}</id>
+							<name>AtmoLight</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-21, 24.607201, 57.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.6, 0.25, 1</color>
+									<intensity>600</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>6</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.4</flickerAmount>
+									<flickerFilter>0.3</flickerFilter>
+									<bakeMode>LbmIndirect</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{96C48276-1EAE-4BC5-95A2-F9D8CEEAD6A6}</id>
+							<name>AtmoLight</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>6, 24.763399, 71.800003, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.5, 0.18, 1</color>
+									<intensity>350</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>4.5</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.5</flickerAmount>
+									<flickerFilter>0.3</flickerFilter>
+									<bakeMode>LbmIndirect</bakeMode>
 								</item>
 							</components>
 						</item>
@@ -4492,7 +4573,7 @@
 							</state>
 							<transform>
 								<translation>-9.5804, 23.679672, 79.810997, 0</translation>
-								<rotation>-0.050772, -0.477586, 0.036635, 0.876352</rotation>
+								<rotation>-0.050772, -0.477586, 0.036635, 0.876351</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -5272,7 +5353,7 @@
 							</state>
 							<transform>
 								<translation>-96.217598, 11.997607, -69.669502, 0</translation>
-								<rotation>-0.097927, -0.045451, -0.08246, 0.99073</rotation>
+								<rotation>-0.097927, -0.045451, -0.08246, 0.990729</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -5962,7 +6043,7 @@
 							</state>
 							<transform>
 								<translation>45.284401, 10.011322, -47.684799, 0</translation>
-								<rotation>-0.008565, 0.969307, -0.050182, 0.240527</rotation>
+								<rotation>-0.008565, 0.969306, -0.050182, 0.240527</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -5977,7 +6058,7 @@
 							</state>
 							<transform>
 								<translation>1.7444, 1.354646, -112.454201, 0</translation>
-								<rotation>0.010653, 0.909555, -0.004866, 0.41542</rotation>
+								<rotation>0.010653, 0.909554, -0.004866, 0.41542</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6172,7 +6253,7 @@
 							</state>
 							<transform>
 								<translation>-61.8909, 24.005617, 95.598801, 0</translation>
-								<rotation>0.197187, -0.171265, 0.093447, 0.960757</rotation>
+								<rotation>0.197187, -0.171265, 0.093447, 0.960756</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6697,7 +6778,7 @@
 							</state>
 							<transform>
 								<translation>1.49, 1.39653, -132.276093, 0</translation>
-								<rotation>0.012276, 0.989736, -0.025232, 0.140129</rotation>
+								<rotation>0.012276, 0.989735, -0.025232, 0.140129</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6802,7 +6883,7 @@
 							</state>
 							<transform>
 								<translation>-22.326389, 22.889259, 53.033981, 0</translation>
-								<rotation>-0.011639, 0.987713, -0.009451, -0.155559</rotation>
+								<rotation>0.011639, -0.987713, 0.009451, 0.155559</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -7012,7 +7093,7 @@
 							</state>
 							<transform>
 								<translation>-104.467697, 19.04073, -19.5961, 0</translation>
-								<rotation>0.029586, -0.22238, 0.250525, 0.941759</rotation>
+								<rotation>0.029586, -0.22238, 0.250525, 0.941758</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -8077,7 +8158,7 @@
 							</state>
 							<transform>
 								<translation>63.550499, 23.696047, 27.354401, 0</translation>
-								<rotation>-0.304698, 0.315315, -0.323231, 0.838605</rotation>
+								<rotation>-0.304698, 0.315315, -0.323231, 0.838604</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -8227,7 +8308,7 @@
 							</state>
 							<transform>
 								<translation>11.948, 27.116301, 106.4478, 0</translation>
-								<rotation>0.02215, 0.989655, 0.12913, 0.058471</rotation>
+								<rotation>0.02215, 0.989654, 0.12913, 0.058471</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -8662,7 +8743,7 @@
 							</state>
 							<transform>
 								<translation>61.3298, 29.521654, 40.8993, 0</translation>
-								<rotation>0.426393, 0.883588, 0.132185, 0.141384</rotation>
+								<rotation>0.426393, 0.883587, 0.132185, 0.141384</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -8767,7 +8848,7 @@
 							</state>
 							<transform>
 								<translation>-68.365601, 1.422192, -80.061798, 0</translation>
-								<rotation>-0.084963, 0.107066, -0.009183, 0.990573</rotation>
+								<rotation>-0.084963, 0.107066, -0.009183, 0.990572</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -8887,7 +8968,7 @@
 							</state>
 							<transform>
 								<translation>24.232, 24.720196, 90.278603, 0</translation>
-								<rotation>-0.127932, 0.984304, -0.114576, 0.040651</rotation>
+								<rotation>-0.127932, 0.984303, -0.114576, 0.040651</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9442,7 +9523,7 @@
 							</state>
 							<transform>
 								<translation>30.6577, 4.755725, -64.097702, 0</translation>
-								<rotation>-0.109226, 0.353856, -0.066015, 0.926552</rotation>
+								<rotation>-0.109226, 0.353856, -0.066015, 0.926551</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9791,7 +9872,7 @@
 							</state>
 							<transform>
 								<translation>27.178, 10.40786, -22.485001, 0</translation>
-								<rotation>-0.004512, 0.968149, 0.013119, 0.249992</rotation>
+								<rotation>-0.004512, 0.968148, 0.013119, 0.249992</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -9821,7 +9902,7 @@
 							</state>
 							<transform>
 								<translation>24.128, 10.42045, -25.347, 0</translation>
-								<rotation>0.01318, -0.138824, 0.009938, 0.99018</rotation>
+								<rotation>0.01318, -0.138824, 0.009938, 0.990179</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -9926,7 +10007,7 @@
 							</state>
 							<transform>
 								<translation>-34.527, 23.307709, 16.337, 0</translation>
-								<rotation>-0.026055, 0.292665, -0.10889, 0.949638</rotation>
+								<rotation>-0.026055, 0.292665, -0.10889, 0.949637</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -10016,7 +10097,7 @@
 							</state>
 							<transform>
 								<translation>-34.98, 23.151701, 12.331, 0</translation>
-								<rotation>-0.005592, 0.503383, -0.021233, 0.863785</rotation>
+								<rotation>-0.005592, 0.503383, -0.021233, 0.863784</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -10721,7 +10802,7 @@
 							</state>
 							<transform>
 								<translation>-0.020931, 23.363899, 30.806883, 0</translation>
-								<rotation>0.101896, 0.381218, -0.002374, 0.91885</rotation>
+								<rotation>0.101896, 0.381218, -0.002374, 0.918849</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -11276,7 +11357,7 @@
 							</state>
 							<transform>
 								<translation>-66.249001, 31.53257, 12.984, 0</translation>
-								<rotation>-0.003744, 0.040738, -0.004062, 0.999155</rotation>
+								<rotation>-0.003744, 0.040738, -0.004062, 0.999154</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -11666,7 +11747,7 @@
 							</state>
 							<transform>
 								<translation>-22.858, 22.819918, 66.522003, 0</translation>
-								<rotation>0.006018, -0.150602, -0.012787, 0.988494</rotation>
+								<rotation>0.006018, -0.150602, -0.012787, 0.988493</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -11696,7 +11777,7 @@
 							</state>
 							<transform>
 								<translation>-23.399, 22.862194, 64.953003, 0</translation>
-								<rotation>0.01736, 0.878027, -0.000525, 0.478297</rotation>
+								<rotation>0.01736, 0.878026, -0.000525, 0.478297</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12041,7 +12122,7 @@
 							</state>
 							<transform>
 								<translation>-10.578396, 23.175041, 12.316339, 0</translation>
-								<rotation>0.025882, 0.210628, -0.025126, 0.976901</rotation>
+								<rotation>0.025882, 0.210628, -0.025126, 0.9769</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12101,7 +12182,7 @@
 							</state>
 							<transform>
 								<translation>-31.59969, 10.319496, -36.127056, 0</translation>
-								<rotation>0.00249, -0.967827, -0.001896, 0.251599</rotation>
+								<rotation>0.00249, -0.967826, -0.001896, 0.251599</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12656,7 +12737,7 @@
 							</state>
 							<transform>
 								<translation>-21.562, 23.041193, 55.957001, 0</translation>
-								<rotation>0.013098, -0.195096, -0.014563, 0.980589</rotation>
+								<rotation>0.013098, -0.195096, -0.014563, 0.980588</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12791,7 +12872,7 @@
 							</state>
 							<transform>
 								<translation>9.308, 23.206955, 33.686001, 0</translation>
-								<rotation>-0.00394, 0.00535, -0.007936, 0.999947</rotation>
+								<rotation>-0.00394, 0.00535, -0.007936, 0.999946</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13256,7 +13337,7 @@
 							</state>
 							<transform>
 								<translation>19.627001, 22.7612, 23.195, 0</translation>
-								<rotation>0, -0.998889, 0, 0.047136</rotation>
+								<rotation>0, -0.998888, 0, 0.047136</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13744,7 +13825,7 @@
 							</state>
 							<transform>
 								<translation>-37.164291, 10.329262, -30.858931, 0</translation>
-								<rotation>0.000417, 0, 0.000692, 1</rotation>
+								<rotation>0.000417, -0, 0.000692, 1</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -14014,7 +14095,7 @@
 							</state>
 							<transform>
 								<translation>-6.298897, 22.665245, 2.18113, 0</translation>
-								<rotation>-0.034686, 0.236233, -0.013783, 0.97098</rotation>
+								<rotation>-0.034686, 0.236233, -0.013783, 0.970979</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -14164,7 +14245,7 @@
 							</state>
 							<transform>
 								<translation>-39.298313, 35.467918, 34.020039, 0</translation>
-								<rotation>0.19008, 0.948679, -0.015262, 0.252281</rotation>
+								<rotation>0.19008, 0.948678, -0.015262, 0.252281</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -14228,7 +14309,7 @@
 							</state>
 							<transform>
 								<translation>0.451973, 22.540821, 76.822784, 0</translation>
-								<rotation>-0.016264, 0.412691, 0.025514, 0.910369</rotation>
+								<rotation>-0.016264, 0.412691, 0.025514, 0.910368</rotation>
 							</transform>
 							<components/>
 							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
@@ -14243,7 +14324,7 @@
 							</state>
 							<transform>
 								<translation>-20.400761, 22.796177, 86.692444, 0</translation>
-								<rotation>-0.028217, -0.291465, 0.023416, 0.955879</rotation>
+								<rotation>-0.028217, -0.291465, 0.023416, 0.955878</rotation>
 							</transform>
 							<components/>
 							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
@@ -15267,7 +15348,7 @@
 							</state>
 							<transform>
 								<translation>-63.633301, 10.8508, -39.3885, 0</translation>
-								<rotation>0, 0.466856, 0, 0.884334</rotation>
+								<rotation>0, 0.466856, 0, 0.884333</rotation>
 							</transform>
 							<components/>
 							<entityData>{C58F4F5C-19C5-495C-B02B-76522AD1CAD4}</entityData>
@@ -15927,7 +16008,7 @@
 							</state>
 							<transform>
 								<translation>-41.148994, 35.983685, 37.578918, 0</translation>
-								<rotation>0.01127, 0.300373, -0.016788, 0.953608</rotation>
+								<rotation>0.01127, 0.300373, -0.016788, 0.953607</rotation>
 							</transform>
 							<components/>
 							<entityData>{C58F4F5C-19C5-495C-B02B-76522AD1CAD4}</entityData>
@@ -16141,7 +16222,7 @@
 							</state>
 							<transform>
 								<translation>-70.350197, 31.532301, 7.5543, 0</translation>
-								<rotation>0, 0.426545, 0, 0.904467</rotation>
+								<rotation>0, 0.426545, 0, 0.904466</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -16441,7 +16522,7 @@
 							</state>
 							<transform>
 								<translation>34.868801, 38.2859, 42.113499, 0</translation>
-								<rotation>0, 0.436609, 0, 0.899652</rotation>
+								<rotation>0, 0.436609, 0, 0.899651</rotation>
 							</transform>
 							<components/>
 							<entityData>{D1CEA339-74F7-42FA-8E4D-489EC6E48F65}</entityData>
@@ -16486,7 +16567,7 @@
 							</state>
 							<transform>
 								<translation>44.2435, 10.5717, -14.2112, 0</translation>
-								<rotation>0, -0.567928, 0, 0.823079</rotation>
+								<rotation>0, -0.567928, 0, 0.823078</rotation>
 							</transform>
 							<components/>
 							<entityData>{D1CEA339-74F7-42FA-8E4D-489EC6E48F65}</entityData>
@@ -16576,7 +16657,7 @@
 							</state>
 							<transform>
 								<translation>-3.890893, 23.192333, 49.732803, 0</translation>
-								<rotation>-0.000132, 0.126915, -0.001558, -0.991912</rotation>
+								<rotation>0.000132, -0.126915, 0.001558, 0.991912</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -16846,7 +16927,7 @@
 							</state>
 							<transform>
 								<translation>-61.805698, 10.3885, -52.712399, 0</translation>
-								<rotation>0, 0.25582, 0, 0.966725</rotation>
+								<rotation>0, 0.25582, 0, 0.966724</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -17041,7 +17122,7 @@
 							</state>
 							<transform>
 								<translation>-63.229099, 31.5138, 19.824301, 0</translation>
-								<rotation>0, 0.027294, 0, 0.999628</rotation>
+								<rotation>0, 0.027294, 0, 0.999627</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -17476,7 +17557,7 @@
 							</state>
 							<transform>
 								<translation>4.760936, 23.309567, 51.951374, 0</translation>
-								<rotation>0.001473, 0.696475, -0.020314, -0.717292</rotation>
+								<rotation>-0.001473, -0.696475, 0.020314, 0.717292</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -18455,7 +18536,7 @@
 							</state>
 							<transform>
 								<translation>-44.9259, 10.8449, -40.0243, 0</translation>
-								<rotation>0, -0.99992, 0, 0.012691</rotation>
+								<rotation>0, -0.999919, 0, 0.012691</rotation>
 							</transform>
 							<components/>
 							<entityData>{4212B482-F79E-4F59-8736-BA3CC222C6E6}</entityData>
@@ -19880,7 +19961,7 @@
 							</state>
 							<transform>
 								<translation>35.4897, 9.9813, -46.6875, 0</translation>
-								<rotation>0, 0.170905, 0, 0.985288</rotation>
+								<rotation>0, 0.170905, 0, 0.985287</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>
@@ -22235,7 +22316,7 @@
 							</state>
 							<transform>
 								<translation>12.8591, 23.5201, 48.8162, 0</translation>
-								<rotation>0, -0.931646, 0, 0.363366</rotation>
+								<rotation>0, -0.931647, 0, 0.363366</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>
@@ -24365,7 +24446,7 @@
 							</state>
 							<transform>
 								<translation>-7.590514, 23.204441, 22.25178, 0</translation>
-								<rotation>-0.000082, -0.999427, 0.001445, 0.033833</rotation>
+								<rotation>-0.000082, -0.999426, 0.001445, 0.033833</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>
@@ -27954,7 +28035,7 @@
 							</state>
 							<transform>
 								<translation>-61.700199, 31.5308, 10.3367, 0</translation>
-								<rotation>0, 0.615383, 0, 0.788229</rotation>
+								<rotation>0, 0.615383, 0, 0.788228</rotation>
 							</transform>
 							<components/>
 							<entityData>{84FBBED5-CF60-4E6D-9DA5-759CAD2403B4}</entityData>
@@ -28809,7 +28890,7 @@
 							</state>
 							<transform>
 								<translation>-36.730701, 12.9824, -20.93, 0</translation>
-								<rotation>0, -0.34789, 0, 0.937536</rotation>
+								<rotation>0, -0.34789, 0, 0.937535</rotation>
 							</transform>
 							<components/>
 							<entityData>{84FBBED5-CF60-4E6D-9DA5-759CAD2403B4}</entityData>

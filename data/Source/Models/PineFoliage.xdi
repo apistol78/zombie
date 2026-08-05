@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.mesh.MeshAsset" version="26">
+<object type="traktor.mesh.MeshAsset" version="27">
 	<fileName>Models/PineFoliage.tmd</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
-	<materialShaders>
-		<item>
-			<first>Foliage</first>
-			<second>{F35B9830-8E7C-EB4B-BCA7-A01C1AA7CB01}</second>
-		</item>
-	</materialShaders>
+	<materialShaders/>
 	<materialTextures/>
 	<scaleFactor>1, 2, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
@@ -16,6 +11,7 @@
 	<center>None</center>
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<previewAngle>0</previewAngle>
 </object>

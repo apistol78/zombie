@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.mesh.MeshAsset" version="26">
+<object type="traktor.mesh.MeshAsset" version="27">
 	<fileName>Models/PineTrunk.tmd</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
-	<materialShaders>
-		<item>
-			<first>Trunk</first>
-			<second>{BCC1134A-1565-D74A-8321-B8657CD11D16}</second>
-		</item>
-	</materialShaders>
+	<materialShaders/>
 	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
@@ -16,6 +11,7 @@
 	<center>None</center>
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<previewAngle>0</previewAngle>
 </object>

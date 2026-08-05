@@ -27,6 +27,23 @@ local GROUND_MIN_NORMAL_Y < const > = 0.7   -- reject ground steeper than ~45 de
 -- a zombie could spawn standing on another zombie's head.
 local COLLISION_DEFAULT < const > = 0x00000001
 
+-- Consecrated ground: nothing rises inside a lit ward. The Stage publishes the
+-- list as context._litWards ({ x, z, r, r2 } per lit ward) and only rebuilds it when
+-- one is lit, so this is a short table walk -- at most one entry per relic.
+local function inLitWard(wards, p)
+	if wards == nil then
+		return false
+	end
+	for _, w in ipairs(wards) do
+		local dx < const > = p.x - w.x
+		local dz < const > = p.z - w.z
+		if dx * dx + dz * dz < w.r2 then
+			return true
+		end
+	end
+	return false
+end
+
 -- Drop a nav-mesh point onto the surface actually underneath it.
 --
 -- The nav mesh is a voxelised stand-in for the world, not the world: its polygons are
@@ -62,7 +79,8 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 
 	-- Freeze together with the rest of the game (the Stage owns these flags).
-	if context._gameOver or context._paused then
+	-- _nightOver is the win: nothing new rises into the dawn.
+	if context._gameOver or context._paused or context._nightOver then
 		return
 	end
 
@@ -131,12 +149,23 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 	self._spawned = kept
 
+	-- Ward pressure. Every ward the player lights buys a patch of safe ground and
+	-- pays for it by making everywhere else worse: spawns come faster and closer.
+	--
+	-- Headcount is deliberately NOT scaled. MAX_ENEMIES is a performance ceiling
+	-- (each zombie carries thirteen physics bodies), not a difficulty knob -- the
+	-- escalation is speed and proximity, here and in EnemyController's pace.
+	local lit < const > = context._wardsLit or 0
+	local wards < const > = context._litWards
+	local spawnMin < const > = math.max(SPAWN_MIN - 0.8 * lit, 4.0)
+	local interval < const > = SPAWN_INTERVAL * math.max(1.0 - 0.1 * lit, 0.5)
+
 	-- 3) Only spawn while under the cap, and throttle attempts.
 	self._timer = self._timer - deltaTime
 	if #self._spawned >= MAX_ENEMIES or self._timer > 0.0 then
 		return
 	end
-	self._timer = SPAWN_INTERVAL
+	self._timer = interval
 
 	-- Player facing, so we can prefer spawning in front of the player.
 	local heading = 0.0
@@ -155,15 +184,17 @@ function Spawner:update(context, totalTime, deltaTime)
 		local p = self._navMesh:findRandomPoint(playerPos, SPAWN_MAX)   -- (0,0,0,0) on failure
 		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
 			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
-			if dx * dx + dz * dz >= SPAWN_MIN * SPAWN_MIN then
+			if dx * dx + dz * dz >= spawnMin * spawnMin then
 				-- Settle onto the actual surface, and take the ground's own verdict on
 				-- whether this is a place to stand: a near-vertical hit means the nav
 				-- point landed on a cliff face or the side of a boulder, where a zombie
 				-- would spawn half inside the rock and immediately slide. Rejecting the
 				-- candidate costs nothing - there are CANDIDATES-1 more, and failing the
 				-- whole attempt just retries in SPAWN_INTERVAL seconds.
+				-- ...and reject it outright if it lands on consecrated ground, which
+				-- is what makes a lit ward mean something rather than just look warm.
 				local g, gn = traceGround(pm, p)
-				if g ~= nil and gn.y >= GROUND_MIN_NORMAL_Y then
+				if g ~= nil and gn.y >= GROUND_MIN_NORMAL_Y and not inLitWard(wards, g) then
 					local eye < const > = playerPos.xyz1 + Vector4(0.0, 1.6, 0.0)
 					local r < const > = g + Vector4(0.0, 1.6, 0.0) - eye
 					local rl < const > = r.length

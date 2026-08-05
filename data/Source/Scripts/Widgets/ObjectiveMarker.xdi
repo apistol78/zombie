@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- ObjectiveMarker
+--
+-- HUD compass for wherever the player is supposed to be going: a needle on a dial
+-- with the range beside it. The art is the "MC_ObjectiveMarker" export of the
+-- UI/Hud movie, authored in data/Assets/UI/Hud.svg, on the same plate as the
+-- ammunition and treasure tiles.
+--
+-- The needle shows a *relative* bearing -- straight up is dead ahead, so lining it
+-- up with the fixed tick at the top of the dial and walking is the whole
+-- interaction. Scene 2 is 353 near-identical pines in the dark; without this the
+-- relic hunt is frustration rather than fear.
+--
+-- Layers in the SVG, back to front:
+--
+--   shadow  static
+--   plate   steel plate; static
+--   dial    recessed face with the fixed heading ticks; static
+--   needle  spun about the dial centre by the bearing, dimmed when there is no
+--           target left to point at
+--   glow    white overlay; alpha kicked when the objective changes
+--
+-- Fixed size, so the HUD row never shifts as the range counts down, and the text
+-- is re-placed by hand on every change (as in TreasureCounter -- a Widget lays out
+-- no children).
+--
+-- GOTCHA: the SVG importer bakes every shape at absolute movie coordinates, so a
+-- child sprite's origin is the movie's origin, not the art's. Rotating one swings
+-- it away from that origin, hence spinAbout below (the same helper AmmoCounter
+-- uses for its ejected case).
+
+ObjectiveMarker = ObjectiveMarker or class("ObjectiveMarker", Widget)
+
+ObjectiveMarker:setStyle("resource", "MC_ObjectiveMarker")
+
+-- All of these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
+local W < const > = 180
+local H < const > = 56
+local DIAL_X < const > = 28
+local DIAL_Y < const > = 28
+local TEXT_X < const > = 50
+local TEXT_W < const > = 120
+
+local C_TEXT < const > = Color4f(1.0, 0.88, 0.66, 1.0)
+local C_OUTLINE < const > = Color4f(0.0, 0.0, 0.0, 1.0)
+
+local TURN_RATE < const > = 14.0   -- needle easing (1/s); fast enough to feel direct
+local ARRIVED < const > = 3.0      -- range under which the dial reads as "here" (m)
+
+-- Rotate about (px, py). setRotation takes degrees and turns about the sprite
+-- origin, so X/Y undo the swing that puts (px, py) back where the art was drawn.
+local function spinAbout(mc, px, py, deg)
+	local r < const > = math.rad(deg)
+	local c < const > = math.cos(r)
+	local s < const > = math.sin(r)
+	mc.rotation = deg
+	mc.X = px - (px * c - py * s)
+	mc.Y = py - (px * s + py * c)
+end
+
+-- Shortest way round from a to b, in degrees.
+local function shortestDelta(a, b)
+	local d = (b - a) % 360.0
+	if d > 180.0 then
+		d = d - 360.0
+	end
+	return d
+end
+
+function ObjectiveMarker:new(parent, skin)
+	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
+	assert(mc ~= nil, "ObjectiveMarker; no such movie resource, is UI/Hud in the resource kits?")
+	self:_initialize(parent, mc)
+end
+
+function ObjectiveMarker:getPreferredSize()
+	return { width = W, height = H }
+end
+
+function ObjectiveMarker:place(x, y, width, height)
+	Widget.place(self, x, y, width, height)
+	self:_layoutText()
+end
+
+-- Point at something. "bearing" is in radians, relative to the way the player is
+-- facing (0 = dead ahead, positive = to the right); "distance" is in metres. Pass
+-- nil for either to say there is nothing to point at, which parks the needle and
+-- blanks the range.
+function ObjectiveMarker:setTarget(bearing, distance)
+	if bearing == nil then
+		self._active = false
+		if self._shown ~= nil then
+			self._shown = nil
+			self._text:setText("")
+			self:_layoutText()
+		end
+		return self
+	end
+
+	if not self._active then
+		-- Just acquired, or switched from a relic to the altar: flash the plate and
+		-- snap the needle rather than sweeping it round from wherever it parked.
+		self._active = true
+		self._flash = 1.0
+		self._angle = math.deg(bearing)
+	end
+	self._targetAngle = math.deg(bearing)
+
+	local text
+	if distance < ARRIVED then
+		text = "HERE"
+	else
+		text = string.format("%d m", math.floor(distance + 0.5))
+	end
+	if text ~= self._shown then
+		self._shown = text
+		self._text:setText(text)
+		self:_layoutText()
+	end
+	return self
+end
+
+-- Called when the thing being pointed at changes, so the next setTarget snaps and
+-- flashes instead of sweeping across the dial.
+function ObjectiveMarker:retarget()
+	self._active = false
+	return self
+end
+
+function ObjectiveMarker:update(dt)
+	-- Ease the needle round the short way. Fast enough to track mouse-look directly,
+	-- slow enough to take the jitter out of a target that is nearly on top of you.
+	local delta < const > = shortestDelta(self._angle, self._targetAngle)
+	self._angle = self._angle + delta * math.min(1.0, dt * TURN_RATE)
+	spinAbout(self._needle_mc, DIAL_X, DIAL_Y, self._angle)
+
+	-- Nothing to point at: leave the needle where it is, faded back.
+	self._needle_mc.alpha = self._active and 1.0 or 0.15
+
+	if self._flash > 0.0 then
+		self._flash = math.max(0.0, self._flash - dt * 2.4)
+		self._glow_mc.alpha = math.sin(self._flash * math.pi) * 0.3
+	end
+end
+
+-- Private
+
+function ObjectiveMarker:_initialize(parent, mc)
+	Widget._initialize(self, parent, mc)
+
+	self._halign = Widget.ALIGN_CENTER
+	self._valign = Widget.ALIGN_CENTER
+
+	self._angle = 0.0
+	self._targetAngle = 0.0
+	self._active = false
+	self._flash = 0.0
+	self._shown = nil
+
+	self._needle_mc = mc:getMember("needle")
+	self._glow_mc = mc:getMember("glow")
+	assert(self._needle_mc ~= nil, "ObjectiveMarker; movie resource is missing its parts")
+
+	self._glow_mc.alpha = 0.0
+	self._needle_mc.alpha = 0.15
+
+	-- Created after the art so it ends up on top of it.
+	self._text = Static(self, "")
+	self._text:setTextSize(22)
+	self._text:setTextColor(C_TEXT)
+	self._text:setTextOutlineColor(C_OUTLINE)
+	self._text:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self:_layoutText()
+end
+
+-- Centre the range in the space the art leaves beside the dial.
+function ObjectiveMarker:_layoutText()
+	local ts < const > = self._text:getPreferredSize()
+	self._text:place(TEXT_X, (H - ts.height) / 2, TEXT_W, ts.height)
+end
+]]></text>
+</object>

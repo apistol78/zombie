@@ -5,6 +5,8 @@
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
 #using \{04146358-42A5-463F-9AEC-380D3C1C7F95}
+#using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
+#using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 
 import(traktor)
 
@@ -17,16 +19,22 @@ import(traktor)
 --
 -- The top row is driven by a scripted loop -- repeated hits down to nearly
 -- dead, a pause on empty, then a full heal, with a treasure collected every
--- couple of seconds -- so every animation path (damage lag, hit flash,
--- heartbeat, critical rim, collect pop, shimmer) is exercised. The rows below
--- are held at fixed values to check the colour ramp and the critical state.
+-- couple of seconds and the rifle emptied a round at a time and reloaded --
+-- so every animation path (damage lag, hit flash, heartbeat, critical rim,
+-- collect pop, shimmer, shot kick, case eject, dry rim, reload sweep) is
+-- exercised. The rows below are held at fixed values to check the colour ramp
+-- and the critical/empty states.
 
 HudScaffolding = HudScaffolding or class("HudScaffolding", Scaffolding)
 
 local SAMPLES < const > = { 1.0, 0.62, 0.34, 0.17, 0.0 }
+local MAG_SIZE < const > = 6
+local RESERVE < const > = 24
+local RELOAD_TIME < const > = 1.9
 
 -- Both the widget art and UiKit itself; the widgets look up "MC_HealthBar" /
--- "MC_TreasureCounter" in the first, Static and Panel come from the second.
+-- "MC_TreasureCounter" / "MC_AmmoCounter" / "MC_ObjectiveMarker" in the first,
+-- Static and Panel come from the second.
 function HudScaffolding:getResourceKits()
 	return {
 		"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
@@ -40,16 +48,23 @@ function HudScaffolding:setup(frame)
 	self._found = 0
 	self._hitTimer = 1.5
 	self._popTimer = 2.0
+	self._mag = MAG_SIZE
+	self._reserve = RESERVE
+	self._fireTimer = 0.8
+	self._reloadTimer = nil
+	self._bearing = 0.0
 
 	-- Dark backdrop, roughly the value the HUD sits against in game.
 	local panel < const > = Panel(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 14))
 	panel:setColor(Color4f(0.13, 0.16, 0.12, 1.0))
 
-	self._live, self._liveTreasure = self:_row(panel, "live")
+	self._live, self._liveTreasure, self._liveAmmo, self._liveMarker = self:_row(panel, "live")
 	for _, v in ipairs(SAMPLES) do
-		local bar, treasure = self:_row(panel, string.format("%d%%", math.floor(v * 100 + 0.5)))
+		local bar, treasure, ammo, marker = self:_row(panel, string.format("%d%%", math.floor(v * 100 + 0.5)))
 		bar:setValue(v)
 		treasure:setCount(math.floor(v * 10), 10)
+		ammo:setAmmo(math.floor(v * MAG_SIZE), math.floor(v * RESERVE))
+		marker:setTarget(v * 2.0 * math.pi, v * 140.0)
 	end
 end
 
@@ -80,6 +95,47 @@ function HudScaffolding:update()
 		self._liveTreasure:pop()
 	end
 
+	-- Empty the magazine a round at a time, sit on empty long enough to see the
+	-- rim pulse, then reload and go again. The reserve refills itself so the loop
+	-- never ends.
+	if self._reloadTimer ~= nil then
+		self._reloadTimer = self._reloadTimer - dt
+		if self._reloadTimer <= 0.0 then
+			local take < const > = math.min(MAG_SIZE - self._mag, self._reserve)
+			self._mag = self._mag + take
+			self._reserve = self._reserve - take
+			if self._reserve <= 0 then
+				self._reserve = RESERVE
+			end
+			self._reloadTimer = nil
+			self._liveAmmo:setReload(nil)
+			self._liveAmmo:setAmmo(self._mag, self._reserve)
+		else
+			self._liveAmmo:setReload(1.0 - self._reloadTimer / RELOAD_TIME)
+		end
+	else
+		self._fireTimer = self._fireTimer - dt
+		if self._fireTimer <= 0.0 then
+			if self._mag > 0 then
+				self._mag = self._mag - 1
+				self._fireTimer = 0.45
+				self._liveAmmo:setAmmo(self._mag, self._reserve)
+				self._liveAmmo:spend()
+				if self._mag <= 0 then
+					self._fireTimer = 1.6
+				end
+			else
+				self._reloadTimer = RELOAD_TIME
+				self._liveAmmo:setReload(0.0)
+			end
+		end
+	end
+
+	-- Swing the compass right round and walk the range down, so the needle easing,
+	-- the short-way-round wrap and the "HERE" readout all get exercised.
+	self._bearing = (self._bearing + dt * 0.9) % (2.0 * math.pi)
+	self._liveMarker:setTarget(self._bearing, 2.0 + (1.0 - self._bearing / (2.0 * math.pi)) * 90.0)
+
 	-- Every widget animates itself, exactly as the stage does in game.
 	for _, w in ipairs(self._widgets) do
 		w:update(dt)
@@ -88,22 +144,29 @@ end
 
 -- Private
 
--- One labelled row: caption, health bar, treasure counter.
+-- One labelled row: caption, then the four HUD widgets in the order they sit in
+-- on the in game HUD. Wider than the preview control, so the treasure counter
+-- clips off the right; the marker is leftmost precisely because it is the one
+-- being iterated on.
 function HudScaffolding:_row(parent, caption)
-	local row < const > = Container(parent, TableLayout({ 0, 0, 0 }, { 0 }, 0, 0, 16, 0))
+	local row < const > = Container(parent, TableLayout({ 0, 0, 0, 0, 0 }, { 0 }, 0, 0, 16, 0))
 
 	local label < const > = Static(row, caption)
 	label:setTextColor(Color4f(0.85, 0.87, 0.8, 1.0))
 	label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 	label:setVerticalAlign(Widget.ALIGN_CENTER)
 
+	local marker < const > = ObjectiveMarker(row)
 	local bar < const > = HealthBar(row)
+	local ammo < const > = AmmoCounter(row)
 	local treasure < const > = TreasureCounter(row)
 
+	table.insert(self._widgets, marker)
 	table.insert(self._widgets, bar)
+	table.insert(self._widgets, ammo)
 	table.insert(self._widgets, treasure)
 
-	return bar, treasure
+	return bar, treasure, ammo, marker
 end
 ]]></text>
 </object>

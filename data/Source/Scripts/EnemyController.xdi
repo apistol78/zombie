@@ -37,12 +37,49 @@ EnemyController = EnemyController or class("EnemyController", traktor.world.Scri
 local COLLISION_DEFAULT = 0x00000001
 local COLLISION_INTERACTABLE = 0x00000002
 
+-- Consecrated ground. Returns a push away from every lit ward the point is inside
+-- of, plus whether it is inside any at all. The Stage publishes the ward list as
+-- context._litWards ({ x, z, r, r2 }); nil or empty means nothing to avoid.
+--
+-- Weight ramps from 0.4 at the rim to 1.0 at the flame, so a zombie is turned back
+-- however shallowly it strays in, and is driven out hardest from the middle. It is
+-- deliberately non-zero right at the boundary: a ward that only pushed once you
+-- were well inside would let the horde stand a third of the way in, which is
+-- exactly the ground the player is trying to make safe.
+local function wardPush(wards, x, z)
+	if wards == nil then
+		return 0.0, 0.0, false
+	end
+	local px, pz = 0.0, 0.0
+	local inside = false
+	for _, w in ipairs(wards) do
+		local ax < const > = x - w.x
+		local az < const > = z - w.z
+		local d2 < const > = ax * ax + az * az
+		if d2 < w.r2 then
+			inside = true
+			local d < const > = math.sqrt(d2)
+			if d > 0.001 then
+				local k < const > = 0.4 + 0.6 * ((w.r - d) / w.r)
+				px = px + (ax / d) * k
+				pz = pz + (az / d) * k
+			else
+				px = px + 1.0   -- standing on the flame itself; any way out will do
+			end
+		end
+	end
+	return px, pz, inside
+end
+
 function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
 	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
 	self._avoidRadius = 2.0   -- start avoiding other agents within this distance (m)
 	self._separation = 1.5    -- how strongly avoidance overrides path following
+	self._wardRepulsion = 3.0 -- ...and how strongly a lit ward does; must beat the
+	                          -- path (a unit vector) even at the ward's rim, or the
+	                          -- horde would simply walk in after the player
 
 	-- State machine.
 	self._state = "patrol"    -- "patrol" | "attack"
@@ -128,7 +165,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 			-- move() only feeds impulses, which the controller accumulates until this
 			-- clamp stops them - a couple of frames of walking - so maxVelocity, not the
 			-- impulse magnitude, is what the enemy actually travels at. It carries this
-			-- zombie's randomised pace (see :new()).
+			-- zombie's randomised pace (see :new()). Re-applied every frame further
+			-- down, scaled by the Stage's ward escalation.
 			self._character.maxVelocity = self._attackSpeed
 		end
 	end
@@ -196,9 +234,19 @@ function EnemyController:update(context, totalTime, deltaTime)
 		end
 	end
 
-	local speed = self._patrolSpeed
+	-- Pace multiplier from the Stage: every ward the player lights makes the forest
+	-- outside it faster (see Main:_publishWards). Read per frame and applied to
+	-- maxVelocity as well, so already-spawned zombies speed up too -- setting it
+	-- once at resolve would leave the existing horde ambling at the old rate.
+	-- Defaults to 1.0, so this controller still behaves standalone.
+	local pace < const > = context._enemyPace or 1.0
+
+	local speed = self._patrolSpeed * pace
 	if self._state == "attack" then
-		speed = self._attackSpeed
+		speed = self._attackSpeed * pace
+	end
+	if self._character ~= nil then
+		self._character.maxVelocity = self._attackSpeed * pace
 	end
 
 	-- ---- Collect the finished path query, then choose a destination and issue the next ----
@@ -250,7 +298,17 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if (needNew or self._repathTimer <= 0.0) and self._pathResult == nil then
 			self._repathTimer = 1.5
 			if needNew then
-				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 2.0)
+				local candidate = self._navMesh:findRandomPoint(enemyPos, 2.0)
+				-- Do not deliberately wander onto consecrated ground. One retry is
+				-- enough: the repulsion below turns the zombie around either way,
+				-- this just stops it repeatedly setting off toward a ward it cannot
+				-- enter. Always assigns, so a rejected pair still leaves a target for
+				-- createMoveQuery below.
+				local _, _, inWard = wardPush(context._litWards, candidate.x, candidate.z)
+				if inWard then
+					candidate = self._navMesh:findRandomPoint(enemyPos, 2.0)
+				end
+				self._patrolTarget = candidate
 			end
 			self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
 		end
@@ -296,9 +354,16 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- Avoid player.
 	avoid(playerPos.x, playerPos.z)
 
-	-- Blend separation into the desired direction, then renormalise to a unit heading.
-	targetX = targetX + sepX * self._separation
-	targetZ = targetZ + sepZ * self._separation
+	-- Consecrated ground pushes back. This is what makes a lit ward a place the
+	-- player is actually safe standing in, rather than merely a place nothing
+	-- spawns: the horde is driven out of one it is caught in, and turned away at
+	-- the rim when it chases the player into one.
+	local wardX < const > , wardZ < const > = wardPush(context._litWards, enemyPos.x, enemyPos.z)
+
+	-- Blend separation and ward repulsion into the desired direction, then
+	-- renormalise to a unit heading.
+	targetX = targetX + sepX * self._separation + wardX * self._wardRepulsion
+	targetZ = targetZ + sepZ * self._separation + wardZ * self._wardRepulsion
 	local tl = math.sqrt(targetX * targetX + targetZ * targetZ)
 	if tl > 0.001 then
 		targetX = targetX / tl

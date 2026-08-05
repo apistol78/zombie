@@ -2399,7 +2399,7 @@
 						</item>
 						<item type="traktor.world.EntityData" version="2">
 							<id>{BFE36E93-7848-4C29-8894-743079BA4F7E}</id>
-							<name>CemCross</name>
+							<name>Altar</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
@@ -2412,6 +2412,18 @@
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
 									<mesh>{2CAD0D93-C615-A346-99C9-7B1B2E25C60E}</mesh>
+								</item>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.6, 0.25, 1</color>
+									<intensity>700</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>11</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.35</flickerAmount>
+									<flickerFilter>0.3</flickerFilter>
+									<bakeMode>LbmIndirect</bakeMode>
 								</item>
 								<item type="traktor.physics.RigidBodyComponentData" version="1">
 									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
@@ -13765,6 +13777,524 @@
 							</transform>
 							<components/>
 							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000000}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>17.500000, 23.560320, 33.000000, 0</translation>
+								<rotation>0, 0.216440, 0, 0.976296</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000001}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-8.500000, 23.388437, 13.500000, 0</translation>
+								<rotation>0, 0.984808, 0, -0.173648</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000002}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>10.500000, 22.419672, 4.500000, 0</translation>
+								<rotation>0, 0.173648, 0, -0.984808</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000003}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-13.500000, 23.087656, 63.500000, 0</translation>
+								<rotation>0, 0.573576, 0, 0.819152</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000004}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0.000000, 23.794695, 73.500000, 0</translation>
+								<rotation>0, 0.976296, 0, 0.216440</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000005}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-4.000000, 23.386484, 66.000000, 0</translation>
+								<rotation>0, 0.608761, 0, -0.793353</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000006}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-27.500000, 23.515398, 25.500000, 0</translation>
+								<rotation>0, 0.087156, 0, 0.996195</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000007}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-45.500000, 23.615007, 4.500000, 0</translation>
+								<rotation>0, 0.866025, 0, 0.500000</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000008}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>16.000000, 10.511293, -30.000000, 0</translation>
+								<rotation>0, 0.866025, 0, -0.500000</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-000000000009}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-34.500000, 10.585512, -35.000000, 0</translation>
+								<rotation>0, 0.461749, 0, 0.887011</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-00000000000A}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>55.000000, 10.940981, 15.000000, 0</translation>
+								<rotation>0, 0.500000, 0, -0.866025</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A330C0DE-7F10-4E62-9B55-00000000000B}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-60.000000, 41.107462, 38.000000, 0</translation>
+								<rotation>0, 0.991445, 0, -0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{5F1D8A02-4C77-4B36-9E1A-70B3C8D4E951}</id>
+			<name>Relics</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>true</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B44E11C0-3D82-4A17-8E60-000000000000}</id>
+							<name>Relic</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>12.500000, 22.431007, 5.000000, 0</translation>
+								<rotation>0, 0.984808, 0, -0.173648</rotation>
+							</transform>
+							<components/>
+							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B44E11C0-3D82-4A17-8E60-000000000001}</id>
+							<name>Relic</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-14.500000, 23.368523, 17.000000, 0</translation>
+								<rotation>0, 0.382683, 0, 0.923880</rotation>
+							</transform>
+							<components/>
+							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B44E11C0-3D82-4A17-8E60-000000000002}</id>
+							<name>Relic</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-44.000000, 23.063828, -2.000000, 0</translation>
+								<rotation>0, 0.422618, 0, -0.906308</rotation>
+							</transform>
+							<components/>
+							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B44E11C0-3D82-4A17-8E60-000000000003}</id>
+							<name>Relic</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>12.000000, 10.360512, -37.000000, 0</translation>
+								<rotation>0, 0.906308, 0, 0.422618</rotation>
+							</transform>
+							<components/>
+							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B44E11C0-3D82-4A17-8E60-000000000004}</id>
+							<name>Relic</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-56.000000, 40.579720, 42.000000, 0</translation>
+								<rotation>0, 0.642788, 0, 0.766044</rotation>
+							</transform>
+							<components/>
+							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{7A3B9E64-1C05-4D82-B7F3-269DA0C81E57}</id>
+			<name>Wards</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000000}</id>
+							<name>WardPost</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0.000000, 23.266960, 67.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{28A52E43-DE97-3145-A031-6E129A677221}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DEF1A3-6D27-4B90-8E41-000000000000}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0.000000, 25.166960, 67.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.62, 0.26, 1</color>
+									<intensity>1100</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>13</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.5</flickerAmount>
+									<flickerFilter>0.25</flickerFilter>
+									<bakeMode>LbmDisabled</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000001}</id>
+							<name>WardPost</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>3.500000, 23.181015, 46.500000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{28A52E43-DE97-3145-A031-6E129A677221}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DEF1A3-6D27-4B90-8E41-000000000001}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>3.500000, 25.081015, 46.500000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.62, 0.26, 1</color>
+									<intensity>1100</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>13</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.5</flickerAmount>
+									<flickerFilter>0.25</flickerFilter>
+									<bakeMode>LbmDisabled</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000002}</id>
+							<name>WardPost</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>12.000000, 23.393913, 40.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{28A52E43-DE97-3145-A031-6E129A677221}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DEF1A3-6D27-4B90-8E41-000000000002}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>12.000000, 25.293913, 40.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.62, 0.26, 1</color>
+									<intensity>1100</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>13</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.5</flickerAmount>
+									<flickerFilter>0.25</flickerFilter>
+									<bakeMode>LbmDisabled</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000003}</id>
+							<name>WardPost</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-27.000000, 23.218124, 37.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{28A52E43-DE97-3145-A031-6E129A677221}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DEF1A3-6D27-4B90-8E41-000000000003}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-27.000000, 25.118124, 37.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.62, 0.26, 1</color>
+									<intensity>1100</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>13</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.5</flickerAmount>
+									<flickerFilter>0.25</flickerFilter>
+									<bakeMode>LbmDisabled</bakeMode>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000004}</id>
+							<name>WardPost</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-2.500000, 23.085312, 15.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{28A52E43-DE97-3145-A031-6E129A677221}</mesh>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C0DEF1A3-6D27-4B90-8E41-000000000004}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-2.500000, 24.985312, 15.000000, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.LightComponentData" version="13">
+									<lightType>Point</lightType>
+									<color>1, 0.62, 0.26, 1</color>
+									<intensity>1100</intensity>
+									<castShadow>false</castShadow>
+									<nearRange>0</nearRange>
+									<farRange>13</farRange>
+									<radius>1.570796</radius>
+									<flickerAmount>0.5</flickerAmount>
+									<flickerFilter>0.25</flickerFilter>
+									<bakeMode>LbmDisabled</bakeMode>
+								</item>
+							</components>
 						</item>
 					</entityData>
 				</item>

@@ -56,6 +56,17 @@ GEM_X, GEM_Y = 28, 28
 GEM_S = 30
 SPARK_X, SPARK_Y = 21, 21
 
+AC_W = TC_W                     # ammo counter shares the treasure plate, so the
+ROUND_X, ROUND_Y = 28, 28       # two right hand HUD tiles read as a matched pair
+ROUND_S = 32                    # cartridge height
+RELOAD_X, RELOAD_W = 50, TC_W - 60  # reload bar, under the count and clear of
+RELOAD_Y, RELOAD_H = 39, 3          # the cartridge so it does not cut across it
+
+OM_W = TC_W                     # objective marker: third tile on the same plate
+DIAL_X, DIAL_Y = 28, 28         # compass dial centre, and the needle's pivot
+DIAL_R = 17
+NEEDLE_R = 13                   # needle tip, measured from the pivot
+
 # ------------------------------------------------------------------ palette --
 
 EDGE = "#050508"                # outermost dark line of a plate
@@ -74,6 +85,22 @@ GEM_TABLE = "#ffedb0"
 GEM_LEFT = "#c79309"
 GEM_RIGHT = "#8c5c07"
 GEM_RIM = "#42280a"
+
+BRASS = "#c8962a"               # cartridge case
+BRASS_HI = "#f2d488"
+BRASS_LO = "#8a6416"
+BRASS_RIM = "#3d2b07"
+LEAD = "#b9b9c2"                # bullet tip
+LEAD_HI = "#e8e8ef"
+LEAD_LO = "#6e6e78"
+RELOAD = "#4aa3ff"              # reload sweep, matching the ammo pickup's blue
+
+DIAL_RIM = "#4a4d57"            # compass dial
+DIAL_FACE = "#121218"
+DIAL_TICK = "#8b8f9c"
+NEEDLE = "#ffb347"              # needle, in the relic's amber
+NEEDLE_HI = "#ffe0a8"
+NEEDLE_RIM = "#3a2405"
 
 # The fill is drawn greyscale and tinted per frame by the widget's colour
 # transform, so these are shades, not colours.
@@ -107,6 +134,11 @@ def poly(points, fill, opacity=None):
 def rect(x, y, w, h, fill, opacity=None):
     return ('<rect x="%s" y="%s" width="%s" height="%s" style="%s"/>'
             % (n(x), n(y), n(w), n(h), style(fill, opacity)))
+
+
+def circle(cx, cy, r, fill, opacity=None):
+    return ('<circle cx="%s" cy="%s" r="%s" style="%s"/>'
+            % (n(cx), n(cy), n(r), style(fill, opacity)))
 
 
 def cut_rect(x, y, w, h, c):
@@ -155,6 +187,71 @@ def gem(cx, cy, s):
         poly(o([(-tw, top), (tw, top), (tw * 1.55, gird), (-tw * 1.55, gird)]), GEM_TABLE),
         poly(o([(-hw, gird), (-tw * 1.55, gird), (0, tip)]), GEM_LEFT),
         poly(o([(tw * 1.55, gird), (hw, gird), (0, tip)]), GEM_RIGHT),
+    ]
+
+
+def _cartridge_parts(cx, cy, s):
+    """Rim, case and bullet polygons of a rifle round, tip up, centred on
+    (cx, cy) and s tall. Split out so the silhouette can be redrawn slightly
+    inflated underneath, the way the gem's rim is."""
+    half = s * 0.5
+    y_base = cy + half
+    y_rim = cy + half - s * 0.09        # top of the extractor rim
+    y_shoulder = cy - half + s * 0.48   # top of the straight case
+    y_neck = cy - half + s * 0.36       # case neck, where the bullet starts
+    y_tip = cy - half
+    w_rim, w_case, w_neck = s * 0.19, s * 0.16, s * 0.1
+
+    rim = [(cx - w_rim, y_rim), (cx + w_rim, y_rim),
+           (cx + w_rim, y_base), (cx - w_rim, y_base)]
+
+    case = [(cx - w_case, y_rim), (cx + w_case, y_rim),
+            (cx + w_case, y_shoulder), (cx + w_neck, y_neck),
+            (cx - w_neck, y_neck), (cx - w_case, y_shoulder)]
+
+    # Circular ogive, four segments a flank.
+    steps = 5
+
+    def flank(sign):
+        out = []
+        for i in range(1, steps):
+            t = i / steps
+            out.append((cx + sign * w_neck * math.sqrt(max(0.0, 1.0 - t * t)),
+                        y_neck - (y_neck - y_tip) * t))
+        return out
+
+    bullet = ([(cx - w_neck, y_neck), (cx + w_neck, y_neck)]
+              + flank(1) + [(cx, y_tip)] + list(reversed(flank(-1))))
+
+    return rim, case, bullet
+
+
+def cartridge(cx, cy, s):
+    o_rim, o_case, o_bullet = _cartridge_parts(cx, cy, s * 1.14)
+    rim, case, bullet = _cartridge_parts(cx, cy, s)
+    return [
+        poly(o_rim, BRASS_RIM), poly(o_case, BRASS_RIM), poly(o_bullet, BRASS_RIM),
+        poly(rim, BRASS_LO),
+        poly(case, BRASS),
+        poly(bullet, LEAD),
+        # Lit from the upper left, like every other plate on the HUD.
+        rect(cx - s * 0.12, cy - s * 0.05, s * 0.05, s * 0.32, BRASS_HI, 0.85),
+        poly([(cx - s * 0.07, cy - s * 0.16), (cx - s * 0.02, cy - s * 0.17),
+              (cx - s * 0.01, cy - s * 0.42), (cx - s * 0.05, cy - s * 0.4)],
+             LEAD_HI, 0.8),
+        rect(cx - s * 0.16, cy + s * 0.29, s * 0.32, s * 0.03, BRASS_RIM, 0.7),
+    ]
+
+
+def casing(cx, cy):
+    """Spent case, drawn lying on its side; the widget flings it off on each
+    shot. No bullet, and shorter than the live round it leaves behind."""
+    w, h = 13, 6
+    return [
+        rect(cx - w / 2 - 1, cy - h / 2 - 1, w + 2, h + 2, BRASS_RIM),
+        rect(cx - w / 2, cy - h / 2, w, h, BRASS),
+        rect(cx - w / 2, cy - h / 2, w, 2, BRASS_HI, 0.8),
+        rect(cx + w / 2 - 2, cy - h / 2, 2, h, BRASS_LO),
     ]
 
 
@@ -270,6 +367,100 @@ def treasure_counter():
     return layers
 
 
+# ------------------------------------------------------------ ammo counter --
+
+def ammo_counter():
+    """Shares the treasure counter's plate so the two right hand tiles match.
+    'round' kicks on each shot, 'casing' is flung clear, 'reload' fills as the
+    magazine is refilled and 'warn' rims the plate once it runs dry."""
+    layers = []
+
+    layers.append(sprite("shadow", [
+        poly(cut_rect(2, TC_PLATE_Y + 3, AC_W - 4, TC_PLATE_H, 7), BLACK, 0.45),
+    ]))
+
+    # Under the plate, a couple of pixels proud of it, so only a rim shows.
+    layers.append(sprite("warn", [
+        poly(cut_rect(0, TC_PLATE_Y - 3, AC_W, TC_PLATE_H + 6, 9), WARN, 0.35),
+        poly(cut_rect(1, TC_PLATE_Y - 1, AC_W - 2, TC_PLATE_H + 2, 7), WARN),
+    ]))
+
+    layers.append(sprite("plate", [
+        poly(cut_rect(2, TC_PLATE_Y, AC_W - 4, TC_PLATE_H, 7), EDGE),
+        poly(cut_rect(3, TC_PLATE_Y + 1, AC_W - 6, TC_PLATE_H - 2, 6), BEVEL),
+        poly(cut_rect(4, TC_PLATE_Y + 3, AC_W - 8, TC_PLATE_H - 4, 5), FACE),
+    ]))
+
+    layers.append(sprite("reloadtrack", [
+        rect(RELOAD_X, RELOAD_Y, RELOAD_W, RELOAD_H, TRACK),
+    ]))
+    layers.append(sprite("reload", [
+        rect(RELOAD_X, RELOAD_Y, RELOAD_W, RELOAD_H, RELOAD),
+    ]))
+
+    layers.append(sprite("round", cartridge(ROUND_X, ROUND_Y, ROUND_S)))
+    layers.append(sprite("casing", casing(ROUND_X, ROUND_Y)))
+
+    layers.append(sprite("glow", [
+        poly(cut_rect(3, TC_PLATE_Y + 1, AC_W - 6, TC_PLATE_H - 2, 6), WHITE),
+    ]))
+
+    return layers
+
+
+# -------------------------------------------------------- objective marker --
+
+def _needle_shape(cx, cy, r, w, tail):
+    """Arrowhead pointing up, straddling the pivot: tip ahead of it, barbs and
+    notch behind, so it reads as a compass needle swinging about (cx, cy)."""
+    return [(cx, cy - r), (cx + w, cy + tail), (cx, cy + tail * 0.35), (cx - w, cy + tail)]
+
+
+def objective_marker():
+    """Same plate as the other right hand tiles, carrying a compass dial. Only
+    'needle' moves -- the widget spins it about (DIAL_X, DIAL_Y) by the bearing to
+    the current objective. The ticks stay put: the top one is 'straight ahead'."""
+    layers = []
+
+    layers.append(sprite("shadow", [
+        poly(cut_rect(2, TC_PLATE_Y + 3, OM_W - 4, TC_PLATE_H, 7), BLACK, 0.45),
+    ]))
+
+    layers.append(sprite("plate", [
+        poly(cut_rect(2, TC_PLATE_Y, OM_W - 4, TC_PLATE_H, 7), EDGE),
+        poly(cut_rect(3, TC_PLATE_Y + 1, OM_W - 6, TC_PLATE_H - 2, 6), BEVEL),
+        poly(cut_rect(4, TC_PLATE_Y + 3, OM_W - 8, TC_PLATE_H - 4, 5), FACE),
+    ]))
+
+    layers.append(sprite("dial", [
+        circle(DIAL_X, DIAL_Y, DIAL_R + 2, EDGE),
+        circle(DIAL_X, DIAL_Y, DIAL_R, DIAL_RIM),
+        circle(DIAL_X, DIAL_Y, DIAL_R - 2, DIAL_FACE),
+        # Fixed heading marks: a prominent one for dead ahead, faint for the sides
+        # and behind, so a needle pointing anywhere but up is obvious at a glance.
+        poly([(DIAL_X - 3, DIAL_Y - DIAL_R + 1), (DIAL_X + 3, DIAL_Y - DIAL_R + 1),
+              (DIAL_X, DIAL_Y - DIAL_R + 6)], DIAL_TICK),
+        rect(DIAL_X + DIAL_R - 6, DIAL_Y - 1, 4, 2, DIAL_TICK, 0.55),
+        rect(DIAL_X - DIAL_R + 2, DIAL_Y - 1, 4, 2, DIAL_TICK, 0.55),
+        rect(DIAL_X - 1, DIAL_Y + DIAL_R - 6, 2, 4, DIAL_TICK, 0.55),
+    ]))
+
+    layers.append(sprite("needle", [
+        poly(_needle_shape(DIAL_X, DIAL_Y, NEEDLE_R + 1.5, 7.4, 6.2), NEEDLE_RIM),
+        poly(_needle_shape(DIAL_X, DIAL_Y, NEEDLE_R, 6, 5), NEEDLE),
+        # Lit down the left flank, like every other plate on the HUD.
+        poly([(DIAL_X, DIAL_Y - NEEDLE_R), (DIAL_X, DIAL_Y + 1.75),
+              (DIAL_X - 6, DIAL_Y + 5)], NEEDLE_HI, 0.55),
+        circle(DIAL_X, DIAL_Y, 2.2, NEEDLE_RIM),
+    ]))
+
+    layers.append(sprite("glow", [
+        poly(cut_rect(3, TC_PLATE_Y + 1, OM_W - 6, TC_PLATE_H - 2, 6), WHITE),
+    ]))
+
+    return layers
+
+
 def main():
     doc = []
     # NOTE: no double hyphen anywhere inside these comments; that is illegal in
@@ -296,6 +487,18 @@ def main():
     doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
     doc.append('     style="display:none">')
     doc.extend(treasure_counter())
+    doc.append('  </g>')
+
+    doc.append('  <g id="MC_AmmoCounter" inkscape:label="MC_AmmoCounter"')
+    doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
+    doc.append('     style="display:none">')
+    doc.extend(ammo_counter())
+    doc.append('  </g>')
+
+    doc.append('  <g id="MC_ObjectiveMarker" inkscape:label="MC_ObjectiveMarker"')
+    doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
+    doc.append('     style="display:none">')
+    doc.extend(objective_marker())
     doc.append('  </g>')
 
     doc.append('</svg>')

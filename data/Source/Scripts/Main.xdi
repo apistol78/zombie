@@ -5,10 +5,20 @@
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
 #using \{04146358-42A5-463F-9AEC-380D3C1C7F95}
+#using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
+#using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 
 import(traktor)
 
 -- Main
+
+-- Where the Sky entity's directional light ends up at dawn: a low warm sun, an
+-- order of magnitude brighter than the cool moonlight it is authored with. Stored
+-- premultiplied, because that is the form LightComponent.color takes.
+local DAWN_SUN < const > = Vector4(1.0, 0.86, 0.62, 1.0) * 26.0
+
+-- Two-argument atan; math.atan2 was folded into math.atan.
+local atan2 < const > = math.atan2 or math.atan
 
 Main = Main or class("Main", Stage)
 
@@ -46,13 +56,17 @@ function Main:new(params, environment)
 	self._lblGodMode:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblGodMode:setVerticalAlign(Widget.ALIGN_TOP)
 
-	-- HUD: health bar centered along the bottom with the treasure tally to its
-	-- right. Both are custom canvas-drawn widgets (Scripts/Widgets), and both
-	-- want a per-frame :update to run their animations.
-	self._hud = Container(self._frame, TableLayout({ 0, 0 }, { 0 }, 0, 0, 18, 0))
+	-- HUD: one row along the bottom, reading left to right as where to go, how alive
+	-- you are, what you have to shoot with, and what you have found. Ammo sits next
+	-- to health because those two are what the player is actually spending. All four
+	-- are custom widgets (Scripts/Widgets) whose art comes from the UI/Hud movie, and
+	-- all four want a per-frame :update to run their animations.
+	self._hud = Container(self._frame, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 18, 0))
 	self._hud:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._hud:setVerticalAlign(Widget.ALIGN_BOTTOM)
+	self._marker = ObjectiveMarker(self._hud)
 	self._healthBar = HealthBar(self._hud)
+	self._ammo = AmmoCounter(self._hud)
 	self._treasure = TreasureCounter(self._hud)
 
 	-- Game Over menu (hidden until death): the "GAME OVER" banner plus Restart / Exit
@@ -85,6 +99,34 @@ function Main:new(params, environment)
 	-- No explicit hide needed: Dialog starts hidden (Dialog:_initialize ends in
 	-- setVisible(false)), exactly as the pause dialog below relies on.
 
+	-- Objective banner and contextual prompt, both centred near the top.
+	--
+	-- These are ILayout.FLOAT (the same escape hatch Dialog uses), so they sit
+	-- outside the frame's two-row layout and leave the god mode label and the HUD
+	-- row exactly where they were. They have to be placed by hand anyway: Static
+	-- clamps its text bounds to the width it was placed at, so a label whose text
+	-- changes -- and the prompt changes constantly -- gets the longer string cut
+	-- off unless it is re-placed. See _setLabel.
+	self._objective = { widget = Static(self._frame, ""), y = 30 }
+	self._objective.widget.__layout = ILayout.FLOAT
+	self._objective.widget:setTextSize(26)
+	self._objective.widget:setTextColor(Color4f(1.0, 0.82, 0.45, 1.0))
+	self._objective.widget:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+
+	self._prompt = { widget = Static(self._frame, ""), y = 66 }
+	self._prompt.widget.__layout = ILayout.FLOAT
+	self._prompt.widget:setTextSize(22)
+	self._prompt.widget:setTextColor(Color4f(0.92, 0.94, 0.9, 1.0))
+	self._prompt.widget:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+
+	-- Transient line for things that happen rather than things that are true --
+	-- currently only a ward catching light.
+	self._notice = { widget = Static(self._frame, ""), y = 102 }
+	self._notice.widget.__layout = ILayout.FLOAT
+	self._notice.widget:setTextSize(24)
+	self._notice.widget:setTextColor(Color4f(1.0, 0.72, 0.34, 1.0))
+	self._notice.widget:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+
 	-- Ensure layouts are updated.
 	self._frame:update()
 
@@ -113,6 +155,75 @@ function Main:new(params, environment)
 	self._fireRange = 40.0       -- max shot distance (m)
 	self._fireRadius = 0.9       -- aim-assist radius around the shot ray (m)
 
+	-- Ammunition. The rifle holds a magazine, the player carries a reserve, and
+	-- rounds only move from one to the other on a reload that takes long enough
+	-- that *where* you choose to do it matters. With zombies spawning forever and
+	-- one shot killing one of them, this is the whole economy: tune these first.
+	--
+	-- Rounds are spent in _fireWeapon and topped up by "AmmoPickup" crates, which
+	-- Terrain (Scene 2) scatters around the landmarks.
+	self._magSize = 6            -- rounds the rifle holds
+	self._mag = 6                -- rounds in it right now
+	self._reserve = 24           -- spare rounds carried
+	self._reserveMax = 60        -- most that can be carried at once
+	self._ammoPerPickup = 12     -- rounds in one crate
+	self._reloadTime = 1.9       -- seconds to refill the magazine
+	self._fireInterval = 0.4     -- minimum seconds between shots
+	self._fireTimer = 0.0        -- counts down to the next shot being allowed
+	self._reloadTimer = 0.0      -- counts down to the magazine being refilled
+	self._ammo:setAmmo(self._mag, self._reserve)
+
+	-- Relics. The night's objective: consecrated crosses are scattered around the
+	-- map's landmarks and have to be carried, one at a time, back to the altar at
+	-- the chapel.
+	--
+	-- Carrying one is the whole point of the mechanic -- both hands are on it, so
+	-- the rifle goes down, sprinting is out and you move slower than a zombie
+	-- walks. Every relic run is therefore a route you commit to, and putting it
+	-- down to fight means coming back for it.
+	self._carried = nil          -- the Relic entity in the player's hands, or nil
+	self._placedRelics = {}      -- delivered relics; skipped when scanning for one to take
+	self._relicsPlaced = 0
+	self._relicsTotal = nil      -- counted off the world in resolve, like _totalPickups
+	self._reachRange = 2.2       -- how close to a relic you must be to take it (m)
+	self._altarRange = 3.5       -- ...and to the altar to place one; it is a 1.8 m monument
+	self._carrySpeed = 1.9       -- movement speed while carrying (walking is 3.0)
+
+	-- Wards. Every relic delivered lights one, and a lit ward is ground the Spawner
+	-- refuses to place zombies on. They are lit nearest-the-altar first, so the safe
+	-- zone grows outward from the cemetery along the routes the player keeps
+	-- re-walking -- which is the point: a ward out at a relic site would be
+	-- consecrating ground nobody ever visits again.
+	--
+	-- The trade is that it also winds the rest of the night up (see _publishWards
+	-- and Scripts/Spawner): you are buying an island and paying for it with a worse
+	-- forest, so the last relic run is the bad one.
+	self._wards = nil            -- resolved off the world, ordered by distance from the altar
+	self._wardsLit = 0
+	self._litWards = {}          -- published to the Spawner
+	self._enemyPace = 1.0        -- published to EnemyController
+	self._wardRadius = 15.0      -- no-spawn radius of a lit ward (m)
+	self._wardIgniteRate = 0.9   -- how fast a ward catches (1/s)
+	self._enemyPacePerWard = 0.1 -- zombie speed added per lit ward
+	self._noticeText = ""
+	self._noticeTimer = 0.0
+
+	-- The night director. There is exactly one way to win -- every relic on the
+	-- altar -- and it fires a timed sequence rather than an instant cut, so the
+	-- payoff has room to land: the horde drops where it stands, the sun comes up
+	-- over several seconds, and the screen floods warm into the victory card.
+	--
+	-- Only the directional light on the Sky entity carries the sunrise. SkyComponent
+	-- has no script bindings at all (nothing in Weather is registered), so its
+	-- intensity and horizon colours cannot be animated -- hence the wash, which
+	-- covers the sky staying night-dark underneath.
+	self._nightOver = false      -- true from the moment the last relic is placed
+	self._victoryShown = false
+	self._dawn = 0.0             -- seconds into the sunrise
+	self._dawnTime = 7.5         -- how long it takes, end to end
+	self._sun = nil              -- the Sky entity's directional light
+	self._sunNight = nil         -- ...and its authored colour, i.e. the moonlight
+
 	-- Aiming: mouse Y pitches the view/weapon up and down (mouse X yaws, in update).
 	self._pitch = 0.0            -- current aim pitch (radians; + = up)
 	self._pitchMin = -1.15       -- clamp low (~ -66 deg)
@@ -139,6 +250,34 @@ function Main:new(params, environment)
 	self._exitButton = PushButton(self._pauseDialog, "Exit")
 	self._exitButton:setOnClick(function() self:_exitToStartup() end)
 
+	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
+	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
+	-- created after the HUD and the other dialogs so it covers them -- but before the
+	-- victory card below, which has to sit on top of it. Hidden rather than merely
+	-- transparent: Panel listens for mouse presses and would otherwise swallow clicks
+	-- meant for the pause menu.
+	self._flash = Panel(self._frame, FloodLayout())
+	self._flash.__layout = ILayout.FLOAT
+	self._flash:setColor(Color4f(1.0, 0.94, 0.8, 0.0))
+	self._flash:setVisible(false)
+
+	-- Victory card, raised at the end of the sunrise.
+	self._victoryDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
+	local victoryTitle = Static(self._victoryDialog, "DAWN")
+	victoryTitle:setTextSize(60)
+	victoryTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
+	victoryTitle:setTextColor(Color4f(0.85, 0.5, 0.08, 1.0))
+	victoryTitle:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	local victorySub = Static(self._victoryDialog, "THE NIGHT IS OVER")
+	victorySub:setTextSize(22)
+	victorySub:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._victoryRestart = PushButton(self._victoryDialog, "Again")
+	self._victoryRestart:setMinimumWidth(220)
+	self._victoryRestart:setOnClick(function() self:_restart() end)
+	self._victoryExit = PushButton(self._victoryDialog, "Exit")
+	self._victoryExit:setMinimumWidth(220)
+	self._victoryExit:setOnClick(function() self:_exitToStartup() end)
+
 	environment.input.inputSystem:setExclusive(true)
 	environment.render.renderView:hideCursor()
 end
@@ -147,7 +286,7 @@ end
 -- click the menu, then return to mouse-look), and flips the freeze flag that
 -- Main:update and every EnemyController honour.
 function Main:_setPaused(paused)
-	if self._gameOver then
+	if self._gameOver or self._nightOver then
 		return
 	end
 	self._paused = paused
@@ -200,6 +339,10 @@ function Main:finalize()
 		self._gameOverDialog:remove()
 		self._gameOverDialog = nil
 	end
+	if self._victoryDialog ~= nil then
+		self._victoryDialog:remove()
+		self._victoryDialog = nil
+	end
 	self._frame:remove()
 	self._frame = nil
 end
@@ -219,6 +362,81 @@ function Main:resolve()
 	if self._totalPickups == nil then
 		self._totalPickups = world:getEntities("Pickup").size
 		self._treasure:setCount(self._pickups, self._totalPickups)
+	end
+	-- Relics stay in the world once delivered (they are stood up around the altar),
+	-- so this total is counted once and stays right for the rest of the night.
+	if self._relicsTotal == nil then
+		self._relicsTotal = world:getEntities("Relic").size
+	end
+	if self._altar == nil then
+		self._altar = world:getEntity("Altar")
+	end
+	-- The scene's moon: a directional LightComponent riding the Sky entity. Its
+	-- authored colour is captured as the night value the sunrise interpolates from.
+	if self._sun == nil then
+		local sky < const > = world:getEntity("Sky")
+		if sky ~= nil then
+			self._sun = sky:getComponent(traktor.world.LightComponent)
+			if self._sun ~= nil then
+				local c < const > = self._sun.color
+				self._sunNight = Vector4(c.x, c.y, c.z, c.w)
+			end
+		end
+	end
+	-- Collect the wards once and sort them by distance from the altar, so the
+	-- lighting order radiates outward. Sorted here rather than authored as an index,
+	-- so dragging a post around in the scene editor cannot put the sequence out of
+	-- order. Ends up an empty (non-nil) list in a scene with no wards, which is what
+	-- stops this re-running every frame in Scene 1.
+	if self._wards == nil and self._altar ~= nil then
+		local a < const > = self._altar.transform.translation
+		local list = {}
+		local i = 0
+		while true do
+			local e = world:getEntity("Ward", i)
+			if e == nil then
+				break
+			end
+			i = i + 1
+			local light = e:getComponent(traktor.world.LightComponent)
+			if light ~= nil then
+				local p < const > = e.transform.translation
+				-- LightComponent stores the authored colour *premultiplied by
+				-- intensity*, so reading it is how the lit target is picked up
+				-- without repeating the scene's numbers in script. Copied into a
+				-- fresh Vector4 rather than held by reference.
+				local c < const > = light.color
+				list[#list + 1] = {
+					light = light,
+					full = Vector4(c.x, c.y, c.z, c.w),
+					lit = false,
+					ignite = 0.0,
+					x = p.x,
+					z = p.z,
+					d = (p.x - a.x) * (p.x - a.x) + (p.z - a.z) * (p.z - a.z)
+				}
+			end
+		end
+		table.sort(list, function (l, r) return l.d < r.d end)
+		self._wards = list
+
+		-- Dark until consecrated. Blacked out here rather than authored at zero
+		-- intensity so the wards are still visible in the scene editor -- and this
+		-- runs on the first update, before anything is drawn, so there is no flash.
+		--
+		-- _wardsLit survives a script hot reload while these records do not, so the
+		-- first _wardsLit of them are restored to full rather than going dark and
+		-- never coming back.
+		for k, w in ipairs(self._wards) do
+			if k <= self._wardsLit then
+				w.lit = true
+				w.ignite = 1.0
+				w.light.color = w.full
+			else
+				w.light.color = Vector4(0.0, 0.0, 0.0, 0.0)
+			end
+		end
+		self:_publishWards()
 	end
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
@@ -321,6 +539,411 @@ function Main:_killAllEnemies()
 	end
 end
 
+-- Set a floating label's text and centre it horizontally at its own y. Skipped
+-- when neither the text nor the frame width has changed, so this is cheap enough
+-- to call every frame -- which it has to be, since the frame width only settles
+-- after the first layout and changes again on every window resize.
+function Main:_setLabel(rec, text)
+	local p < const > = self._frame:getPlacement()
+	if rec.text == text and rec.placedWidth == p.width then
+		return
+	end
+	rec.text = text
+	rec.placedWidth = p.width
+	rec.widget:setText(text)
+	local ts < const > = rec.widget:getPreferredSize()
+	rec.widget:place((p.width - ts.width) / 2, rec.y, ts.width, ts.height)
+end
+
+-- Is a world point close enough to the player to interact with?
+function Main:_withinRange(p, range)
+	if self._humanoid == nil then
+		return false
+	end
+	local pp < const > = self._humanoid.transform.translation
+	local dx < const > = p.x - pp.x
+	local dy < const > = p.y - pp.y
+	local dz < const > = p.z - pp.z
+	return dx * dx + dy * dy + dz * dz < range * range
+end
+
+-- The closest relic still up for grabs, and how far off it is. Pass maxDist to
+-- limit it (the E prompt wants arm's reach); omit it for the nearest anywhere on
+-- the map, which is what the objective compass points at.
+--
+-- Delivered relics are skipped: they stay in the world standing around the altar,
+-- so without the _placedRelics guard the player could pick one straight back up
+-- again -- and the compass would send them to the altar they just left.
+function Main:_nearestRelic(maxDist)
+	local world = self.world.world
+	if world == nil or self._humanoid == nil then
+		return nil, 0.0
+	end
+
+	local pp < const > = self._humanoid.transform.translation
+	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
+	local i = 0
+	while true do
+		local r = world:getEntity("Relic", i)
+		if r == nil then
+			break
+		end
+		i = i + 1
+		if self._placedRelics[r] == nil and r ~= self._carried then
+			local q = r.transform.translation
+			local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
+			local d = dx * dx + dy * dy + dz * dz
+			if d < bestD then
+				best, bestD = r, d
+			end
+		end
+	end
+	if best == nil then
+		return nil, 0.0
+	end
+	return best, math.sqrt(bestD)
+end
+
+-- Stand something on whatever is underneath a point, so a relic put down on a
+-- slope neither floats nor sinks to the shin. Short trace window, same reasoning
+-- as the Spawner's traceGround: reaching further up starts the ray above nearby
+-- props and drops the relic onto boulders and table tops instead of the ground.
+-- Static world only (0x1), so a passing zombie is never mistaken for floor.
+function Main:_groundAt(p)
+	local pm < const > = self.environment.physics.physicsManager
+	if pm == nil then
+		return p
+	end
+	local hit < const > = pm:queryRay(
+		Vector4(p.x, p.y + 1.0, p.z, 1.0),
+		Vector4(0.0, -1.0, 0.0, 0.0),
+		4.0,
+		traktor.physics.QueryFilter(0x00000001),
+		true
+	)
+	if hit == nil then
+		return p
+	end
+	return hit.position
+end
+
+-- Put the carried relic down in front of the player, standing on the ground and
+-- facing the way they are. This is the move that buys the rifle back.
+function Main:_dropRelic()
+	local relic < const > = self._carried
+	if relic == nil or self._humanoid == nil then
+		return
+	end
+	self._carried = nil
+
+	local heading < const > = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
+	local at < const > = self._humanoid.transform.translation + heading * Vector4(0.0, 0.0, 0.7, 0.0)
+	relic.transform = Transform(self:_groundAt(at), heading)
+end
+
+-- Deliver the carried relic: stand it in the ring around the altar and tally it.
+-- Placed relics are left in the world rather than removed, so the night's progress
+-- is legible out there in the dark and not only on the HUD.
+function Main:_placeRelic()
+	local relic < const > = self._carried
+	if relic == nil or self._altar == nil then
+		return
+	end
+	self._carried = nil
+	self._placedRelics[relic] = true
+	self._relicsPlaced = self._relicsPlaced + 1
+
+	local a < const > = self._altar.transform.translation
+	local slots < const > = math.max(self._relicsTotal or 1, 1)
+	local angle < const > = (self._relicsPlaced - 1) * 2.0 * math.pi / slots
+	-- Facing back at the altar: the mesh's cross lies in XY and looks along +Z, so
+	-- a relic standing at `angle` on the ring has to be yawed half a turn past it.
+	local facing < const > = Quaternion.fromEulerAngles(angle + math.pi, 0.0, 0.0)
+	local at < const > = Vector4(a.x + math.sin(angle) * 2.1, a.y, a.z + math.cos(angle) * 2.1, 1.0)
+	relic.transform = Transform(self:_groundAt(at), facing)
+
+	local fx = relic:getComponent(traktor.world.EventSetComponent)
+	if fx ~= nil then
+		fx:raise("sparkle")
+	end
+
+	-- Consecration flows back out of the altar: one more ward takes light, the safe
+	-- ground reaches a landmark further out, and the forest beyond it speeds up.
+	if self:_lightNextWard() then
+		self:_showNotice("A WARD IS LIT")
+	end
+
+	-- Every relic home ends the night. Checked last, so its notice replaces the
+	-- ward one rather than being overwritten by it.
+	if self._relicsTotal ~= nil and self._relicsPlaced >= self._relicsTotal then
+		self:_breakDawn()
+	end
+end
+
+-- Light the nearest still-dark ward to the altar. Returns false once they all
+-- burn, which is how the last delivery knows it finished the night.
+function Main:_lightNextWard()
+	if self._wards == nil then
+		return false
+	end
+	for _, w in ipairs(self._wards) do
+		if not w.lit then
+			w.lit = true
+			w.ignite = 0.0
+			self._wardsLit = self._wardsLit + 1
+			self:_publishWards()
+			return true
+		end
+	end
+	return false
+end
+
+-- Hand the world what it needs off the ward state: where consecrated ground is,
+-- and how hard the night should push. Read by Scripts/Spawner (which will not
+-- place anything inside a lit ward) and by every Scripts/EnemyController (which
+-- steers out of one). Rebuilt only when a ward is lit -- wards never move, so
+-- there is nothing to do per frame.
+--
+-- Both r and r2 are published: the spawner only ever compares squared distances,
+-- but the enemies need the real radius to scale their push, and doing that sqrt
+-- once here beats doing it per ward per zombie per frame.
+function Main:_publishWards()
+	local lit = {}
+	if self._wards ~= nil then
+		for _, w in ipairs(self._wards) do
+			if w.lit then
+				lit[#lit + 1] = {
+					x = w.x,
+					z = w.z,
+					r = self._wardRadius,
+					r2 = self._wardRadius * self._wardRadius
+				}
+			end
+		end
+	end
+	self._litWards = lit
+	self._enemyPace = 1.0 + self._enemyPacePerWard * self._wardsLit
+end
+
+-- Ease a ward up to full once it is lit. Overshoots and settles, so it catches
+-- with a flare instead of fading up like a dimmer.
+function Main:_updateWards(dt)
+	if self._wards == nil then
+		return
+	end
+	for _, w in ipairs(self._wards) do
+		if w.lit and w.ignite < 1.0 then
+			w.ignite = math.min(1.0, w.ignite + dt * self._wardIgniteRate)
+			local t < const > = w.ignite
+			local k
+			if t < 0.35 then
+				k = (t / 0.35) * 1.7
+			else
+				k = 1.7 - 0.7 * ((t - 0.35) / 0.65)
+			end
+			w.light.color = w.full * k
+		end
+	end
+end
+
+-- The night is won. Everything after this is the payoff: the spawner is shut off,
+-- the horde drops where it stands, and Main:_updateDawn runs the sunrise.
+function Main:_breakDawn()
+	if self._nightOver then
+		return
+	end
+	self._nightOver = true
+	self._dawn = 0.0
+	self:_showNotice("DAWN BREAKS")
+
+	-- The light takes them. Routed through the same rag doll path a shot zombie
+	-- takes, so the horde collapses in place rather than being deleted out from
+	-- under the player. EnemyController deliberately does *not* freeze on
+	-- _nightOver -- it still has to see _deadEnemies and make the switch.
+	self:_killAllEnemies()
+
+	-- Hand the mouse back, ready for the victory card.
+	self._flash:setVisible(true)
+	self.environment.input.inputSystem:setExclusive(false)
+	self.environment.render.renderView:showCursor()
+end
+
+-- Run the sunrise: ease the scene's directional light from moonlight to a low warm
+-- sun, flood the screen warm on top of it, then raise the victory card.
+function Main:_updateDawn(dt)
+	if not self._nightOver then
+		return
+	end
+
+	self._dawn = self._dawn + dt
+	local t < const > = math.min(1.0, self._dawn / self._dawnTime)
+
+	-- The two halves of the sequence deliberately do not share a curve. The sun is
+	-- done by the halfway mark and the wash only starts just before that, so there
+	-- is a stretch in the middle where the player actually sees the forest they
+	-- fought through standing in daylight -- ramping both together would have the
+	-- screen white by the time the sun arrived, and the whole point of lighting the
+	-- world would be lost behind it.
+	if self._sun ~= nil and self._sunNight ~= nil then
+		local s < const > = math.min(1.0, t / 0.5)
+		local e < const > = s * s   -- slow to start, so the first moments still read as night
+		self._sun.color = self._sunNight * (1.0 - e) + DAWN_SUN * e
+	end
+
+	-- Wash: holds off, then floods to opaque for the card. It is what covers the sky
+	-- staying night-dark through all of this, SkyComponent being unscriptable.
+	local a < const > = math.max(0.0, (t - 0.6) / 0.4)
+	local p < const > = self._frame:getPlacement()
+	self._flash:place(0, 0, p.width, p.height)
+	self._flash:setColor(Color4f(1.0, 0.94, 0.8, a * a))
+
+	if t >= 1.0 and not self._victoryShown then
+		self._victoryShown = true
+		self._victoryDialog:show()
+	end
+end
+
+-- Aim the objective compass at wherever the player should be walking: the altar
+-- while carrying, otherwise the nearest relic still out in the forest. Blank once
+-- the night is over, either way it ended.
+function Main:_updateMarker(dt)
+	local target = nil
+	if not self._gameOver and not self._nightOver and self._humanoid ~= nil then
+		if self._carried ~= nil then
+			target = self._altar
+		else
+			-- Unbounded, unlike the reach test the E prompt uses.
+			target = self:_nearestRelic()
+		end
+	end
+
+	-- Changing what it points at snaps and flashes the needle rather than sweeping
+	-- it across the dial, so a hand-off reads as a new instruction.
+	if target ~= self._markerTarget then
+		self._markerTarget = target
+		self._marker:retarget()
+	end
+
+	if target == nil then
+		self._marker:setTarget(nil)
+	else
+		local p < const > = target.transform.translation
+		local pp < const > = self._humanoid.transform.translation
+		local dx < const > = p.x - pp.x
+		local dz < const > = p.z - pp.z
+		-- Relative bearing. Forward is (sin h, 0, cos h), so the world bearing of
+		-- (dx, dz) is atan2(dx, dz), and subtracting the player's heading turns it
+		-- into "how far round from straight ahead" -- which is what the needle shows.
+		self._marker:setTarget(atan2(dx, dz) - self._heading, math.sqrt(dx * dx + dz * dz))
+	end
+
+	self._marker:update(dt)
+end
+
+-- Flash a line under the objective for a few seconds.
+function Main:_showNotice(text)
+	self._noticeText = text
+	self._noticeTimer = 3.5
+end
+
+-- E, edge triggered. With a relic in hand: deliver it if the altar is in reach,
+-- otherwise put it down. With empty hands: take the nearest relic in reach.
+function Main:_interact()
+	if self._carried ~= nil then
+		if self._altar ~= nil and self:_withinRange(self._altar.transform.translation, self._altarRange) then
+			self:_placeRelic()
+		else
+			self:_dropRelic()
+		end
+		return
+	end
+
+	local relic < const > = self:_nearestRelic(self._reachRange)
+	if relic ~= nil then
+		self._carried = relic
+	end
+end
+
+-- Objective line, the contextual prompt for whatever E would do right now, and
+-- the transient notice under them.
+function Main:_updateHudText(dt)
+	local total < const > = self._relicsTotal
+	local objective = ""
+	if total ~= nil and total > 0 then
+		if self._relicsPlaced >= total then
+			objective = "THE ALTAR IS WHOLE"
+		else
+			objective = "RELICS  " .. tostring(self._relicsPlaced) .. " / " .. tostring(total)
+		end
+	end
+	self:_setLabel(self._objective, objective)
+
+	local prompt = ""
+	if not self._gameOver and not self._nightOver then
+		if self._carried ~= nil then
+			if self._altar ~= nil and self:_withinRange(self._altar.transform.translation, self._altarRange) then
+				prompt = "E   PLACE THE RELIC"
+			else
+				prompt = "E   PUT DOWN THE RELIC"
+			end
+		elseif self:_nearestRelic(self._reachRange) ~= nil then
+			prompt = "E   TAKE THE RELIC"
+		end
+	end
+	self:_setLabel(self._prompt, prompt)
+
+	self._noticeTimer = math.max(0.0, self._noticeTimer - dt)
+	self:_setLabel(self._notice, self._noticeTimer > 0.0 and self._noticeText or "")
+end
+
+-- Start refilling the magazine from the reserve. Refuses when one is already in
+-- progress, when the magazine is full, or when there is nothing left to load with
+-- -- so the caller can fire this at every dry trigger pull without special casing.
+-- Returns true when a reload actually began.
+function Main:_beginReload()
+	if self._reloadTimer > 0.0 or self._carried ~= nil then
+		return false
+	end
+	if self._mag >= self._magSize or self._reserve <= 0 then
+		return false
+	end
+	self._reloadTimer = self._reloadTime
+	self._ammo:setReload(0.0)
+	return true
+end
+
+-- Weapon timers and the reload key. Called from Main:update *below* its paused and
+-- game over early returns, so the shot cadence and a reload in flight both freeze
+-- with the rest of the game rather than ticking away behind the pause menu.
+function Main:_updateWeapon(dt)
+	if self._fireTimer > 0.0 then
+		self._fireTimer = math.max(0.0, self._fireTimer - dt)
+	end
+
+	-- R reloads on demand (edge triggered), so the player can top up in a lull
+	-- instead of being caught mid magazine.
+	do
+		local mapping < const > = self.environment.input.inputMapping
+		if mapping ~= nil and mapping:isStatePressed("STATE_RELOAD") then
+			self:_beginReload()
+		end
+	end
+
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = math.max(0.0, self._reloadTimer - dt)
+		self._ammo:setReload(1.0 - self._reloadTimer / self._reloadTime)
+		if self._reloadTimer <= 0.0 then
+			-- Whole magazines are not swapped: only as many rounds as are actually
+			-- left go in, so the last reload of a run is a short one.
+			local take < const > = math.min(self._magSize - self._mag, self._reserve)
+			self._mag = self._mag + take
+			self._reserve = self._reserve - take
+			self._ammo:setReload(nil)
+			self._ammo:setAmmo(self._mag, self._reserve)
+		end
+	end
+end
+
 -- Fire the weapon: hitscan a ray out of the player's eye along the current facing,
 -- pick the nearest live zombie close to the ray (with clear line of sight) and mark
 -- it dead. Its EnemyController switches to rag doll; Main despawns the corpse later.
@@ -329,6 +952,30 @@ function Main:_fireWeapon()
 	if self._humanoid == nil or world == nil then
 		return
 	end
+
+	-- Both hands are on the relic: nothing to shoot with until it is put down.
+	if self._carried ~= nil then
+		return
+	end
+
+	-- Nothing happens mid reload, and the rifle will not cycle faster than
+	-- _fireInterval however fast the trigger is pulled.
+	if self._reloadTimer > 0.0 or self._fireTimer > 0.0 then
+		return
+	end
+
+	-- Dry: no bang and no muzzle flash, just a reload started for the player --
+	-- which is what pulling the trigger on an empty rifle meant. If the reserve is
+	-- empty too, _beginReload refuses and the red HUD plate is the only answer.
+	if self._mag <= 0 then
+		self:_beginReload()
+		return
+	end
+
+	self._mag = self._mag - 1
+	self._fireTimer = self._fireInterval
+	self._ammo:setAmmo(self._mag, self._reserve)
+	self._ammo:spend()
 
 	-- Muzzle: spawn the projectile particle bolt from the weapon along the current
 	-- aim. Raised on every shot (before target selection) so firing always shows the
@@ -408,6 +1055,22 @@ function Main:update(info)
 	-- flash once the game is paused or over.
 	self._healthBar:update(dt)
 	self._treasure:update(dt)
+	self._ammo:update(dt)
+	-- Ticks the compass widget itself, as well as re-aiming it.
+	self:_updateMarker(dt)
+
+	-- Objective and prompt. Also above the early-returns, so the banner stays put
+	-- and correctly centred through a pause or a window resize.
+	self:_updateHudText(dt)
+
+	-- Wards easing up to full. Above the early-returns for the same reason the HUD
+	-- widgets are: a ward caught on the frame the player died should still finish
+	-- catching rather than freeze at its flare.
+	self:_updateWards(dt)
+
+	-- The sunrise, once the night is won. Must run above the freeze below, since
+	-- that freeze is exactly what it is playing over.
+	self:_updateDawn(dt)
 
 	-- If an exit-to-startup load is in flight, switch to it the moment it is ready.
 	-- Checked before the game-over / paused early-returns below, because Exit is
@@ -419,6 +1082,15 @@ function Main:update(info)
 			end
 			self._loader = nil
 		end
+		return
+	end
+
+	-- Night won: freeze the player for the sunrise. Deliberately does not freeze the
+	-- enemies -- every one of them was just handed to the rag doll path, and their
+	-- controllers have to keep running to make the switch. Their corpses are never
+	-- despawned, since the despawn pass is below this return, which is fine: nothing
+	-- happens after the victory card but a restart.
+	if self._nightOver then
 		return
 	end
 
@@ -459,6 +1131,18 @@ function Main:update(info)
 		end
 	end
 
+	-- Shot cadence and reload. Above the movement block below, which is guarded on
+	-- there being a character controller -- the rifle keeps cycling either way.
+	self:_updateWeapon(dt)
+
+	-- E takes a relic, puts it down, or places it on the altar.
+	do
+		local mapping < const > = self.environment.input.inputMapping
+		if mapping ~= nil and mapping:isStatePressed("STATE_INTERACT") then
+			self:_interact()
+		end
+	end
+
 	-- Mouse X turns the character (yaw); W/S (STATE_MOVE_Z) move forward/back and
 	-- A/D (STATE_MOVE_X) strafe left/right, both relative to the current facing.
 	if self._character ~= nil then
@@ -469,9 +1153,12 @@ function Main:update(info)
 			local look = mapping:getStateValue("STATE_LOOK_X")
 			local lookY = -mapping:getStateValue("STATE_LOOK_Y")
 			-- Hold Shift to sprint. maxVelocity tracks the target speed so the character
-			-- controller's clamp doesn't cap the sprint.
+			-- controller's clamp doesn't cap the sprint. Carrying a relic overrides
+			-- both: you shuffle, and no amount of Shift helps.
 			local speed = self._walkSpeed
-			if mapping:isStateDown("STATE_SPRINT") then
+			if self._carried ~= nil then
+				speed = self._carrySpeed
+			elseif mapping:isStateDown("STATE_SPRINT") then
 				speed = self._sprintSpeed
 			end
 			self._character.maxVelocity = speed
@@ -575,6 +1262,45 @@ function Main:update(info)
 		end
 	end
 
+	-- Ammo crate collection: walking over an "AmmoPickup" adds rounds to the reserve
+	-- and removes it. Only collected while below the cap, so a crate is never partly
+	-- wasted -- leave it and it is still there when you come back needing it. Same
+	-- one-per-frame scan as the pickups above (removeEntity shifts remaining indices).
+	if self._humanoid ~= nil and self._reserve < self._reserveMax then
+		local world = self.world.world
+		if world ~= nil then
+			local pp = self._humanoid.transform.translation
+			local i = 0
+			while true do
+				local ap = world:getEntity("AmmoPickup", i)
+				if ap == nil then
+					break
+				end
+				local q = ap.transform.translation
+				local dx = q.x - pp.x
+				local dy = q.y - pp.y
+				local dz = q.z - pp.z
+				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
+					-- follow=false on the event, so the pop lingers where the crate was.
+					local fx = ap:getComponent(traktor.world.EventSetComponent)
+					if fx ~= nil then
+						fx:raise("sparkle")
+					end
+					world:removeEntity(ap)
+					self._reserve = math.min(self._reserveMax, self._reserve + self._ammoPerPickup)
+					self._ammo:setAmmo(self._mag, self._reserve)
+					-- Picked up while standing there with an empty rifle: start loading
+					-- it without making the player ask.
+					if self._mag <= 0 then
+						self:_beginReload()
+					end
+					break
+				end
+				i = i + 1
+			end
+		end
+	end
+
 	-- Enemy contact damage: every enemy within hurt range drains health, and
 	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
 	-- God mode (G) skips the whole thing -- the scan's only output is the drain, so
@@ -621,6 +1347,11 @@ function Main:update(info)
 				if self._health <= 0.0 then
 					self._health = 0.0
 					self._gameOver = true
+					-- Let go of the relic, or it hangs in the air where the player's
+					-- hands were: postUpdate stops running once _gameOver is set.
+					if self._carried ~= nil then
+						self:_dropRelic()
+					end
 					-- Show the Game Over menu and free the mouse cursor so its
 					-- Restart / Exit buttons are clickable (as the pause menu does).
 					self._gameOverDialog:show()
@@ -708,7 +1439,34 @@ function Main:postUpdate(info)
 	if self._weapon ~= nil then
 		local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
 		local eye = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-		self._weapon.transform = Transform(eye + aim * Vector4(0.18, -0.22, 0.35, 0.0), aim)
+		local offset = Vector4(0.18, -0.22, 0.35, 0.0)
+
+		-- Drop the rifle out of the sightline and roll it over. Reloading eases all
+		-- the way down and back up across _reloadTime; carrying a relic pins it at
+		-- the bottom for as long as your hands are full. Either way it is the tell
+		-- that costs the player: it is obvious the gun cannot be fired, and during a
+		-- reload, roughly how much longer that lasts.
+		local dip = 0.0
+		if self._reloadTimer > 0.0 then
+			dip = math.sin((1.0 - self._reloadTimer / self._reloadTime) * math.pi)
+		end
+		if self._carried ~= nil then
+			dip = 1.0
+		end
+		if dip > 0.0 then
+			offset = offset + Vector4(0.06, -0.3, -0.14, 0.0) * dip
+			aim = aim * Quaternion.fromEulerAngles(0.0, -0.9 * dip, 0.6 * dip)
+		end
+
+		self._weapon.transform = Transform(eye + aim * offset, aim)
+	end
+
+	-- Carried relic: held out in front and low, taking up the bottom of the view.
+	-- Its pitch is damped so looking around does not swing it through the camera.
+	if self._carried ~= nil and self._humanoid ~= nil then
+		local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch * 0.35, 0.0)
+		local eye < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
+		self._carried.transform = Transform(eye + aim * Vector4(0.0, -0.85, 0.85, 0.0), aim)
 	end
 end
 
@@ -717,6 +1475,10 @@ function Main:reload()
 	self._camera = nil
 	self._weapon = nil
 	self._fireEvents = nil
+	self._altar = nil
+	-- Ward records hold live LightComponent handles, so they have to be re-resolved.
+	-- resolve() restores which of them burn from _wardsLit, which survives.
+	self._wards = nil
 end
 
 ]]></text>

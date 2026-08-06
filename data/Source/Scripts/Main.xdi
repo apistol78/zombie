@@ -6,6 +6,7 @@
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
 #using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
+#using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
 
 import(traktor)
 
@@ -66,6 +67,17 @@ function Main:new(params, environment)
 	self._marker = ObjectiveMarker(self._hud)
 	self._healthBar = HealthBar(self._hud)
 	self._ammo = AmmoCounter(self._hud)
+
+	-- Aiming crosshair: a Crosshair widget (Scripts/Widgets/Crosshair) whose art is the
+	-- MC_Crosshair export of the same UI/Hud movie the other HUD widgets use. It is not
+	-- part of the HUD row -- it is floated (ILayout.FLOAT) over the centre of the screen
+	-- and placed by hand each frame in _updateCrosshair, since the centre moves with the
+	-- window size. Parented to the frame after the HUD but before the dialogs and the
+	-- dawn wash, so those cover it; it hides itself whenever a relic is carried or the
+	-- game is not being played.
+	self._crosshair = Crosshair(self._frame)
+	self._crosshair.__layout = ILayout.FLOAT
+	self._crosshairShown = nil   -- nil so the first _updateCrosshair forces the state
 
 	-- Game Over menu (hidden until death): the "GAME OVER" banner plus Restart / Exit
 	-- buttons, as a modal Dialog auto-centered over the HUD (one column: title, then
@@ -170,10 +182,11 @@ function Main:new(params, environment)
 	-- map's landmarks and have to be carried, one at a time, back to the altar at
 	-- the chapel.
 	--
-	-- Carrying one is the whole point of the mechanic -- both hands are on it, so
-	-- the rifle goes down, sprinting is out and you move slower than a zombie
-	-- walks. Every relic run is therefore a route you commit to, and putting it
-	-- down to fight means coming back for it.
+	-- Carrying one is the whole point of the mechanic. It fills one hand rather than
+	-- both, so the rifle stays up and you can still fire (it just rides a little
+	-- further right, out of the relic's way) -- but sprinting is out and you move
+	-- slower than a zombie walks. Every relic run is therefore a route you commit to,
+	-- and putting it down is no longer the only way to fight back.
 	self._carried = nil          -- the Relic entity in the player's hands, or nil
 	self._placedRelics = {}      -- delivered relics; skipped when scanning for one to take
 	self._relicsPlaced = 0
@@ -748,6 +761,43 @@ function Main:_updateMarker(dt)
 	self._marker:update(dt)
 end
 
+-- Place the aiming crosshair at the centre of the screen, and show it only while the
+-- player is actually sighting down the rifle: not while a relic is carried (both the
+-- ask and the fiction -- the reticle belongs to the gun, and a hand is off it holding
+-- the relic), and not while the game is paused, lost or won. Called from update above
+-- its early-returns, so those "not playing" states can hide it.
+function Main:_updateCrosshair(dt)
+	local show = not self._gameOver
+		and not self._nightOver
+		and not self._paused
+		and self._carried == nil
+		and self._humanoid ~= nil
+
+	if show ~= self._crosshairShown then
+		self._crosshairShown = show
+		self._crosshair:setVisible(show)
+	end
+
+	-- Ease the firing bloom back even while hidden, so the reticle is at rest the next
+	-- time it shows.
+	self._crosshair:update(dt)
+
+	if not show then
+		return
+	end
+
+	-- Centre the widget's box on the middle of the screen -- the same coordinate space
+	-- the flash panel fills. The reticle is authored at the centre of its box, so this
+	-- lands it exactly on the point of aim.
+	local pl < const > = self._frame:getPlacement()
+	local sz < const > = self._crosshair:getPreferredSize()
+	self._crosshair:place(
+		(pl.width - sz.width) * 0.5,
+		(pl.height - sz.height) * 0.5,
+		sz.width, sz.height
+	)
+end
+
 -- Flash a line under the objective for a few seconds.
 function Main:_showNotice(text)
 	self._noticeText = text
@@ -838,7 +888,7 @@ end
 -- -- so the caller can fire this at every dry trigger pull without special casing.
 -- Returns true when a reload actually began.
 function Main:_beginReload()
-	if self._reloadTimer > 0.0 or self._carried ~= nil then
+	if self._reloadTimer > 0.0 then
 		return false
 	end
 	if self._mag >= self._magSize or self._reserve <= 0 then
@@ -890,10 +940,8 @@ function Main:_fireWeapon()
 		return
 	end
 
-	-- Both hands are on the relic: nothing to shoot with until it is put down.
-	if self._carried ~= nil then
-		return
-	end
+	-- A relic fills only one hand, so the rifle still fires with one carried -- there
+	-- is deliberately no early-out here for carrying.
 
 	-- Nothing happens mid reload, and the rifle will not cycle faster than
 	-- _fireInterval however fast the trigger is pulled.
@@ -913,6 +961,12 @@ function Main:_fireWeapon()
 	self._fireTimer = self._fireInterval
 	self._ammo:setAmmo(self._mag, self._reserve)
 	self._ammo:spend()
+
+	-- Bloom the crosshair as recoil feedback (it eases back in Crosshair:update). Harmless
+	-- while it is hidden mid-relic-carry -- it simply settles before it is shown again.
+	if self._crosshair ~= nil then
+		self._crosshair:kick()
+	end
 
 	-- Muzzle: spawn the projectile particle bolt from the weapon along the current
 	-- aim. Raised on every shot (before target selection) so firing always shows the
@@ -997,6 +1051,10 @@ function Main:update(info)
 	-- Objective and prompt. Also above the early-returns, so the banner stays put
 	-- and correctly centred through a pause or a window resize.
 	self:_updateHudText(dt)
+
+	-- Aiming crosshair. Above the early-returns for the same reason: it has to be able
+	-- to hide itself when the game pauses, is lost or is won.
+	self:_updateCrosshair(dt)
 
 	-- Wards ease up to full in their own Ward components (Scripts/Ward), which run
 	-- every frame regardless of this stage's freeze -- so a ward caught on the frame
@@ -1285,17 +1343,20 @@ function Main:postUpdate(info)
 		local eye = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
 		local offset = Vector4(0.18, -0.22, 0.35, 0.0)
 
-		-- Drop the rifle out of the sightline and roll it over. Reloading eases all
-		-- the way down and back up across _reloadTime; carrying a relic pins it at
-		-- the bottom for as long as your hands are full. Either way it is the tell
-		-- that costs the player: it is obvious the gun cannot be fired, and during a
-		-- reload, roughly how much longer that lasts.
+		-- Carrying a relic no longer stows the rifle -- the player can still shoot. The
+		-- off hand is full holding the relic on the left, so the rifle just rides a
+		-- little further right to make room for it.
+		if self._carried ~= nil then
+			offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
+		end
+
+		-- Drop the rifle out of the sightline and roll it over while reloading: it eases
+		-- all the way down and back up across _reloadTime. It is the tell that costs the
+		-- player -- it is obvious the gun cannot be fired, and roughly how much longer
+		-- that lasts. Still plays with a relic in the off hand.
 		local dip = 0.0
 		if self._reloadTimer > 0.0 then
 			dip = math.sin((1.0 - self._reloadTimer / self._reloadTime) * math.pi)
-		end
-		if self._carried ~= nil then
-			dip = 1.0
 		end
 		if dip > 0.0 then
 			offset = offset + Vector4(0.06, -0.3, -0.14, 0.0) * dip
@@ -1305,12 +1366,13 @@ function Main:postUpdate(info)
 		self._weapon.transform = Transform(eye + aim * offset, aim)
 	end
 
-	-- Carried relic: held out in front and low, taking up the bottom of the view.
-	-- Its pitch is damped so looking around does not swing it through the camera.
+	-- Carried relic: held up in the player's left hand, off to the left so it clears
+	-- both the rifle on the right and the aim straight down the middle. Its pitch is
+	-- damped so looking around does not swing it through the camera.
 	if self._carried ~= nil and self._humanoid ~= nil then
 		local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch * 0.35, 0.0)
 		local eye < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-		self._carried.transform = Transform(eye + aim * Vector4(0.0, -0.85, 0.85, 0.0), aim)
+		self._carried.transform = Transform(eye + aim * Vector4(-0.38, -0.5, 0.62, 0.0), aim)
 	end
 end
 

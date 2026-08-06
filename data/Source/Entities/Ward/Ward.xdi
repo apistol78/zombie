@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.world.EntityData" version="2">
-	<id>{2E7B5C10-9A44-4F63-B8D1-5C0A7E31F204}</id>
-	<name>Relic</name>
+	<id>{8F26A2B3-80CC-41B5-9C1F-DEB13962EB2C}</id>
+	<name>Ward</name>
 	<state>
 		<visible>true</visible>
-		<dynamic>true</dynamic>
+		<dynamic>false</dynamic>
 		<locked>false</locked>
 	</state>
 	<transform>
@@ -13,54 +13,38 @@
 	</transform>
 	<components>
 		<item type="traktor.mesh.MeshComponentData" version="1">
-			<mesh>{DF131619-EC0E-4043-A3D4-FFC68CF3CE5E}</mesh>
-		</item>
-		<item type="traktor.world.EventSetComponentData">
-			<eventData>
-				<item>
-					<first>sparkle</first>
-					<second type="traktor.spray.SpawnEffectEventData" version="3">
-						<effect>{460B33C8-81D2-4168-9F66-558B18628CF1}</effect>
-						<transform>
-							<translation>0, 0.4, 0, 0</translation>
-							<rotation>0, 0, 0, 1</rotation>
-						</transform>
-						<follow>false</follow>
-						<useRotation>false</useRotation>
-					</second>
-				</item>
-			</eventData>
+			<mesh>{28A52E43-DE97-3145-A031-6E129A677221}</mesh>
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
-			<class>{34D2D28B-4B5F-46D2-A9F9-EC993BE3034C}</class>
+			<class>{A55C4534-706A-44C3-ABE0-5C06529C3FAC}</class>
 			<properties/>
 			<editorSupport>false</editorSupport>
 		</item>
 		<item type="traktor.world.GroupComponentData">
 			<entityData>
 				<item type="traktor.world.EntityData" version="2">
-					<id>{85F296BD-5492-854B-8610-AEA420AE2A76}</id>
-					<name>Light</name>
+					<id>{EC64C457-A7F7-4525-9A4B-A23F2C5DC033}</id>
+					<name>Flame</name>
 					<state>
 						<visible>true</visible>
 						<dynamic>false</dynamic>
 						<locked>false</locked>
 					</state>
 					<transform>
-						<translation>0, 0.388661, 0.351133, 0</translation>
+						<translation>0, 1.9, 0, 0</translation>
 						<rotation>0, 0, 0, 1</rotation>
 					</transform>
 					<components>
 						<item type="traktor.world.LightComponentData" version="13">
 							<lightType>Point</lightType>
-							<color>1, 0.68, 0.28, 1</color>
-							<intensity>140</intensity>
+							<color>1, 0.62, 0.26, 1</color>
+							<intensity>1100</intensity>
 							<castShadow>false</castShadow>
 							<nearRange>0</nearRange>
-							<farRange>4</farRange>
+							<farRange>13</farRange>
 							<radius>1.570796</radius>
-							<flickerAmount>0.25</flickerAmount>
-							<flickerFilter>0.4</flickerFilter>
+							<flickerAmount>0.5</flickerAmount>
+							<flickerFilter>0.25</flickerFilter>
 							<bakeMode>LbmDisabled</bakeMode>
 						</item>
 					</components>

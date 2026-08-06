@@ -179,9 +179,15 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- the real ground beneath it, standing on a surface flat enough to stand on, hidden
 	-- from the player (a physics ray from the player's eye is blocked by terrain before
 	-- reaching it), preferring points in front.
+	-- Centre the spawn ring on the ground *beneath* the player, not the player's own
+	-- position: when they are up a tower or on a roof, findRandomPoint(playerPos) would
+	-- seed off a rooftop polygon and scatter the horde across it. findClosestPointXZ
+	-- ignores height, and probing from far below biases a stacked spot to the terrain
+	-- rather than a roof above it. Falls back to the player's position if nothing is found.
+	local spawnCenter < const > = self._navMesh:findClosestPointXZ(Vector4(playerPos.x, playerPos.y - 1000.0, playerPos.z, 1.0), 8.0)
 	local best, bestInFront = nil, false
 	for _ = 1, CANDIDATES do
-		local p = self._navMesh:findRandomPoint(playerPos, SPAWN_MAX)   -- (0,0,0,0) on failure
+		local p = self._navMesh:findRandomPoint(spawnCenter, SPAWN_MAX)   -- (0,0,0,0) on failure
 		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
 			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
 			if dx * dx + dz * dz >= spawnMin * spawnMin then

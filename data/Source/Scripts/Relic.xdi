@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Relic
+--
+-- A consecrated cross the player carries, one at a time, back to the altar. This
+-- component owns only where the relic ends up when it leaves the player's hands:
+--
+--   * Relic:drop(context)   put it down on the ground in front of the player
+--   * Relic:place(context)  stand it in the ring around the altar and flare it
+--
+-- Both are called by Main -- via entity:getComponent(world.ScriptComponent) -- in
+-- place of the old Main:_dropRelic / Main:_placeRelic. context is the Stage (the
+-- Main instance), so the relic reads the player, the altar and the delivery tally
+-- straight off it and grounds itself with the Stage's own ground query.
+--
+-- Everything around the move stays with the Stage, which owns it: whether a relic
+-- is in hand, the running tally, the ward that lights and the dawn that breaks.
+-- Carrying is likewise driven by Main:postUpdate; this only handles letting go.
+
+Relic = Relic or class("Relic", traktor.world.ScriptComponent)
+
+local ALTAR_RADIUS < const > = 2.1   -- how far out the ring of delivered relics stands (m)
+local DROP_AHEAD < const > = 0.7     -- how far in front of the player a dropped relic lands (m)
+
+-- Put the relic down in front of the player, standing on the ground and facing
+-- the way they are. This is the move that buys the rifle back.
+function Relic:drop(context)
+	local player < const > = context._humanoid
+	if player == nil then
+		return
+	end
+	local heading < const > = Quaternion.fromEulerAngles(context._heading, 0.0, 0.0)
+	local at < const > = player.transform.translation + heading * Vector4(0.0, 0.0, DROP_AHEAD, 0.0)
+	self.owner.transform = Transform(context:_groundAt(at), heading)
+end
+
+-- Deliver the relic: stand it in the ring around the altar at the slot the Stage
+-- has just counted, and let it flare. Left standing in the world afterwards, so
+-- the night's progress is legible out in the dark and not only on the HUD.
+function Relic:place(context)
+	local altar < const > = context._altar
+	if altar == nil then
+		return
+	end
+	local a < const > = altar.transform.translation
+	local slots < const > = math.max(context._relicsTotal or 1, 1)
+	-- Main has already counted this delivery, so the slot is one behind the tally.
+	local angle < const > = (context._relicsPlaced - 1) * 2.0 * math.pi / slots
+	-- Facing back at the altar: the mesh's cross lies in XY and looks along +Z, so
+	-- a relic standing at `angle` on the ring has to be yawed half a turn past it.
+	local facing < const > = Quaternion.fromEulerAngles(angle + math.pi, 0.0, 0.0)
+	local at < const > = Vector4(a.x + math.sin(angle) * ALTAR_RADIUS, a.y, a.z + math.cos(angle) * ALTAR_RADIUS, 1.0)
+	self.owner.transform = Transform(context:_groundAt(at), facing)
+
+	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
+	if fx ~= nil then
+		fx:raise("sparkle")
+	end
+end
+]]></text>
+</object>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
+
+import(traktor)
+
+-- HealthPickup
+--
+-- A pickup that restores health. Only taken while the player is actually hurt,
+-- so one is never spent to overheal -- left alone, it stays put until it is worth
+-- something. The collect-and-remove machinery lives in Pickup; this only decides
+-- when it may be taken and what taking it does.
+
+HealthPickup = HealthPickup or class("HealthPickup", Pickup)
+
+local HEAL_AMOUNT < const > = 35.0   -- health restored per pickup (capped at max)
+
+function HealthPickup:canTake(context)
+	return context._health < context._maxHealth
+end
+
+function HealthPickup:take(context)
+	context._health = math.min(context._maxHealth, context._health + HEAL_AMOUNT)
+end
+]]></text>
+</object>

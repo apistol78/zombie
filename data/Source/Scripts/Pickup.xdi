@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Pickup
+--
+-- Base ScriptComponent for anything the player walks over to collect. The base
+-- owns the one behaviour every pickup shares -- notice the player is standing on
+-- it, and once it is actually taken pop its sparkle and remove it from the world
+-- -- and defers the two decisions that differ per kind to the subclass:
+--
+--   * Pickup:canTake(context) -> bool   whether it may be taken right now
+--                                       (default true; override to gate on a
+--                                       resource already being full, so a crate
+--                                       left on the ground is still there when it
+--                                       is finally worth something)
+--   * Pickup:take(context)              apply the effect; called only once, and
+--                                       only when canTake returned true
+--
+-- context is the Stage -- the Main instance -- exactly as in every other
+-- update() here, so a subclass reads and writes the player's health or ammo
+-- straight off it.
+--
+-- Attach a *subclass* (never this base) to an entity that has a mesh. A
+-- "sparkle" EventSetComponent is optional: the base raises it only if present,
+-- so a pickup with no sparkle simply vanishes.
+
+Pickup = Pickup or class("Pickup", traktor.world.ScriptComponent)
+
+-- How close the player's origin must come to the pickup's to count as walked
+-- over. This is the radius the Stage used back when the scan lived there.
+local TAKE_RANGE < const > = 1.2
+
+function Pickup:canTake(context)
+	return true
+end
+
+function Pickup:take(context)
+end
+
+function Pickup:update(context, totalTime, deltaTime)
+	if context == nil then
+		return
+	end
+
+	-- Freeze with the rest of the game: nothing is collected through the pause
+	-- menu, after death, or once the night is already won.
+	if context._gameOver or context._paused or context._nightOver then
+		return
+	end
+
+	local player < const > = context._humanoid
+	if player == nil then
+		return
+	end
+
+	-- Within reach? Origin to origin, all three axes, same measure the Stage used.
+	local pp < const > = player.transform.translation
+	local q < const > = self.owner.transform.translation
+	local dx < const > = q.x - pp.x
+	local dy < const > = q.y - pp.y
+	local dz < const > = q.z - pp.z
+	if dx * dx + dy * dy + dz * dz >= TAKE_RANGE * TAKE_RANGE then
+		return
+	end
+
+	-- Standing on it, but the subclass may still refuse it (health already full,
+	-- reserve already capped), in which case leave it to be collected later.
+	if not self:canTake(context) then
+		return
+	end
+
+	self:take(context)
+
+	-- Taken. Pop the sparkle where it stood -- follow=false on the event, so the
+	-- burst lingers after the entity is gone -- then remove it. removeEntity while
+	-- the world is updating is deferred, so taking itself out mid-update is safe.
+	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
+	if fx ~= nil then
+		fx:raise("sparkle")
+	end
+	self.world:removeEntity(self.owner)
+end
+]]></text>
+</object>

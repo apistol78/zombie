@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Ward
+--
+-- A consecration ward: a stone pillar with a flame at its top. The pillar is
+-- always there; the flame -- a point LightComponent on a "Flame" child entity
+-- held 1.9 m up the pillar by this entity's GroupComponent -- stays dark until a
+-- relic is delivered and Main lights the nearest ward by calling turnOn() on this
+-- component. Once lit it eases up to full with a flare and holds.
+--
+-- The Stage owns *which* ward lights and the no-spawn ground each one buys (see
+-- Main:_publishWards); this component owns only the look of the flame. The light's
+-- authored colour -- stored premultiplied by intensity -- is the lit target, and
+-- the component blacks it out until turnOn.
+--
+-- Attach to an entity whose GroupComponent holds a child named "Flame" carrying a
+-- point LightComponent.
+
+Ward = Ward or class("Ward", traktor.world.ScriptComponent)
+
+local IGNITE_RATE < const > = 0.9   -- how fast the flame catches once lit (1/s)
+
+-- Light it. Idempotent: turning on an already-lit ward does nothing, so Main can
+-- re-assert its lit wards after a hot reload without re-flaring them. Pass
+-- instant=true to snap straight to full (the reload-restore path); omit it for the
+-- flare-up a fresh consecration earns.
+function Ward:turnOn(instant)
+	if self._lit then
+		return
+	end
+	self._lit = true
+	self._ignite = instant and 1.0 or 0.0
+end
+
+function Ward:isOn()
+	return self._lit == true
+end
+
+-- Find (once) and cache the flame's LightComponent off the "Flame" child entity.
+function Ward:_resolveLight()
+	if self._light ~= nil then
+		return self._light
+	end
+	local group = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return nil
+	end
+	local flame = group:getEntity("Flame", 0)
+	if flame == nil then
+		return nil
+	end
+	self._light = flame:getComponent(traktor.world.LightComponent)
+	return self._light
+end
+
+function Ward:update(context, totalTime, deltaTime)
+	local light = self:_resolveLight()
+	if light == nil then
+		return
+	end
+
+	-- First sight of the light: capture its authored (premultiplied) colour as the
+	-- lit target, then apply the current state. Done on the first update rather than
+	-- in :new() because the child light is not resolvable until the entity is built
+	-- and grouped -- and doing it here, before anything is drawn, means the ward
+	-- never flashes lit for a frame before going dark.
+	if self._full == nil then
+		local c < const > = light.color
+		self._full = Vector4(c.x, c.y, c.z, c.w)
+		if not self._lit then
+			light.color = Vector4(0.0, 0.0, 0.0, 0.0)
+			return
+		end
+	end
+
+	if not self._lit then
+		return
+	end
+
+	-- Ease up to full once lit, overshooting and settling so it catches with a
+	-- flare rather than fading up like a dimmer. A fully-caught ward is left alone.
+	if self._ignite < 1.0 then
+		self._ignite = math.min(1.0, self._ignite + deltaTime * IGNITE_RATE)
+		local t < const > = self._ignite
+		local k
+		if t < 0.35 then
+			k = (t / 0.35) * 1.7
+		else
+			k = 1.7 - 0.7 * ((t - 0.35) / 0.65)
+		end
+		light.color = self._full * k
+	else
+		light.color = self._full
+	end
+end
+]]></text>
+</object>

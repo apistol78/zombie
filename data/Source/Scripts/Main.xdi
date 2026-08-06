@@ -4,7 +4,6 @@
 #using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
-#using \{04146358-42A5-463F-9AEC-380D3C1C7F95}
 #using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 
@@ -27,7 +26,7 @@ function Main:new(params, environment)
 
 	-- Initialize UiKit. Two resource kits: the HUD widgets' own art (UI/Hud,
 	-- imported from data/Assets/UI/Hud.svg) and UiKit's own movie, which the
-	-- menus and every Static come from. HealthBar/TreasureCounter look their
+	-- menus and every Static come from. HealthBar/AmmoCounter look their
 	-- movie clips up by name across both, so the HUD one has to be listed here
 	-- or they cannot build themselves.
 	Widget.initialize(
@@ -57,17 +56,16 @@ function Main:new(params, environment)
 	self._lblGodMode:setVerticalAlign(Widget.ALIGN_TOP)
 
 	-- HUD: one row along the bottom, reading left to right as where to go, how alive
-	-- you are, what you have to shoot with, and what you have found. Ammo sits next
-	-- to health because those two are what the player is actually spending. All four
-	-- are custom widgets (Scripts/Widgets) whose art comes from the UI/Hud movie, and
-	-- all four want a per-frame :update to run their animations.
-	self._hud = Container(self._frame, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 18, 0))
+	-- you are, and what you have to shoot with. Ammo sits next to health because those
+	-- two are what the player is actually spending. All three are custom widgets
+	-- (Scripts/Widgets) whose art comes from the UI/Hud movie, and all three want a
+	-- per-frame :update to run their animations.
+	self._hud = Container(self._frame, TableLayout({ 0, 0, 0 }, { 0 }, 0, 0, 18, 0))
 	self._hud:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._hud:setVerticalAlign(Widget.ALIGN_BOTTOM)
 	self._marker = ObjectiveMarker(self._hud)
 	self._healthBar = HealthBar(self._hud)
 	self._ammo = AmmoCounter(self._hud)
-	self._treasure = TreasureCounter(self._hud)
 
 	-- Game Over menu (hidden until death): the "GAME OVER" banner plus Restart / Exit
 	-- buttons, as a modal Dialog auto-centered over the HUD (one column: title, then
@@ -130,16 +128,12 @@ function Main:new(params, environment)
 	-- Ensure layouts are updated.
 	self._frame:update()
 
-	-- Gameplay counters.
-	self._pickups = 0
-
 	-- Player health / game-over.
 	self._health = 100.0
 	self._maxHealth = 100.0
 	self._gameOver = false
 	self._hurtRange = 1.0   -- enemies within this distance (m) deal damage
 	self._enemyDps = 20.0   -- health drained per second per touching enemy
-	self._healAmount = 35.0 -- health restored per health pickup (capped at max)
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
 	self._godMode = false   -- G: skip contact damage entirely (zombies still bite, visibly)
 
@@ -166,7 +160,6 @@ function Main:new(params, environment)
 	self._mag = 6                -- rounds in it right now
 	self._reserve = 24           -- spare rounds carried
 	self._reserveMax = 60        -- most that can be carried at once
-	self._ammoPerPickup = 12     -- rounds in one crate
 	self._reloadTime = 1.9       -- seconds to refill the magazine
 	self._fireInterval = 0.4     -- minimum seconds between shots
 	self._fireTimer = 0.0        -- counts down to the next shot being allowed
@@ -184,7 +177,7 @@ function Main:new(params, environment)
 	self._carried = nil          -- the Relic entity in the player's hands, or nil
 	self._placedRelics = {}      -- delivered relics; skipped when scanning for one to take
 	self._relicsPlaced = 0
-	self._relicsTotal = nil      -- counted off the world in resolve, like _totalPickups
+	self._relicsTotal = nil      -- counted off the world in resolve
 	self._reachRange = 2.2       -- how close to a relic you must be to take it (m)
 	self._altarRange = 3.5       -- ...and to the altar to place one; it is a 1.8 m monument
 	self._carrySpeed = 1.9       -- movement speed while carrying (walking is 3.0)
@@ -203,7 +196,6 @@ function Main:new(params, environment)
 	self._litWards = {}          -- published to the Spawner
 	self._enemyPace = 1.0        -- published to EnemyController
 	self._wardRadius = 15.0      -- no-spawn radius of a lit ward (m)
-	self._wardIgniteRate = 0.9   -- how fast a ward catches (1/s)
 	self._enemyPacePerWard = 0.1 -- zombie speed added per lit ward
 	self._noticeText = ""
 	self._noticeTimer = 0.0
@@ -356,13 +348,6 @@ function Main:resolve()
 	if world == nil then
 		return
 	end
-	-- Treasures placed in the level, counted once the world exists so the HUD
-	-- can show "found / total". Nothing spawns pickups at runtime, so this is
-	-- a fixed total for the level.
-	if self._totalPickups == nil then
-		self._totalPickups = world:getEntities("Pickup").size
-		self._treasure:setCount(self._pickups, self._totalPickups)
-	end
 	-- Relics stay in the world once delivered (they are stood up around the altar),
 	-- so this total is counted once and stays right for the rest of the night.
 	if self._relicsTotal == nil then
@@ -385,9 +370,14 @@ function Main:resolve()
 	end
 	-- Collect the wards once and sort them by distance from the altar, so the
 	-- lighting order radiates outward. Sorted here rather than authored as an index,
-	-- so dragging a post around in the scene editor cannot put the sequence out of
+	-- so dragging a ward around in the scene editor cannot put the sequence out of
 	-- order. Ends up an empty (non-nil) list in a scene with no wards, which is what
 	-- stops this re-running every frame in Scene 1.
+	--
+	-- Each ward's flame is owned by its own Ward ScriptComponent (Scripts/Ward); this
+	-- only tracks where the wards are and which are lit, and lights one by calling
+	-- turnOn() on that component. The record therefore holds the entity, not a live
+	-- light handle.
 	if self._wards == nil and self._altar ~= nil then
 		local a < const > = self._altar.transform.translation
 		local list = {}
@@ -398,42 +388,29 @@ function Main:resolve()
 				break
 			end
 			i = i + 1
-			local light = e:getComponent(traktor.world.LightComponent)
-			if light ~= nil then
-				local p < const > = e.transform.translation
-				-- LightComponent stores the authored colour *premultiplied by
-				-- intensity*, so reading it is how the lit target is picked up
-				-- without repeating the scene's numbers in script. Copied into a
-				-- fresh Vector4 rather than held by reference.
-				local c < const > = light.color
-				list[#list + 1] = {
-					light = light,
-					full = Vector4(c.x, c.y, c.z, c.w),
-					lit = false,
-					ignite = 0.0,
-					x = p.x,
-					z = p.z,
-					d = (p.x - a.x) * (p.x - a.x) + (p.z - a.z) * (p.z - a.z)
-				}
-			end
+			local p < const > = e.transform.translation
+			list[#list + 1] = {
+				entity = e,
+				lit = false,
+				x = p.x,
+				z = p.z,
+				d = (p.x - a.x) * (p.x - a.x) + (p.z - a.z) * (p.z - a.z)
+			}
 		end
 		table.sort(list, function (l, r) return l.d < r.d end)
 		self._wards = list
 
-		-- Dark until consecrated. Blacked out here rather than authored at zero
-		-- intensity so the wards are still visible in the scene editor -- and this
-		-- runs on the first update, before anything is drawn, so there is no flash.
-		--
 		-- _wardsLit survives a script hot reload while these records do not, so the
-		-- first _wardsLit of them are restored to full rather than going dark and
-		-- never coming back.
+		-- first _wardsLit of them are re-lit -- instantly, so a mid-game reload does
+		-- not replay every flare. A fresh night has _wardsLit == 0 and lights none;
+		-- the Ward components start their flames dark on their own.
 		for k, w in ipairs(self._wards) do
 			if k <= self._wardsLit then
 				w.lit = true
-				w.ignite = 1.0
-				w.light.color = w.full
-			else
-				w.light.color = Vector4(0.0, 0.0, 0.0, 0.0)
+				local sc < const > = w.entity:getComponent(traktor.world.ScriptComponent)
+				if sc ~= nil then
+					sc:turnOn(true)
+				end
 			end
 		end
 		self:_publishWards()
@@ -627,61 +604,10 @@ function Main:_groundAt(p)
 	return hit.position
 end
 
--- Put the carried relic down in front of the player, standing on the ground and
--- facing the way they are. This is the move that buys the rifle back.
-function Main:_dropRelic()
-	local relic < const > = self._carried
-	if relic == nil or self._humanoid == nil then
-		return
-	end
-	self._carried = nil
-
-	local heading < const > = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
-	local at < const > = self._humanoid.transform.translation + heading * Vector4(0.0, 0.0, 0.7, 0.0)
-	relic.transform = Transform(self:_groundAt(at), heading)
-end
-
--- Deliver the carried relic: stand it in the ring around the altar and tally it.
--- Placed relics are left in the world rather than removed, so the night's progress
--- is legible out there in the dark and not only on the HUD.
-function Main:_placeRelic()
-	local relic < const > = self._carried
-	if relic == nil or self._altar == nil then
-		return
-	end
-	self._carried = nil
-	self._placedRelics[relic] = true
-	self._relicsPlaced = self._relicsPlaced + 1
-
-	local a < const > = self._altar.transform.translation
-	local slots < const > = math.max(self._relicsTotal or 1, 1)
-	local angle < const > = (self._relicsPlaced - 1) * 2.0 * math.pi / slots
-	-- Facing back at the altar: the mesh's cross lies in XY and looks along +Z, so
-	-- a relic standing at `angle` on the ring has to be yawed half a turn past it.
-	local facing < const > = Quaternion.fromEulerAngles(angle + math.pi, 0.0, 0.0)
-	local at < const > = Vector4(a.x + math.sin(angle) * 2.1, a.y, a.z + math.cos(angle) * 2.1, 1.0)
-	relic.transform = Transform(self:_groundAt(at), facing)
-
-	local fx = relic:getComponent(traktor.world.EventSetComponent)
-	if fx ~= nil then
-		fx:raise("sparkle")
-	end
-
-	-- Consecration flows back out of the altar: one more ward takes light, the safe
-	-- ground reaches a landmark further out, and the forest beyond it speeds up.
-	if self:_lightNextWard() then
-		self:_showNotice("A WARD IS LIT")
-	end
-
-	-- Every relic home ends the night. Checked last, so its notice replaces the
-	-- ward one rather than being overwritten by it.
-	if self._relicsTotal ~= nil and self._relicsPlaced >= self._relicsTotal then
-		self:_breakDawn()
-	end
-end
-
--- Light the nearest still-dark ward to the altar. Returns false once they all
--- burn, which is how the last delivery knows it finished the night.
+-- Light the nearest still-dark ward to the altar: flag it, tell its Ward component
+-- to catch (Scripts/Ward owns the flame itself), and republish the safe ground.
+-- Returns false once they all burn, which is how the last delivery knows it
+-- finished the night.
 function Main:_lightNextWard()
 	if self._wards == nil then
 		return false
@@ -689,8 +615,11 @@ function Main:_lightNextWard()
 	for _, w in ipairs(self._wards) do
 		if not w.lit then
 			w.lit = true
-			w.ignite = 0.0
 			self._wardsLit = self._wardsLit + 1
+			local sc < const > = w.entity:getComponent(traktor.world.ScriptComponent)
+			if sc ~= nil then
+				sc:turnOn()
+			end
 			self:_publishWards()
 			return true
 		end
@@ -723,27 +652,6 @@ function Main:_publishWards()
 	end
 	self._litWards = lit
 	self._enemyPace = 1.0 + self._enemyPacePerWard * self._wardsLit
-end
-
--- Ease a ward up to full once it is lit. Overshoots and settles, so it catches
--- with a flare instead of fading up like a dimmer.
-function Main:_updateWards(dt)
-	if self._wards == nil then
-		return
-	end
-	for _, w in ipairs(self._wards) do
-		if w.lit and w.ignite < 1.0 then
-			w.ignite = math.min(1.0, w.ignite + dt * self._wardIgniteRate)
-			local t < const > = w.ignite
-			local k
-			if t < 0.35 then
-				k = (t / 0.35) * 1.7
-			else
-				k = 1.7 - 0.7 * ((t - 0.35) / 0.65)
-			end
-			w.light.color = w.full * k
-		end
-	end
 end
 
 -- The night is won. Everything after this is the payoff: the spawner is shut off,
@@ -848,12 +756,41 @@ end
 
 -- E, edge triggered. With a relic in hand: deliver it if the altar is in reach,
 -- otherwise put it down. With empty hands: take the nearest relic in reach.
+--
+-- The relic positions itself for either move (Relic:drop / Relic:place on its
+-- ScriptComponent); the Stage owns everything around it -- whether a relic is in
+-- hand, the running tally, the ward that lights and the dawn that breaks.
 function Main:_interact()
 	if self._carried ~= nil then
+		local relic < const > = self._carried
+		local sc < const > = relic:getComponent(traktor.world.ScriptComponent)
 		if self._altar ~= nil and self:_withinRange(self._altar.transform.translation, self._altarRange) then
-			self:_placeRelic()
+			-- Deliver it. Count it first so the relic stands in the right ring slot;
+			-- it is left in the world rather than removed.
+			self._carried = nil
+			self._placedRelics[relic] = true
+			self._relicsPlaced = self._relicsPlaced + 1
+			if sc ~= nil then
+				sc:place(self)
+			end
+
+			-- Consecration flows back out of the altar: one more ward takes light, the
+			-- safe ground reaches a landmark further out, and the forest beyond speeds up.
+			if self:_lightNextWard() then
+				self:_showNotice("A WARD IS LIT")
+			end
+
+			-- Every relic home ends the night. Checked last, so its notice replaces the
+			-- ward one rather than being overwritten by it.
+			if self._relicsTotal ~= nil and self._relicsPlaced >= self._relicsTotal then
+				self:_breakDawn()
+			end
 		else
-			self:_dropRelic()
+			-- Not in reach of the altar: just put it down, which buys the rifle back.
+			self._carried = nil
+			if sc ~= nil then
+				sc:drop(self)
+			end
 		end
 		return
 	end
@@ -1048,13 +985,11 @@ function Main:update(info)
 
 	local dt < const > = info.frameDeltaTime
 
-	-- Tick the HUD widgets' animations (health drain, hit flash, heartbeat,
-	-- treasure pop). Deliberately above every early-return below: the values
-	-- they show are pushed to them where they change, and letting the widgets
-	-- keep animating means a hit taken on the last frame still finishes its
-	-- flash once the game is paused or over.
+	-- Tick the HUD widgets' animations (health drain, hit flash, heartbeat).
+	-- Deliberately above every early-return below: the values they show are pushed to
+	-- them where they change, and letting the widgets keep animating means a hit taken
+	-- on the last frame still finishes its flash once the game is paused or over.
 	self._healthBar:update(dt)
-	self._treasure:update(dt)
 	self._ammo:update(dt)
 	-- Ticks the compass widget itself, as well as re-aiming it.
 	self:_updateMarker(dt)
@@ -1063,10 +998,9 @@ function Main:update(info)
 	-- and correctly centred through a pause or a window resize.
 	self:_updateHudText(dt)
 
-	-- Wards easing up to full. Above the early-returns for the same reason the HUD
-	-- widgets are: a ward caught on the frame the player died should still finish
-	-- catching rather than freeze at its flare.
-	self:_updateWards(dt)
+	-- Wards ease up to full in their own Ward components (Scripts/Ward), which run
+	-- every frame regardless of this stage's freeze -- so a ward caught on the frame
+	-- the player died still finishes catching rather than sticking at its flare.
 
 	-- The sunrise, once the night is won. Must run above the freeze below, since
 	-- that freeze is exactly what it is playing over.
@@ -1201,105 +1135,10 @@ function Main:update(info)
 		end
 	end
 
-	-- Pickup collection: when the player walks over a "Pickup" entity, remove it and tally it.
-	-- One per frame keeps it simple, since removeEntity shifts the remaining indices.
-	if self._humanoid ~= nil then
-		local world = self.world.world
-		if world ~= nil then
-			local pp = self._humanoid.transform.translation
-			local i = 0
-			while true do
-				local pk = world:getEntity("Pickup", i)
-				if pk == nil then
-					break
-				end
-				local q = pk.transform.translation
-				local dx = q.x - pp.x
-				local dy = q.y - pp.y
-				local dz = q.z - pp.z
-				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
-					-- Gold sparkle pop at the pickup. follow=false on the event, so the
-					-- spawned effect lingers in place after we remove the entity below.
-					local fx = pk:getComponent(traktor.world.EventSetComponent)
-					if fx ~= nil then
-						fx:raise("sparkle")
-					end
-					world:removeEntity(pk)
-					self._pickups = self._pickups + 1
-					self._treasure:setCount(self._pickups, self._totalPickups)
-					self._treasure:pop()
-					break
-				end
-				i = i + 1
-			end
-		end
-	end
-
-	-- Health pickup collection: walking over a "HealthPickup" restores health (capped
-	-- at max) and removes it. Only collected while below max so a pickup is never wasted.
-	-- Same one-per-frame scan as score pickups (removeEntity shifts remaining indices).
-	if self._humanoid ~= nil and self._health < self._maxHealth then
-		local world = self.world.world
-		if world ~= nil then
-			local pp = self._humanoid.transform.translation
-			local i = 0
-			while true do
-				local hp = world:getEntity("HealthPickup", i)
-				if hp == nil then
-					break
-				end
-				local q = hp.transform.translation
-				local dx = q.x - pp.x
-				local dy = q.y - pp.y
-				local dz = q.z - pp.z
-				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
-					world:removeEntity(hp)
-					self._health = math.min(self._maxHealth, self._health + self._healAmount)
-					break
-				end
-				i = i + 1
-			end
-		end
-	end
-
-	-- Ammo crate collection: walking over an "AmmoPickup" adds rounds to the reserve
-	-- and removes it. Only collected while below the cap, so a crate is never partly
-	-- wasted -- leave it and it is still there when you come back needing it. Same
-	-- one-per-frame scan as the pickups above (removeEntity shifts remaining indices).
-	if self._humanoid ~= nil and self._reserve < self._reserveMax then
-		local world = self.world.world
-		if world ~= nil then
-			local pp = self._humanoid.transform.translation
-			local i = 0
-			while true do
-				local ap = world:getEntity("AmmoPickup", i)
-				if ap == nil then
-					break
-				end
-				local q = ap.transform.translation
-				local dx = q.x - pp.x
-				local dy = q.y - pp.y
-				local dz = q.z - pp.z
-				if dx * dx + dy * dy + dz * dz < 1.2 * 1.2 then
-					-- follow=false on the event, so the pop lingers where the crate was.
-					local fx = ap:getComponent(traktor.world.EventSetComponent)
-					if fx ~= nil then
-						fx:raise("sparkle")
-					end
-					world:removeEntity(ap)
-					self._reserve = math.min(self._reserveMax, self._reserve + self._ammoPerPickup)
-					self._ammo:setAmmo(self._mag, self._reserve)
-					-- Picked up while standing there with an empty rifle: start loading
-					-- it without making the player ask.
-					if self._mag <= 0 then
-						self:_beginReload()
-					end
-					break
-				end
-				i = i + 1
-			end
-		end
-	end
+	-- Health and ammo pickups collect themselves now: each carries a Pickup
+	-- ScriptComponent (Scripts/Pickup, subclassed by HealthPickup / AmmoPickup) that
+	-- notices the player walking over it and applies its effect straight to this
+	-- stage. (Treasure pickups and their HUD counter have been removed.)
 
 	-- Enemy contact damage: every enemy within hurt range drains health, and
 	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
@@ -1348,9 +1187,14 @@ function Main:update(info)
 					self._health = 0.0
 					self._gameOver = true
 					-- Let go of the relic, or it hangs in the air where the player's
-					-- hands were: postUpdate stops running once _gameOver is set.
+					-- hands were: postUpdate stops running once _gameOver is set. The
+					-- relic drops itself (Relic:drop); the stage just lets go of it.
 					if self._carried ~= nil then
-						self:_dropRelic()
+						local sc < const > = self._carried:getComponent(traktor.world.ScriptComponent)
+						if sc ~= nil then
+							sc:drop(self)
+						end
+						self._carried = nil
 					end
 					-- Show the Game Over menu and free the mouse cursor so its
 					-- Restart / Exit buttons are clickable (as the pause menu does).
@@ -1476,7 +1320,7 @@ function Main:reload()
 	self._weapon = nil
 	self._fireEvents = nil
 	self._altar = nil
-	-- Ward records hold live LightComponent handles, so they have to be re-resolved.
+	-- Ward records hold live entity handles, so they have to be re-resolved.
 	-- resolve() restores which of them burn from _wardsLit, which survives.
 	self._wards = nil
 end

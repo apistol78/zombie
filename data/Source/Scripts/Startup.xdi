@@ -28,16 +28,12 @@ function Startup:new(params, environment)
 	self._frame = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
 
 	-- Menu: a title over one button per selectable stage, then Exit. The Dialog
-	-- auto-centers on its parent Frame; one column, four auto-height rows.
-	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
+	-- auto-centers on its parent Frame; one column, three auto-height rows.
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
 
 	local title = Static(self._dialog, "SELECT STAGE")
 	title:setTextSize(40)
 	title:setHorizontalAlign(Widget.ALIGN_CENTER)
-
-	local buttonMain = PushButton(self._dialog, "Main")
-	buttonMain:setMinimumWidth(220)
-	buttonMain:setOnClick(function() self:_select("MAIN") end)
 
 	local buttonTerrain = PushButton(self._dialog, "Terrain")
 	buttonTerrain:setMinimumWidth(220)

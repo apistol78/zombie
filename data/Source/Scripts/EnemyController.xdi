@@ -37,38 +37,100 @@ EnemyController = EnemyController or class("EnemyController", traktor.world.Scri
 local COLLISION_DEFAULT = 0x00000001
 local COLLISION_INTERACTABLE = 0x00000002
 
--- Consecrated ground. Returns a push away from every lit ward the point is inside
--- of, plus whether it is inside any at all. The Stage publishes the ward list as
--- context._litWards ({ x, z, r, r2 }); nil or empty means nothing to avoid.
---
--- Weight ramps from 0.4 at the rim to 1.0 at the flame, so a zombie is turned back
--- however shallowly it strays in, and is driven out hardest from the middle. It is
--- deliberately non-zero right at the boundary: a ward that only pushed once you
--- were well inside would let the horde stand a third of the way in, which is
--- exactly the ground the player is trying to make safe.
-local function wardPush(wards, x, z)
+-- Consecrated ground. A lit ward is a circle { x, z, r, r2 } the Stage publishes as
+-- context._litWards (nil/empty means nothing to avoid). The horde neither paths into
+-- one nor piles against its rim: chase targets are kept outside a ward, and a route
+-- that would clip one is arced around it rather than shoved straight back -- which is
+-- what the old radial push did, and why zombies stacked up in a heap at the boundary.
+local WARD_LOOKAHEAD < const > = 2.5   -- start arcing around a lit ward this far outside its rim (m)
+local WARD_CLEARANCE < const > = 3.5   -- place chase targets this far outside a lit ward (m); kept larger
+                                       -- than WARD_LOOKAHEAD so a target never sits inside the arc band,
+                                       -- which would leave the zombie circling instead of arriving
+
+-- The lit ward a point is inside, or nil. Used to keep chase targets off the safe
+-- ground and to notice when the player has stepped onto it.
+local function wardContaining(wards, x, z)
 	if wards == nil then
-		return 0.0, 0.0, false
+		return nil
 	end
-	local px, pz = 0.0, 0.0
-	local inside = false
 	for _, w in ipairs(wards) do
 		local ax < const > = x - w.x
 		local az < const > = z - w.z
-		local d2 < const > = ax * ax + az * az
-		if d2 < w.r2 then
-			inside = true
-			local d < const > = math.sqrt(d2)
+		if ax * ax + az * az < w.r2 then
+			return w
+		end
+	end
+	return nil
+end
+
+-- Move a point out of any lit ward it lands in, to WARD_CLEARANCE past the rim, so a
+-- chase target is never set on ground the zombie is not allowed to stand on.
+local function pushOutOfWards(wards, x, z)
+	if wards == nil then
+		return x, z
+	end
+	for _, w in ipairs(wards) do
+		local ax < const > = x - w.x
+		local az < const > = z - w.z
+		local d < const > = math.sqrt(ax * ax + az * az)
+		local keep < const > = w.r + WARD_CLEARANCE
+		if d < keep then
 			if d > 0.001 then
-				local k < const > = 0.4 + 0.6 * ((w.r - d) / w.r)
-				px = px + (ax / d) * k
-				pz = pz + (az / d) * k
+				x = w.x + (ax / d) * keep
+				z = w.z + (az / d) * keep
 			else
-				px = px + 1.0   -- standing on the flame itself; any way out will do
+				x = w.x + keep
+				z = w.z
 			end
 		end
 	end
-	return px, pz, inside
+	return x, z
+end
+
+-- Steer a desired heading (dx, dz) around lit wards. A zombie caught inside one (a
+-- ward lit over it) is driven straight out; one approaching a rim while still heading
+-- inward is turned along the tangent -- toward its goal -- blending from fully sideways
+-- at the rim to untouched at WARD_LOOKAHEAD out, so it arcs around the safe ground
+-- instead of stalling against it. A heading that already clears the ward is left alone.
+local function avoidWards(wards, px, pz, dx, dz)
+	if wards == nil then
+		return dx, dz
+	end
+	for _, w in ipairs(wards) do
+		local nx < const > = px - w.x
+		local nz < const > = pz - w.z
+		local d < const > = math.sqrt(nx * nx + nz * nz)
+		local influence < const > = w.r + WARD_LOOKAHEAD
+		if d < influence then
+			if d < 0.001 then
+				return 1.0, 0.0   -- on the flame itself; any way out will do
+			end
+			local rx < const > = nx / d
+			local rz < const > = nz / d
+			if d < w.r then
+				-- Inside: evict straight out along the radial.
+				dx, dz = rx, rz
+			elseif (dx * rx + dz * rz) < 0.0 then
+				-- Outside but heading in: slide along the tangent, on the side that
+				-- keeps the most of the original goal direction.
+				local tx = -rz
+				local tz = rx
+				if (dx * tx + dz * tz) < 0.0 then
+					tx = rz
+					tz = -rx
+				end
+				local t < const > = (influence - d) / WARD_LOOKAHEAD   -- 1 at the rim, 0 at the edge
+				dx = dx * (1.0 - t) + tx * t
+				dz = dz * (1.0 - t) + tz * t
+				local l < const > = math.sqrt(dx * dx + dz * dz)
+				if l > 0.001 then
+					dx = dx / l
+					dz = dz / l
+				end
+			end
+		end
+	end
+	return dx, dz
 end
 
 function EnemyController:new()
@@ -77,9 +139,6 @@ function EnemyController:new()
 	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
 	self._avoidRadius = 2.0   -- start avoiding other agents within this distance (m)
 	self._separation = 1.5    -- how strongly avoidance overrides path following
-	self._wardRepulsion = 3.0 -- ...and how strongly a lit ward does; must beat the
-	                          -- path (a unit vector) even at the ward's rim, or the
-	                          -- horde would simply walk in after the player
 
 	-- State machine.
 	self._state = "patrol"    -- "patrol" | "attack"
@@ -273,15 +332,35 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._state == "attack" then
 		if self._repathTimer <= 0.0 and self._pathResult == nil then
 			self._repathTimer = 0.5
-			-- Jitter around the player, then snap onto the nav mesh so it stays reachable.
+			-- Where to chase to. Normally the player -- but consecrated ground cannot be
+			-- entered, so if the player has stepped into a lit ward, aim at the ring just
+			-- outside it on this zombie's own side instead. The horde then gathers around
+			-- the whole edge of the safe ground rather than piling against the one point of
+			-- rim between it and a player it can never reach.
+			local aimX, aimZ = playerPos.x, playerPos.z
+			local pw = wardContaining(context._litWards, playerPos.x, playerPos.z)
+			if pw ~= nil then
+				local nx = enemyPos.x - pw.x
+				local nz = enemyPos.z - pw.z
+				local nl = math.sqrt(nx * nx + nz * nz)
+				if nl > 0.001 then
+					aimX = pw.x + (nx / nl) * (pw.r + WARD_CLEARANCE)
+					aimZ = pw.z + (nz / nl) * (pw.r + WARD_CLEARANCE)
+				end
+			end
+			-- Jitter so the horde does not stack on one point, then keep the result off
+			-- consecrated ground and snap it onto the nav mesh so it stays reachable.
 			local jitter = 1.5
-			local target = Vector4(
-				playerPos.x + (math.random() * 2.0 - 1.0) * jitter,
-				playerPos.y,
-				playerPos.z + (math.random() * 2.0 - 1.0) * jitter,
-				1.0
-			)
-			target = self._navMesh:findClosestPoint(target)
+			aimX = aimX + (math.random() * 2.0 - 1.0) * jitter
+			aimZ = aimZ + (math.random() * 2.0 - 1.0) * jitter
+			aimX, aimZ = pushOutOfWards(context._litWards, aimX, aimZ)
+			-- Snap onto the ground beneath the aim. findClosestPointXZ ignores height, so
+			-- it still resolves to the terrain when the player has climbed a tower or a
+			-- roof -- where the old height-limited findClosestPoint failed (handing back the
+			-- mid-air point) or snapped to a roof polygon off to the side, sending the horde
+			-- the wrong way. Searched from the zombie's own ground level, so a genuinely
+			-- stacked surface resolves to the reachable one.
+			local target = self._navMesh:findClosestPointXZ(Vector4(aimX, enemyPos.y, aimZ, 1.0), 4.0)
 			self._pathResult = self._navMesh:createMoveQuery(enemyPos, target)
 		end
 	else
@@ -300,12 +379,11 @@ function EnemyController:update(context, totalTime, deltaTime)
 			if needNew then
 				local candidate = self._navMesh:findRandomPoint(enemyPos, 2.0)
 				-- Do not deliberately wander onto consecrated ground. One retry is
-				-- enough: the repulsion below turns the zombie around either way,
-				-- this just stops it repeatedly setting off toward a ward it cannot
-				-- enter. Always assigns, so a rejected pair still leaves a target for
+				-- enough: the steering below arcs the zombie around a ward either way,
+				-- this just stops it repeatedly setting off toward one it cannot enter.
+				-- Always assigns, so a rejected pair still leaves a target for
 				-- createMoveQuery below.
-				local _, _, inWard = wardPush(context._litWards, candidate.x, candidate.z)
-				if inWard then
+				if wardContaining(context._litWards, candidate.x, candidate.z) ~= nil then
 					candidate = self._navMesh:findRandomPoint(enemyPos, 2.0)
 				end
 				self._patrolTarget = candidate
@@ -354,16 +432,10 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- Avoid player.
 	avoid(playerPos.x, playerPos.z)
 
-	-- Consecrated ground pushes back. This is what makes a lit ward a place the
-	-- player is actually safe standing in, rather than merely a place nothing
-	-- spawns: the horde is driven out of one it is caught in, and turned away at
-	-- the rim when it chases the player into one.
-	local wardX < const > , wardZ < const > = wardPush(context._litWards, enemyPos.x, enemyPos.z)
-
-	-- Blend separation and ward repulsion into the desired direction, then
-	-- renormalise to a unit heading.
-	targetX = targetX + sepX * self._separation + wardX * self._wardRepulsion
-	targetZ = targetZ + sepZ * self._separation + wardZ * self._wardRepulsion
+	-- Blend separation from other agents into the path direction, then renormalise to
+	-- a unit heading.
+	targetX = targetX + sepX * self._separation
+	targetZ = targetZ + sepZ * self._separation
 	local tl = math.sqrt(targetX * targetX + targetZ * targetZ)
 	if tl > 0.001 then
 		targetX = targetX / tl
@@ -372,6 +444,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 		targetX = 0.0
 		targetZ = 0.0
 	end
+
+	-- Consecrated ground has the last word on the heading: arc around a lit ward
+	-- rather than walk into it, and drive out of one the zombie is somehow caught
+	-- inside. Redirecting along the rim (instead of shoving straight back down the
+	-- path, as the old push did) is what stops the horde stalling in a heap at the
+	-- boundary. Recompute the length after, since eviction can hand a heading to a
+	-- zombie that had none.
+	targetX, targetZ = avoidWards(context._litWards, enemyPos.x, enemyPos.z, targetX, targetZ)
+	tl = math.sqrt(targetX * targetX + targetZ * targetZ)
 
 	-- Rotate facing toward the desired direction at a limited angular rate (shortest
 	-- way around), so turns - including reversals - happen gradually, never instantly.

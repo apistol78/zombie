@@ -7,7 +7,7 @@ local ENEMY < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
 
 -- Tuning.
-local MAX_ENEMIES < const > = 40      -- keep at most this many spawned alive
+local MAX_ENEMIES < const > = 30      -- keep at most this many spawned alive
 local SPAWN_MIN < const > = 8.0       -- nearest a spawn may appear to the player (m)
 local SPAWN_MAX < const > = 20.0      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
@@ -127,7 +127,7 @@ function Spawner:update(context, totalTime, deltaTime)
 			-- Gone: Main destroyed the corpse. Drop the entry (do not keep it).
 		elseif dead ~= nil and dead[e] ~= nil then
 			-- Dying, but still an entity in the world: keep the slot occupied.
-			kept[#kept + 1] = e
+			table.insert(kept, e)
 		else
 			local ep = e.transform.translation
 			local dx, dy, dz = ep.x - playerPos.x, ep.y - playerPos.y, ep.z - playerPos.z
@@ -143,7 +143,7 @@ function Spawner:update(context, totalTime, deltaTime)
 				-- global, so not even a restart clears them. Destroy it explicitly.
 				e:destroy()
 			else
-				kept[#kept + 1] = e
+				table.insert(kept, e)
 			end
 		end
 	end
@@ -241,7 +241,7 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 	local yaw < const > = (math.atan2 or math.atan)(playerPos.x - best.x, playerPos.z - best.z)
 	enemy.transform = traktor.Transform(traktor.Vector4(best.x, best.y, best.z, 1.0), traktor.Quaternion.fromEulerAngles(yaw, 0.0, 0.0))
-	self._spawned[#self._spawned + 1] = enemy
+	table.insert(self._spawned, enemy)
 end
 ]]></text>
 </object>

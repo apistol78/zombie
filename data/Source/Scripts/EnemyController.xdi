@@ -42,8 +42,8 @@ local COLLISION_INTERACTABLE = 0x00000002
 -- one nor piles against its rim: chase targets are kept outside a ward, and a route
 -- that would clip one is arced around it rather than shoved straight back -- which is
 -- what the old radial push did, and why zombies stacked up in a heap at the boundary.
-local WARD_LOOKAHEAD < const > = 2.5   -- start arcing around a lit ward this far outside its rim (m)
-local WARD_CLEARANCE < const > = 3.5   -- place chase targets this far outside a lit ward (m); kept larger
+local WARD_LOOKAHEAD < const > = 2.0   -- start arcing around a lit ward this far outside its rim (m)
+local WARD_CLEARANCE < const > = 3.0   -- place chase targets this far outside a lit ward (m); kept larger
                                        -- than WARD_LOOKAHEAD so a target never sits inside the arc band,
                                        -- which would leave the zombie circling instead of arriving
 
@@ -137,8 +137,8 @@ function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
 	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
-	self._avoidRadius = 2.0   -- start avoiding other agents within this distance (m)
-	self._separation = 1.5    -- how strongly avoidance overrides path following
+	self._avoidRadius = 2.5   -- start avoiding other agents within this distance (m)
+	self._separation = 2.0    -- how strongly avoidance overrides path following
 
 	-- State machine.
 	self._state = "patrol"    -- "patrol" | "attack"

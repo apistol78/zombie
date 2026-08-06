@@ -153,6 +153,7 @@ function Main:new(params, environment)
 	-- the current speed each frame so the character controller's velocity clamp permits it.
 	self._walkSpeed = 3.0
 	self._sprintSpeed = 6.0
+	self._running = false   -- true while sprinting and moving; hides the crosshair, lowers the rifle
 
 	-- Shooting: left mouse fires a hitscan that ragdolls the nearest zombie in front.
 	self._deadEnemies = {}       -- live set: enemy entity -> remaining corpse lifetime (s)
@@ -172,7 +173,7 @@ function Main:new(params, environment)
 	self._mag = 6                -- rounds in it right now
 	self._reserve = 24           -- spare rounds carried
 	self._reserveMax = 60        -- most that can be carried at once
-	self._reloadTime = 1.9       -- seconds to refill the magazine
+	self._reloadTime = 1.2       -- seconds to refill the magazine
 	self._fireInterval = 0.4     -- minimum seconds between shots
 	self._fireTimer = 0.0        -- counts down to the next shot being allowed
 	self._reloadTimer = 0.0      -- counts down to the magazine being refilled
@@ -184,16 +185,16 @@ function Main:new(params, environment)
 	--
 	-- Carrying one is the whole point of the mechanic. It fills one hand rather than
 	-- both, so the rifle stays up and you can still fire (it just rides a little
-	-- further right, out of the relic's way) -- but sprinting is out and you move
-	-- slower than a zombie walks. Every relic run is therefore a route you commit to,
-	-- and putting it down is no longer the only way to fight back.
+	-- further right, out of the relic's way) -- but sprinting is out and you move at a
+	-- wary walk. Every relic run is therefore a route you commit to, and putting it
+	-- down is no longer the only way to fight back.
 	self._carried = nil          -- the Relic entity in the player's hands, or nil
 	self._placedRelics = {}      -- delivered relics; skipped when scanning for one to take
 	self._relicsPlaced = 0
 	self._relicsTotal = nil      -- counted off the world in resolve
 	self._reachRange = 2.2       -- how close to a relic you must be to take it (m)
 	self._altarRange = 3.5       -- ...and to the altar to place one; it is a 1.8 m monument
-	self._carrySpeed = 1.9       -- movement speed while carrying (walking is 3.0)
+	self._carrySpeed = 2.6       -- movement speed while carrying (normal walk is 3.0)
 
 	-- Wards. Every relic delivered lights one, and a lit ward is ground the Spawner
 	-- refuses to place zombies on. They are lit nearest-the-altar first, so the safe
@@ -402,13 +403,13 @@ function Main:resolve()
 			end
 			i = i + 1
 			local p < const > = e.transform.translation
-			list[#list + 1] = {
+			table.insert(list, {
 				entity = e,
 				lit = false,
 				x = p.x,
 				z = p.z,
 				d = (p.x - a.x) * (p.x - a.x) + (p.z - a.z) * (p.z - a.z)
-			}
+			})
 		end
 		table.sort(list, function (l, r) return l.d < r.d end)
 		self._wards = list
@@ -654,12 +655,12 @@ function Main:_publishWards()
 	if self._wards ~= nil then
 		for _, w in ipairs(self._wards) do
 			if w.lit then
-				lit[#lit + 1] = {
+				table.insert(lit, {
 					x = w.x,
 					z = w.z,
 					r = self._wardRadius,
 					r2 = self._wardRadius * self._wardRadius
-				}
+				})
 			end
 		end
 	end
@@ -767,10 +768,17 @@ end
 -- the relic), and not while the game is paused, lost or won. Called from update above
 -- its early-returns, so those "not playing" states can hide it.
 function Main:_updateCrosshair(dt)
+	-- Hidden whenever the magazine is empty -- during a reload and when fully dry. The
+	-- reticle is an aiming aid for a loaded rifle; with no round chambered there is no
+	-- shot to line up, so it comes back the instant the magazine is refilled.
+	local loaded = self._mag > 0
+
 	local show = not self._gameOver
 		and not self._nightOver
 		and not self._paused
+		and not self._running
 		and self._carried == nil
+		and loaded
 		and self._humanoid ~= nil
 
 	if show ~= self._crosshairShown then
@@ -1148,12 +1156,19 @@ function Main:update(info)
 			-- controller's clamp doesn't cap the sprint. Carrying a relic overrides
 			-- both: you shuffle, and no amount of Shift helps.
 			local speed = self._walkSpeed
+			local sprinting = false
 			if self._carried ~= nil then
 				speed = self._carrySpeed
 			elseif mapping:isStateDown("STATE_SPRINT") then
 				speed = self._sprintSpeed
+				sprinting = true
 			end
 			self._character.maxVelocity = speed
+			-- "Running" is sprinting while actually moving. It hides the crosshair and
+			-- drops the rifle to a low ready (see _updateCrosshair and postUpdate) -- you
+			-- still fire, but from the hip. Computed here, where the inputs are to hand.
+			local moving = move > 0.1 or move < -0.1 or strafe > 0.1 or strafe < -0.1
+			self._running = sprinting and moving
 			local lookSensitivity = 0.005   -- radians per pixel of mouse motion
 			-- STATE_LOOK_* are per-frame mouse deltas (pixels) -- do NOT scale by dt.
 			self._heading = self._heading + look * lookSensitivity
@@ -1186,7 +1201,6 @@ function Main:update(info)
 			end
 
 			if self._poseController ~= nil then
-				local moving = move > 0.1 or move < -0.1 or strafe > 0.1 or strafe < -0.1
 				self._poseController:setParameterValue("moving", moving)
 				self._poseController:setParameterValue("jump", jumped)
 			end
@@ -1293,7 +1307,7 @@ function Main:update(info)
 		for e, life in pairs(self._deadEnemies) do
 			life = life - dt
 			if life <= 0.0 then
-				remove[#remove + 1] = e
+				table.insert(remove, e)
 			else
 				self._deadEnemies[e] = life
 			end
@@ -1350,6 +1364,14 @@ function Main:postUpdate(info)
 			offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
 		end
 
+		-- Lowered on the run: while sprinting the rifle drops to a low ready and the
+		-- crosshair is hidden (see _updateCrosshair). You can still fire, but from the
+		-- hip -- a gentler cousin of the reload dip.
+		if self._running then
+			offset = offset + Vector4(0.0, -0.14, -0.08, 0.0)
+			aim = aim * Quaternion.fromEulerAngles(0.0, -0.4, 0.18)
+		end
+
 		-- Drop the rifle out of the sightline and roll it over while reloading: it eases
 		-- all the way down and back up across _reloadTime. It is the tell that costs the
 		-- player -- it is obvious the gun cannot be fired, and roughly how much longer
@@ -1367,10 +1389,11 @@ function Main:postUpdate(info)
 	end
 
 	-- Carried relic: held up in the player's left hand, off to the left so it clears
-	-- both the rifle on the right and the aim straight down the middle. Its pitch is
-	-- damped so looking around does not swing it through the camera.
+	-- both the rifle on the right and the aim straight down the middle. Rotated by the
+	-- full aim pitch, exactly like the weapon, so it rises and drops with the view
+	-- instead of lagging behind it.
 	if self._carried ~= nil and self._humanoid ~= nil then
-		local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch * 0.35, 0.0)
+		local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
 		local eye < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
 		self._carried.transform = Transform(eye + aim * Vector4(-0.38, -0.5, 0.62, 0.0), aim)
 	end

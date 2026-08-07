@@ -1408,20 +1408,131 @@
 								</item>
 							</components>
 						</item>
-						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+						<item type="traktor.world.EntityData" version="2">
 							<id>{07A8C34A-67EB-4C38-BD18-98291E434D97}</id>
-							<name>Lookout</name>
+							<name>Tower</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
-								<locked>true</locked>
+								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6.168223, 22.226257, 7.065803, 0</translation>
+								<translation>6.1682, 22.3225, 7.0658, 1</translation>
 								<rotation>0, 0.841471, 0, 0.540303</rotation>
 							</transform>
-							<components/>
-							<entityData>{958E4557-7765-41AD-871E-043B1A381B47}</entityData>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{5B1E7C09-2D64-4F8A-9C31-D0A47E58B6F1}</mesh>
+								</item>
+								<item type="traktor.physics.RigidBodyComponentData" version="1">
+									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+											<localTransform>
+												<translation>0, 0, 0, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</localTransform>
+											<collisionGroup>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionGroup>
+											<collisionMask>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionMask>
+											<material>0</material>
+											<mesh>{9E3A61D7-84FB-4C25-A0B8-2F17C9D45E63}</mesh>
+										</shape>
+										<friction>0.75</friction>
+										<restitution>0</restitution>
+										<kinematic>false</kinematic>
+									</bodyDesc>
+									<eventCollide/>
+									<transformFilter>0</transformFilter>
+								</item>
+								<item type="traktor.world.GroupComponentData">
+									<entityData>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{116F71E2-23F8-4C11-8C33-3EC82C0DDA16}</id>
+											<name>TorchDoor</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>0.9, 2.4, -2, 1</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components>
+												<item type="traktor.world.LightComponentData" version="13">
+													<lightType>Point</lightType>
+													<color>1, 0.68, 0.28, 1</color>
+													<intensity>120</intensity>
+													<castShadow>false</castShadow>
+													<nearRange>0</nearRange>
+													<farRange>5</farRange>
+													<radius>1.570796</radius>
+													<flickerAmount>0.25</flickerAmount>
+													<flickerFilter>0.4</flickerFilter>
+													<bakeMode>LbmDisabled</bakeMode>
+												</item>
+											</components>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{CA7F9678-4BAE-4B4D-9B69-01B7759EBC65}</id>
+											<name>TorchMid</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>0, 5, 0.9, 1</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components>
+												<item type="traktor.world.LightComponentData" version="13">
+													<lightType>Point</lightType>
+													<color>1, 0.68, 0.28, 1</color>
+													<intensity>120</intensity>
+													<castShadow>false</castShadow>
+													<nearRange>0</nearRange>
+													<farRange>5</farRange>
+													<radius>1.570796</radius>
+													<flickerAmount>0.25</flickerAmount>
+													<flickerFilter>0.4</flickerFilter>
+													<bakeMode>LbmDisabled</bakeMode>
+												</item>
+											</components>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{37914829-9331-4FCE-A215-4A87005D15FE}</id>
+											<name>TorchTop</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>0, 9, 0, 1</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components>
+												<item type="traktor.world.LightComponentData" version="13">
+													<lightType>Point</lightType>
+													<color>1, 0.68, 0.28, 1</color>
+													<intensity>120</intensity>
+													<castShadow>false</castShadow>
+													<nearRange>0</nearRange>
+													<farRange>5</farRange>
+													<radius>1.570796</radius>
+													<flickerAmount>0.25</flickerAmount>
+													<flickerFilter>0.4</flickerFilter>
+													<bakeMode>LbmDisabled</bakeMode>
+												</item>
+											</components>
+										</item>
+									</entityData>
+								</item>
+							</components>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{0A104F35-6AB2-410E-B865-C4C8EE817BBA}</id>

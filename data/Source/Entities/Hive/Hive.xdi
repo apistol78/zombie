@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{DB2DD56A-3B17-48D9-97BA-6EB699DD6AE3}</id>
+	<name>Hive</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{F13C9B88-F948-4271-9037-10259BA17ACB}</id>
+					<name>Boulder Large</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{062A22AB-97B2-4C9F-9257-9E9CFBFD9003}</mesh>
+						</item>
+					</components>
+				</item>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{92DE23A4-EC54-4E96-B450-831105D5B2BB}</id>
+					<name>Spawn</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 1.074629, -3.740804, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.world.VolumeComponentData">
+							<size>3, 2, 4, 0</size>
+						</item>
+					</components>
+				</item>
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+					<id>{A28947EE-A5E8-41EF-BB2F-8191DC5A10EF}</id>
+					<name>Hive-Barrier</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 0, -2, 0</translation>
+						<rotation>0, -1, 0, 0</rotation>
+					</transform>
+					<components/>
+					<entityData>{D5BC0743-545D-4A7A-8BA5-A2C18B985D69}</entityData>
+				</item>
+			</entityData>
+		</item>
+		<item type="traktor.theater.TheaterEntityComponentData">
+			<acts>
+				<item type="traktor.theater.ActData">
+					<name>Unwield</name>
+					<duration>5</duration>
+					<tracks>
+						<item type="traktor.theater.TrackData" version="1">
+							<entityId>{F13C9B88-F948-4271-9037-10259BA17ACB}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<path>
+								<keys>
+									<item>
+										<T>0.294</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<position>0, 0, 0, 1</position>
+										<orientation>0, 0, 0, 0</orientation>
+										<values>
+											<item>0</item>
+											<item>0</item>
+											<item>0</item>
+											<item>0</item>
+										</values>
+									</item>
+									<item>
+										<T>4.008</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<position>0, -2.920642, 0, 1</position>
+										<orientation>0, 0, 0, 0</orientation>
+										<values>
+											<item>0</item>
+											<item>0</item>
+											<item>0</item>
+											<item>0</item>
+										</values>
+									</item>
+								</keys>
+							</path>
+							<events>
+								<item>
+									<T>0.492</T>
+									<event type="traktor.world.ScriptEventData">
+										<method>_spawnZombies</method>
+									</event>
+								</item>
+								<item>
+									<T>0.16</T>
+									<event type="traktor.spray.SpawnEffectEventData" version="3">
+										<effect>{460B33C8-81D2-4168-9F66-558B18628CF1}</effect>
+										<transform>
+											<translation>0, 0, 0, 0</translation>
+											<rotation>0, 0, 0, 1</rotation>
+										</transform>
+										<follow>false</follow>
+										<useRotation>false</useRotation>
+									</event>
+								</item>
+								<item>
+									<T>0.1</T>
+									<event type="traktor.spray.SoundEventData" version="1">
+										<sound>{50D1D000-0000-4000-8000-00000000000C}</sound>
+										<positional>true</positional>
+										<follow>false</follow>
+										<autoStopFar>true</autoStopFar>
+									</event>
+								</item>
+							</events>
+						</item>
+					</tracks>
+				</item>
+			</acts>
+		</item>
+		<item type="traktor.world.ScriptComponentData" version="2">
+			<class>{14864FF1-5F0E-4E1F-B1A7-5D11A6B545F8}</class>
+			<properties/>
+			<editorSupport>false</editorSupport>
+		</item>
+	</components>
+</object>

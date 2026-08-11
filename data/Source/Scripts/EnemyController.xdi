@@ -12,7 +12,8 @@ import(traktor)
 --
 -- Losing sight does not drop ATTACK instantly; the enemy keeps chasing for a short
 -- memory window first. That feels natural ("I just saw you go that way") and also
--- damps mode flicker when another agent briefly crosses the view ray.
+-- damps mode flicker when another agent briefly crosses the view ray. A zombie put
+-- into ATTACK by :hunt rather than :alertTo never comes out of it at all -- see there.
 --
 -- Both modes are held off for the first _spawnDelay seconds of a zombie's life: it
 -- stands still and its "moving" parameter is left alone, so it reads as getting up
@@ -37,112 +38,76 @@ EnemyController = EnemyController or class("EnemyController", traktor.world.Scri
 local COLLISION_DEFAULT = 0x00000001
 local COLLISION_INTERACTABLE = 0x00000002
 
--- Consecrated ground. A lit ward is a circle { x, z, r, r2 } the Stage publishes as
--- context._litWards (nil/empty means nothing to avoid). The horde neither paths into
--- one nor piles against its rim: chase targets are kept outside a ward, and a route
--- that would clip one is arced around it rather than shoved straight back -- which is
--- what the old radial push did, and why zombies stacked up in a heap at the boundary.
-local WARD_LOOKAHEAD < const > = 2.0   -- start arcing around a lit ward this far outside its rim (m)
-local WARD_CLEARANCE < const > = 3.0   -- place chase targets this far outside a lit ward (m); kept larger
-                                       -- than WARD_LOOKAHEAD so a target never sits inside the arc band,
-                                       -- which would leave the zombie circling instead of arriving
+-- Lit wards are nothing to this controller. A ward's light kills what is standing on its
+-- ground the moment it catches (Main:_purgeWard) and the Spawner will not place anything
+-- inside one afterwards, but the horde neither steers out of one nor arcs around it: it
+-- walks through consecrated ground like any other ground.
+--
+-- That is a deliberate removal, not an omission. Every version of "the horde avoids a
+-- ward" ended up costing more than it bought -- zombies piling against a rim, circling
+-- inside overlapping discs, chase targets shoved onto ground they could not reach -- and
+-- all of it in service of ground the player is only standing on for a few seconds. The
+-- flare that clears the ward is the mechanic; the rest was upkeep.
+--
+-- How long a freshly spawned zombie hunts the player without having seen them. Same
+-- units as _attackMemory below and deliberately the same value: a zombie the spawner
+-- has just placed behind cover gets exactly the grace a zombie that has just lost
+-- sight of the player gets.
+--
+-- NOTE these are not seconds. _lostTimer is only decremented inside the one-in-four
+-- perception sample, so it burns down at roughly a quarter of real time -- 2.5 here
+-- is about ten seconds of hunting, of which the first 2.5 are spent on _spawnDelay
+-- standing up. That leaves something like nine metres of walking, which is what it
+-- takes to come out of the cover it rose behind.
+local SPAWN_HUNT < const > = 2.5
 
--- The lit ward a point is inside, or nil. Used to keep chase targets off the safe
--- ground and to notice when the player has stepped onto it.
-local function wardContaining(wards, x, z)
-	if wards == nil then
-		return nil
-	end
-	for _, w in ipairs(wards) do
-		local ax < const > = x - w.x
-		local az < const > = z - w.z
-		if ax * ax + az * az < w.r2 then
-			return w
-		end
-	end
-	return nil
-end
+-- Inside this range of the player, a chasing zombie faces the player rather than facing
+-- the way it is steering (see the facing block in update, which is also the story of why
+-- it exists).
+--
+-- Sized as _playerSpace plus a hair, and no more, because inside this range the step is
+-- taken at the player rather than along the route: it has to cover the push that used to
+-- reverse the facing and nothing else. Between _playerSpace and here the two rules agree
+-- anyway -- there is no push yet, so the steering already points at the player -- so the
+-- margin only keeps the rule from flickering at its own boundary. Widening it would start
+-- overriding the route while there is still route left to follow, and a zombie with a
+-- boulder between it and the player would lean on the rock instead of walking round it.
+local CLOSE_QUARTERS < const > = 1.4
 
--- Move a point out of any lit ward it lands in, to WARD_CLEARANCE past the rim, so a
--- chase target is never set on ground the zombie is not allowed to stand on.
-local function pushOutOfWards(wards, x, z)
-	if wards == nil then
-		return x, z
-	end
-	for _, w in ipairs(wards) do
-		local ax < const > = x - w.x
-		local az < const > = z - w.z
-		local d < const > = math.sqrt(ax * ax + az * az)
-		local keep < const > = w.r + WARD_CLEARANCE
-		if d < keep then
-			if d > 0.001 then
-				x = w.x + (ax / d) * keep
-				z = w.z + (az / d) * keep
-			else
-				x = w.x + keep
-				z = w.z
-			end
-		end
-	end
-	return x, z
-end
-
--- Steer a desired heading (dx, dz) around lit wards. A zombie caught inside one (a
--- ward lit over it) is driven straight out; one approaching a rim while still heading
--- inward is turned along the tangent -- toward its goal -- blending from fully sideways
--- at the rim to untouched at WARD_LOOKAHEAD out, so it arcs around the safe ground
--- instead of stalling against it. A heading that already clears the ward is left alone.
-local function avoidWards(wards, px, pz, dx, dz)
-	if wards == nil then
-		return dx, dz
-	end
-	for _, w in ipairs(wards) do
-		local nx < const > = px - w.x
-		local nz < const > = pz - w.z
-		local d < const > = math.sqrt(nx * nx + nz * nz)
-		local influence < const > = w.r + WARD_LOOKAHEAD
-		if d < influence then
-			if d < 0.001 then
-				return 1.0, 0.0   -- on the flame itself; any way out will do
-			end
-			local rx < const > = nx / d
-			local rz < const > = nz / d
-			if d < w.r then
-				-- Inside: evict straight out along the radial.
-				dx, dz = rx, rz
-			elseif (dx * rx + dz * rz) < 0.0 then
-				-- Outside but heading in: slide along the tangent, on the side that
-				-- keeps the most of the original goal direction.
-				local tx = -rz
-				local tz = rx
-				if (dx * tx + dz * tz) < 0.0 then
-					tx = rz
-					tz = -rx
-				end
-				local t < const > = (influence - d) / WARD_LOOKAHEAD   -- 1 at the rim, 0 at the edge
-				dx = dx * (1.0 - t) + tx * t
-				dz = dz * (1.0 - t) + tz * t
-				local l < const > = math.sqrt(dx * dx + dz * dz)
-				if l > 0.001 then
-					dx = dx / l
-					dz = dz / l
-				end
-			end
-		end
-	end
-	return dx, dz
-end
+-- Voices (see EnemyController:_voice). Range first: past this a zombie is silent, which
+-- is what keeps thirty of them from all being mixed at once. A little beyond the fog's
+-- 22 m, so something can be heard before it can be seen -- which is the point of it.
+local VOICE_RANGE < const > = 28.0
+local VOICE_CLOSE_RANGE < const > = 6.0    -- ...and this near, while chasing, it gets insistent
+local VOICE_INTERVAL_MIN < const > = 4.0   -- shortest wait between utterances (s)
+local VOICE_INTERVAL_MAX < const > = 7.0   -- ...plus up to this much, drawn per zombie
+local VOICE_INTERVAL_CLOSE < const > = 1.2 -- the wait once it is on the player
 
 function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
 	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
-	self._avoidRadius = 2.5   -- start avoiding other agents within this distance (m)
+	self._avoidRadius = 2.5   -- start avoiding other zombies within this distance (m)
 	self._separation = 2.0    -- how strongly avoidance overrides path following
+
+	-- How much room a zombie leaves the *player*, as opposed to the two and a half
+	-- metres it leaves another zombie. It is not there to keep its distance -- it is
+	-- there to stop it standing inside the man it is eating.
+	--
+	-- The number matters more than it looks. The push ramps from nothing at this
+	-- distance to _separation at the player's own position, against a path direction of
+	-- unit length, so the two cancel at exactly half of it -- which is where a zombie
+	-- comes to rest. At 1.2 that rest point is 0.6 m: the player's capsule radius plus
+	-- the zombie's, i.e. chest to chest, and comfortably inside Main's _hurtRange, so a
+	-- zombie that has caught up is a zombie that is biting. Anything at or above twice
+	-- _hurtRange parks the horde outside its own reach, where it can crowd the player
+	-- forever without ever hurting them.
+	self._playerSpace = 1.2
 
 	-- State machine.
 	self._state = "patrol"    -- "patrol" | "attack"
 	self._lostTimer = 0.0     -- remaining ATTACK memory after losing sight (s)
+	self._relentless = false  -- set by :hunt; ATTACK is then never given up
 	self._patrolTarget = nil  -- current wander destination (Vector4)
 	self._sightRange = 20.0   -- furthest the player can be spotted (m)
 	self._attackMemory = 2.5  -- keep chasing this long after losing sight (s)
@@ -162,6 +127,44 @@ function EnemyController:new()
 	-- "moving" untouched meanwhile so the graph holds its stand-up state. Perception
 	-- and path finding keep running, so the first step lands the moment it expires.
 	self._spawnDelay = 2.5   -- (s) counted from the controller's first live update
+end
+
+-- Arrive with intent. Called by Scripts/Spawner on a zombie it has just placed.
+--
+-- The spawner only ever puts one down where the player cannot see it -- and cover
+-- works both ways, so left to itself the new zombie cannot see the player either. It
+-- fails its perception check, stays on patrol, and patrol wanders to a random point
+-- within *two metres* at 0.55 m/s. So it loiters in the bush it rose behind while the
+-- player walks past at three metres a second, and only starts chasing once they are
+-- well beyond it and the sight line finally opens -- from behind. That is the whole
+-- reason the horde was only ever met from the back.
+--
+-- Being told the player is out there lets it walk out of that cover towards them,
+-- which is where they meet it. Expressed as the existing chase-from-memory state
+-- rather than a new one: attack already re-paths to the player's live position twice
+-- a second, and the first real sighting simply refreshes the timer and takes over. If
+-- it never gets that sighting it drops back to patrol none the wiser.
+function EnemyController:alertTo(hunt)
+	self._state = "attack"
+	self._lostTimer = hunt or SPAWN_HUNT
+	self._patrolTarget = nil
+	self._repathTimer = 0.0   -- path on the very first update rather than in half a second
+end
+
+-- Hunt without end. Called by Scripts/Hive on a zombie it has just sent up out of a
+-- hive: this one was summoned rather than stumbled upon, so it knows where the player
+-- is from the moment it rises and never loses interest.
+--
+-- alertTo's memory window is wrong for it in both directions. A hive can be the far
+-- side of the map, which is minutes of walking -- far longer than any window worth
+-- calling a memory -- and a brood that timed out would drop to patrol and mill about
+-- wherever it happened to have got to, which is the one thing a hive must not produce.
+-- So the attack -> patrol transition is suppressed outright rather than given a very
+-- large number: a real sighting refreshes _lostTimer to _attackMemory, which would
+-- quietly hand any such number back.
+function EnemyController:hunt()
+	self:alertTo()
+	self._relentless = true
 end
 
 -- Drive the enemy's animation graph into its "dead" rag doll state by setting the
@@ -215,6 +218,30 @@ function EnemyController:update(context, totalTime, deltaTime)
 	end
 	if self._dead then
 		return
+	end
+
+	-- A hive is opening somewhere and the camera is watching it (Main:_beginCutscene).
+	-- Everything holds still for that except the zombies inside the hive -- its own
+	-- brood, rising and walking out, which is the whole subject of the shot.
+	--
+	-- Tested by distance from the hive rather than by asking who spawned whom: the
+	-- Stage publishes the focus and its squared radius, so this costs a subtraction and
+	-- a compare, needs no bookkeeping to stay in step with what the hive has actually
+	-- sent up, and reads the way the rule is meant ("the zombies at the hive are awake")
+	-- rather than as a list of exceptions.
+	--
+	-- Below the rag doll switch above, deliberately: a zombie the player shot on the way
+	-- in still has to be allowed to hand itself over to physics, or the purge that lit
+	-- this hive leaves a field of bodies standing to attention until the shot ends. Same
+	-- reasoning as the dawn, which does not freeze them either.
+	local cutscene < const > = context._cutscene
+	if cutscene ~= nil then
+		local p < const > = enemy.transform.translation
+		local dx < const > = p.x - cutscene.x
+		local dz < const > = p.z - cutscene.z
+		if dx * dx + dz * dz > cutscene.r2 then
+			return
+		end
 	end
 
 	-- Resolve and cache dependencies.
@@ -283,7 +310,9 @@ function EnemyController:update(context, totalTime, deltaTime)
 			if self._state ~= "attack" then
 				self._state = "attack"
 			end
-		elseif self._state == "attack" then
+		elseif self._state == "attack" and not self._relentless then
+			-- ...unless it is hunting (see :hunt), in which case losing sight of the
+			-- player never means giving up on them.
 			self._lostTimer = self._lostTimer - deltaTime
 			if self._lostTimer <= 0.0 then
 				self._state = "patrol"
@@ -332,28 +361,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._state == "attack" then
 		if self._repathTimer <= 0.0 and self._pathResult == nil then
 			self._repathTimer = 0.5
-			-- Where to chase to. Normally the player -- but consecrated ground cannot be
-			-- entered, so if the player has stepped into a lit ward, aim at the ring just
-			-- outside it on this zombie's own side instead. The horde then gathers around
-			-- the whole edge of the safe ground rather than piling against the one point of
-			-- rim between it and a player it can never reach.
-			local aimX, aimZ = playerPos.x, playerPos.z
-			local pw = wardContaining(context._litWards, playerPos.x, playerPos.z)
-			if pw ~= nil then
-				local nx = enemyPos.x - pw.x
-				local nz = enemyPos.z - pw.z
-				local nl = math.sqrt(nx * nx + nz * nz)
-				if nl > 0.001 then
-					aimX = pw.x + (nx / nl) * (pw.r + WARD_CLEARANCE)
-					aimZ = pw.z + (nz / nl) * (pw.r + WARD_CLEARANCE)
-				end
-			end
-			-- Jitter so the horde does not stack on one point, then keep the result off
-			-- consecrated ground and snap it onto the nav mesh so it stays reachable.
+			-- Where to chase to: the player, wherever they are standing. A lit ward used
+			-- to divert this to the ring outside it, on the grounds that consecrated
+			-- ground could not be entered -- it can now, so there is nothing to divert
+			-- for and a player standing in the light is chased like any other player.
+			--
+			-- Jittered so the horde does not stack every one of its paths on one point.
 			local jitter = 1.5
-			aimX = aimX + (math.random() * 2.0 - 1.0) * jitter
-			aimZ = aimZ + (math.random() * 2.0 - 1.0) * jitter
-			aimX, aimZ = pushOutOfWards(context._litWards, aimX, aimZ)
+			local aimX = playerPos.x + (math.random() * 2.0 - 1.0) * jitter
+			local aimZ = playerPos.z + (math.random() * 2.0 - 1.0) * jitter
 			-- Snap onto the ground beneath the aim. findClosestPointXZ ignores height, so
 			-- it still resolves to the terrain when the player has climbed a tower or a
 			-- roof -- where the old height-limited findClosestPoint failed (handing back the
@@ -377,16 +393,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if (needNew or self._repathTimer <= 0.0) and self._pathResult == nil then
 			self._repathTimer = 1.5
 			if needNew then
-				local candidate = self._navMesh:findRandomPoint(enemyPos, 2.0)
-				-- Do not deliberately wander onto consecrated ground. One retry is
-				-- enough: the steering below arcs the zombie around a ward either way,
-				-- this just stops it repeatedly setting off toward one it cannot enter.
-				-- Always assigns, so a rejected pair still leaves a target for
-				-- createMoveQuery below.
-				if wardContaining(context._litWards, candidate.x, candidate.z) ~= nil then
-					candidate = self._navMesh:findRandomPoint(enemyPos, 2.0)
-				end
-				self._patrolTarget = candidate
+				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 2.0)
 			end
 			self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
 		end
@@ -410,12 +417,12 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- Collision avoidance: accumulate a push away from nearby agents (other enemies
 	-- and the player). This enemy is in the "Enemy" list too, but its own delta is zero.
 	local sepX, sepZ = 0.0, 0.0
-	local function avoid(px, pz)
+	local function avoid(px, pz, radius)
 		local ax = enemyPos.x - px
 		local az = enemyPos.z - pz
 		local d = math.sqrt(ax * ax + az * az)
-		if d > 0.001 and d < self._avoidRadius then
-			local w = (self._avoidRadius - d) / self._avoidRadius
+		if d > 0.001 and d < radius then
+			local w = (radius - d) / radius
 			sepX = sepX + (ax / d) * w
 			sepZ = sepZ + (az / d) * w
 		end
@@ -426,11 +433,14 @@ function EnemyController:update(context, totalTime, deltaTime)
 	for i = 0, enemies.size - 1 do
 		local other = enemies:get(i)
 		local p = other.transform.translation
-		avoid(p.x, p.z)
+		avoid(p.x, p.z, self._avoidRadius)
 	end
 
-	-- Avoid player.
-	avoid(playerPos.x, playerPos.z)
+	-- Keep out of the player, but only just -- see _playerSpace. Giving the player the
+	-- same berth as another zombie is what used to hold the horde at arm's length: the
+	-- push started two and a half metres out and had beaten the approach by 1.25 m, so
+	-- they never closed to their own biting range.
+	avoid(playerPos.x, playerPos.z, self._playerSpace)
 
 	-- Blend separation from other agents into the path direction, then renormalise to
 	-- a unit heading.
@@ -445,19 +455,40 @@ function EnemyController:update(context, totalTime, deltaTime)
 		targetZ = 0.0
 	end
 
-	-- Consecrated ground has the last word on the heading: arc around a lit ward
-	-- rather than walk into it, and drive out of one the zombie is somehow caught
-	-- inside. Redirecting along the rim (instead of shoving straight back down the
-	-- path, as the old push did) is what stops the horde stalling in a heap at the
-	-- boundary. Recompute the length after, since eviction can hand a heading to a
-	-- zombie that had none.
-	targetX, targetZ = avoidWards(context._litWards, enemyPos.x, enemyPos.z, targetX, targetZ)
-	tl = math.sqrt(targetX * targetX + targetZ * targetZ)
+	-- What to face. Normally the way it is steering -- but a zombie within reach of the
+	-- player faces the player, whatever the steering says.
+	--
+	-- This is where they used to be found looking away from the man they were eating. The
+	-- steered direction is the path blended with the push away from everything nearby,
+	-- the player included; at contact that push is the larger term, so the sum pointed
+	-- backwards, the facing followed it, and -- since the step below is taken along the
+	-- facing -- the zombie turned round and walked off, only to turn back the moment it
+	-- was clear again. A horde shuffling to and fro at arm's length with its back to you.
+	--
+	-- Facing the player fixes both halves at once. It looks the right way, and the align
+	-- gate below turns a backwards push into "stop advancing" rather than "walk away",
+	-- since the step is scaled by how well the facing agrees with the steering: pressed
+	-- right up against the player it holds still and claws instead of retreating.
+	--
+	-- Deliberately kept to CLOSE_QUARTERS, and to a zombie that has actually noticed the
+	-- player, precisely because the step follows the facing: over any real distance the
+	-- steering has to be what drives it, since that is what carries it around rocks and
+	-- boulders instead of straight into them.
+	local faceX, faceZ = targetX, targetZ
+	if self._state == "attack" and pdist < CLOSE_QUARTERS then
+		local ax < const > = playerPos.x - enemyPos.x
+		local az < const > = playerPos.z - enemyPos.z
+		local al < const > = math.sqrt(ax * ax + az * az)
+		if al > 0.001 then
+			faceX, faceZ = ax / al, az / al
+		end
+	end
+	local fl < const > = math.sqrt(faceX * faceX + faceZ * faceZ)
 
 	-- Rotate facing toward the desired direction at a limited angular rate (shortest
 	-- way around), so turns - including reversals - happen gradually, never instantly.
-	if tl > 0.001 then
-		local desired = (math.atan2 or math.atan)(targetX, targetZ)
+	if fl > 0.001 then
+		local desired = (math.atan2 or math.atan)(faceX, faceZ)
 		local delta = desired - self._heading
 		while delta > math.pi do delta = delta - 2.0 * math.pi end
 		while delta < -math.pi do delta = delta + 2.0 * math.pi end
@@ -500,6 +531,46 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._pose ~= nil then
 		self._pose:setParameterValue("moving", moving)
 		self._pose:setParameterValue("attack", attacking)
+	end
+
+	self:_voice(context, deltaTime, pdist)
+end
+
+-- Groan, now and then. The "groan" event on the Zombie entity is a positional,
+-- following SoundEventData over the SB - Groan bank, so each one comes from where that
+-- zombie is and is picked at random from three utterances at a wandering pitch -- the
+-- horde never repeats itself exactly, and where it is coming from is information the
+-- player can act on before anything is in sight.
+--
+-- Two things keep this from becoming a wall of noise with thirty of them alive. Only
+-- zombies within VOICE_RANGE speak at all, which is a little past the fog and well past
+-- what the mix can hold; and each one waits a randomised VOICE_INTERVAL between
+-- utterances, drawn per zombie rather than shared, so they never fall into step. A
+-- zombie that is actually on the player gets to be more insistent -- that is the sound
+-- of being caught, and it arrives just before the damage does.
+function EnemyController:_voice(context, deltaTime, pdist)
+	if self._voiceTimer == nil then
+		-- Staggered on the first update rather than at zero, or every zombie a wave
+		-- spawns would speak on the same frame.
+		self._voiceTimer = VOICE_INTERVAL_MIN + math.random() * VOICE_INTERVAL_MAX
+	end
+
+	self._voiceTimer = self._voiceTimer - deltaTime
+	if self._voiceTimer > 0.0 then
+		return
+	end
+
+	local close < const > = self._state == "attack" and pdist < VOICE_CLOSE_RANGE
+	self._voiceTimer = (close and VOICE_INTERVAL_CLOSE or VOICE_INTERVAL_MIN)
+		+ math.random() * VOICE_INTERVAL_MAX
+
+	if pdist > VOICE_RANGE then
+		return
+	end
+
+	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
+	if fx ~= nil then
+		fx:raise("groan")
 	end
 end
 ]]></text>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.scene.SceneAsset" version="10">
 	<worldRenderSettings type="traktor.world.WorldRenderSettings" version="42">
-		<viewNearZ>0.1</viewNearZ>
+		<viewNearZ>0.01</viewNearZ>
 		<viewFarZ>100</viewFarZ>
 		<exposureMode>Adaptive</exposureMode>
 		<exposure>0.2</exposure>
@@ -71,6 +71,10 @@
 			<phaseForward>0.8</phaseForward>
 			<phaseBackward>-0.4</phaseBackward>
 			<phaseBlend>0.5</phaseBlend>
+		</item>
+		<item type="traktor.theater.TheaterWorldComponentData" version="1">
+			<acts/>
+			<randomizeActs>false</randomizeActs>
 		</item>
 	</worldComponents>
 	<layers>
@@ -164,6 +168,8 @@
 									<fov>1.221731</fov>
 									<width>1</width>
 									<height>1</height>
+								</item>
+								<item type="traktor.spray.ListenerComponentData">
 								</item>
 							</components>
 						</item>
@@ -1417,7 +1423,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>6.1682, 22.3225, 7.0658, 1</translation>
+								<translation>6.1682, 22.3225, 7.0658, 0</translation>
 								<rotation>0, 0.841471, 0, 0.540303</rotation>
 							</transform>
 							<components>
@@ -1458,7 +1464,7 @@
 												<locked>false</locked>
 											</state>
 											<transform>
-												<translation>0.9, 2.4, -2, 1</translation>
+												<translation>0.9, 2.4, -2, 0</translation>
 												<rotation>0, 0, 0, 1</rotation>
 											</transform>
 											<components>
@@ -1485,7 +1491,7 @@
 												<locked>false</locked>
 											</state>
 											<transform>
-												<translation>0, 5, 0.9, 1</translation>
+												<translation>0, 5, 0.9, 0</translation>
 												<rotation>0, 0, 0, 1</rotation>
 											</transform>
 											<components>
@@ -1512,7 +1518,7 @@
 												<locked>false</locked>
 											</state>
 											<transform>
-												<translation>0, 9, 0, 1</translation>
+												<translation>0, 9, 0, 0</translation>
 												<rotation>0, 0, 0, 1</rotation>
 											</transform>
 											<components>
@@ -2523,18 +2529,6 @@
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
 									<mesh>{2CAD0D93-C615-A346-99C9-7B1B2E25C60E}</mesh>
-								</item>
-								<item type="traktor.world.LightComponentData" version="13">
-									<lightType>Point</lightType>
-									<color>1, 0.6, 0.25, 1</color>
-									<intensity>700</intensity>
-									<castShadow>false</castShadow>
-									<nearRange>0</nearRange>
-									<farRange>11</farRange>
-									<radius>1.570796</radius>
-									<flickerAmount>0.35</flickerAmount>
-									<flickerFilter>0.3</flickerFilter>
-									<bakeMode>LbmIndirect</bakeMode>
 								</item>
 								<item type="traktor.physics.RigidBodyComponentData" version="1">
 									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
@@ -4434,33 +4428,6 @@
 							</components>
 						</item>
 						<item type="traktor.world.EntityData" version="2">
-							<id>{97AFE7DD-C5BB-4766-9983-1B83E9B32F0A}</id>
-							<name>AtmoLight</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-21, 24.607201, 57.5, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
-							</transform>
-							<components>
-								<item type="traktor.world.LightComponentData" version="13">
-									<lightType>Point</lightType>
-									<color>1, 0.6, 0.25, 1</color>
-									<intensity>600</intensity>
-									<castShadow>false</castShadow>
-									<nearRange>0</nearRange>
-									<farRange>6</farRange>
-									<radius>1.570796</radius>
-									<flickerAmount>0.4</flickerAmount>
-									<flickerFilter>0.3</flickerFilter>
-									<bakeMode>LbmIndirect</bakeMode>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
 							<id>{96C48276-1EAE-4BC5-95A2-F9D8CEEAD6A6}</id>
 							<name>AtmoLight</name>
 							<state>
@@ -4696,7 +4663,7 @@
 							</state>
 							<transform>
 								<translation>-9.5804, 23.679672, 79.810997, 0</translation>
-								<rotation>-0.050772, -0.477586, 0.036635, 0.876351</rotation>
+								<rotation>-0.050772, -0.477586, 0.036635, 0.876352</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -5476,7 +5443,7 @@
 							</state>
 							<transform>
 								<translation>-96.217598, 11.997607, -69.669502, 0</translation>
-								<rotation>-0.097927, -0.045451, -0.08246, 0.990729</rotation>
+								<rotation>-0.097927, -0.045451, -0.08246, 0.99073</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -5550,8 +5517,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>-39.064301, 30.527349, 19.210199, 0</translation>
-								<rotation>-0.002676, 0.469483, -0.549763, 0.690898</rotation>
+								<translation>-41.443447, 31.36367, 19.049101, 0</translation>
+								<rotation>-0.091536, -0.018449, -0.106368, 0.989933</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6166,7 +6133,7 @@
 							</state>
 							<transform>
 								<translation>45.284401, 10.011322, -47.684799, 0</translation>
-								<rotation>-0.008565, 0.969306, -0.050182, 0.240527</rotation>
+								<rotation>-0.008565, 0.969307, -0.050182, 0.240527</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6376,7 +6343,7 @@
 							</state>
 							<transform>
 								<translation>-61.8909, 24.005617, 95.598801, 0</translation>
-								<rotation>0.197187, -0.171265, 0.093447, 0.960756</rotation>
+								<rotation>0.197187, -0.171265, 0.093447, 0.960757</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6901,7 +6868,7 @@
 							</state>
 							<transform>
 								<translation>1.49, 1.39653, -132.276093, 0</translation>
-								<rotation>0.012276, 0.989735, -0.025232, 0.140129</rotation>
+								<rotation>0.012276, 0.989736, -0.025232, 0.140129</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6945,8 +6912,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>-22.919701, 23.211443, 41.137199, 0</translation>
-								<rotation>0.001228, -0.825017, -0.00865, 0.565041</rotation>
+								<translation>-22.646925, 23.21059, 40.042522, 0</translation>
+								<rotation>-0.002784, 0.506795, 0.002531, -0.862058</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -8971,7 +8938,7 @@
 							</state>
 							<transform>
 								<translation>-68.365601, 1.422192, -80.061798, 0</translation>
-								<rotation>-0.084963, 0.107066, -0.009183, 0.990572</rotation>
+								<rotation>-0.084963, 0.107066, -0.009183, 0.990573</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9091,7 +9058,7 @@
 							</state>
 							<transform>
 								<translation>24.232, 24.720196, 90.278603, 0</translation>
-								<rotation>-0.127932, 0.984303, -0.114576, 0.040651</rotation>
+								<rotation>-0.127932, 0.984304, -0.114576, 0.040651</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9646,7 +9613,7 @@
 							</state>
 							<transform>
 								<translation>30.6577, 4.755725, -64.097702, 0</translation>
-								<rotation>-0.109226, 0.353856, -0.066015, 0.926551</rotation>
+								<rotation>-0.109226, 0.353856, -0.066015, 0.926552</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9809,7 +9776,7 @@
 			<id>{238DDD90-CE56-4933-B3A0-F6A6892FA0EB}</id>
 			<name>Undergrowth</name>
 			<state>
-				<visible>true</visible>
+				<visible>false</visible>
 				<dynamic>false</dynamic>
 				<locked>false</locked>
 			</state>
@@ -9824,7 +9791,7 @@
 							<id>{DD43D50E-6A75-4CC5-81E2-FF4B392CA623}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9839,7 +9806,7 @@
 							<id>{56952298-EE62-41B4-8E1E-2865A25C1216}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9854,7 +9821,7 @@
 							<id>{A6B57EF4-571A-4FE4-8142-47CB0467652B}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9869,7 +9836,7 @@
 							<id>{F38410EA-29FB-4E5B-805F-B9CEAFF8A405}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9884,7 +9851,7 @@
 							<id>{1D9A4462-ABE6-4769-A049-72CCA2E39E86}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9899,7 +9866,7 @@
 							<id>{CE6B9243-EAAC-449C-9087-A1FA767289FB}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9914,7 +9881,7 @@
 							<id>{93992FE0-EA7A-45EC-A4BA-68007D7CB0BE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9929,7 +9896,7 @@
 							<id>{4885220D-74E3-43D8-8115-7C9AFC5AB614}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9944,7 +9911,7 @@
 							<id>{D362CB5E-2F2E-433C-94C4-48BA1E7CFBC3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9959,7 +9926,7 @@
 							<id>{FE81013B-39CD-4CA4-B2BA-4555B881F004}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9974,7 +9941,7 @@
 							<id>{3575E527-A526-440D-93B2-6B1CAB127070}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -9989,13 +9956,13 @@
 							<id>{66E3EAF1-0B73-45AE-B444-C2FFE787F1F9}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>27.178, 10.40786, -22.485001, 0</translation>
-								<rotation>-0.004512, 0.968148, 0.013119, 0.249992</rotation>
+								<rotation>-0.004512, 0.968149, 0.013119, 0.249992</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -10004,7 +9971,7 @@
 							<id>{A3BA7BC9-469E-422D-B4FF-C1704DB70D71}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10019,13 +9986,13 @@
 							<id>{595AB92B-FD5B-41DB-8C12-32383F4BA273}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>24.128, 10.42045, -25.347, 0</translation>
-								<rotation>0.01318, -0.138824, 0.009938, 0.990179</rotation>
+								<rotation>0.01318, -0.138824, 0.009938, 0.99018</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -10034,7 +10001,7 @@
 							<id>{DD185FFB-DCB2-4B31-B85C-70855C6229E7}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10049,7 +10016,7 @@
 							<id>{76608FDE-7928-439C-84A4-D6A24C772E7A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10064,7 +10031,7 @@
 							<id>{9AE7265E-CC09-469E-AEC7-D6A6D0F1A15E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10079,7 +10046,7 @@
 							<id>{43074571-809C-437A-BA15-B4E5A5DC25DF}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10094,7 +10061,7 @@
 							<id>{A4B61825-E2D2-4967-8B5A-B8E44BE5285F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10109,7 +10076,7 @@
 							<id>{565F6DEE-6C5D-4A3E-98B9-582984570D95}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10124,7 +10091,7 @@
 							<id>{E188F449-AD19-40DA-83D1-CAA912925875}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10139,7 +10106,7 @@
 							<id>{DB90AD8C-504E-41B0-9419-85F7F0500BB0}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10154,7 +10121,7 @@
 							<id>{67808397-E79D-467C-9446-86F939E7C813}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10169,7 +10136,7 @@
 							<id>{AB3ED530-ACD7-4644-8B20-0D546BB517AF}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10184,7 +10151,7 @@
 							<id>{E5B9EDD5-204F-4445-98EB-009CF0A6AE39}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10199,7 +10166,7 @@
 							<id>{A556D8CC-9853-4D4D-BD6D-3921181708B6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10214,7 +10181,7 @@
 							<id>{54FAE865-E5E9-48C5-A483-30EF21B8B930}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10229,7 +10196,7 @@
 							<id>{DF08FD8C-9364-498E-9718-BA0185CDC278}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10244,7 +10211,7 @@
 							<id>{ADA11B5A-EDE0-4712-808D-56B208989557}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10259,7 +10226,7 @@
 							<id>{73C3C9B8-B560-4DB7-987A-9E703DC864FB}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10274,7 +10241,7 @@
 							<id>{D0F74C2A-366C-451C-B9F3-CF3ABC6A1317}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10289,7 +10256,7 @@
 							<id>{5EF712FD-D010-44B3-9362-9EF66137D2F6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10304,7 +10271,7 @@
 							<id>{3D932D9D-8754-4EE9-8813-E6EB9A7B8B84}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10319,7 +10286,7 @@
 							<id>{1C30CAD1-25A8-4963-B03C-86876DB9C022}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10334,7 +10301,7 @@
 							<id>{8B7A9F60-1362-4367-B193-83A646ED1575}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10349,7 +10316,7 @@
 							<id>{4B3532C1-4441-4999-916F-E72B05493F28}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10364,7 +10331,7 @@
 							<id>{4C850D2C-904C-4FF2-97F1-5A9BAD167E78}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10379,7 +10346,7 @@
 							<id>{623CDE27-04A2-4A1E-8B1A-45645CE567CD}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10394,7 +10361,7 @@
 							<id>{990EB925-1A45-4046-A2E2-FD20B939D5B6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10409,7 +10376,7 @@
 							<id>{A62E6020-9A3D-498A-B609-45D809A583D4}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10424,7 +10391,7 @@
 							<id>{AC2BC72E-058E-412F-8D6C-F26389D76D4F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10439,7 +10406,7 @@
 							<id>{6AAEF496-F942-4413-93C7-3DD23CE34B14}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10454,7 +10421,7 @@
 							<id>{82D5298E-5949-429C-A848-3DFFB56E04AE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10469,7 +10436,7 @@
 							<id>{D9F05E34-D6ED-4E1D-81E3-8CBA4A0E206C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10484,7 +10451,7 @@
 							<id>{8AE43883-E25C-433C-9F39-791B1D211422}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10499,7 +10466,7 @@
 							<id>{44633504-1BC2-4012-A1F6-6914E81BE626}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10514,7 +10481,7 @@
 							<id>{FE10B99A-3A60-4D11-97A0-58B4458B2957}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10529,7 +10496,7 @@
 							<id>{7B423DC9-024B-48F9-AAA4-035196682D70}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10544,7 +10511,7 @@
 							<id>{31B692F9-8409-4553-A98F-489D24379435}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10559,7 +10526,7 @@
 							<id>{A3AD3446-EF3F-4CD1-8825-2E4D51A5A63A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10574,7 +10541,7 @@
 							<id>{1B7A2620-8195-42A0-9F56-98FE8C2CAFD8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10589,7 +10556,7 @@
 							<id>{0F692439-04BF-4EE8-BB6A-6797A00EE7FA}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10604,7 +10571,7 @@
 							<id>{D6A8058E-80AD-4E8D-95DD-A93C1A9BBD79}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10619,7 +10586,7 @@
 							<id>{504DEBC7-0185-4F79-B801-3E75B290567A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10634,7 +10601,7 @@
 							<id>{F615C0B3-A754-40B8-867C-94431CD57C1E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10649,7 +10616,7 @@
 							<id>{DC095340-982A-4129-BE48-B35EB97C4A2E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10664,7 +10631,7 @@
 							<id>{89CA03CA-435E-4C34-8830-F4629B75CE3C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10679,7 +10646,7 @@
 							<id>{95EABF38-3B27-41F6-ABAC-2456BA45806F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10694,7 +10661,7 @@
 							<id>{CB7A2C31-0F0C-4FE5-AEA5-6315C426FC7A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10709,7 +10676,7 @@
 							<id>{EF190D7E-B6AC-4AB1-8FC5-C86EE52E3E46}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10724,7 +10691,7 @@
 							<id>{3DDB2B97-BA5F-47B0-AB4F-C0D9B2D367C0}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10739,7 +10706,7 @@
 							<id>{D867D793-42A1-4A8E-8C5A-923E178BE322}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10754,7 +10721,7 @@
 							<id>{B5153368-013E-458E-9B58-6780EBEC0636}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10769,7 +10736,7 @@
 							<id>{C9CB3CD0-2F81-4226-B445-742B7F2493B1}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10784,7 +10751,7 @@
 							<id>{EEEED509-59EA-4090-B926-50423E342BC8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10799,7 +10766,7 @@
 							<id>{24C2E9FB-85CC-4675-B3F0-60F13A8F7303}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10814,7 +10781,7 @@
 							<id>{B6B7A86E-9C20-4750-AB0D-EE14DC6BC928}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10829,7 +10796,7 @@
 							<id>{BA2A3A9B-C17F-4FC0-B042-94EE9D0D01EE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10844,7 +10811,7 @@
 							<id>{E8C3A783-9AAF-4FB9-B223-A434860C9A8E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10859,7 +10826,7 @@
 							<id>{D11E3311-656D-4A68-8E40-33228822E623}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10874,7 +10841,7 @@
 							<id>{B18012BC-5FE7-4849-9EDB-1FA166AF4812}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10889,7 +10856,7 @@
 							<id>{AE70F065-45C7-4B73-8B9F-4B0CD8575CB4}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10904,7 +10871,7 @@
 							<id>{7317D428-D7CA-425F-87B7-A37085C89206}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10919,7 +10886,7 @@
 							<id>{B479F254-C005-44CD-9BE4-763A600B2D68}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10934,7 +10901,7 @@
 							<id>{5D52090D-C126-46FC-A64C-A2F0BC6AF72E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10949,7 +10916,7 @@
 							<id>{83156718-CBEA-4686-A65D-6AB47D40F8CC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10964,7 +10931,7 @@
 							<id>{C84E08E4-8FAD-43D9-A875-6F9349D8B7D9}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10979,7 +10946,7 @@
 							<id>{9A143E75-2E9A-4D0A-A564-C8305CB13A7B}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -10994,7 +10961,7 @@
 							<id>{3C8FB722-3FB8-4361-A746-72068F9E2D62}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11009,7 +10976,7 @@
 							<id>{1C2D9C6D-230C-4884-8D2B-A606801BE286}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11024,7 +10991,7 @@
 							<id>{168C75FF-20C5-4AA2-B536-2F4C6C394EFA}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11039,7 +11006,7 @@
 							<id>{8331C8A3-6263-4FC6-B41E-BE45F861B76C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11054,7 +11021,7 @@
 							<id>{990BE1A4-A1AF-4B12-8465-57BF151BE040}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11069,7 +11036,7 @@
 							<id>{FCB1820C-450D-4528-9BAA-6910D32292E8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11084,7 +11051,7 @@
 							<id>{4C78349D-14F4-4C77-B40D-A8E1B9C06188}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11099,7 +11066,7 @@
 							<id>{E0007420-F819-443F-8EB4-BAB708C2C3FB}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11114,7 +11081,7 @@
 							<id>{AAC94EBF-7439-4DFC-ADEA-609F720CA28F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11129,7 +11096,7 @@
 							<id>{E4E48712-A052-4305-81DA-C858E2B221F5}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11144,7 +11111,7 @@
 							<id>{385D277E-7874-4EA6-A9D3-9272EB4F018F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11159,7 +11126,7 @@
 							<id>{484B4501-4F94-4BD9-9B20-0E623A1C363C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11174,7 +11141,7 @@
 							<id>{12CC08F7-18AF-439B-88D9-80F8D5D6B927}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11189,7 +11156,7 @@
 							<id>{FDC41467-BD8D-4B86-93EE-00F4CD7B947F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11204,7 +11171,7 @@
 							<id>{299B17CD-D70E-4B63-BA91-0087FEFEA635}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11219,7 +11186,7 @@
 							<id>{2D6665D4-ABCC-4AAB-8DF0-D0C938BF9C63}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11234,7 +11201,7 @@
 							<id>{A47D13AB-15B9-41D0-BB32-6C22E1454908}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11249,7 +11216,7 @@
 							<id>{A88DE13B-D4F5-44AB-8BC9-C645415957C0}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11264,7 +11231,7 @@
 							<id>{15F619C4-3F2D-4626-8CBE-2313B10452A7}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11279,7 +11246,7 @@
 							<id>{8069248B-34C8-463B-AFEC-918063A0DEA1}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11294,7 +11261,7 @@
 							<id>{020E3874-A6A0-4AB4-8693-8B92E84631FB}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11309,7 +11276,7 @@
 							<id>{058D09DF-9D39-4A12-B77E-22A38F035E61}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11324,7 +11291,7 @@
 							<id>{2030C92F-DD2D-4961-A16A-0A49112727CD}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11339,7 +11306,7 @@
 							<id>{98AA0E51-E342-4D06-9121-D25BE35DD6DC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11354,7 +11321,7 @@
 							<id>{2CA5F12D-A6D8-402E-B36D-1750097FACE5}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11369,7 +11336,7 @@
 							<id>{3A3B35F5-FD05-43CB-8CEE-D23BAA7B84AC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11384,7 +11351,7 @@
 							<id>{05C4CF0F-12D5-4429-98D1-755331C04CCB}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11399,7 +11366,7 @@
 							<id>{676C31BC-A77C-4CCA-86E8-1CC6F8E005D9}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11414,7 +11381,7 @@
 							<id>{3DCA0C86-148D-4174-B595-8FEF0EE803BC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11429,7 +11396,7 @@
 							<id>{D0B58F80-76D8-413B-AF6C-F8137844A598}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11444,7 +11411,7 @@
 							<id>{8FABDAA8-9ECA-4866-916E-92496E474DDD}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11459,7 +11426,7 @@
 							<id>{FE543890-54BF-4A8C-B9F4-D4A09EF0C07F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11474,13 +11441,13 @@
 							<id>{E62F91E8-3353-4088-9D3A-5F0A11B06D80}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>-66.249001, 31.53257, 12.984, 0</translation>
-								<rotation>-0.003744, 0.040738, -0.004062, 0.999154</rotation>
+								<rotation>-0.003744, 0.040738, -0.004062, 0.999155</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -11489,7 +11456,7 @@
 							<id>{C51D5B31-0030-4281-8B36-53B12613B35B}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11504,7 +11471,7 @@
 							<id>{BFD50438-94FA-469D-9ECF-5FCF479223B1}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11519,7 +11486,7 @@
 							<id>{74920300-ABA1-44E8-A6FB-1DFDF8F3C5A3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11534,7 +11501,7 @@
 							<id>{C60D0945-7F6F-4ECA-9370-7036F376F698}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11549,7 +11516,7 @@
 							<id>{3276FC46-B541-4029-87C3-19D6ADA300DE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11564,7 +11531,7 @@
 							<id>{36F6026E-A8F7-44CD-ACCF-39727E512BFC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11579,7 +11546,7 @@
 							<id>{1C6D1EEE-DD5C-4198-96F0-378BAC63133A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11594,7 +11561,7 @@
 							<id>{FFF11C72-7FC9-41A6-A88A-87C0DE48D2DD}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11609,7 +11576,7 @@
 							<id>{88017B58-A348-41AA-8E72-E76AC2612DC6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11624,7 +11591,7 @@
 							<id>{6882294C-EBAB-4BF6-9663-92DF46047C23}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11639,7 +11606,7 @@
 							<id>{E23B14FB-7AB6-416A-BD8C-DAB2A436F24C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11654,7 +11621,7 @@
 							<id>{A972612D-4D95-4CFE-B805-015A0B20CE08}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11669,7 +11636,7 @@
 							<id>{C4DF5120-5799-4FC9-9B66-F76A443CEC7D}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11684,7 +11651,7 @@
 							<id>{2AB74E0F-9773-489E-8F3C-E9119DA9CACE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11699,7 +11666,7 @@
 							<id>{E67BA98A-6BD5-4A3D-8039-AE974CD7369E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11714,7 +11681,7 @@
 							<id>{C55B3DA5-35FF-44E5-9B10-C215A6426EE1}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11729,7 +11696,7 @@
 							<id>{E5A9DA0E-83C4-4434-9B72-108CFD9CFBED}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11744,7 +11711,7 @@
 							<id>{368471A0-CAC8-40EE-B931-421BE67ED09E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11759,7 +11726,7 @@
 							<id>{EB2B7BB3-2086-487C-A8FE-4A84AB91E4BA}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11774,7 +11741,7 @@
 							<id>{D4DA9BE5-40EC-43BC-BA5B-6A1F7E2C55B9}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11789,7 +11756,7 @@
 							<id>{A378C145-6A3B-47F4-83CD-609A613D35F3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11804,7 +11771,7 @@
 							<id>{5F12710D-BD89-4631-990A-3A8EE7C7EEF0}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11819,7 +11786,7 @@
 							<id>{ADAEC4A1-4B0D-4AE4-9C21-9005966B1BF9}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11834,7 +11801,7 @@
 							<id>{D2B1BCB4-E2EB-4256-8BC1-6C04031A8953}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11849,7 +11816,7 @@
 							<id>{4F718031-8B6B-48D6-BA74-6A21DCF69F58}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11864,13 +11831,13 @@
 							<id>{063441ED-728D-43BF-B180-69690ADA75B2}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>-22.858, 22.819918, 66.522003, 0</translation>
-								<rotation>0.006018, -0.150602, -0.012787, 0.988493</rotation>
+								<rotation>0.006018, -0.150602, -0.012787, 0.988494</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -11879,7 +11846,7 @@
 							<id>{97DFE5BD-18E8-4396-A2AF-5B576BDD8843}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11894,7 +11861,7 @@
 							<id>{B324B07C-FC92-4953-BB8A-2DA10C6C1209}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11909,7 +11876,7 @@
 							<id>{D6A394A8-A521-40FE-8DAD-704AC1175D35}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11924,7 +11891,7 @@
 							<id>{E08442CD-0159-4CA7-9EAA-BFDA64E96BEB}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11939,7 +11906,7 @@
 							<id>{1EF5A415-B8C6-422C-B7E6-E8F5CD1DB99E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11954,7 +11921,7 @@
 							<id>{A2700C47-F190-4963-8C76-3D510AD01F01}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11969,7 +11936,7 @@
 							<id>{07F10014-1577-4CFA-89E2-46A8788A849A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11984,7 +11951,7 @@
 							<id>{FC355699-FDA6-4777-910B-5F90B9A9F405}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -11999,7 +11966,7 @@
 							<id>{A790EB68-2465-48F5-BEF3-42B7405CE905}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12014,7 +11981,7 @@
 							<id>{BF9BBD40-B3CE-4909-B9A4-EA3609479CD3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12029,7 +11996,7 @@
 							<id>{19BF7EC1-A91A-4184-A7DC-8F66D6031B29}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12044,7 +12011,7 @@
 							<id>{E9954D5F-F603-4CD9-A8C9-4F179E1C6EE4}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12059,7 +12026,7 @@
 							<id>{7CBBACCE-35C5-455D-B25E-08F3CB225B87}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12074,7 +12041,7 @@
 							<id>{95FA74A7-BBFD-4DCE-9777-760B1929371C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12089,7 +12056,7 @@
 							<id>{722F1CCC-9B40-48B6-B2E2-ED95700A20A6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12104,7 +12071,7 @@
 							<id>{A76DCA8A-6128-4301-99CC-5A576D5BF1D6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12119,7 +12086,7 @@
 							<id>{3C1DDEDD-F217-492D-8441-B1EE5943C242}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12134,7 +12101,7 @@
 							<id>{C1571EF3-00E7-494A-A66A-5700E558B284}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12149,7 +12116,7 @@
 							<id>{D924AE8F-2DD5-43CE-88D9-34A2C53D078F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12164,7 +12131,7 @@
 							<id>{8647E78D-1A15-47BD-AD37-492A87741EB0}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12179,7 +12146,7 @@
 							<id>{30967CCF-C395-4F50-BBCA-A819CC230940}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12194,7 +12161,7 @@
 							<id>{2795495E-4015-4A8A-8F85-97A142053214}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12209,7 +12176,7 @@
 							<id>{6C843D5B-49C5-4505-95AC-68EDE9BD03C3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12224,7 +12191,7 @@
 							<id>{4DDC02C3-96B1-4A59-8FC9-6B282F95213A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12239,13 +12206,13 @@
 							<id>{00B9589C-D975-403B-87A2-EBAA384BEA3C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>-10.578396, 23.175041, 12.316339, 0</translation>
-								<rotation>0.025882, 0.210628, -0.025126, 0.9769</rotation>
+								<rotation>0.025882, 0.210628, -0.025126, 0.976901</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12254,7 +12221,7 @@
 							<id>{18CA4C1D-D0E6-4D00-8BD6-95C2F6641077}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12269,7 +12236,7 @@
 							<id>{CDCF91A0-4185-4B62-8F17-A008DFB7A6AA}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12284,7 +12251,7 @@
 							<id>{9AD0D656-AD40-4F8D-80DD-49467CC75FEC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12299,13 +12266,13 @@
 							<id>{7C9B7B0B-CDBF-4814-A866-BFF83F0E7352}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>-31.59969, 10.319496, -36.127056, 0</translation>
-								<rotation>0.00249, -0.967826, -0.001896, 0.251599</rotation>
+								<rotation>0.00249, -0.967827, -0.001896, 0.251599</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12314,7 +12281,7 @@
 							<id>{1656792F-1C1B-4124-845D-368A58CD90F7}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12329,7 +12296,7 @@
 							<id>{5B676A6D-804F-470C-A864-443007AF3D07}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12344,7 +12311,7 @@
 							<id>{76AC03DC-8A92-4E3B-9E2F-15843113CE50}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12359,7 +12326,7 @@
 							<id>{DC7E78D3-6DF6-43EA-9B63-873912F51F87}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12374,7 +12341,7 @@
 							<id>{850EBBF9-2198-4B3B-9361-AC48E70E33A3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12389,7 +12356,7 @@
 							<id>{4F374500-E39E-4029-9C64-209DC4962267}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12404,7 +12371,7 @@
 							<id>{8366BC49-18D3-4176-B79F-587BE6DB3C1A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12419,7 +12386,7 @@
 							<id>{70054FA3-862E-47B9-BC09-84C8FD690327}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12434,7 +12401,7 @@
 							<id>{B7A7150B-573B-44E6-8B15-AA967325F000}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12449,7 +12416,7 @@
 							<id>{314D7A6C-CF52-4654-8657-0488BB6071DE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12464,7 +12431,7 @@
 							<id>{07BD1C2E-2EB6-49DE-8AF7-F0F13AF2BD37}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12479,7 +12446,7 @@
 							<id>{91B87AFD-8036-43B7-A5BB-83781A19ED03}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12494,7 +12461,7 @@
 							<id>{50BBDBDF-59CC-46C0-BBF5-E20CA95B3ACD}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12509,7 +12476,7 @@
 							<id>{6EB2E1A0-4C05-4454-9487-07D1229E3D09}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12524,7 +12491,7 @@
 							<id>{711F679F-5B30-4F66-9B3C-70FA4E8E913D}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12539,7 +12506,7 @@
 							<id>{6C5BFC80-FD7F-4FA2-A05F-79B1C4E75276}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12554,7 +12521,7 @@
 							<id>{027DE511-054B-412C-8C08-63FB219B2D68}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12569,7 +12536,7 @@
 							<id>{618264B4-8858-4783-AD85-4B5F01B60A72}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12584,7 +12551,7 @@
 							<id>{F316D23A-0315-487F-A4F3-57529B25A04C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12599,7 +12566,7 @@
 							<id>{08BFD026-005B-421F-9C2F-EA8C264C64BF}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12614,7 +12581,7 @@
 							<id>{7DDDD029-72ED-4C12-86C1-1F3A5D52B2C1}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12629,7 +12596,7 @@
 							<id>{0AB724F2-BD87-40BC-81DD-D4F240E43445}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12644,7 +12611,7 @@
 							<id>{B6393C73-1880-4382-A97F-6BC631FDA0D8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12659,7 +12626,7 @@
 							<id>{36CF84F6-F7EE-4C3E-BA81-839EBBF7903B}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12674,7 +12641,7 @@
 							<id>{E55D6155-7D34-4D99-AA76-160E4B3E215F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12689,7 +12656,7 @@
 							<id>{446F01DB-231E-4499-A5F6-EE0D0579DD20}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12704,7 +12671,7 @@
 							<id>{F96BB417-7A32-4CE1-B639-98745F829C12}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12719,7 +12686,7 @@
 							<id>{09CFE19C-00CE-41CC-8654-8E78BA8C50CD}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12734,7 +12701,7 @@
 							<id>{36B0B1E1-89F6-4438-B7AD-81FF9F9280E4}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12749,7 +12716,7 @@
 							<id>{29B9B472-327B-4BCA-B0F9-FE0C9E280782}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12764,7 +12731,7 @@
 							<id>{0A42D73D-A299-428D-8143-FE4705F4E237}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12779,7 +12746,7 @@
 							<id>{50B0E89D-CEB9-4F50-B3C9-A0B9EEC957B8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12794,7 +12761,7 @@
 							<id>{158CAC70-48D0-4B4F-A641-ECADA06C61FC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12809,7 +12776,7 @@
 							<id>{FD91057B-C056-40F2-A18A-EFC48484A658}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12824,7 +12791,7 @@
 							<id>{853BD119-C2B4-4055-BC72-4273BE6930B5}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12839,7 +12806,7 @@
 							<id>{4CCDA767-123C-4482-95FA-8DE3BAC7CA4D}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12854,13 +12821,13 @@
 							<id>{ED8D3C6B-9B67-4C7F-A5EB-70E9C806CE54}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>-21.562, 23.041193, 55.957001, 0</translation>
-								<rotation>0.013098, -0.195096, -0.014563, 0.980588</rotation>
+								<rotation>0.013098, -0.195096, -0.014563, 0.980589</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12869,7 +12836,7 @@
 							<id>{0B3202AD-0F81-4664-81FC-7B92F1B07F91}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12884,7 +12851,7 @@
 							<id>{20DBE353-D275-4202-98AF-8A0ACDD0AB8A}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12899,7 +12866,7 @@
 							<id>{4594F8EF-6AA2-4CBC-9FA5-CFD2778AECAE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12914,7 +12881,7 @@
 							<id>{9F82B73D-55DC-4FF8-9FD9-D302E4AAB667}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12929,7 +12896,7 @@
 							<id>{0966D353-EFAB-4BFC-A9A5-79C6A3B5B773}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12944,7 +12911,7 @@
 							<id>{D8DB9C60-BCCC-4917-9529-961B80948813}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12959,7 +12926,7 @@
 							<id>{D24AF09A-BD7D-4AC0-A279-7DE322B8C24D}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12974,7 +12941,7 @@
 							<id>{8C9924C7-BA88-4346-A89D-7D38E9043575}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -12989,13 +12956,13 @@
 							<id>{4538D97D-04D1-4F01-A22A-CD130229E592}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>9.308, 23.206955, 33.686001, 0</translation>
-								<rotation>-0.00394, 0.00535, -0.007936, 0.999946</rotation>
+								<rotation>-0.00394, 0.00535, -0.007936, 0.999947</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13004,7 +12971,7 @@
 							<id>{B3508B2A-4C23-4ED0-969C-E0DFB8288C15}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13019,7 +12986,7 @@
 							<id>{6A1D9148-3012-443C-ADB4-A6BBE8F16BEF}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13034,7 +13001,7 @@
 							<id>{A3B9E523-B846-4823-AC1B-41025B2A12A8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13049,7 +13016,7 @@
 							<id>{C842C3E8-6047-4729-A99E-EC47EBCFBAD7}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13064,7 +13031,7 @@
 							<id>{08185C3F-28B3-4878-9C65-4572512B6A07}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13079,7 +13046,7 @@
 							<id>{1387A4D3-2574-4EF1-A7A4-FF2613E26136}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13094,7 +13061,7 @@
 							<id>{C7AB0C9A-4559-43E7-87A1-4FE1C493B964}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13109,7 +13076,7 @@
 							<id>{1FFFB344-D3F1-4598-A349-09F78307B4A8}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13124,7 +13091,7 @@
 							<id>{50AFA908-015B-4B22-8CBA-8CCB990B2E4F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13139,7 +13106,7 @@
 							<id>{29D8D3D3-A304-462B-BAC6-47F331FFE5D3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13154,7 +13121,7 @@
 							<id>{E88EE1E5-0B7D-4F19-8DA7-6C95A6636E51}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13169,7 +13136,7 @@
 							<id>{30B0D446-A974-4230-B3E3-1B4E6950B5CA}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13184,7 +13151,7 @@
 							<id>{0AC29D8C-9CF3-4982-AB85-AEE5CF7A6C2F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13199,7 +13166,7 @@
 							<id>{5FCEC908-82A4-4A08-BC16-8D244E1F130B}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13214,7 +13181,7 @@
 							<id>{9A9FF0FA-3733-4739-81B3-0676D1D4DB38}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13229,7 +13196,7 @@
 							<id>{18EE2681-9743-4696-9B4B-D1567C87CA97}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13244,7 +13211,7 @@
 							<id>{48D44582-7E5D-47D5-A8C7-C52FA6E7755F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13259,7 +13226,7 @@
 							<id>{D3B9CF97-CA2A-4DC0-B085-7729A3A0053F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13274,7 +13241,7 @@
 							<id>{13F2C264-11CD-4D58-A004-C843678F5EC3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13289,7 +13256,7 @@
 							<id>{32CE4B2B-C978-46FD-B78D-1DDA3D4F637C}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13304,7 +13271,7 @@
 							<id>{61C71130-461F-4B8F-BF3A-D6186B4AD918}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13319,7 +13286,7 @@
 							<id>{683975A9-2CAE-46A2-A122-5C67CFB8F5FC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13334,7 +13301,7 @@
 							<id>{AEC7CD81-6CFD-4CCE-B160-C96A1EC46BB6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13349,7 +13316,7 @@
 							<id>{BE682AF5-6264-47D9-B029-15ACDE87A63D}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13364,7 +13331,7 @@
 							<id>{2A2C05E1-0B0E-4117-A578-4C9FA8AB83B6}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13379,7 +13346,7 @@
 							<id>{7531AE5A-580B-4A7D-8402-D2EFA565624F}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13394,7 +13361,7 @@
 							<id>{5F50D8D3-8DF9-4D69-B67E-7FD3F2DC7DEE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13409,7 +13376,7 @@
 							<id>{B75595BD-471D-4D82-BF7A-0ACCFAE5C267}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13424,7 +13391,7 @@
 							<id>{E4B362F2-58F7-4DCA-85E1-2A068220BD2E}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13439,7 +13406,7 @@
 							<id>{EA51AA10-8A55-4EE7-B87E-FB1AFF73C5FC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13454,13 +13421,13 @@
 							<id>{DD5AA387-9940-4AD6-B09C-336104AE85C4}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
 								<translation>19.627001, 22.7612, 23.195, 0</translation>
-								<rotation>0, -0.998888, 0, 0.047136</rotation>
+								<rotation>0, -0.998889, 0, 0.047136</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13469,7 +13436,7 @@
 							<id>{9005F715-9C39-4C95-9201-C004B1674DC7}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13484,7 +13451,7 @@
 							<id>{3DF0B71E-416D-4046-8723-2E5911E40324}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13499,7 +13466,7 @@
 							<id>{465C4A51-1251-4BF0-BDD6-42B985B513E3}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13514,7 +13481,7 @@
 							<id>{FC66A368-C940-4534-AACA-F981961D24FE}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13529,7 +13496,7 @@
 							<id>{A5AA6B08-57F1-4C6B-A76F-514193411387}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13544,7 +13511,7 @@
 							<id>{250BD6E9-E2DB-47BB-861C-C8006B8865BC}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13559,7 +13526,7 @@
 							<id>{5E294518-4D5E-4B8E-9578-BCBD3DAE7A58}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13574,7 +13541,7 @@
 							<id>{2C3C2284-5A5F-49C3-8E8C-75D059A0F6C7}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13589,7 +13556,7 @@
 							<id>{87F43841-6A10-4A41-AA3C-5C7CDFB387B4}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13604,7 +13571,7 @@
 							<id>{CAC6881F-948E-43CE-98FC-CBCE2F029422}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13619,7 +13586,7 @@
 							<id>{323447E3-42EE-4E15-AB5D-AE72FCEBA2D1}</id>
 							<name>Fern</name>
 							<state>
-								<visible>true</visible>
+								<visible>false</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
@@ -13763,8 +13730,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-8.5, 23.388437, 13.5, 0</translation>
-								<rotation>0, 0.984808, 0, -0.173648</rotation>
+								<translation>-7.292151, 23.963436, 16.651495, 0</translation>
+								<rotation>-0.037411, 0.639092, -0.03461, 0.76744</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13779,7 +13746,7 @@
 							</state>
 							<transform>
 								<translation>10.5, 22.419672, 4.5, 0</translation>
-								<rotation>0, 0.173648, 0, -0.984808</rotation>
+								<rotation>0, -0.173648, 0, 0.984808</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13823,8 +13790,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-4, 23.386484, 66, 0</translation>
-								<rotation>0, 0.608761, 0, -0.793353</rotation>
+								<translation>-5.872384, 23.961483, 66.407906, 0</translation>
+								<rotation>0.003439, -0.98875, 0.022955, 0.147765</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13853,8 +13820,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-45.5, 23.615007, 4.5, 0</translation>
-								<rotation>0, 0.866025, 0, 0.5</rotation>
+								<translation>-36.233208, 24.190006, -4.333866, 0</translation>
+								<rotation>-0.002724, 0.557858, -0.006556, 0.829906</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13869,7 +13836,7 @@
 							</state>
 							<transform>
 								<translation>16, 10.511293, -30, 0</translation>
-								<rotation>0, 0.866025, 0, -0.5</rotation>
+								<rotation>0, -0.866025, 0, 0.5</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13899,7 +13866,7 @@
 							</state>
 							<transform>
 								<translation>55, 10.940981, 15, 0</translation>
-								<rotation>0, 0.5, 0, -0.866025</rotation>
+								<rotation>0, -0.5, 0, 0.866025</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13914,7 +13881,802 @@
 							</state>
 							<transform>
 								<translation>-60, 41.107464, 38, 0</translation>
-								<rotation>0, 0.991445, 0, -0.130526</rotation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{358CB27B-6742-43F2-8588-A09679576B81}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-23.535629, 23.325462, 77.742188, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{33E15FE8-DE89-456D-AAAC-01E3CA3B019D}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-37.828358, 24.029987, 61.410072, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6900CB16-09B0-450C-839B-62EC9535A626}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-25.677935, 24.020144, 40.775452, 0</translation>
+								<rotation>-0.002555, 0.475167, 0.000994, 0.879891</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{445EAABC-7472-4165-8AE1-F5DAE9753710}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-7.241791, 22.710293, 49.766212, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2CCB9EB4-5A1B-46EB-80ED-E93C5A1502E5}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>15.5709, 23.909775, 64.030212, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9483DAD7-96E5-408E-AD64-A0B5217B894C}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>13.988106, 23.203333, 37.367561, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{41F52CA6-B8DA-4DBF-8DC6-CE7BD871BC6A}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>7.603691, 22.334694, 35.61042, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{01494D68-F478-4ACA-B686-82E9B4117532}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>10.271164, 22.545158, 13.977558, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2B703002-823F-4EC0-9977-BAB51A629DDE}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>8.769722, 18.228937, -10.267097, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E632977D-A454-448A-8AB5-D75E92D81C4E}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-9.163734, 20.507311, -15.190109, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6CED19A3-AFB9-410D-BB71-5587DD368D69}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-32.197227, 22.421677, -12.125996, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{558AE1AD-5496-4D8B-A7CA-7EEE543AB052}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-26.894539, 24.068644, 6.711369, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0D10DF4A-97B4-46F9-8AA6-F5F2E724B4FA}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-48.104301, 11.681419, -34.493179, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C4BC8AE4-3CD8-456C-A4B1-7684627BAC00}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-23.060535, 11.142009, -51.619061, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5B21BAFD-C6D0-47A2-B7CC-696625CB2DC8}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>7.391563, 11.783179, -47.628803, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{31B94A0A-7557-4416-A11F-277AB24FEAA2}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>28.780273, 11.873314, -42.131012, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4ADA1240-94AD-4F0C-A201-76A0F7C7AF7B}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>35.251442, 11.438761, -13.822357, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{AFFBD062-E420-44F0-B829-EEF4BC3A3EA3}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.998482, 22.6842, 10.895226, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B232587D-C636-43B4-B084-AE3F1BB88244}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>34.17527, 32.698162, 30.686333, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{89AE2356-BBA1-4900-BDAB-EDA2854AEA40}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.680832, 38.615509, 40.198952, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{627B254B-A7FA-40F1-8BAB-65FE4171AC61}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>29.945808, 32.711777, 53.930962, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2B74233F-0F84-4769-921F-DE334790400E}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>5.775345, 27.191826, 86.924461, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{46C4A657-9102-4E9E-96F5-493BD1E6C8C4}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-10.129677, 24.71512, 105.332085, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{71017A56-0909-4829-9943-1DAE30475360}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-50.738792, 25.472315, 89.507759, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8D2766F0-C99A-4550-BAE7-9ED5F920CA5B}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-86.30426, 19.630272, 75.3694, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B87AF2B3-21CA-4B31-A86F-6E17484ACFFF}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-100.797615, 20.935911, 22.246483, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9766230A-C447-46F0-8618-8CE45BFFC536}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-88.849289, 23.586161, -17.951878, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{233C5870-ABA9-4AD8-8F8D-1C817D9E8E50}</id>
+							<name>HealthPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-62.290577, 32.036724, 7.415169, 0</translation>
+								<rotation>0.012792, 0.775396, -0.031275, 0.63057</rotation>
+							</transform>
+							<components/>
+							<entityData>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{80ECF1C0-BA0A-4CAE-B6AF-F97AD40BBEB6}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-24.84565, 22.646687, 50.641277, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{48213481-997E-457D-A5C5-CF9C6A2C28EF}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-11.077995, 23.455845, 42.595093, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0EDDF4CA-AE6C-44EC-A75A-A9264CB4C2BA}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>9.668457, 23.475006, 44.887978, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D4B6CB28-2081-48F5-B910-1FBE2DAF8D6B}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14.219284, 23.351917, 20.155243, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{81B74D34-E817-4C44-8648-FD38283D1595}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>3.193924, 21.726086, -5.322514, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E0D0D8A7-0706-46B9-8227-4389059DD1C3}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>30.074806, 11.353172, -25.97308, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2EAE17B4-6158-47A6-8B02-9F4A458CAD34}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>43.076157, 12.226383, -35.440659, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CBD35018-4A23-417B-B75C-A66929BF9806}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>36.964722, 7.225887, -60.877716, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{50574A49-633A-4B73-809D-5F1F9B005B06}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>3.054073, 2.605183, -84.016388, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7F9A05F1-1A6F-4475-84A5-E1C1CC98939C}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-31.782787, 3.049561, -84.344582, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{97387E1E-E372-4980-AECE-1BA5D677C723}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-65.682098, 12.105045, -58.469543, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3E16847D-7756-4850-8E75-967390BEFF32}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-78.046585, 11.912331, -38.446899, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0DFCD7B8-758B-4D39-8A7B-A5F918B0F710}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-66.269897, 11.479141, -18.979168, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9C463AB4-900C-4930-9793-AC151E3F0587}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-56.874317, 27.736492, -4.139286, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A66B06EA-527B-41DE-A90C-62B19F57D750}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-68.12748, 32.986904, 6.716337, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{49F5E7B7-715F-4FEF-9D13-6DB5DDEF71F8}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-45.114315, 37.808941, 44.197186, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A306D05A-77F8-4F6D-B35D-457F2FFCB046}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-20.799141, 23.472639, 65.863586, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8E780908-118B-48EA-8E16-E21D3C5BC903}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-4.812729, 23.175133, 79.322571, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{15CD1B41-3394-4A10-AC57-877EAE707C19}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-27.357502, 22.266129, 73.811493, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{ACB076EC-ED3A-445F-A9C3-68D0865D405D}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-55.701824, 25.119583, 85.505394, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2BC8E0B4-40C9-471F-9085-9C13BD8CC385}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-90.664307, 20.233385, 44.082874, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{02CA52FA-E109-47AC-884B-D0FEB63F4F35}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-74.539986, 34.869442, 3.398003, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{76733B1C-BF93-42BD-ABAB-C2238F36A0E7}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-48.273857, 45.026276, 27.427296, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3C3A0C37-7F57-4C2A-AF5A-FC3E6FC230A0}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-20.137024, 23.215271, 28.89797, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
+							</transform>
+							<components/>
+							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4687E106-BF5F-4898-9B9D-228BA272416B}</id>
+							<name>AmmoPickup</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>7.438034, 31.830444, 4.711197, 0</translation>
+								<rotation>0, -0.991445, 0, 0.130526</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -13947,8 +14709,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>12.5, 22.732998, 5, 0</translation>
-								<rotation>0, 0.984808, 0, -0.173648</rotation>
+								<translation>6.670369, 23.097372, 5.537426, 0</translation>
+								<rotation>0, -0.984808, 0, 0.173648</rotation>
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
@@ -13978,7 +14740,7 @@
 							</state>
 							<transform>
 								<translation>-44, 23.063828, -2, 0</translation>
-								<rotation>0, 0.422618, 0, -0.906308</rotation>
+								<rotation>0, -0.422618, 0, 0.906308</rotation>
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
@@ -14007,7 +14769,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-48.643234, 46.46323, 27.837437, 0</translation>
+								<translation>-40.77914, 36.435112, 34.201752, 0</translation>
 								<rotation>0, 0.642788, 0, 0.766044</rotation>
 							</transform>
 							<components/>
@@ -14024,6 +14786,21 @@
 							<transform>
 								<translation>-23.823837, 23.495901, 59.789589, 0</translation>
 								<rotation>0, 0.352274, 0, 0.935897</rotation>
+							</transform>
+							<components/>
+							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{759F1437-8256-4449-AE8C-B92785A978CB}</id>
+							<name>Relic</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>8.084725, 32.803669, 7.892281, 0</translation>
+								<rotation>0, 0.533471, 0, 0.845819</rotation>
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
@@ -14071,7 +14848,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>3.5, 23.181015, 46.5, 0</translation>
+								<translation>-9.364134, 23.181015, 48.205765, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -14086,8 +14863,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>12, 23.393913, 40, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>5.349054, 23.393913, 49.14912, 0</translation>
+								<rotation>0, -0.019999, 0, 0.9998</rotation>
 							</transform>
 							<components/>
 							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
@@ -14116,8 +14893,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2.5, 23.085312, 15, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>1.993197, 23.085312, 15.419508, 0</translation>
+								<rotation>0, 0.20846, 0, 0.978031</rotation>
 							</transform>
 							<components/>
 							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
@@ -14132,7 +14909,97 @@
 							</state>
 							<transform>
 								<translation>-7.588034, 23.401123, 33.565529, 0</translation>
+								<rotation>0, 0.285952, 0, 0.958244</rotation>
+							</transform>
+							<components/>
+							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000005}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14, 10.280434, -26, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000006}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-8, 21.397789, -6, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{F114FAED-7193-4495-B11D-716E17EE9B79}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-7.809513, 20.745163, -30.248802, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000007}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-26, 22.25132, -8, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000008}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-30.046715, 23.188828, 13.516018, 0</translation>
+								<rotation>0, 0.099833, 0, 0.995004</rotation>
+							</transform>
+							<components/>
+							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C0DE7A71-9B14-4E58-A2D6-000000000009}</id>
+							<name>Ward</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-19.922701, 23.270866, 51.051472, 0</translation>
+								<rotation>0, 0.059964, 0, 0.998201</rotation>
 							</transform>
 							<components/>
 							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
@@ -14656,21 +15523,6 @@
 				<item type="traktor.world.GroupComponentData">
 					<entityData>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
-							<id>{BA17DE03-0000-4000-8000-000000000000}</id>
-							<name>Boulder Large</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>9.83, 23.1155, 47.894199, 0</translation>
-								<rotation>-0.062388, -0.410996, -0.029703, 0.909015</rotation>
-							</transform>
-							<components/>
-							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
-						</item>
-						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{20105F33-C94B-457F-812B-92F7AD988180}</id>
 							<name>Boulder Large</name>
 							<state>
@@ -14695,7 +15547,7 @@
 							</state>
 							<transform>
 								<translation>-20.400761, 22.796177, 86.692444, 0</translation>
-								<rotation>-0.028217, -0.291465, 0.023416, 0.955878</rotation>
+								<rotation>-0.028217, -0.291465, 0.023416, 0.955879</rotation>
 							</transform>
 							<components/>
 							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
@@ -14729,21 +15581,6 @@
 							</transform>
 							<components/>
 							<entityData>{93FABD6D-E5DA-477F-B854-626F3CE77995}</entityData>
-						</item>
-						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
-							<id>{BA17DE03-0000-4000-8000-000000000002}</id>
-							<name>Boulder Large</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>17.1273, 23.413601, 45.854401, 0</translation>
-								<rotation>-0.025851, -0.916608, -0.043314, 0.396592</rotation>
-							</transform>
-							<components/>
-							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{BA17DE03-0000-4000-8000-000000000003}</id>
@@ -15330,6 +16167,141 @@
 							<components/>
 							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
 						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B3EDDFFF-85E1-4670-A050-D4AD35A8EA50}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-16.803667, 21.724163, -5.8938, 0</translation>
+								<rotation>-0.023918, 0.616818, -0.046848, 0.785347</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9B83722A-BF04-4162-91D4-1B70D76B4499}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>10.410232, 17.909479, -11.208423, 0</translation>
+								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{271A2499-4E47-42F1-8B82-651968AD8363}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>26.617886, 10.666884, -16.868446, 0</translation>
+								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A75D2DF8-9527-4D86-91B8-93F7F561061D}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>19.182545, 8.721858, -48.177544, 0</translation>
+								<rotation>-0.093166, -0.837898, 0.106889, 0.527088</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4D00A120-9927-4231-B4B7-D7D20E6D97EE}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>7.447085, 10.261072, -54.973702, 0</translation>
+								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{658EEF0D-B705-4B32-8116-B002E37E4AD9}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-1.952329, 7.223333, -73.107231, 0</translation>
+								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3F4FC779-06C0-4739-A5F4-759A1E57B05B}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-23.820162, 6.15707, -67.541977, 0</translation>
+								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D78F4E4F-5899-4384-9111-1B4CB6C495BE}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-46.55603, 10.623686, -55.990868, 0</translation>
+								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{EF9D6892-87CF-47F9-8148-EFBA94D0C538}</id>
+							<name>Boulder Medium</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-52.821819, 9.603892, -40.548, 0</translation>
+								<rotation>0.015705, 0.996587, 0.017205, 0.079193</rotation>
+							</transform>
+							<components/>
+							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
+						</item>
 					</entityData>
 				</item>
 			</components>
@@ -15508,8 +16480,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-44.410599, 11.3046, -23.872, 0</translation>
-								<rotation>0, 0.632124, 0, 0.774867</rotation>
+								<translation>-44.30777, 11.183902, -28.09775, 0</translation>
+								<rotation>-0.026152, 0.30155, 0.006101, 0.953072</rotation>
 							</transform>
 							<components/>
 							<entityData>{98F451B8-4B2F-482E-AF2E-CFCBE3A595F8}</entityData>
@@ -16138,8 +17110,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-10.4836, 23.1108, 46.2444, 0</translation>
-								<rotation>0, -0.948593, 0, 0.316497</rotation>
+								<translation>-10.309085, 23.102541, 45.875576, 0</translation>
+								<rotation>-0.001326, 0.722195, 0.002053, -0.691686</rotation>
 							</transform>
 							<components/>
 							<entityData>{98F451B8-4B2F-482E-AF2E-CFCBE3A595F8}</entityData>
@@ -16379,7 +17351,7 @@
 							</state>
 							<transform>
 								<translation>-41.148994, 35.983685, 37.578918, 0</translation>
-								<rotation>0.01127, 0.300373, -0.016788, 0.953607</rotation>
+								<rotation>0.01127, 0.300373, -0.016788, 0.953608</rotation>
 							</transform>
 							<components/>
 							<entityData>{C58F4F5C-19C5-495C-B02B-76522AD1CAD4}</entityData>
@@ -16428,6 +17400,21 @@
 							</transform>
 							<components/>
 							<entityData>{98F451B8-4B2F-482E-AF2E-CFCBE3A595F8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DD1E739B-20AD-490E-BEAC-635A33B41DE6}</id>
+							<name>Snag</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-18.516895, 24.087284, 8.525922, 0</translation>
+								<rotation>-0.007803, -0.818433, 0.001495, 0.574547</rotation>
+							</transform>
+							<components/>
+							<entityData>{C58F4F5C-19C5-495C-B02B-76522AD1CAD4}</entityData>
 						</item>
 					</entityData>
 				</item>
@@ -16757,8 +17744,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-30.663, 23.2292, 44.281101, 0</translation>
-								<rotation>0, -0.78516, 0, 0.619293</rotation>
+								<translation>-27.83613, 23.214354, 45.263634, 0</translation>
+								<rotation>0.001852, 0.475168, -0.00103, 0.879893</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -17493,7 +18480,7 @@
 							</state>
 							<transform>
 								<translation>-63.229099, 31.5138, 19.824301, 0</translation>
-								<rotation>0, 0.027294, 0, 0.999627</rotation>
+								<rotation>0, 0.027294, 0, 0.999628</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -18907,7 +19894,7 @@
 							</state>
 							<transform>
 								<translation>-44.9259, 10.8449, -40.0243, 0</translation>
-								<rotation>0, -0.999919, 0, 0.012691</rotation>
+								<rotation>0, -0.99992, 0, 0.012691</rotation>
 							</transform>
 							<components/>
 							<entityData>{4212B482-F79E-4F59-8736-BA3CC222C6E6}</entityData>
@@ -20332,7 +21319,7 @@
 							</state>
 							<transform>
 								<translation>35.4897, 9.9813, -46.6875, 0</translation>
-								<rotation>0, 0.170905, 0, 0.985287</rotation>
+								<rotation>0, 0.170905, 0, 0.985288</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>
@@ -24817,7 +25804,7 @@
 							</state>
 							<transform>
 								<translation>-7.590514, 23.204441, 22.25178, 0</translation>
-								<rotation>-0.000082, -0.999426, 0.001445, 0.033833</rotation>
+								<rotation>-0.000082, -0.999427, 0.001445, 0.033833</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>
@@ -26245,8 +27232,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>25.9989, 12.3581, -13.4285, 0</translation>
-								<rotation>0, 0.999996, 0, 0.002927</rotation>
+								<translation>26.614126, 13.337664, -14.346064, 0</translation>
+								<rotation>-0.29995, -0.523192, 0.065642, 0.794979</rotation>
 							</transform>
 							<components/>
 							<entityData>{84FBBED5-CF60-4E6D-9DA5-759CAD2403B4}</entityData>
@@ -29450,18 +30437,54 @@
 				</item>
 			</components>
 		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{0F181CFB-2F7F-416D-8D22-5F2C8C5137AD}</id>
+			<name>Hives</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5D0E50C0-808F-446A-93C3-7655AB4BA0B5}</id>
+							<name>Hive</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-35.297264, 23.85774, 40.541149, 0</translation>
+								<rotation>0, 0.589145, 0, 0.808028</rotation>
+							</transform>
+							<components/>
+							<entityData>{97F6B4CF-9224-4489-9A89-E2DEC741E140}</entityData>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
 	</layers>
 	<operationData>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Trees</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.75</upness>
-			<offset>-0.5</offset>
+			<offset>0</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Undergrowth</item>
 				<item>Logs</item>
@@ -29470,60 +30493,74 @@
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.65</upness>
 			<offset>0</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Boulders</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.45</upness>
-			<offset>-0.8</offset>
+			<offset>-0.4</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Deadwood</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.85</upness>
-			<offset>-0.12</offset>
+			<offset>0</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Shrubs</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.8</upness>
-			<offset>-0.05</offset>
+			<offset>0</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Groundcover</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.7</upness>
-			<offset>-0.02</offset>
+			<offset>0</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Forest Debris</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.35</upness>
-			<offset>-0.04</offset>
+			<offset>0</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
-		<item type="traktor.terrain.AlignToTerrainOperationData" version="1">
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
 				<item>Pickups</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.65</upness>
-			<offset>0.8</offset>
+			<offset>0.55</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
 		</item>
 		<item type="traktor.shape.BakeOperationData">
 			<enableLightmaps>false</enableLightmaps>

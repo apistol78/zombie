@@ -5,24 +5,29 @@ import(traktor)
 
 -- Relic
 --
--- A consecrated cross the player carries, one at a time, back to the altar. This
--- component owns only where the relic ends up when it leaves the player's hands:
+-- A consecrated cross the player carries, one at a time, to whichever ward post they
+-- decide to light with it. This component owns only where the relic ends up when it
+-- leaves the player's hands:
 --
---   * Relic:drop(context)   put it down on the ground in front of the player
---   * Relic:place(context)  stand it in the ring around the altar and flare it
+--   * Relic:drop(context)         put it down on the ground in front of the player
+--   * Relic:place(context, ward)  stand it at the foot of that ward post and flare it
 --
 -- Both are called by Main -- via entity:getComponent(world.ScriptComponent) -- in
 -- place of the old Main:_dropRelic / Main:_placeRelic. context is the Stage (the
--- Main instance), so the relic reads the player, the altar and the delivery tally
--- straight off it and grounds itself with the Stage's own ground query.
+-- Main instance), so the relic reads the player straight off it and grounds itself
+-- with the Stage's own ground query; ward is one of the Stage's ward records
+-- (see Main:resolve), which is what carries the entity to stand at.
 --
 -- Everything around the move stays with the Stage, which owns it: whether a relic
--- is in hand, the running tally, the ward that lights and the dawn that breaks.
--- Carrying is likewise driven by Main:postUpdate; this only handles letting go.
+-- is in hand, which wards burn, and the dawn that breaks. Carrying is likewise
+-- driven by Main:postUpdate; this only handles letting go.
 
 Relic = Relic or class("Relic", traktor.world.ScriptComponent)
 
-local ALTAR_RADIUS < const > = 2.1   -- how far out the ring of delivered relics stands (m)
+-- Two-argument atan; math.atan2 was folded into math.atan.
+local atan2 < const > = math.atan2 or math.atan
+
+local WARD_RADIUS < const > = 1.0    -- how far out from the post a spent relic stands (m)
 local DROP_AHEAD < const > = 0.7     -- how far in front of the player a dropped relic lands (m)
 
 -- Put the relic down in front of the player, standing on the ground and facing
@@ -37,22 +42,37 @@ function Relic:drop(context)
 	self.owner.transform = Transform(context:_groundAt(at), heading)
 end
 
--- Deliver the relic: stand it in the ring around the altar at the slot the Stage
--- has just counted, and let it flare. Left standing in the world afterwards, so
--- the night's progress is legible out in the dark and not only on the HUD.
-function Relic:place(context)
-	local altar < const > = context._altar
-	if altar == nil then
+-- Spend the relic on a ward: stand it at the foot of that post and let it flare.
+-- Left standing in the world afterwards, so which ground the player has bought is
+-- legible out in the dark and not only on the HUD.
+--
+-- It goes on the side the player walked in from, rather than a fixed compass point,
+-- so it is never planted through the pillar's back and is always facing whoever set
+-- it down as the flame catches.
+function Relic:place(context, ward)
+	if ward == nil then
 		return
 	end
-	local a < const > = altar.transform.translation
-	local slots < const > = math.max(context._relicsTotal or 1, 1)
-	-- Main has already counted this delivery, so the slot is one behind the tally.
-	local angle < const > = (context._relicsPlaced - 1) * 2.0 * math.pi / slots
-	-- Facing back at the altar: the mesh's cross lies in XY and looks along +Z, so
-	-- a relic standing at `angle` on the ring has to be yawed half a turn past it.
-	local facing < const > = Quaternion.fromEulerAngles(angle + math.pi, 0.0, 0.0)
-	local at < const > = Vector4(a.x + math.sin(angle) * ALTAR_RADIUS, a.y, a.z + math.cos(angle) * ALTAR_RADIUS, 1.0)
+	local w < const > = ward.entity.transform.translation
+
+	-- Outward bearing: from the post towards the player. Falls back to +Z for the
+	-- degenerate case of standing exactly on it.
+	local dx, dz = 0.0, 1.0
+	local player < const > = context._humanoid
+	if player ~= nil then
+		local pp < const > = player.transform.translation
+		local ax < const > = pp.x - w.x
+		local az < const > = pp.z - w.z
+		local l < const > = math.sqrt(ax * ax + az * az)
+		if l > 0.001 then
+			dx, dz = ax / l, az / l
+		end
+	end
+
+	-- The mesh's cross lies in XY and looks along +Z, so yawing it to that same
+	-- outward bearing turns its face away from the pillar rather than into it.
+	local facing < const > = Quaternion.fromEulerAngles(atan2(dx, dz), 0.0, 0.0)
+	local at < const > = Vector4(w.x + dx * WARD_RADIUS, w.y, w.z + dz * WARD_RADIUS, 1.0)
 	self.owner.transform = Transform(context:_groundAt(at), facing)
 
 	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)

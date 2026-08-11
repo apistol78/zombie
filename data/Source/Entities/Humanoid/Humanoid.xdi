@@ -51,6 +51,42 @@
 						<useRotation>true</useRotation>
 					</second>
 				</item>
+				<item>
+					<first>hurt</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-000000000004}</sound>
+						<positional>false</positional>
+						<follow>false</follow>
+						<autoStopFar>false</autoStopFar>
+					</second>
+				</item>
+				<item>
+					<first>step</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-000000000002}</sound>
+						<positional>false</positional>
+						<follow>false</follow>
+						<autoStopFar>false</autoStopFar>
+					</second>
+				</item>
+				<item>
+					<first>ward</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1D000-0000-4000-8000-00000000000B}</sound>
+						<positional>false</positional>
+						<follow>false</follow>
+						<autoStopFar>false</autoStopFar>
+					</second>
+				</item>
+				<item>
+					<first>dawn</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1D000-0000-4000-8000-00000000000D}</sound>
+						<positional>false</positional>
+						<follow>false</follow>
+						<autoStopFar>false</autoStopFar>
+					</second>
+				</item>
 			</eventData>
 		</item>
 		<item type="traktor.world.GroupComponentData">
@@ -85,6 +121,15 @@
 										<useRotation>true</useRotation>
 									</second>
 								</item>
+							<item>
+								<first>reload</first>
+								<second type="traktor.spray.SoundEventData" version="1">
+									<sound>{50D1B000-0000-4000-8000-000000000006}</sound>
+									<positional>false</positional>
+									<follow>false</follow>
+									<autoStopFar>false</autoStopFar>
+								</second>
+							</item>
 							</eventData>
 						</item>
 					</components>

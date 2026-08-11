@@ -12,7 +12,38 @@ local SPAWN_MIN < const > = 8.0       -- nearest a spawn may appear to the playe
 local SPAWN_MAX < const > = 20.0      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
 local SPAWN_INTERVAL < const > = 0.5  -- seconds between spawn attempts
-local CANDIDATES < const > = 8        -- spawn-point tries per attempt
+local CANDIDATES < const > = 12       -- spawn-point tries per attempt
+
+-- Putting the horde where the player is going rather than where it has been.
+--
+-- The old rule was "keep the first hidden candidate, upgrade to an in-front one if
+-- one turns up", sampling a ring centred on the player. In practice that still fed
+-- them in from behind, for three compounding reasons: half a ring centred on the
+-- player is behind them; whichever hidden point came out of the sampler first was
+-- taken; and -- the real culprit -- the line-of-sight ray used a default
+-- QueryFilter, whose includeGroup is ~0, so *other zombies counted as cover*. Every
+-- zombie already trailing the player made the ground behind them read as "hidden",
+-- which fed the next spawn in behind as well. It compounded itself.
+--
+-- So: sample a ring pushed AHEAD_BIAS metres up the player's forward, score every
+-- candidate on how far round from forward it sits and take the best rather than the
+-- first, and trace cover against the static world only.
+local AHEAD_BIAS < const > = 9.0      -- how far ahead of the player the ring is centred (m)
+local COVER_MIN < const > = 2.5       -- cover must be at least this far from the eye, so
+                                      -- standing in a bush cannot make everywhere "hidden"
+
+-- Taking them back off again once the player has left them behind. Without this the
+-- population sits in the trail at up to DESPAWN_DIST, eating the slots that the rule
+-- above wants to spend in front -- the two halves are the same mechanism.
+local BEHIND_DIST < const > = 28.0    -- ...at which a zombie left behind may be removed (m)
+local BEHIND_DOT < const > = -0.25    -- how far round from forward counts as behind (~105 deg)
+local RECEDE_MIN < const > = 0.5      -- and how fast the player has to be leaving it (m/s)
+local BEHIND_INTERVAL < const > = 0.4 -- seconds between removals, so the trail thins at a
+                                      -- deliberate rate; one a frame would empty it in half
+                                      -- a second and read as the forest going quiet
+local VEL_SMOOTH < const > = 6.0      -- player velocity easing (1/s); raw frame deltas jitter
+
+local EYE < const > = 1.6             -- eye height, and the height a zombie is sighted at (m)
 
 -- Ground trace. The window is deliberately short: it has to cover the nav mesh drifting
 -- off the terrain, not search for a floor several metres away. Tracing far upward would
@@ -28,7 +59,7 @@ local GROUND_MIN_NORMAL_Y < const > = 0.7   -- reject ground steeper than ~45 de
 local COLLISION_DEFAULT < const > = 0x00000001
 
 -- Consecrated ground: nothing rises inside a lit ward. The Stage publishes the
--- list as context._litWards ({ x, z, r, r2 } per lit ward) and only rebuilds it when
+-- list as context._litWards ({ x, z, r2 } per lit ward) and only rebuilds it when
 -- one is lit, so this is a short table walk -- at most one entry per relic.
 local function inLitWard(wards, p)
 	if wards == nil then
@@ -68,9 +99,47 @@ local function traceGround(pm, p)
 	return hit.position, hit.normal
 end
 
+-- Is a point hidden from the player, and by cover that is actually out at the far
+-- end rather than under their nose? Returns whether the sight line is blocked and
+-- how far along it the blocker sits.
+--
+-- Static world only (0x1), exactly as traceGround: without that mask the *other
+-- zombies* count as cover, and a horde trailing the player turns the ground behind
+-- them into the only place that ever reads as hidden.
+local function sightLine(pm, eye, p)
+	local r < const > = p + Vector4(0.0, EYE, 0.0, 0.0) - eye
+	local rl < const > = r.length
+	if rl <= 0.5 then
+		return false, 0.0
+	end
+	local hit < const > = pm:queryRay(eye, r / rl, rl - 0.5, physics.QueryFilter(COLLISION_DEFAULT), true)
+	if hit == nil then
+		return false, rl
+	end
+	return true, (hit.position - eye).length
+end
+
+-- The nav mesh point under (x, z), or nil when there is no walkable ground there.
+--
+-- Probed from far below so a stacked spot resolves to the terrain rather than a roof
+-- above it, and because findClosestPointXZ ignores height. It returns its search
+-- point *verbatim* when it finds nothing, so a y still down at the probe depth is
+-- how the miss is detected -- without that check an off-mesh probe silently returns
+-- a point 1000 m underground and poisons the whole attempt.
+local function groundNavPoint(navMesh, x, y, z)
+	local p < const > = navMesh:findClosestPointXZ(Vector4(x, y - 1000.0, z, 1.0), 8.0)
+	if p.y <= y - 900.0 then
+		return nil
+	end
+	return p
+end
+
 function Spawner:new()
 	self._spawned = {}   -- enemies this spawner created (its managed population)
 	self._timer = 0.0
+	self._velX, self._velZ = 0.0, 0.0   -- smoothed player velocity, XZ
+	self._lastPX, self._lastPZ = nil, nil
+	self._behindTimer = 0.0
 end
 
 function Spawner:update(context, totalTime, deltaTime)
@@ -79,8 +148,10 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 
 	-- Freeze together with the rest of the game (the Stage owns these flags).
-	-- _nightOver is the win: nothing new rises into the dawn.
-	if context._gameOver or context._paused or context._nightOver then
+	-- _nightOver is the win: nothing new rises into the dawn, and _cutscene is a hive
+	-- opening -- the camera is over there and the only thing that may move is that
+	-- hive's own brood (see Main:_beginCutscene).
+	if context._gameOver or context._paused or context._nightOver or context._cutscene ~= nil then
 		return
 	end
 
@@ -107,6 +178,27 @@ function Spawner:update(context, totalTime, deltaTime)
 	local pm < const > = environment.physics.physicsManager
 	local playerPos < const > = self._player.transform.translation
 
+	-- Which way the player is looking, and which way they are actually travelling.
+	-- Both are needed below: facing decides what counts as in front of them, and
+	-- velocity decides whether a zombie behind them is being left behind or is still
+	-- being backed towards. Velocity is eased because a raw per-frame delta jitters
+	-- enough to flicker the receding test on and off.
+	local heading = 0.0
+	local character < const > = self._player:getComponent(traktor.physics.CharacterComponent)
+	if character ~= nil then
+		heading = character.headAngle
+	end
+	local forward < const > = traktor.Quaternion.fromEulerAngles(heading, 0.0, 0.0) * traktor.Vector4(0.0, 0.0, 1.0, 0.0)
+
+	if self._lastPX ~= nil and deltaTime > 0.0 then
+		local k < const > = math.min(1.0, deltaTime * VEL_SMOOTH)
+		self._velX = self._velX + ((playerPos.x - self._lastPX) / deltaTime - self._velX) * k
+		self._velZ = self._velZ + ((playerPos.z - self._lastPZ) / deltaTime - self._velZ) * k
+	end
+	self._lastPX, self._lastPZ = playerPos.x, playerPos.z
+
+	local eye < const > = playerPos.xyz1 + Vector4(0.0, EYE, 0.0)
+
 	-- 1) Prune the managed population, then unspawn enemies that have wandered too far
 	-- from the player.
 	--
@@ -120,8 +212,18 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- lifetime) deliberately keeps its slot: it is still an entity in the world holding a
 	-- full set of physics bodies, so counting it against the cap is what keeps the live
 	-- population -- and the body count -- bounded.
+	--
+	-- A zombie the player has walked away from is also removed, well short of
+	-- DESPAWN_DIST: past BEHIND_DIST, more than BEHIND_DOT round from where they are
+	-- looking, with the player measurably receding from it, and out of sight so it is
+	-- never seen to vanish. That is not only tidying -- those trailing followers are
+	-- holding MAX_ENEMIES slots, and freeing one is what lets the spawn rule below
+	-- put a zombie in front instead. Only the furthest such zombie goes per update,
+	-- which bounds this to a single extra ray per frame and thins the trail out from
+	-- the back rather than deleting it wholesale.
 	local dead < const > = context._deadEnemies
 	local kept = {}
+	local strayEnemy, strayDist2 = nil, BEHIND_DIST * BEHIND_DIST
 	for _, e in ipairs(self._spawned) do
 		if e.world == nil then
 			-- Gone: Main destroyed the corpse. Drop the entry (do not keep it).
@@ -144,10 +246,40 @@ function Spawner:update(context, totalTime, deltaTime)
 				e:destroy()
 			else
 				table.insert(kept, e)
+				-- Kept, so it is a live follower: is it one the player has finished
+				-- with? Selected here rather than alongside the distance test above so
+				-- a zombie already being despawned can never also be picked as the
+				-- stray. Furthest wins, so the trail is eaten from the back.
+				local flat2 < const > = dx * dx + dz * dz
+				if flat2 > strayDist2 then
+					local d < const > = math.sqrt(flat2)
+					if (dx * forward.x + dz * forward.z) / d < BEHIND_DOT
+						and (self._velX * dx + self._velZ * dz) / d < -RECEDE_MIN then
+						strayEnemy, strayDist2 = e, flat2
+					end
+				end
 			end
 		end
 	end
 	self._spawned = kept
+
+	-- Take the stray, if it really cannot be seen going. The sight test is out here so
+	-- it costs one ray per update whatever the headcount, and it is on its own timer so
+	-- a sprinting player thins the trail rather than deleting it.
+	self._behindTimer = self._behindTimer - deltaTime
+	if strayEnemy ~= nil and self._behindTimer <= 0.0 then
+		if sightLine(pm, eye, strayEnemy.transform.translation) then
+			self._behindTimer = BEHIND_INTERVAL
+			for i, e in ipairs(self._spawned) do
+				if e == strayEnemy then
+					table.remove(self._spawned, i)
+					break
+				end
+			end
+			self.world:removeEntity(strayEnemy)
+			strayEnemy:destroy()   -- as above: removeEntity alone leaks thirteen bodies
+		end
+	end
 
 	-- Ward pressure. Every ward the player lights buys a patch of safe ground and
 	-- pays for it by making everywhere else worse: spawns come faster and closer.
@@ -167,30 +299,37 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 	self._timer = interval
 
-	-- Player facing, so we can prefer spawning in front of the player.
-	local heading = 0.0
-	local character = self._player:getComponent(traktor.physics.CharacterComponent)
-	if character ~= nil then
-		heading = character.headAngle
-	end
-	local forward < const > = traktor.Quaternion.fromEulerAngles(heading, 0.0, 0.0) * traktor.Vector4(0.0, 0.0, 1.0, 0.0)
-
 	-- 2) + 8) Pick a spawn point: a random nav-mesh point in the spawn ring, dropped onto
-	-- the real ground beneath it, standing on a surface flat enough to stand on, hidden
-	-- from the player (a physics ray from the player's eye is blocked by terrain before
-	-- reaching it), preferring points in front.
-	-- Centre the spawn ring on the ground *beneath* the player, not the player's own
-	-- position: when they are up a tower or on a roof, findRandomPoint(playerPos) would
-	-- seed off a rooftop polygon and scatter the horde across it. findClosestPointXZ
-	-- ignores height, and probing from far below biases a stacked spot to the terrain
-	-- rather than a roof above it. Falls back to the player's position if nothing is found.
-	local spawnCenter < const > = self._navMesh:findClosestPointXZ(Vector4(playerPos.x, playerPos.y - 1000.0, playerPos.z, 1.0), 8.0)
-	local best, bestInFront = nil, false
+	-- the real ground beneath it, standing on a surface flat enough to stand on, and
+	-- hidden from the player behind something with some substance to it.
+	--
+	-- The ring is centred AHEAD_BIAS metres up the player's forward rather than on the
+	-- player, which is what actually moves the horde in front of them: the sampler then
+	-- draws mostly from the ground they are walking into, and only reaches back past
+	-- them at the near edge. Centred on the ground *beneath* that point, not at eye
+	-- level -- when the player is up the tower, seeding off a rooftop polygon would
+	-- scatter the horde across the roof. Falls back to the player's own ground, and
+	-- then to the player, so a forward that points off the mesh (a cliff edge, the
+	-- map border) costs nothing.
+	local aheadX < const > = playerPos.x + forward.x * AHEAD_BIAS
+	local aheadZ < const > = playerPos.z + forward.z * AHEAD_BIAS
+	local spawnCenter < const > =
+		groundNavPoint(self._navMesh, aheadX, playerPos.y, aheadZ) or
+		groundNavPoint(self._navMesh, playerPos.x, playerPos.y, playerPos.z) or
+		playerPos
+
+	-- Every candidate that survives the filters is scored on how far round from
+	-- forward it sits, and the best one wins -- rather than the old "take the first
+	-- hidden one", which threw away the whole point of sampling more than one. A
+	-- behind-the-player point can still win, but only when nothing ahead qualified,
+	-- so the horde keeps coming even in a corner where there is no cover in front.
+	local best, bestScore = nil, -math.huge
 	for _ = 1, CANDIDATES do
 		local p = self._navMesh:findRandomPoint(spawnCenter, SPAWN_MAX)   -- (0,0,0,0) on failure
 		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
 			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
-			if dx * dx + dz * dz >= spawnMin * spawnMin then
+			local flat2 < const > = dx * dx + dz * dz
+			if flat2 >= spawnMin * spawnMin and flat2 <= SPAWN_MAX * SPAWN_MAX then
 				-- Settle onto the actual surface, and take the ground's own verdict on
 				-- whether this is a place to stand: a near-vertical hit means the nav
 				-- point landed on a cliff face or the side of a boulder, where a zombie
@@ -201,21 +340,14 @@ function Spawner:update(context, totalTime, deltaTime)
 				-- is what makes a lit ward mean something rather than just look warm.
 				local g, gn = traceGround(pm, p)
 				if g ~= nil and gn.y >= GROUND_MIN_NORMAL_Y and not inLitWard(wards, g) then
-					local eye < const > = playerPos.xyz1 + Vector4(0.0, 1.6, 0.0)
-					local r < const > = g + Vector4(0.0, 1.6, 0.0) - eye
-					local rl < const > = r.length
-					if rl > 0.5 then
-						local hit < const > = pm:queryRay(eye, r / rl, rl - 0.5, physics.QueryFilter(), true)
-						if hit ~= nil then
-							-- Occluded => hidden. Keep the first hidden point; upgrade to
-							-- an in-front one as soon as we find it.
-							local inFront = (r.x * forward.x + r.z * forward.z) > 0.0
-							if best == nil or (inFront and not bestInFront) then
-								best, bestInFront = g, inFront
-								if inFront then
-									break
-								end
-							end
+					-- Hidden, and hidden by something out there rather than by whatever
+					-- the player happens to be standing in: cover a hand's breadth from
+					-- the eye would otherwise make every direction qualify at once.
+					local hidden < const >, coverDist < const > = sightLine(pm, eye, g)
+					if hidden and coverDist >= COVER_MIN then
+						local score < const > = (dx * forward.x + dz * forward.z) / math.sqrt(flat2)
+						if score > bestScore then
+							best, bestScore = g, score
 						end
 					end
 				end
@@ -241,6 +373,24 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 	local yaw < const > = (math.atan2 or math.atan)(playerPos.x - best.x, playerPos.z - best.z)
 	enemy.transform = traktor.Transform(traktor.Vector4(best.x, best.y, best.z, 1.0), traktor.Quaternion.fromEulerAngles(yaw, 0.0, 0.0))
+
+	-- Send it after the player rather than leaving it to notice them.
+	--
+	-- Placing it in cover is only half the job: cover hides the player from *it* too,
+	-- so on its own it would fail perception, stay on patrol, and shuffle about within
+	-- two metres of where it rose until the player had walked past and the sight line
+	-- opened from behind. EnemyController:alertTo puts it straight into its chase state
+	-- so it walks out of that cover towards them instead. Spawning in front of the
+	-- player is worth nothing without this.
+	--
+	-- MUST come after the transform assignment above: ScriptComponent builds its Lua
+	-- object lazily in validate(), which runs on the first setTransform or update, so
+	-- calling this on a freshly created entity would find nothing to call.
+	local sc < const > = enemy:getComponent(traktor.world.ScriptComponent)
+	if sc ~= nil then
+		sc:alertTo()
+	end
+
 	table.insert(self._spawned, enemy)
 end
 ]]></text>

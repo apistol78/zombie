@@ -35,6 +35,24 @@
 						<useRotation>true</useRotation>
 					</second>
 				</item>
+				<item>
+					<first>groan</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-000000000001}</sound>
+						<positional>true</positional>
+						<follow>true</follow>
+						<autoStopFar>true</autoStopFar>
+					</second>
+				</item>
+				<item>
+					<first>hit</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-000000000003}</sound>
+						<positional>true</positional>
+						<follow>false</follow>
+						<autoStopFar>true</autoStopFar>
+					</second>
+				</item>
 			</eventData>
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">

@@ -17,8 +17,36 @@ AmmoPickup = AmmoPickup or class("AmmoPickup", Pickup)
 
 local AMMO_PER_PICKUP < const > = 12   -- rounds in one crate
 
+-- How long a looted crate takes to be worth walking back to.
+--
+-- The night is long enough that a fixed 144 rounds across twelve crates would run the
+-- map dry well before the last relic, and starving the rifle does not make the night
+-- tense -- it makes it unplayable, since nothing else kills a zombie. Coming back turns
+-- the map into a renewable supply that has to be *travelled* to instead: the crates are
+-- where they were, so running dry means committing to a route you already know, through
+-- a forest that has got worse since you last walked it.
+--
+-- Camping a crate is prevented by where the refill happens rather than by when: the
+-- Stage holds a pickup back until the player is RESPAWN_CLEARANCE (12 m) away from the
+-- spot, so this can be short without a crate becoming a chair to sit on.
+
+-- This pickup's own entity data: what Main builds when the crate comes back (see
+-- Pickup:entityData). The escaped form is what makes it a tracked dependency as well
+-- as a guid, exactly as Scripts/Spawner references the zombie.
+local ENTITY < const > = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
+
+local RESPAWN_DELAY < const > = 45.0
+
 function AmmoPickup:canTake(context)
 	return context._reserve < context._reserveMax
+end
+
+function AmmoPickup:respawnDelay()
+	return RESPAWN_DELAY
+end
+
+function AmmoPickup:entityData()
+	return ENTITY
 end
 
 function AmmoPickup:take(context)

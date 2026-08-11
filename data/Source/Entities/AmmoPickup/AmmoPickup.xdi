@@ -36,5 +36,48 @@
 			<properties/>
 			<editorSupport>false</editorSupport>
 		</item>
+		<item type="traktor.animation.PathComponentData" version="1">
+			<path>
+				<keys>
+					<item>
+						<T>0</T>
+						<tcb>0, 0, 0, 0</tcb>
+						<position>0, 0, 0, 1</position>
+						<orientation>0, 0, 0, 0</orientation>
+						<values>
+							<item>0</item>
+							<item>0</item>
+							<item>0</item>
+							<item>0</item>
+						</values>
+					</item>
+					<item>
+						<T>0.5</T>
+						<tcb>0, 0, 0, 0</tcb>
+						<position>0, 0.2, 0, 1</position>
+						<orientation>3.14, 0, 0, 0</orientation>
+						<values>
+							<item>0</item>
+							<item>0</item>
+							<item>0</item>
+							<item>0</item>
+						</values>
+					</item>
+					<item>
+						<T>1</T>
+						<tcb>0, 0, 0, 0</tcb>
+						<position>0, 0, 0, 1</position>
+						<orientation>6.24, 0, 0, 0</orientation>
+						<values>
+							<item>0</item>
+							<item>0</item>
+							<item>0</item>
+							<item>0</item>
+						</values>
+					</item>
+				</keys>
+			</path>
+			<timeMode>PingPong</timeMode>
+		</item>
 	</components>
 </object>

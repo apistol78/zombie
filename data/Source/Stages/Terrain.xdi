@@ -16,6 +16,13 @@
 			<clearBackground>false</clearBackground>
 			<enableSound>true</enableSound>
 		</item>
+		<item type="traktor.runtime.AudioLayerData">
+			<name>ambience</name>
+			<permitTransition>true</permitTransition>
+			<sound>{50D1B000-0000-4000-8000-000000000007}</sound>
+			<autoPlay>true</autoPlay>
+			<repeat>true</repeat>
+		</item>
 	</layers>
 	<class>{8227E4BB-9B52-E647-BEF1-6E3F32ED4810}</class>
 	<shaderFade>{00000000-0000-0000-0000-000000000000}</shaderFade>

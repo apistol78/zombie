@@ -16,8 +16,31 @@ HealthPickup = HealthPickup or class("HealthPickup", Pickup)
 
 local HEAL_AMOUNT < const > = 35.0   -- health restored per pickup (capped at max)
 
+-- How long a drained flask takes to fill again -- four times as long as an ammo crate.
+--
+-- Health is the stronger of the two: rounds only let you keep killing, while health is
+-- what lets you take a bad decision and survive it. A night where every flask is back
+-- inside a minute is a night with no lasting consequences in it, so these come back
+-- slowly, and the thirty-four of them are spread across the whole map rather than
+-- clustered like the crates.
+
+-- This pickup's own entity data: what Main builds when the flask comes back (see
+-- Pickup:entityData). The escaped form is what makes it a tracked dependency as well
+-- as a guid, exactly as Scripts/Spawner references the zombie.
+local ENTITY < const > = Guid("\{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}")
+
+local RESPAWN_DELAY < const > = 180.0
+
 function HealthPickup:canTake(context)
 	return context._health < context._maxHealth
+end
+
+function HealthPickup:respawnDelay()
+	return RESPAWN_DELAY
+end
+
+function HealthPickup:entityData()
+	return ENTITY
 end
 
 function HealthPickup:take(context)

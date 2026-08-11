@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.sound.BankAsset" version="3">
+	<category>{00000000-0000-0000-0000-000000000000}</category>
+	<presence>0</presence>
+	<presenceRate>0.25</presenceRate>
+	<grains>
+		<item type="traktor.sound.RandomGrainData">
+			<grains>
+				<item type="traktor.sound.PlayGrainData" version="2">
+					<sound>{50D1D000-0000-4000-8000-000000000006}</sound>
+					<filters/>
+					<gain>
+						<min>-2.5</min>
+						<max>1.5</max>
+					</gain>
+					<pitch>
+						<min>0.9</min>
+						<max>1.12</max>
+					</pitch>
+					<repeat>false</repeat>
+				</item>
+				<item type="traktor.sound.PlayGrainData" version="2">
+					<sound>{50D1D000-0000-4000-8000-000000000007}</sound>
+					<filters/>
+					<gain>
+						<min>-2.5</min>
+						<max>1.5</max>
+					</gain>
+					<pitch>
+						<min>0.9</min>
+						<max>1.12</max>
+					</pitch>
+					<repeat>false</repeat>
+				</item>
+				<item type="traktor.sound.PlayGrainData" version="2">
+					<sound>{50D1D000-0000-4000-8000-000000000008}</sound>
+					<filters/>
+					<gain>
+						<min>-2.5</min>
+						<max>1.5</max>
+					</gain>
+					<pitch>
+						<min>0.9</min>
+						<max>1.12</max>
+					</pitch>
+					<repeat>false</repeat>
+				</item>
+			</grains>
+			<humanize>true</humanize>
+		</item>
+	</grains>
+</object>

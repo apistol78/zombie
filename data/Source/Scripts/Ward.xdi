@@ -7,9 +7,9 @@ import(traktor)
 --
 -- A consecration ward: a stone pillar with a flame at its top. The pillar is
 -- always there; the flame -- a point LightComponent on a "Flame" child entity
--- held 1.9 m up the pillar by this entity's GroupComponent -- stays dark until a
--- relic is delivered and Main lights the nearest ward by calling turnOn() on this
--- component. Once lit it eases up to full with a flare and holds.
+-- held 1.9 m up the pillar by this entity's GroupComponent -- stays dark until the
+-- player carries a relic to this post and sets it down, at which point Main calls
+-- turnOn() on this component. Once lit it eases up to full with a flare and holds.
 --
 -- The Stage owns *which* ward lights and the no-spawn ground each one buys (see
 -- Main:_publishWards); this component owns only the look of the flame. The light's

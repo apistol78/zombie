@@ -7,8 +7,8 @@ import(traktor)
 --
 -- Base ScriptComponent for anything the player walks over to collect. The base
 -- owns the one behaviour every pickup shares -- notice the player is standing on
--- it, and once it is actually taken pop its sparkle and remove it from the world
--- -- and defers the two decisions that differ per kind to the subclass:
+-- it, and once it is actually taken pop its sparkle, take it out of the world and
+-- book its return -- and defers the decisions that differ per kind to the subclass:
 --
 --   * Pickup:canTake(context) -> bool   whether it may be taken right now
 --                                       (default true; override to gate on a
@@ -17,6 +17,8 @@ import(traktor)
 --                                       is finally worth something)
 --   * Pickup:take(context)              apply the effect; called only once, and
 --                                       only when canTake returned true
+--   * Pickup:respawnDelay() -> seconds  how long until it comes back; 0 for a
+--                                       pickup that is gone for good
 --
 -- context is the Stage -- the Main instance -- exactly as in every other
 -- update() here, so a subclass reads and writes the player's health or ammo
@@ -37,6 +39,24 @@ function Pickup:canTake(context)
 end
 
 function Pickup:take(context)
+end
+
+-- Seconds before a collected pickup is put back where it stood. Zero -- the default
+-- -- means it is not: a pickup only returns if its kind says so, which keeps the
+-- one-shot ones one-shot without them having to say anything.
+function Pickup:respawnDelay()
+	return 0.0
+end
+
+-- Which entity data a returning pickup is rebuilt from. Its own, in other words -- the
+-- guid the scene instances it by. nil (the default) is the other way of saying that this
+-- kind does not come back.
+--
+-- A collected pickup is destroyed rather than kept aside and re-added, so its return is
+-- built from scratch like anything else this game spawns; see Main:_respawnLater for the
+-- lifetime trap that makes this the safer of the two.
+function Pickup:entityData()
+	return nil
 end
 
 function Pickup:update(context, totalTime, deltaTime)
@@ -80,7 +100,22 @@ function Pickup:update(context, totalTime, deltaTime)
 	if fx ~= nil then
 		fx:raise("sparkle")
 	end
+	-- Book the return *before* going, since it needs this one's transform: the Stage is the
+	-- only thing that can put a pickup back, because an entity outside the world is not
+	-- updated and so cannot time its own way back, and nothing can hide one in place
+	-- instead (Entity::setState is not scripted, so leaving the world is the only way to
+	-- disappear). See Main:_respawnLater, which also gates the return on the player not
+	-- standing over the spot.
+	context:_respawnLater(self:entityData(), self.owner.transform, self:respawnDelay())
+
+	-- Then go, and go properly. removeEntity while the world is updating is deferred, so
+	-- taking itself out mid-update is safe -- and it clears the entity's world pointer
+	-- immediately, which is what lets destroy() run here (Entity::destroy refuses to run on
+	-- an entity still in a world). Same pair the Spawner uses to despawn a zombie: without
+	-- the destroy the components are never torn down, and with a queue holding the entity
+	-- instead there was nothing to guarantee it was ever torn down at all.
 	self.world:removeEntity(self.owner)
+	self.owner:destroy()
 end
 ]]></text>
 </object>

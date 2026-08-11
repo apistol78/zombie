@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Hive
+--
+-- A zombie hive: a pen walled off behind a boulder, dormant until the night turns
+-- against the player. Lighting a ward wakes the nearest still-dormant one
+-- (Main:_wakeHive), which is what consecrating ground costs -- the relic buys an
+-- island of safe forest, and the hive it wakes fills the rest of the map back up.
+--
+-- Waking is two things at once:
+--
+--   * The theater act named ACT plays, sinking the boulder that plugs the mouth. The
+--     act rides this entity's own TheaterEntityComponent and moves children of its
+--     group relative to the hive's transform, so every hive instanced from
+--     Entities/Hive plays its own opening wherever in the scene it stands.
+--   * BROOD zombies rise inside the pen -- the "Spawn" child entity's VolumeComponent --
+--     each one already hunting the player (EnemyController:hunt) so it walks out of the
+--     pen rather than loitering in it, and never gives up and drops back to patrol on
+--     the way.
+--
+-- *When* they rise is the act's business, not this script's. The act carries a
+-- world.ScriptEventData keyed at the moment the boulder has lifted far enough to let
+-- something out, and that event calls _spawnZombies here -- so the opening and the brood
+-- are timed together in the editor, against the animation, rather than against a
+-- constant in code that has to be kept in step with it by hand. One such event sends up
+-- one brood; an author who wants them to come in waves adds more keys.
+--
+-- They are the same Entities/Zombie the Spawner places, so everything that already
+-- deals with a zombie deals with these: the player shoots them, Main rag dolls them
+-- and clears their corpses, and they steer out of lit wards. They are deliberately
+-- NOT part of the Spawner's managed population, so they neither count against its
+-- headcount ceiling nor are despawned once the player walks away -- a hive's brood is
+-- a lasting consequence of a choice the player made, not ambient pressure. The extra
+-- population is bounded: BROOD zombies, once, per hive.
+--
+-- Attach to an entity carrying a GroupComponent that holds a child named "Spawn" with
+-- a VolumeComponent (plus whatever the act animates), and a TheaterEntityComponent
+-- with an act named ACT.
+
+Hive = Hive or class("Hive", traktor.world.ScriptComponent)
+
+local ZOMBIE < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
+
+-- Two-argument atan; math.atan2 was folded into math.atan.
+local atan2 < const > = math.atan2 or math.atan
+
+local ACT < const > = "Unwield"        -- the act that sinks the boulder plugging the mouth
+local BROOD < const > = 5              -- zombies one waking sends out
+
+-- The brood comes up together, on the act's cue, so they are spread across the pen
+-- rather than in time: five bodies standing up in one spot would spend their whole
+-- stand-up animation shoving each other apart. RISE_GAP is the room each one is given,
+-- and PLACE_TRIES how many spots are tried to find it before settling for the first.
+local RISE_GAP < const > = 1.2         -- keep them at least this far apart in the pen (m)
+local PLACE_TRIES < const > = 8        -- candidate spots tried to find that much room
+
+-- Held in from the volume's sides, so one does not rise with half of it inside the pen
+-- wall the author drew the volume up against. A zombie's capsule is 0.6 m across.
+local WALL_MARGIN < const > = 0.4
+
+-- Ground trace. Deliberately no further than the volume the author drew plus a
+-- margin: a longer reach would find the hillside outside the pen and drop a zombie
+-- down it.
+local GROUND_REACH < const > = 1.0     -- how far past the volume's floor to keep looking (m)
+
+-- Static world only (terrain, the pen walls, props). The brood is placed one after
+-- another, and without this mask the zombie already standing there counts as floor -- so the
+-- next one would spawn on its head.
+local COLLISION_DEFAULT < const > = 0x00000001
+
+function Hive:new()
+	self._active = false
+	self._risen = {}     -- the brood as it is placed; only for spacing, dropped after
+end
+
+-- Wake the hive: play the act. That is the whole of it -- the act sinks the boulder and,
+-- at the moment it chooses, calls _spawnZombies to send the brood up. Called by Main a
+-- beat after a ward takes light (Main:_openHive), through the entity's ScriptComponent.
+--
+-- Idempotent, exactly like Ward:turnOn -- waking an open hive does nothing, so Main
+-- can re-assert what it woke after a hot reload without replaying the act or sending
+-- out a second brood. Pass instant=true for that restore path: it only re-marks the
+-- hive, since the boulder is C++ state that survived the reload sitting exactly where
+-- the act left it.
+--
+-- Returns true when this call is what woke it.
+function Hive:activate(instant)
+	if self._active then
+		return false
+	end
+	self._active = true
+	if instant then
+		return true
+	end
+
+	local performance < const > = self.owner:getComponent(traktor.theater.TheaterEntityComponent)
+	if performance ~= nil and performance:play(ACT) then
+		return true
+	end
+
+	-- No theater component, or no act by that name -- Performance:play has already
+	-- logged which. The brood is the hive's whole purpose, and it is now the act that
+	-- carries the cue to send it, so without one there is nothing left to call
+	-- _spawnZombies: do it here instead. A hive whose animation is broken still fights,
+	-- it just does it without ceremony.
+	self:_spawnZombies()
+	return true
+end
+
+function Hive:isActive()
+	return self._active == true
+end
+
+-- Is the hive in the middle of opening? Which is now exactly "is the act still running",
+-- since the act owns both the boulder and the cue that sends the brood up.
+--
+-- This is what the Stage holds its cutscene on (Main:_updateCutscene), so the shot lasts
+-- as long as the act does: re-timing the act in the editor re-times the cutscene with it,
+-- and neither has a duration written down anywhere else. False for a dormant hive, and
+-- false again the moment the act ends.
+function Hive:isOpening()
+	local performance < const > = self.owner:getComponent(traktor.theater.TheaterEntityComponent)
+	return performance ~= nil and performance.playing
+end
+
+-- Find (once) the pen the brood rises in: the "Spawn" child entity and its
+-- VolumeComponent. Resolved lazily rather than in :new() for the same reason
+-- Ward:_resolveLight is -- the group's children are not there to be found until the
+-- entity has been built and grouped.
+--
+-- Both are kept. The component's bounding box is in its owner's local space, and the
+-- owner's transform is what puts it out in the world: GroupComponentData flattens the
+-- hive's placement into its children when the scene is built, so the child's own
+-- transform is already the world one.
+function Hive:_resolveVolume()
+	if self._volume == nil then
+		local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+		if group == nil then
+			return nil, nil
+		end
+		local spawn < const > = group:getEntity("Spawn", 0)
+		if spawn == nil then
+			return nil, nil
+		end
+		local volume < const > = spawn:getComponent(traktor.world.VolumeComponent)
+		if volume == nil then
+			return nil, nil
+		end
+		self._spawn = spawn
+		self._volume = volume
+	end
+	return self._volume, self._spawn
+end
+
+-- Is there room for one more at (x, z)? Only measured against this hive's own brood,
+-- which is the whole of the crowding problem: they come up in the same instant and then
+-- stand still for the length of their stand-up animation, with nothing but this keeping
+-- them from doing it inside one another. Entries whose entity has left the world are
+-- skipped rather than trusted.
+function Hive:_clear(x, z)
+	for _, e in ipairs(self._risen) do
+		if e.world ~= nil then
+			local p < const > = e.transform.translation
+			local dx < const > = p.x - x
+			local dz < const > = p.z - z
+			if dx * dx + dz * dz < RISE_GAP * RISE_GAP then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+-- Send one zombie up out of the pen. Returns true when one actually rose.
+function Hive:_rise(context)
+	local volume < const >, spawn < const > = self:_resolveVolume()
+	if volume == nil then
+		return false
+	end
+	local pm < const > = context.environment.physics.physicsManager
+	if pm == nil then
+		return false
+	end
+
+	local bb < const > = volume.boundingBox   -- local to the spawn entity...
+	local tf < const > = spawn.transform      -- ...which this puts in the world
+	local mn < const > = bb.min
+	local mx < const > = bb.max
+	local c < const > = bb.center
+
+	-- The footprint the brood may rise on: the volume's, held in by WALL_MARGIN and
+	-- collapsing to its centre line rather than inverting if the volume is narrower
+	-- than twice that.
+	local hx < const > = math.max(0.0, (mx.x - mn.x) * 0.5 - WALL_MARGIN)
+	local hz < const > = math.max(0.0, (mx.z - mn.z) * 0.5 - WALL_MARGIN)
+
+	-- A random spot across that footprint, settled onto whatever is actually
+	-- underneath it. Traced from the volume's ceiling down through it, so the zombie
+	-- stands on the ground the author drew the volume over instead of at whatever
+	-- height the volume happens to be centred at. Nothing hit means the pen has no
+	-- floor under that spot, and the volume's own floor is a better answer than
+	-- refusing to spawn: the character controller pulls it down within a frame or two.
+	local at = nil
+	for _ = 1, PLACE_TRIES do
+		local lx < const > = c.x + (math.random() * 2.0 - 1.0) * hx
+		local lz < const > = c.z + (math.random() * 2.0 - 1.0) * hz
+		local top < const > = tf * Vector4(lx, mx.y, lz, 1.0)
+		local floor < const > = tf * Vector4(lx, mn.y, lz, 1.0)
+		local hit < const > = pm:queryRay(
+			top,
+			Vector4(0.0, -1.0, 0.0, 0.0),
+			(top.y - floor.y) + GROUND_REACH,
+			traktor.physics.QueryFilter(COLLISION_DEFAULT),
+			true
+		)
+		local p < const > = (hit ~= nil) and hit.position or floor
+		-- Keep the first candidate whatever it is, so a pen too crowded to find a gap in
+		-- still produces a zombie rather than one short of a brood.
+		at = at or p
+		if self:_clear(p.x, p.z) then
+			at = p
+			break
+		end
+	end
+
+	-- Facing out of the mouth: the pen is behind the hive's origin and the mouth in
+	-- front of it, so the way out is the hive's own forward. Yaw only, exactly as
+	-- Scripts/Spawner does it -- the character controller rebuilds the rotation from
+	-- headAngle on its first update, so any pitch put in here is lost anyway.
+	local forward < const > = self.owner.transform.rotation * Vector4(0.0, 0.0, 1.0, 0.0)
+	local yaw < const > = atan2(forward.x, forward.z)
+
+	-- createEntity builds it from the entity data AND adds it to the world (via the
+	-- entity builder), so there is no addEntity to follow -- see Scripts/Spawner.
+	local zombie = context.world:createEntity(ZOMBIE)
+	if zombie == nil then
+		return false
+	end
+	zombie.transform = Transform(
+		Vector4(at.x, at.y, at.z, 1.0),
+		Quaternion.fromEulerAngles(yaw, 0.0, 0.0)
+	)
+
+	-- Straight into the hunt, and never out of it (EnemyController:hunt). It rises
+	-- attacking rather than being left to notice the player: the pen walls block its
+	-- line of sight, so left to itself it would fail perception, patrol inside the pen
+	-- it just rose in, and the hive would open with nothing coming out of it. And
+	-- unlike a zombie the spawner drops behind cover a few metres from the player, this
+	-- one may have the whole map to cross -- so it is given no memory window to run out
+	-- of on the way, rather than a generous one.
+	--
+	-- MUST come after the transform assignment above: ScriptComponent builds its Lua
+	-- object lazily in validate(), which runs on the first setTransform or update, so
+	-- calling this on a freshly created entity would find nothing to call.
+	local sc < const > = zombie:getComponent(traktor.world.ScriptComponent)
+	if sc ~= nil then
+		sc:hunt()
+	end
+
+	table.insert(self._risen, zombie)
+	return true
+end
+
+-- Send the brood up. Called from the act (see the header): a world.ScriptEventData keyed
+-- at the moment the boulder has lifted far enough to let something out, raised with this
+-- entity as the sender -- which is why the call lands here and not on the child entity
+-- whose track carries it.
+--
+-- It arrives with no arguments at all: ScriptComponent::execute invokes the method bare,
+-- so the Stage -- the only route to the world layer that builds entities and to the
+-- physics manager the ground trace needs -- has to be the one caught in :update.
+--
+-- All BROOD of them in the one frame. That is a spike (each zombie is an animation graph
+-- and thirteen physics bodies) but a well-hidden one: the act only ever plays inside the
+-- cutscene, where the game is frozen and the player is watching a boulder move.
+function Hive:_spawnZombies()
+	local context < const > = self._stage
+	if context == nil then
+		return
+	end
+
+	-- Freeze together with the rest of the game (the Stage owns these flags), so a hive
+	-- whose act reaches this cue on the frame the player died does not send its brood up
+	-- behind the Game Over menu, and _nightOver -- the win -- stops it for good.
+	--
+	-- Deliberately not _cutscene: that one *is* the hive opening, and the whole point of
+	-- the shot is what comes out of it.
+	if context._gameOver or context._paused or context._nightOver then
+		return
+	end
+
+	for _ = 1, BROOD do
+		self:_rise(context)
+	end
+
+	-- Let go of the brood. The list is only there to space them out as they are placed,
+	-- and holding entity references past that pins every one of them -- and, once the
+	-- player kills one, its thirteen physics bodies -- in memory for the rest of the night.
+	self._risen = {}
+end
+
+-- The hive needs nothing per frame any more: waking plays an act, and the act calls
+-- _spawnZombies when it is ready. What this is still for is catching the Stage, since the
+-- cue arrives without one (see _spawnZombies) -- and catching it every frame rather than
+-- once means it is never a stale handle from a previous stage.
+function Hive:update(context, totalTime, deltaTime)
+	self._stage = context
+end
+]]></text>
+</object>

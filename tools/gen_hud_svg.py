@@ -37,7 +37,11 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 # ---------------------------------------------------------------- geometry --
 
-W, H = 460, 56                  # document, and the health bar's widget box
+DOC_W, DOC_H = 460, 216         # document; big enough for the widest (health bar)
+                                # and the tallest (minimap) export, since every
+                                # one of them is authored at the origin
+
+W, H = 460, 56                  # health bar widget box
 
 BADGE_X, BADGE_Y = 28, 28       # heart badge centre
 BADGE_R = 24
@@ -66,6 +70,21 @@ OM_W = TC_W                     # objective marker: third tile on the same plate
 DIAL_X, DIAL_Y = 28, 28         # compass dial centre, and the needle's pivot
 DIAL_R = 17
 NEEDLE_R = 13                   # needle tip, measured from the pivot
+
+CH_W = 40                       # crosshair box, authored centred on CH_C
+CH_C = 20
+CH_ARM = 10                     # length of one tick
+CH_TH = 4                       # its thickness, outline included
+CH_GAP = 4                      # clear space between the centre and a tick
+
+MM_W = 200                      # minimap box, square
+MM_BEZEL = 5                    # frame thickness around the map face
+MM_CUT = 8                      # plate chamfer, as on the HUD tiles
+
+BLIP_C = 40                     # every map marker is authored centred here, so
+                                # the widget places one with a single offset
+WARD_AREA_R = 36                # authored radius of the ward disc; scaled at
+                                # runtime to whatever Main's _wardRadius is
 
 # ------------------------------------------------------------------ palette --
 
@@ -101,6 +120,21 @@ DIAL_TICK = "#8b8f9c"
 NEEDLE = "#ffb347"              # needle, in the relic's amber
 NEEDLE_HI = "#ffe0a8"
 NEEDLE_RIM = "#3a2405"
+
+CH_DARK = "#050508"             # crosshair outline, so the reticle survives a
+CH_LIGHT = "#eef1f7"            # pale background as well as the dark forest
+
+MAP_FACE = "#0b0e12"            # minimap ground inside the bezel
+MAP_GRID = "#1b222c"
+MAP_TICK = "#8b8f9c"
+MAP_RELIC = NEEDLE              # deliberately the compass needle's amber: the
+                                # two read as pointing at the same thing
+MAP_WARD_DARK = "#6a7480"
+MAP_WARD_LIT = "#ffd08a"
+MAP_WARD_CORE = "#fff4dd"
+MAP_WARD_AREA = "#ffc061"
+MAP_LANDMARK = "#9fb0c4"
+MAP_PLAYER = "#eef1f7"
 
 # The fill is drawn greyscale and tinted per frame by the widget's colour
 # transform, so these are shades, not colours.
@@ -461,6 +495,144 @@ def objective_marker():
     return layers
 
 
+# -------------------------------------------------------------- crosshair ---
+
+def _tick(x, y, w, h):
+    """One crosshair tick: a dark bar with a light core inset a pixel."""
+    return [rect(x, y, w, h, CH_DARK), rect(x + 1, y + 1, w - 2, h - 2, CH_LIGHT)]
+
+
+def crosshair():
+    """Four ticks around a centre dot, authored centred in a CH_W box. Each tick
+    is its own child sprite so Crosshair can spring it outward on a shot and let
+    it ease back; the dot never moves."""
+    a = CH_C - CH_GAP - CH_ARM      # outer end of the up and left ticks
+    b = CH_C + CH_GAP               # inner end of the down and right ticks
+    t = CH_C - CH_TH / 2            # cross axis, shared by all four
+
+    return [
+        sprite("up", _tick(t, a, CH_TH, CH_ARM)),
+        sprite("down", _tick(t, b, CH_TH, CH_ARM)),
+        sprite("left", _tick(a, t, CH_ARM, CH_TH)),
+        sprite("right", _tick(b, t, CH_ARM, CH_TH)),
+        sprite("dot", [
+            circle(CH_C, CH_C, 2.8, CH_DARK),
+            circle(CH_C, CH_C, 1.8, CH_LIGHT),
+        ]),
+    ]
+
+
+# ---------------------------------------------------------------- minimap ---
+
+def minimap():
+    """The map plate: a chamfered frame around a dark ground with a quarter grid
+    and edge ticks. Nothing in here moves. Everything that does -- relics, wards,
+    landmarks, the player -- is one of the MC_Map* exports below, which the widget
+    instantiates as many of as the scene needs and positions itself."""
+    inner = MM_BEZEL + 1
+    fw = MM_W - inner * 2
+    c = MM_W / 2.0
+
+    layers = []
+
+    layers.append(sprite("shadow", [
+        poly(cut_rect(2, 3, MM_W - 4, MM_W - 4, MM_CUT), BLACK, 0.45),
+    ]))
+
+    layers.append(sprite("plate", [
+        poly(cut_rect(0, 0, MM_W, MM_W, MM_CUT), EDGE),
+        poly(cut_rect(1, 1, MM_W - 2, MM_W - 2, MM_CUT - 1), BEVEL),
+        poly(cut_rect(3, 3, MM_W - 6, MM_W - 6, MM_CUT - 2), FACE),
+    ]))
+
+    # Left a little translucent so the forest reads through it and the map does
+    # not sit on the view like a solid tile.
+    layers.append(sprite("face", [
+        rect(inner, inner, fw, fw, MAP_FACE, 0.92),
+    ]))
+
+    # Quarters, so a distance across the map can be judged without labelling
+    # anything: one cell is a quarter of the extent Main fits to the scene.
+    grid = []
+    for k in range(1, 4):
+        o = inner + fw * k / 4.0
+        grid.append(rect(inner, o, fw, 1, MAP_GRID))
+        grid.append(rect(o, inner, 1, fw, MAP_GRID))
+    layers.append(sprite("grid", grid))
+
+    # North is up. Prominent at the top, faint on the other three edges, exactly
+    # as the compass dial marks dead ahead.
+    layers.append(sprite("ticks", [
+        poly([(c - 4, inner + 1), (c + 4, inner + 1), (c, inner + 8)], MAP_TICK),
+        rect(MM_W - inner - 7, c - 1, 6, 2, MAP_TICK, 0.5),
+        rect(inner + 1, c - 1, 6, 2, MAP_TICK, 0.5),
+        rect(c - 1, MM_W - inner - 7, 2, 6, MAP_TICK, 0.5),
+    ]))
+
+    return layers
+
+
+def map_ward_area():
+    """The consecrated ground a lit ward buys. Drawn under every other marker and
+    kept faint, so two overlapping wards visibly stack -- which is the whole read
+    the player needs when deciding where the next relic should go."""
+    return [sprite("disc", [
+        circle(BLIP_C, BLIP_C, WARD_AREA_R, MAP_WARD_AREA, 0.14),
+    ])]
+
+
+def map_ward():
+    """Ward post: a ring, hollow while the post is dark and filled once it burns.
+    Both states are authored and the widget shows one of them, which keeps colour
+    transforms out of it."""
+    r = 6
+    return [
+        sprite("dark", [
+            circle(BLIP_C, BLIP_C, r, EDGE),
+            circle(BLIP_C, BLIP_C, r - 1, MAP_WARD_DARK),
+            circle(BLIP_C, BLIP_C, r - 3, MAP_FACE),
+        ]),
+        sprite("lit", [
+            circle(BLIP_C, BLIP_C, r + 1, EDGE),
+            circle(BLIP_C, BLIP_C, r, MAP_WARD_LIT),
+            circle(BLIP_C, BLIP_C, r - 3, MAP_WARD_CORE),
+        ]),
+    ]
+
+
+def map_relic():
+    """Relic: a small upright cross, echoing the mesh the player is carrying, on a
+    dark outline so it holds up over a lit ward's disc."""
+    a, b = 2.0, 7.0
+    return [sprite("mark", [
+        rect(BLIP_C - b - 1, BLIP_C - a - 1, b * 2 + 2, a * 2 + 2, EDGE),
+        rect(BLIP_C - a - 1, BLIP_C - b - 1, a * 2 + 2, b * 2 + 2, EDGE),
+        rect(BLIP_C - b, BLIP_C - a, b * 2, a * 2, MAP_RELIC),
+        rect(BLIP_C - a, BLIP_C - b, a * 2, b * 2, MAP_RELIC),
+    ])]
+
+
+def map_landmark():
+    """Landmark: a hollow square, deliberately plainer and cooler than the two
+    markers that are actually objectives."""
+    r = 5
+    return [sprite("mark", [
+        rect(BLIP_C - r, BLIP_C - r, r * 2, r * 2, EDGE),
+        rect(BLIP_C - r + 1, BLIP_C - r + 1, r * 2 - 2, r * 2 - 2, MAP_LANDMARK),
+        rect(BLIP_C - r + 3, BLIP_C - r + 3, r * 2 - 6, r * 2 - 6, MAP_FACE),
+    ])]
+
+
+def map_player():
+    """Player arrow, pointing up at rest. The widget spins it about BLIP_C by the
+    player's heading -- the map is north up, so the arrow is the one thing on it
+    that says which way they are facing. Same shape as the compass needle."""
+    return [sprite("arrow", [
+        poly(_needle_shape(BLIP_C, BLIP_C, 10, 6, 5), EDGE),
+        poly(_needle_shape(BLIP_C, BLIP_C, 8.5, 4.6, 4), MAP_PLAYER),
+    ])]
+
+
 def main():
     doc = []
     # NOTE: no double hyphen anywhere inside these comments; that is illegal in
@@ -472,7 +644,7 @@ def main():
     doc.append('     sprites inside it. Both are authored at the origin and so')
     doc.append('     overlap; toggle the layers to edit them. -->')
     doc.append('<svg width="%d" height="%d" viewBox="0 0 %d %d" version="1.1"'
-               % (W, H, W, H))
+               % (DOC_W, DOC_H, DOC_W, DOC_H))
     doc.append('   xmlns="http://www.w3.org/2000/svg"')
     doc.append('   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"')
     doc.append('   xmlns:traktor="http://traktor/svg">')
@@ -500,6 +672,21 @@ def main():
     doc.append('     style="display:none">')
     doc.extend(objective_marker())
     doc.append('  </g>')
+
+    for eid, builder in (
+        ("MC_Crosshair", crosshair),
+        ("MC_Minimap", minimap),
+        ("MC_MapWardArea", map_ward_area),
+        ("MC_MapWard", map_ward),
+        ("MC_MapRelic", map_relic),
+        ("MC_MapLandmark", map_landmark),
+        ("MC_MapPlayer", map_player),
+    ):
+        doc.append('  <g id="%s" inkscape:label="%s"' % (eid, eid))
+        doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
+        doc.append('     style="display:none">')
+        doc.extend(builder())
+        doc.append('  </g>')
 
     doc.append('</svg>')
 

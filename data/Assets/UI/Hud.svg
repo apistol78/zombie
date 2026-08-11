@@ -4,7 +4,7 @@
      scripts instantiate it by id and animate the named child
      sprites inside it. Both are authored at the origin and so
      overlap; toggle the layers to edit them. -->
-<svg width="460" height="56" viewBox="0 0 460 56" version="1.1"
+<svg width="460" height="216" viewBox="0 0 460 216" version="1.1"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:traktor="http://traktor/svg">
@@ -185,6 +185,83 @@
     <g id="dot" inkscape:label="dot" traktor:sprite="1">
       <circle cx="20" cy="20" r="2.8" style="fill:#050508"/>
       <circle cx="20" cy="20" r="1.8" style="fill:#eef1f7"/>
+    </g>
+  </g>
+  <g id="MC_Minimap" inkscape:label="MC_Minimap"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="shadow" inkscape:label="shadow" traktor:sprite="1">
+      <polygon points="10,3 190,3 198,11 198,191 190,199 10,199 2,191 2,11" style="fill:#000000;fill-opacity:0.45"/>
+    </g>
+    <g id="plate" inkscape:label="plate" traktor:sprite="1">
+      <polygon points="8,0 192,0 200,8 200,192 192,200 8,200 0,192 0,8" style="fill:#050508"/>
+      <polygon points="8,1 192,1 199,8 199,192 192,199 8,199 1,192 1,8" style="fill:#5c5f6b"/>
+      <polygon points="9,3 191,3 197,9 197,191 191,197 9,197 3,191 3,9" style="fill:#1e1e24"/>
+    </g>
+    <g id="face" inkscape:label="face" traktor:sprite="1">
+      <rect x="6" y="6" width="188" height="188" style="fill:#0b0e12;fill-opacity:0.92"/>
+    </g>
+    <g id="grid" inkscape:label="grid" traktor:sprite="1">
+      <rect x="6" y="53" width="188" height="1" style="fill:#1b222c"/>
+      <rect x="53" y="6" width="1" height="188" style="fill:#1b222c"/>
+      <rect x="6" y="100" width="188" height="1" style="fill:#1b222c"/>
+      <rect x="100" y="6" width="1" height="188" style="fill:#1b222c"/>
+      <rect x="6" y="147" width="188" height="1" style="fill:#1b222c"/>
+      <rect x="147" y="6" width="1" height="188" style="fill:#1b222c"/>
+    </g>
+    <g id="ticks" inkscape:label="ticks" traktor:sprite="1">
+      <polygon points="96,7 104,7 100,14" style="fill:#8b8f9c"/>
+      <rect x="187" y="99" width="6" height="2" style="fill:#8b8f9c;fill-opacity:0.5"/>
+      <rect x="7" y="99" width="6" height="2" style="fill:#8b8f9c;fill-opacity:0.5"/>
+      <rect x="99" y="187" width="2" height="6" style="fill:#8b8f9c;fill-opacity:0.5"/>
+    </g>
+  </g>
+  <g id="MC_MapWardArea" inkscape:label="MC_MapWardArea"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="disc" inkscape:label="disc" traktor:sprite="1">
+      <circle cx="40" cy="40" r="36" style="fill:#ffc061;fill-opacity:0.14"/>
+    </g>
+  </g>
+  <g id="MC_MapWard" inkscape:label="MC_MapWard"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="dark" inkscape:label="dark" traktor:sprite="1">
+      <circle cx="40" cy="40" r="6" style="fill:#050508"/>
+      <circle cx="40" cy="40" r="5" style="fill:#6a7480"/>
+      <circle cx="40" cy="40" r="3" style="fill:#0b0e12"/>
+    </g>
+    <g id="lit" inkscape:label="lit" traktor:sprite="1">
+      <circle cx="40" cy="40" r="7" style="fill:#050508"/>
+      <circle cx="40" cy="40" r="6" style="fill:#ffd08a"/>
+      <circle cx="40" cy="40" r="3" style="fill:#fff4dd"/>
+    </g>
+  </g>
+  <g id="MC_MapRelic" inkscape:label="MC_MapRelic"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="mark" inkscape:label="mark" traktor:sprite="1">
+      <rect x="32" y="37" width="16" height="6" style="fill:#050508"/>
+      <rect x="37" y="32" width="6" height="16" style="fill:#050508"/>
+      <rect x="33" y="38" width="14" height="4" style="fill:#ffb347"/>
+      <rect x="38" y="33" width="4" height="14" style="fill:#ffb347"/>
+    </g>
+  </g>
+  <g id="MC_MapLandmark" inkscape:label="MC_MapLandmark"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="mark" inkscape:label="mark" traktor:sprite="1">
+      <rect x="35" y="35" width="10" height="10" style="fill:#050508"/>
+      <rect x="36" y="36" width="8" height="8" style="fill:#9fb0c4"/>
+      <rect x="38" y="38" width="4" height="4" style="fill:#0b0e12"/>
+    </g>
+  </g>
+  <g id="MC_MapPlayer" inkscape:label="MC_MapPlayer"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="arrow" inkscape:label="arrow" traktor:sprite="1">
+      <polygon points="40,30 46,45 40,41.75 34,45" style="fill:#050508"/>
+      <polygon points="40,31.5 44.6,44 40,41.4 35.4,44" style="fill:#eef1f7"/>
     </g>
   </g>
 </svg>

@@ -6,9 +6,9 @@ import(traktor)
 -- EnemyController: a ScriptComponent state machine that drives the owner entity's
 -- character controller across the scene nav mesh.
 --
---   * PATROL - wander between random nav-mesh points (slow, blue tint).
---   * ATTACK - chase the player (fast, red tint). Entered the moment the player is
---              "spotted": within sight range AND with a clear physics line of sight.
+--   * PATROL - wander between random nav-mesh points (slow).
+--   * ATTACK - chase the player (fast). Entered the moment the player is "spotted":
+--              within sight range AND with a clear physics line of sight.
 --
 -- Losing sight does not drop ATTACK instantly; the enemy keeps chasing for a short
 -- memory window first. That feels natural ("I just saw you go that way") and also
@@ -23,15 +23,12 @@ import(traktor)
 -- animation parameter tracks whether this zombie is close enough to actually drain the
 -- player's health, i.e. it mirrors the Stage's contact-damage test.
 --
--- The current mode is shown by tinting the mesh: a MeshParameterComponent overrides
--- the standard "World_MaterialDiffuseColor" uniform per-instance, so no per-mode
--- material is needed and each enemy is coloured independently.
+-- Which mode a zombie is in can be seen while playing from the editor: when the stage
+-- carries a DebugLayer, every live zombie gets a dot over its head coloured by what it
+-- knows about the player. See the awareness block in update.
 --
--- Line-of-sight needs a PhysicsManager, but ScriptComponents have no environment
--- access, so the player Stage publishes it to the global EnemyShared.pm.
---
--- Attach to an entity that has a AiCharacterComponent, an (animated/skinned) mesh and
--- a MeshParameterComponent. Inherits the native ScriptComponent (self.owner/.world).
+-- Attach to an entity that has a AiCharacterComponent and an (animated/skinned) mesh.
+-- Inherits the native ScriptComponent (self.owner/.world).
 
 EnemyController = EnemyController or class("EnemyController", traktor.world.ScriptComponent)
 
@@ -83,6 +80,19 @@ local VOICE_INTERVAL_MIN < const > = 4.0   -- shortest wait between utterances (
 local VOICE_INTERVAL_MAX < const > = 7.0   -- ...plus up to this much, drawn per zombie
 local VOICE_INTERVAL_CLOSE < const > = 1.2 -- the wait once it is on the player
 
+-- Awareness dot (see the debug block in update). Height is measured from the entity
+-- origin, which sits at the zombie's feet, so this clears the head with a little air.
+--
+-- Size is a screen-space figure, not metres: the primitive renderer divides it by 500 to
+-- get a radius in normalised device coordinates, which works out around six pixels across
+-- at 1080p. Constant with distance, deliberately -- a zombie on the far ridge is exactly
+-- the case worth being able to read, and one that scaled would have vanished.
+local DEBUG_DOT_HEIGHT < const > = 2.1
+local DEBUG_DOT_SIZE < const > = 5.0
+local DEBUG_C_SIGHTED < const > = Color4f(1.0, 0.12, 0.06, 1.0) -- chasing, can see the player now
+local DEBUG_C_MEMORY < const > = Color4f(1.0, 0.62, 0.05, 1.0)  -- chasing on memory, or sent by :hunt
+local DEBUG_C_UNAWARE < const > = Color4f(0.18, 0.34, 0.62, 1.0) -- patrolling, has not noticed anything
+
 function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
@@ -107,6 +117,7 @@ function EnemyController:new()
 	-- State machine.
 	self._state = "patrol"    -- "patrol" | "attack"
 	self._lostTimer = 0.0     -- remaining ATTACK memory after losing sight (s)
+	self._spotted = false     -- last perception sample: clear line of sight to the player
 	self._relentless = false  -- set by :hunt; ATTACK is then never given up
 	self._patrolTarget = nil  -- current wander destination (Vector4)
 	self._sightRange = 20.0   -- furthest the player can be spotted (m)
@@ -304,6 +315,10 @@ function EnemyController:update(context, totalTime, deltaTime)
 			end
 		end
 	
+		-- Latched for the awareness dot below, which is drawn every frame while this is
+		-- only sampled one frame in four.
+		self._spotted = spotted
+
 		-- ---- State transitions ----
 		if spotted then
 			self._lostTimer = self._attackMemory
@@ -320,6 +335,37 @@ function EnemyController:update(context, totalTime, deltaTime)
 				self._repathTimer = 0.0
 			end
 		end
+	end
+
+	-- ---- Debug: does this one have the player? ----
+	--
+	-- A dot over the head of every live zombie: red once it is chasing and can see the
+	-- player right now, amber when it is chasing without a current sighting -- burning
+	-- down _lostTimer, or sent out by :hunt, which never had a sighting to begin with --
+	-- and blue while it is still patrolling and has noticed nothing. So the amber ones are
+	-- the horde converging on where the player was, and turn red as they come round the
+	-- rock and find them.
+	--
+	-- The layer draws with depth testing off, which is most of what makes this worth
+	-- having: the dots read through the terrain, so the whole horde's state is legible at
+	-- once rather than only the part with a clear line to the camera.
+	--
+	-- Placed here rather than at the end of update on purpose -- a zombie still standing
+	-- up through its _spawnDelay returns before then, and one rising out of a hive with a
+	-- :hunt already on it is exactly a thing worth seeing. Nothing above this point draws:
+	-- a corpse, a stage that is over or paused, and a zombie frozen outside a cutscene all
+	-- return earlier, and none of them is thinking about anything.
+	--
+	-- context.debug is the runtime's DebugLayer, cached as a member by the base Stage
+	-- class. It exists only when the stage was started from the editor with the "Debug
+	-- Layer" tweak on -- StageData appends it when Runtime.DebugLayer is set -- so nil is
+	-- the normal shipped case, and simply means no dots.
+	local dbg < const > = context.debug
+	if dbg ~= nil then
+		local colour < const > = (self._state ~= "attack" and DEBUG_C_UNAWARE)
+			or (self._spotted and DEBUG_C_SIGHTED)
+			or DEBUG_C_MEMORY
+		dbg:point(enemyPos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, colour)
 	end
 
 	-- Pace multiplier from the Stage: every ward the player lights makes the forest

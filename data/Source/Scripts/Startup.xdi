@@ -97,7 +97,9 @@ function Startup:update(info)
 	-- Keep the logo's flame alive. Above the loader poll, so it carries on burning
 	-- through the moment between clicking a stage and the loading screen appearing.
 	if self._title ~= nil then
-		self._title:update(info.frameDeltaTime)
+		-- simulationDeltaTime, not frameDeltaTime: update() runs once per fixed
+		-- simulation step, so the frame delta would make the flame frame-rate dependent.
+		self._title:update(info.simulationDeltaTime)
 	end
 
 	-- Poll the async loader; once the loading stage is ready, switch to it.

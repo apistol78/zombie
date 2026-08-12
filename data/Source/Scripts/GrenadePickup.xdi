@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
+#using {6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- GrenadePickup
+--
+-- A pickup that hands the player one grenade. Only taken while there is room for it, so a
+-- player already carrying their limit leaves it on the ground for the trip back -- the same
+-- bargain the ammo crates make. The collect-and-remove machinery lives in Pickup; this only
+-- decides when it may be taken and what taking it does.
+
+GrenadePickup = GrenadePickup or class("GrenadePickup", Pickup)
+
+local GRENADES_PER_PICKUP < const > = Config.pickup.grenades
+
+-- How long a taken one stays gone. Longer than an ammo crate's 45 s and shorter than a
+-- health flask's 180 s, which is about where a grenade sits between the two: a crate only
+-- lets you keep doing what you were already doing, while a grenade is a way out of a
+-- situation the rifle cannot answer -- but unlike health it cannot undo a mistake already
+-- made. Camping one is dealt with the way it is for every other pickup, by where rather
+-- than when: Main holds the return until the player is well clear of the spot.
+local RESPAWN_DELAY < const > = Config.pickup.grenadeRespawn
+
+-- This pickup's own entity data: what Main builds when it comes back (see
+-- Pickup:entityData). The escaped form is what makes it a tracked dependency as well as a
+-- guid, exactly as Scripts/AmmoPickup references its crate.
+local ENTITY < const > = Guid("\{6E9AD100-0000-4000-8000-000000000003}")
+
+function GrenadePickup:canTake(context)
+	return context._grenades < context._grenadesMax
+end
+
+function GrenadePickup:respawnDelay()
+	return RESPAWN_DELAY
+end
+
+function GrenadePickup:entityData()
+	return ENTITY
+end
+
+function GrenadePickup:take(context)
+	context._grenades = math.min(context._grenadesMax, context._grenades + GRENADES_PER_PICKUP)
+	context:_updateGrenadeHud()
+end
+]]></text>
+</object>

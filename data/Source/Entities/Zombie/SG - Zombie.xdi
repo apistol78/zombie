@@ -48,6 +48,15 @@
 			<animation>{00AB6107-8FB4-4BEF-B9A0-A60F36419EB4}</animation>
 			<transformTime/>
 		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="1">
+			<name>A - Zombie - Hit</name>
+			<position>
+				<first>849</first>
+				<second>259</second>
+			</position>
+			<animation>{67A0798E-B64B-9749-B100-92BD91206681}</animation>
+			<transformTime/>
+		</item>
 	</states>
 	<transitions>
 		<item type="traktor.animation.StateTransition">
@@ -133,6 +142,41 @@
 			<duration>0.1</duration>
 			<moment>Immediately</moment>
 			<condition>attack</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[5]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.2</duration>
+			<moment>End</moment>
+			<condition/>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>hit</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>hit</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>hit</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[5]"/>
+			<to ref="/object/states/item[2]"/>
+			<duration>0.1</duration>
+			<moment>Immediately</moment>
+			<condition>dead</condition>
 		</item>
 	</transitions>
 	<rootState ref="/object/states/item[3]"/>

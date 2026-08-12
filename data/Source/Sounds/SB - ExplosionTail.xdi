@@ -5,17 +5,17 @@
 	<presenceRate>0.25</presenceRate>
 	<grains>
 		<item type="traktor.sound.PlayGrainData" version="2">
-			<sound>{50D1D000-0000-4000-8000-00000000000E}</sound>
+			<sound>{50D1D000-0000-4000-8000-00000000000C}</sound>
 			<filters/>
 			<gain>
-				<min>-20</min>
-				<max>-20</max>
+				<min>2</min>
+				<max>4</max>
 			</gain>
 			<pitch>
-				<min>1</min>
-				<max>1</max>
+				<min>0.85</min>
+				<max>0.95</max>
 			</pitch>
-			<repeat>true</repeat>
+			<repeat>false</repeat>
 		</item>
 	</grains>
 </object>

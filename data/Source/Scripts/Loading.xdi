@@ -87,7 +87,9 @@ end
 function Loading:update(info)
 	-- Pulse the bar: 0 -> 1 -> 0, looping. Kept above the loader checks so it keeps
 	-- animating for every frame the load is still in flight.
-	self._pulse = self._pulse + info.frameDeltaTime * self._pulseRate
+	-- simulationDeltaTime, not frameDeltaTime: update() runs once per fixed
+	-- simulation step, so the frame delta would make the pulse frame-rate dependent.
+	self._pulse = self._pulse + info.simulationDeltaTime * self._pulseRate
 	while self._pulse >= 2.0 do
 		self._pulse = self._pulse - 2.0
 	end

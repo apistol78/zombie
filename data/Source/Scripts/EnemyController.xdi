@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
 import(traktor)
 
 -- EnemyController: a ScriptComponent state machine that drives the owner entity's
 -- character controller across the scene nav mesh.
 --
---   * PATROL - wander between random nav-mesh points (slow).
+--   * PATROL - wander between random nav-mesh points (slow), on a leash: past a certain
+--              distance the wander is biased back towards the player. See :_wanderPoint.
+--   * INVESTIGATE - walk to where the player was heard firing (medium). See :investigate
+--              and the hearing block in update.
 --   * ATTACK - chase the player (fast). Entered the moment the player is "spotted":
 --              within sight range AND with a clear physics line of sight.
 --
@@ -45,40 +50,77 @@ local COLLISION_INTERACTABLE = 0x00000002
 -- inside overlapping discs, chase targets shoved onto ground they could not reach -- and
 -- all of it in service of ground the player is only standing on for a few seconds. The
 -- flare that clears the ward is the mechanic; the rest was upkeep.
---
--- How long a freshly spawned zombie hunts the player without having seen them. Same
--- units as _attackMemory below and deliberately the same value: a zombie the spawner
--- has just placed behind cover gets exactly the grace a zombie that has just lost
--- sight of the player gets.
---
--- NOTE these are not seconds. _lostTimer is only decremented inside the one-in-four
--- perception sample, so it burns down at roughly a quarter of real time -- 2.5 here
--- is about ten seconds of hunting, of which the first 2.5 are spent on _spawnDelay
--- standing up. That leaves something like nine metres of walking, which is what it
--- takes to come out of the cover it rose behind.
-local SPAWN_HUNT < const > = 2.5
+
+-- Tuning. Every number below is Scripts/Config's, aliased into a local so the code reads
+-- the same as it always did and the lookup happens once at load rather than per frame.
+-- What each one is *for* is documented where it is used; why it is the value it is, is
+-- documented in Config next to the value.
+local CFG < const > = Config.enemy
+local CFG_MELEE < const > = Config.melee
+
+-- How long a freshly spawned zombie hunts the player without having seen them. NOTE these
+-- are not seconds: _lostTimer is only decremented inside the one-in-four perception
+-- sample, so it burns down at roughly a quarter of real time.
+local SPAWN_HUNT < const > = CFG.spawnHunt
 
 -- Inside this range of the player, a chasing zombie faces the player rather than facing
 -- the way it is steering (see the facing block in update, which is also the story of why
 -- it exists).
---
--- Sized as _playerSpace plus a hair, and no more, because inside this range the step is
--- taken at the player rather than along the route: it has to cover the push that used to
--- reverse the facing and nothing else. Between _playerSpace and here the two rules agree
--- anyway -- there is no push yet, so the steering already points at the player -- so the
--- margin only keeps the rule from flickering at its own boundary. Widening it would start
--- overriding the route while there is still route left to follow, and a zombie with a
--- boulder between it and the player would lean on the rock instead of walking round it.
-local CLOSE_QUARTERS < const > = 1.4
+local CLOSE_QUARTERS < const > = CFG.closeQuarters
 
--- Voices (see EnemyController:_voice). Range first: past this a zombie is silent, which
--- is what keeps thirty of them from all being mixed at once. A little beyond the fog's
--- 22 m, so something can be heard before it can be seen -- which is the point of it.
-local VOICE_RANGE < const > = 28.0
-local VOICE_CLOSE_RANGE < const > = 6.0    -- ...and this near, while chasing, it gets insistent
-local VOICE_INTERVAL_MIN < const > = 4.0   -- shortest wait between utterances (s)
-local VOICE_INTERVAL_MAX < const > = 7.0   -- ...plus up to this much, drawn per zombie
-local VOICE_INTERVAL_CLOSE < const > = 1.2 -- the wait once it is on the player
+-- Being shoved (see :hit and :_stagger, and Main:_meleeAttack, which swings the rifle
+-- butt). How far the shove carries, how long it takes to deliver, and how long the zombie
+-- is out of the fight altogether. The distance is delivered exactly, by metres owed rather
+-- than by a speed held for a time -- see :_stagger.
+local HIT_KNOCKBACK < const > = CFG_MELEE.knockback
+local HIT_PUSH_TIME < const > = CFG_MELEE.pushTime
+local HIT_STUN < const > = CFG_MELEE.stun
+
+-- Hearing (see the hearing block in update, and :investigate). Patrol wanders to a random
+-- nav point within two metres and repeats, which is a random walk: half the horde drifts
+-- *away* from the player and stays drifted. The rifle is the pull that biases that walk
+-- back inwards.
+local HEAR_RANGE < const > = CFG.hearRange
+
+-- ...and a rough idea of where it came from, not a fix. The guess is scattered inside a
+-- square of this half-width, which grows with range.
+local HEAR_SPREAD < const > = CFG.hearSpread
+local HEAR_SPREAD_PER_M < const > = CFG.hearSpreadPerM
+
+-- Close enough to the guess to count as having got there and gone back to patrolling.
+local INVESTIGATE_ARRIVE < const > = CFG.investigateArrive
+
+-- ...and the most time spent on one guess before giving it up (s). A zombie that spends
+-- twenty seconds walking towards the shooting and then goes back to wandering has done its
+-- job -- it is now wandering somewhere that matters.
+local INVESTIGATE_TIME < const > = CFG.investigateTime
+
+-- The patrol leash (see :_wanderPoint). Hearing fixes the drift only while the player is
+-- shooting; this is the half of it that works in silence. Inside PATROL_LEASH nothing
+-- changes at all -- the near horde mills about in the dark exactly as it did. Beyond it the
+-- shift towards the player ramps in over the next PATROL_PULL metres, so there is no line
+-- in the forest that zombies visibly bounce off.
+--
+-- What it does is hand them off rather than chase: a zombie walked back to the fence is
+-- inside HEAR_RANGE, where the next shot fired takes over and brings it the rest of the way.
+local PATROL_LEASH < const > = CFG.patrolLeash
+local PATROL_PULL < const > = CFG.patrolPull
+
+-- How far a patrol leg reaches (m), and how far towards the player its search disc is
+-- shifted at full strength. The shift is most of the radius, so the disc then lies mostly
+-- inward and the walk home is direct without being a straight line -- roughly a leg in five
+-- still goes sideways or back, which is what keeps it a shamble rather than a march.
+local PATROL_STEP < const > = CFG.patrolStep
+local PATROL_BIAS < const > = CFG.patrolBias
+
+-- Voices (see EnemyController:_voice). Past VOICE_RANGE a zombie is silent, and each one
+-- waits a randomised interval drawn per zombie rather than shared, so they never fall into
+-- step. A zombie that is actually on the player gets to be more insistent.
+local VOICE_RANGE < const > = CFG.voiceRange
+local VOICE_CLOSE_RANGE < const > = CFG.voiceCloseRange
+local VOICE_INTERVAL_MIN < const > = CFG.voiceIntervalMin
+local VOICE_INTERVAL_MAX < const > = CFG.voiceIntervalMax
+local VOICE_INTERVAL_CLOSE < const > = CFG.voiceIntervalClose
 
 -- Awareness dot (see the debug block in update). Height is measured from the entity
 -- origin, which sits at the zombie's feet, so this clears the head with a little air.
@@ -92,52 +134,61 @@ local DEBUG_DOT_SIZE < const > = 5.0
 local DEBUG_C_SIGHTED < const > = Color4f(1.0, 0.12, 0.06, 1.0) -- chasing, can see the player now
 local DEBUG_C_MEMORY < const > = Color4f(1.0, 0.62, 0.05, 1.0)  -- chasing on memory, or sent by :hunt
 local DEBUG_C_UNAWARE < const > = Color4f(0.18, 0.34, 0.62, 1.0) -- patrolling, has not noticed anything
+local DEBUG_C_HEARD < const > = Color4f(0.30, 0.82, 0.36, 1.0)   -- walking to where a shot was heard
 
 function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
-	self._turnRate = 2.0      -- max turn speed (rad/s); reversals happen gradually
-	self._avoidRadius = 2.5   -- start avoiding other zombies within this distance (m)
-	self._separation = 2.0    -- how strongly avoidance overrides path following
+	self._turnRate = CFG.turnRate      -- max turn speed (rad/s); reversals happen gradually
+	self._avoidRadius = CFG.avoidRadius -- start avoiding other zombies within this distance (m)
+	self._separation = CFG.separation  -- how strongly avoidance overrides path following
 
-	-- How much room a zombie leaves the *player*, as opposed to the two and a half
-	-- metres it leaves another zombie. It is not there to keep its distance -- it is
-	-- there to stop it standing inside the man it is eating.
-	--
-	-- The number matters more than it looks. The push ramps from nothing at this
-	-- distance to _separation at the player's own position, against a path direction of
-	-- unit length, so the two cancel at exactly half of it -- which is where a zombie
-	-- comes to rest. At 1.2 that rest point is 0.6 m: the player's capsule radius plus
-	-- the zombie's, i.e. chest to chest, and comfortably inside Main's _hurtRange, so a
-	-- zombie that has caught up is a zombie that is biting. Anything at or above twice
-	-- _hurtRange parks the horde outside its own reach, where it can crowd the player
-	-- forever without ever hurting them.
-	self._playerSpace = 1.2
+	-- How much room a zombie leaves the *player*, as opposed to the two and a half metres it
+	-- leaves another zombie. It is not there to keep its distance -- it is there to stop it
+	-- standing inside the man it is eating. The push ramps from nothing at this distance to
+	-- _separation at the player's own position, so the two cancel at exactly half of it,
+	-- which is where a zombie comes to rest.
+	self._playerSpace = CFG.playerSpace
 
 	-- State machine.
-	self._state = "patrol"    -- "patrol" | "attack"
+	self._state = "patrol"    -- "patrol" | "investigate" | "attack"
 	self._lostTimer = 0.0     -- remaining ATTACK memory after losing sight (s)
 	self._spotted = false     -- last perception sample: clear line of sight to the player
 	self._relentless = false  -- set by :hunt; ATTACK is then never given up
 	self._patrolTarget = nil  -- current wander destination (Vector4)
-	self._sightRange = 20.0   -- furthest the player can be spotted (m)
-	self._attackMemory = 2.5  -- keep chasing this long after losing sight (s)
-	-- Per-instance pace. A horde whose members all move at exactly the same speed reads
-	-- as one rigid blob: it never spreads out and two zombies that start side by side stay
-	-- glued together forever. Drawn once here and kept for this zombie's lifetime, so an
-	-- individual has a consistent gait rather than jittering frame to frame. The walk
-	-- animation takes its time from distance travelled (TimeFromLocomotion on the Walk
-	-- state), so the cycle rate follows the pace on its own and the feet do not slide.
-	local pace = 0.8 + math.random() * 0.4   -- +/- 20%
-	self._patrolSpeed = 0.55 * pace
-	self._attackSpeed = 1.2 * pace
+	self._sightRange = CFG.sightRange     -- furthest the player can be spotted (m)
+	self._attackMemory = CFG.attackMemory -- keep chasing this long after losing sight (s)
+
+	-- Hearing. _heardShot bookmarks the sequence number of the last shot this zombie is
+	-- aware of, whether or not it was in any position to act on it -- see the hearing
+	-- block in update for why that bookmark is what makes stale gunfire a non-problem.
+	self._heardShot = nil
+	self._investigateTarget = nil -- where it believes the shot came from (Vector4)
+	self._investigateTimer = 0.0  -- time left on the current guess (s)
+	-- Per-instance pace, drawn once here and kept for this zombie's lifetime so an individual
+	-- has a consistent gait rather than jittering frame to frame. The walk animation takes
+	-- its time from distance travelled (TimeFromLocomotion on the Walk state), so the cycle
+	-- rate follows the pace on its own and the feet do not slide.
+	local pace = CFG.paceMin + math.random() * CFG.paceRange
+	self._patrolSpeed = CFG.patrolSpeed * pace
+	self._attackSpeed = CFG.attackSpeed * pace
+	self._investigateSpeed = CFG.investigateSpeed * pace
 
 	self._dead = false   -- set once shot by the player; switches the body to rag doll
+
+	-- Shoved by the player (see :hit). _hitTimer is the whole reel, _pushTimer the part of
+	-- it the shove is still being carried over, and _pushLeft the metres of it still owed.
+	-- All three at rest, so a zombie nobody has hit costs one compare a frame.
+	self._hitTimer = 0.0
+	self._pushTimer = 0.0
+	self._pushLeft = 0.0
+	self._hitX = 0.0     -- ...and the way out, on the ground plane (unit length)
+	self._hitZ = 0.0
 
 	-- Zombies rise before they walk: stay put this long after spawning, and leave
 	-- "moving" untouched meanwhile so the graph holds its stand-up state. Perception
 	-- and path finding keep running, so the first step lands the moment it expires.
-	self._spawnDelay = 2.5   -- (s) counted from the controller's first live update
+	self._spawnDelay = CFG.spawnDelay   -- (s) counted from the controller's first live update
 end
 
 -- Arrive with intent. Called by Scripts/Spawner on a zombie it has just placed.
@@ -178,6 +229,182 @@ function EnemyController:hunt()
 	self._relentless = true
 end
 
+-- Take a shove. Called by Main:_meleeAttack on the zombie the player has just swung the
+-- rifle butt at, with the direction to go -- which is out from the player, and so
+-- backwards, since anything close enough to be hit is facing the man it is trying to eat.
+--
+-- Deliberately not a death and deliberately not damage: there is no health on a zombie to
+-- take and nothing here counts towards the night. What the swing buys is room and a couple
+-- of seconds -- enough to finish a reload, or to get a relic out of a crowd -- and the
+-- whole cost of it is that those are seconds not spent shooting.
+--
+-- Shoving one that is already reeling simply restarts it, which is what a second swing
+-- ought to do; the limit on chaining that is the melee's own cooldown over in Main, which
+-- is the only place it belongs. Returns false for a corpse, so the caller can tell a swing
+-- that landed on something living from one that hit a body already on its way down.
+function EnemyController:hit(dirX, dirZ)
+	if self._dead then
+		return false
+	end
+
+	local len < const > = math.sqrt(dirX * dirX + dirZ * dirZ)
+	if len < 0.001 then
+		return false
+	end
+
+	self._hitX = dirX / len
+	self._hitZ = dirZ / len
+	self._hitTimer = HIT_STUN
+	self._pushTimer = HIT_PUSH_TIME
+	self._pushLeft = HIT_KNOCKBACK
+	return true
+end
+
+-- One frame of being shoved (see :hit). Replaces everything the controller would normally
+-- do with the shove itself, and only for the first HIT_PUSH_TIME of the window -- the rest
+-- of it is the zombie finding its feet again, standing where the shove left it.
+function EnemyController:_stagger(deltaTime)
+	self._hitTimer = self._hitTimer - deltaTime
+
+	-- "hit" is a pulse rather than a state: SG - Zombie leaves its Hit state on its own
+	-- when the animation ends, and would walk straight back into it if the parameter were
+	-- still set -- a zombie reeling for ever off one swing. Held for the length of the
+	-- shove, which is many frames (so a graph that happens to be mid-blend on the frame the
+	-- swing landed still sees it) and well short of the two seconds the animation runs (so
+	-- it is long gone by the time the graph comes back to look).
+	--
+	-- "moving" and "attack" are pointedly left alone while it is held, and cleared only
+	-- after. The graph takes the first transition out of a state whose condition holds, in
+	-- the order they are listed, and every state's own exit -- Walk on !moving, Attack on
+	-- !attack -- is listed above its jump to Hit. So clearing them here would answer the
+	-- swing by walking out of Walk into Idle and only reaching the reaction a blend later,
+	-- with the zombie sliding backwards in its walk pose meanwhile. Left true, those exits
+	-- simply do not fire and the reaction wins outright.
+	--
+	-- They do have to be cleared eventually, and the frames after the shove are exactly
+	-- when: the graph is parked in Hit by then, where neither means anything, and if they
+	-- were still latched when it came back to Idle the zombie would walk or bite its way
+	-- out of the reaction rather than waiting for its controller.
+	--
+	-- (A zombie shoved while it is still standing up gets the two metres but no reaction:
+	-- there is no Hit transition out of the stand-up state, and interrupting a zombie
+	-- getting to its feet is not obviously worth having one.)
+	local pushing < const > = self._pushTimer > 0.0 and self._pushLeft > 0.0
+	if self._pose ~= nil then
+		self._pose:setParameterValue("hit", pushing)
+		if not pushing then
+			self._pose:setParameterValue("moving", false)
+			self._pose:setParameterValue("attack", false)
+		end
+	end
+	if not pushing then
+		return
+	end
+
+	-- Eased out: a speed falling linearly to nothing over the time still left covers the
+	-- distance still owed when it starts at twice the average, which is all this is. So the
+	-- shove lands hard and the body coasts to a stop, instead of being carried off at a
+	-- constant rate and stopping dead.
+	--
+	-- Taken from what remains rather than from a curve fixed at the moment of the hit,
+	-- which is what makes the two metres two metres: sampling a fixed ramp once a frame
+	-- always undershoots it, and undershoots it by more the coarser the frames get. This
+	-- form spends whatever the last frame left over on the next one, so the distance is
+	-- exact and does not depend on the frame rate.
+	local speed = 2.0 * self._pushLeft / self._pushTimer
+
+	-- ...and never more than the metres still owed, which is also what holds the last frame
+	-- -- where the time left goes to nothing and the expression above runs away with it --
+	-- to a step rather than a launch.
+	local step = speed * deltaTime
+	if step > self._pushLeft then
+		step = self._pushLeft
+		speed = step / deltaTime
+	end
+	self._pushLeft = self._pushLeft - step
+	self._pushTimer = self._pushTimer - deltaTime
+
+	-- maxVelocity is the controller's clamp on the impulse below -- not the impulse itself --
+	-- so it has to be raised to the shove's speed or the zombie would be knocked back at
+	-- walking pace and travel a quarter of the distance. Nothing has to put it back: the
+	-- normal path sets it from _attackSpeed every frame, so it repairs itself on recovery.
+	--
+	-- Physics owns the rest. The shove is a velocity, not a teleport, so a zombie put through
+	-- a tree stops at the tree with its metres unspent -- which is the right answer, and one
+	-- no amount of arithmetic here could have got to.
+	self._character.maxVelocity = speed
+	self._character:move(Vector4(self._hitX * speed, 0.0, self._hitZ * speed, 0.0), false)
+end
+
+-- Go and have a look. Called from the hearing block in update with an already-scattered
+-- guess at where the rifle went off, which is a place rather than a person: this state
+-- walks to a fixed point and knows nothing about where the player has got to since.
+--
+-- Kept a state of its own rather than expressed as "patrol, but to that point over there"
+-- because the two differ in every part that matters -- pace, how the destination is chosen,
+-- when it is abandoned -- and because the debug dots are worth being able to tell apart. A
+-- field of green dots converging is the horde acting on a shot; the same field in blue is
+-- the horde ignoring it, and confusing the two would hide the only failure mode this has.
+--
+-- Deliberately does not clear _pathQuery. The route in flight is a patrol leg of at most
+-- two metres, and _repathTimer = 0.0 puts a fresh query out on the very next update, so
+-- the worst it can do is a frame or two of walking the old way -- the same trade alertTo
+-- makes, for the same reason.
+function EnemyController:investigate(x, z)
+	self._state = "investigate"
+	self._investigateTarget = Vector4(x, 0.0, z, 1.0)
+	self._investigateTimer = INVESTIGATE_TIME
+	self._patrolTarget = nil
+	self._repathTimer = 0.0
+end
+
+-- Draw the next patrol destination: a random *reachable* nav point a couple of metres off
+-- -- findRandomPoint walks the mesh outward from its centre, so what comes back is always
+-- somewhere this zombie can get to -- from a disc shifted towards the player by however
+-- hard the leash is pulling. See PATROL_LEASH for why it pulls at all, and when.
+--
+-- Returns nil rather than a bad point when the mesh has nothing to offer, which matters
+-- more than it looks: findRandomPoint reports failure by handing back a zero vector, and a
+-- zero vector taken at face value is a patrol target at the world origin -- a zombie
+-- quietly setting off across the map for the corner of the terrain, one leg at a time. The
+-- w component is the tell, since the engine only builds a positional (w = 1) vector on its
+-- success path and leaves w at zero otherwise.
+function EnemyController:_wanderPoint(enemyPos, playerPos)
+	local cx, cz = enemyPos.x, enemyPos.z
+
+	local dx < const > = playerPos.x - enemyPos.x
+	local dz < const > = playerPos.z - enemyPos.z
+	local d < const > = math.sqrt(dx * dx + dz * dz)
+	if d > PATROL_LEASH then
+		local pull = (d - PATROL_LEASH) / PATROL_PULL
+		if pull > 1.0 then
+			pull = 1.0
+		end
+		local bias < const > = PATROL_BIAS * pull
+		cx = cx + (dx / d) * bias
+		cz = cz + (dz / d) * bias
+	end
+
+	-- Height stays the zombie's own: there is no cheap way to ask what the ground does a
+	-- metre and a half away, and its own feet are the best guess available.
+	local point = self._navMesh:findRandomPoint(Vector4(cx, enemyPos.y, cz, 1.0), PATROL_STEP)
+	if point ~= nil and point.w >= 0.5 then
+		return point
+	end
+
+	-- ...and where that guess is wrong the draw fails outright, since findRandomPoint snaps
+	-- its centre to the mesh through a search box only a metre tall -- so on ground steep
+	-- enough it misses the mesh entirely. Fall back to the plain unbiased draw from the
+	-- feet, which are on the mesh by construction. A leg that forgets the leash is a much
+	-- smaller thing than a zombie standing still on a hillside because its draw kept
+	-- failing, and the next leg gets to try again anyway.
+	point = self._navMesh:findRandomPoint(enemyPos, PATROL_STEP)
+	if point ~= nil and point.w >= 0.5 then
+		return point
+	end
+	return nil
+end
+
 -- Drive the enemy's animation graph into its "dead" rag doll state by setting the
 -- "dead" parameter on its pose controller (SG - Enemy handles the transition).
 function EnemyController:_enterRagDoll()
@@ -190,9 +417,14 @@ function EnemyController:_enterRagDoll()
 	end
 	if pose ~= nil then
 		pose:setParameterValue("dead", true)
-		-- Stop biting; update() returns early from now on, so this would otherwise stay
-		-- latched and fire straight into the attack state if the corpse ever revived.
+		-- Stop biting, and stop reeling; update() returns early from now on, so either
+		-- would otherwise stay latched and fire straight into that state if the corpse
+		-- ever revived. Neither is load-bearing for the rag doll itself -- every state
+		-- reaches Dead ahead of Attack or Hit, including Hit, so a zombie shot mid-shove
+		-- goes down out of the reaction -- they are cleared because a parameter nobody
+		-- will ever set false again is a trap left lying for whoever adds the next state.
 		pose:setParameterValue("attack", false)
+		pose:setParameterValue("hit", false)
 	end
 
 	-- Hand the body over to the rag doll: disable the character controller so it
@@ -335,6 +567,45 @@ function EnemyController:update(context, totalTime, deltaTime)
 				self._repathTimer = 0.0
 			end
 		end
+
+		-- ---- Hearing: has the player fired? ----
+		--
+		-- Published by the Stage as a single record with a sequence number (Main:_fireWeapon)
+		-- rather than pushed at the zombies shot by shot. The state machine lives here, so
+		-- the decision about whether a zombie is in any position to care belongs here too --
+		-- and a stage that only writes three numbers per shot does not care how many zombies
+		-- are listening.
+		--
+		-- Note the bookmark is taken whatever this zombie is doing, and whether or not the
+		-- shot was even audible from here. That is what keeps old gunfire from mattering
+		-- without anyone having to timestamp it: a zombie that spent a firefight chasing has
+		-- already read every one of those shots off the counter by the time it loses the
+		-- player, so it drops back to patrol instead of setting off for a clearing the player
+		-- left a minute ago. Sampling runs about fifteen times a second, so what the bookmark
+		-- says is never more than a frame or two behind the trigger.
+		--
+		-- Below the transitions above on purpose: a zombie that can see the player this
+		-- sample chases them, and does not go to look at a noise it has an answer to.
+		local shot < const > = context._gunshot
+		if shot ~= nil and shot.seq ~= self._heardShot then
+			self._heardShot = shot.seq
+			-- Patrol and investigate both listen -- a second shot is a better fix than the
+			-- one already being walked to, and re-aiming at it is free. Attack does not:
+			-- it is following the player themselves, which beats any guess, and a hunting
+			-- zombie (:hunt) must never be diverted at all.
+			if self._state ~= "attack" then
+				local hx < const > = shot.x - enemyPos.x
+				local hz < const > = shot.z - enemyPos.z
+				local hd < const > = math.sqrt(hx * hx + hz * hz)
+				if hd < HEAR_RANGE then
+					local spread < const > = HEAR_SPREAD + hd * HEAR_SPREAD_PER_M
+					self:investigate(
+						shot.x + (math.random() * 2.0 - 1.0) * spread,
+						shot.z + (math.random() * 2.0 - 1.0) * spread
+					)
+				end
+			end
+		end
 	end
 
 	-- ---- Debug: does this one have the player? ----
@@ -342,9 +613,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- A dot over the head of every live zombie: red once it is chasing and can see the
 	-- player right now, amber when it is chasing without a current sighting -- burning
 	-- down _lostTimer, or sent out by :hunt, which never had a sighting to begin with --
-	-- and blue while it is still patrolling and has noticed nothing. So the amber ones are
-	-- the horde converging on where the player was, and turn red as they come round the
-	-- rock and find them.
+	-- green while it is on its way to a shot it heard, and blue while it is still
+	-- patrolling and has noticed nothing. So the amber ones are the horde converging on
+	-- where the player was, and turn red as they come round the rock and find them.
+	--
+	-- The green is worth watching for its own sake, since it is the one thing here that
+	-- answers a question about the *shape* of the night rather than about one zombie: fire
+	-- a round and the blue dots within earshot should turn green and start closing. A field
+	-- that stays blue means nothing is being pulled inwards, and the horde is back to
+	-- wandering off to be simulated somewhere the player will never go.
 	--
 	-- The layer draws with depth testing off, which is most of what makes this worth
 	-- having: the dots read through the terrain, so the whole horde's state is legible at
@@ -362,10 +639,27 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- the normal shipped case, and simply means no dots.
 	local dbg < const > = context.debug
 	if dbg ~= nil then
-		local colour < const > = (self._state ~= "attack" and DEBUG_C_UNAWARE)
+		local colour < const > = (self._state == "investigate" and DEBUG_C_HEARD)
+			or (self._state ~= "attack" and DEBUG_C_UNAWARE)
 			or (self._spotted and DEBUG_C_SIGHTED)
 			or DEBUG_C_MEMORY
 		dbg:point(enemyPos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, colour)
+	end
+
+	-- ---- Shoved: everything below is suspended for the reel (see :hit) ----
+	--
+	-- No route, no steering, no bite; the body is driven by the shove instead. The path
+	-- query in flight is left alone and _repathTimer is left unticked, so it is already due
+	-- when the zombie comes back and the first update after the reel puts a fresh one out.
+	--
+	-- Below the perception sample and the dot rather than at the top of update, and that is
+	-- the whole reason it sits here: a zombie shoved off the player goes on watching them
+	-- through the reel, so it sets off again the moment it recovers instead of spending a
+	-- sample rediscovering where they went -- and it still reports what it knows to the
+	-- debug layer while it is reeling, which is when one most wants to see it.
+	if self._hitTimer > 0.0 then
+		self:_stagger(deltaTime)
+		return
 	end
 
 	-- Pace multiplier from the Stage: every ward the player lights makes the forest
@@ -378,6 +672,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 	local speed = self._patrolSpeed * pace
 	if self._state == "attack" then
 		speed = self._attackSpeed * pace
+	elseif self._state == "investigate" then
+		speed = self._investigateSpeed * pace
 	end
 	if self._character ~= nil then
 		self._character.maxVelocity = self._attackSpeed * pace
@@ -425,6 +721,38 @@ function EnemyController:update(context, totalTime, deltaTime)
 			local target = self._navMesh:findClosestPointXZ(Vector4(aimX, enemyPos.y, aimZ, 1.0), 4.0)
 			self._pathResult = self._navMesh:createMoveQuery(enemyPos, target)
 		end
+	elseif self._state == "investigate" then
+		-- Walking to a place, not after a person: the destination was fixed when the shot
+		-- was heard and is not re-aimed as the player moves. Re-pathing to it on the same
+		-- 1.5 s beat as patrol is only there to unstick a zombie whose route has gone stale
+		-- against the crowd, not to refresh the target -- there is nothing fresher to know.
+		--
+		-- Two ways out, and the state above is a third: arriving, and running out of time.
+		-- Neither is a failure. Both hand back to patrol from wherever it has got to, which
+		-- is the entire point of the exercise -- it is now wandering near the shooting
+		-- instead of a minute's walk the other way.
+		self._investigateTimer = self._investigateTimer - deltaTime
+		local goal < const > = self._investigateTarget
+		local done = goal == nil or self._investigateTimer <= 0.0
+		if not done then
+			local gx < const > = goal.x - enemyPos.x
+			local gz < const > = goal.z - enemyPos.z
+			done = gx * gx + gz * gz < INVESTIGATE_ARRIVE * INVESTIGATE_ARRIVE
+		end
+		if done then
+			self._state = "patrol"
+			self._investigateTarget = nil
+			self._patrolTarget = nil
+			self._repathTimer = 0.0
+		elseif self._repathTimer <= 0.0 and self._pathResult == nil then
+			self._repathTimer = 1.5
+			-- Snapped the same way a chase target is, and for the same reasons: the guess is
+			-- a scattered point on open ground that may well have landed inside a rock or on
+			-- a roof, and searching from the zombie's own height resolves stacked surfaces to
+			-- the one it can actually walk on.
+			local target = self._navMesh:findClosestPointXZ(Vector4(goal.x, enemyPos.y, goal.z, 1.0), 4.0)
+			self._pathResult = self._navMesh:createMoveQuery(enemyPos, target)
+		end
 	else
 		-- Patrol: take a fresh random nav point when we have none, on arrival, or
 		-- every few seconds (so an enemy that gets stuck re-routes).
@@ -439,9 +767,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if (needNew or self._repathTimer <= 0.0) and self._pathResult == nil then
 			self._repathTimer = 1.5
 			if needNew then
-				self._patrolTarget = self._navMesh:findRandomPoint(enemyPos, 2.0)
+				self._patrolTarget = self:_wanderPoint(enemyPos, playerPos)
 			end
-			self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
+			-- Guarded because _wanderPoint can come back empty-handed: a move query to a nil
+			-- destination is not a question the nav mesh can be asked. Nothing else is needed
+			-- to recover -- a nil target is exactly what needNew tests for, so the next update
+			-- draws again, and _repathTimer having been spent does not hold that up.
+			if self._patrolTarget ~= nil then
+				self._pathResult = self._navMesh:createMoveQuery(enemyPos, self._patrolTarget)
+			end
 		end
 	end
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
+#using {6E9AD100-0000-4000-8000-000000000010}
 import(traktor)
 
 -- Hive
@@ -48,18 +49,18 @@ local ZOMBIE < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 local atan2 < const > = math.atan2 or math.atan
 
 local ACT < const > = "Unwield"        -- the act that sinks the boulder plugging the mouth
-local BROOD < const > = 5              -- zombies one waking sends out
+local BROOD < const > = Config.hive.brood              -- zombies one waking sends out
 
 -- The brood comes up together, on the act's cue, so they are spread across the pen
 -- rather than in time: five bodies standing up in one spot would spend their whole
 -- stand-up animation shoving each other apart. RISE_GAP is the room each one is given,
 -- and PLACE_TRIES how many spots are tried to find it before settling for the first.
-local RISE_GAP < const > = 1.2         -- keep them at least this far apart in the pen (m)
+local RISE_GAP < const > = Config.hive.riseGap         -- keep them at least this far apart in the pen (m)
 local PLACE_TRIES < const > = 8        -- candidate spots tried to find that much room
 
 -- Held in from the volume's sides, so one does not rise with half of it inside the pen
 -- wall the author drew the volume up against. A zombie's capsule is 0.6 m across.
-local WALL_MARGIN < const > = 0.4
+local WALL_MARGIN < const > = Config.hive.wallMargin
 
 -- Ground trace. Deliberately no further than the volume the author drew plus a
 -- margin: a longer reach would find the hillside outside the pen and drop a zombie

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{6E9AD100-0000-4000-8000-000000000002}</id>
+	<name>Grenade</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{0E20549A-430B-F640-836B-6364D80AC4F1}</mesh>
+		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>explode</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{6E9AD100-0000-4000-8000-000000000001}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>false</follow>
+						<useRotation>false</useRotation>
+					</second>
+				</item>
+			</eventData>
+		</item>
+	</components>
+</object>

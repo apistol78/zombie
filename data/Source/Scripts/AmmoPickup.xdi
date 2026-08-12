@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
+#using {6E9AD100-0000-4000-8000-000000000010}
 
 import(traktor)
 
@@ -15,7 +16,7 @@ import(traktor)
 
 AmmoPickup = AmmoPickup or class("AmmoPickup", Pickup)
 
-local AMMO_PER_PICKUP < const > = 12   -- rounds in one crate
+local AMMO_PER_PICKUP < const > = Config.pickup.ammoRounds   -- rounds in one crate
 
 -- How long a looted crate takes to be worth walking back to.
 --
@@ -35,7 +36,7 @@ local AMMO_PER_PICKUP < const > = 12   -- rounds in one crate
 -- as a guid, exactly as Scripts/Spawner references the zombie.
 local ENTITY < const > = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
 
-local RESPAWN_DELAY < const > = 45.0
+local RESPAWN_DELAY < const > = Config.pickup.ammoRespawn
 
 function AmmoPickup:canTake(context)
 	return context._reserve < context._reserveMax

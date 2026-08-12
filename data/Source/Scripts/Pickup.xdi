@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
+#using {6E9AD100-0000-4000-8000-000000000010}
 import(traktor)
 
 -- Pickup
@@ -32,7 +33,7 @@ Pickup = Pickup or class("Pickup", traktor.world.ScriptComponent)
 
 -- How close the player's origin must come to the pickup's to count as walked
 -- over. This is the radius the Stage used back when the scan lived there.
-local TAKE_RANGE < const > = 1.2
+local TAKE_RANGE < const > = Config.pickup.takeRange
 
 function Pickup:canTake(context)
 	return true

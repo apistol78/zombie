@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
+#using {6E9AD100-0000-4000-8000-000000000010}
 
 import(traktor)
 
@@ -14,7 +15,7 @@ import(traktor)
 
 HealthPickup = HealthPickup or class("HealthPickup", Pickup)
 
-local HEAL_AMOUNT < const > = 35.0   -- health restored per pickup (capped at max)
+local HEAL_AMOUNT < const > = Config.pickup.healAmount   -- health restored per pickup (capped at max)
 
 -- How long a drained flask takes to fill again -- four times as long as an ammo crate.
 --
@@ -29,7 +30,7 @@ local HEAL_AMOUNT < const > = 35.0   -- health restored per pickup (capped at ma
 -- as a guid, exactly as Scripts/Spawner references the zombie.
 local ENTITY < const > = Guid("\{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}")
 
-local RESPAWN_DELAY < const > = 180.0
+local RESPAWN_DELAY < const > = Config.pickup.healthRespawn
 
 function HealthPickup:canTake(context)
 	return context._health < context._maxHealth

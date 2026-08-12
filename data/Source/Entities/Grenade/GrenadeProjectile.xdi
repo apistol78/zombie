@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{6E9AD100-0000-4000-8000-000000000005}</id>
+	<name>GrenadeProjectile</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{0E20549A-430B-F640-836B-6364D80AC4F1}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.DynamicBodyDesc" version="6">
+				<shape type="traktor.physics.SphereShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0.068, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<radius>0.055</radius>
+				</shape>
+				<mass>0.6</mass>
+				<autoDeactivate>true</autoDeactivate>
+				<active>true</active>
+				<linearDamping>0.02</linearDamping>
+				<angularDamping>0.4</angularDamping>
+				<friction>0.95</friction>
+				<restitution>0.3</restitution>
+				<linearThreshold>0.8</linearThreshold>
+				<angularThreshold>1</angularThreshold>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>explode</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{6E9AD100-0000-4000-8000-000000000001}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>false</follow>
+						<useRotation>false</useRotation>
+					</second>
+				</item>
+			</eventData>
+		</item>
+	</components>
+</object>

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+-- Config
+--
+-- Every number that decides how the game *plays*, in one place. The scripts that read these
+-- keep their own names for them, so nothing here changes how any of them is used -- this is
+-- the sheet you retune the night from, not an indirection layer.
+--
+-- What belongs here: anything a designer would want to change to make the game harder,
+-- slower, louder, more generous. Ranges, speeds, timings, counts, damage, radii.
+--
+-- What deliberately does not: HUD layout and colours, the hive cutscene's camera framing,
+-- the debug layer's dots, ray-trace scratch distances, and engine constants like collision
+-- group bits. Those live next to the code that uses them, because changing them is a
+-- rendering or plumbing decision rather than a balance one. Keeping that line clear is most
+-- of what makes this file worth having -- a config sheet with trace distances in it is a
+-- config sheet nobody can find the real knobs in.
+--
+-- Reassigned rather than `Config or {}` on purpose: a hot reload is supposed to pick up
+-- edited values, and the whole using-chain is rebuilt with it, so the scripts reading these
+-- re-read them. Note that Main copies most of its own into stage fields in :new(), so those
+-- take effect on the next stage load rather than the next reload.
+
+Config = {
+
+	-- ---- The player ----
+	player = {
+		maxHealth = 100.0,
+		-- Enemies within this distance (m) drain health, and multiple stack. Also read by
+		-- Scripts/EnemyController, which plays the bite animation exactly while it is
+		-- draining -- so the range and the animation can never disagree.
+		hurtRange = 1.0,
+		enemyDps = 20.0,        -- health drained per second per touching enemy
+
+		walkSpeed = 3.0,
+		sprintSpeed = 6.0,
+		-- Carrying a relic overrides both, and no amount of Shift helps: every relic run is a
+		-- route you commit to at a wary walk.
+		carrySpeed = 2.6,
+
+		-- Aim pitch clamps (rad). Sign is the trap here -- pitch grows *downward* (see the
+		-- note in Main:new), so min is how far up you can look and max how far down.
+		pitchMin = -1.15,       -- ~66 deg up
+		pitchMax = 1.15,        -- ~66 deg down
+		invertPitch = false,    -- true for inverted (flight-style) vertical look
+
+		-- Metres of travel per footstep. A stride, near enough: at the walk that is a step
+		-- every two thirds of a second, and sprinting doubles the rate on its own without a
+		-- second constant to keep in step with the speeds.
+		stepStride = 1.9
+	},
+
+	-- ---- The rifle ----
+	--
+	-- With zombies spawning forever and one shot killing one of them, this is the whole
+	-- economy of the night: tune these first.
+	rifle = {
+		range = 40.0,           -- max shot distance (m)
+		radius = 0.9,           -- aim-assist radius around the shot ray (m)
+		magSize = 6,            -- rounds the rifle holds
+		mag = 6,                -- ...and how many are in it at the start of the night
+		reserve = 24,           -- spare rounds carried at the start
+		reserveMax = 60,        -- most that can be carried at once
+		-- Long enough that *where* you choose to reload matters, which is the point of it.
+		reloadTime = 1.2,
+		fireInterval = 0.4      -- minimum seconds between shots
+	},
+
+	-- ---- The rifle butt ----
+	--
+	-- Kills nothing and costs no rounds: it knocks one zombie back and leaves it reeling.
+	-- What it is for is the moment the economy above runs out -- a dry rifle mid-reload with
+	-- something already on you.
+	melee = {
+		-- Range along the aim from the eye to the zombie's chest, and how far off that line
+		-- it may be and still be caught -- together a stubby cone rather than a ray. Both
+		-- generous on purpose: a swing is a panic button pressed with a zombie's face
+		-- filling the screen.
+		range = 2.2,
+		radius = 1.0,
+		-- Long enough that chaining swings is a decision rather than a mash.
+		interval = 0.8,
+
+		-- The shove, read by Scripts/EnemyController rather than by Main -- it is the zombie
+		-- that has to walk it off. Distance is the mechanic: two metres is the difference
+		-- between a zombie that is biting and one that has to come back in.
+		knockback = 2.0,        -- metres it carries
+		pushTime = 0.6,         -- ...delivered over this long (s)
+		-- ...and how long it is out of the fight altogether. This is the length of the Hit
+		-- animation, a shade under it so the controller has the wheel again as the graph
+		-- blends back to Idle. Retune it with the animation, not on its own.
+		stun = 2.1
+	},
+
+	-- ---- Grenades ----
+	--
+	-- The other thing the player can throw at the night, and the only one that does not go
+	-- through the rifle at all: the mouse wheel swaps which of the two the left button does.
+	grenade = {
+		-- One at the start, deliberately: enough to find out what a grenade does and not
+		-- enough to plan around. Every one after it is a decision, since the only way to get
+		-- another is to walk to where one is lying.
+		start = 1,
+		max = 4,
+		interval = 0.9,         -- minimum seconds between throws
+
+		-- Speed and lift together decide the arc: from a level aim these two rise about three
+		-- quarters of a metre and put the grenade down some eleven metres out -- far enough to
+		-- reach a crowd you can see coming and much too short to shell the map from safety.
+		--
+		-- Eleven metres is where it *first lands*, not where it ends up: the projectile is a
+		-- rigid body, so it bounces and rolls on from there. That is the figure to hold in
+		-- mind when retuning the speed.
+		--
+		-- Lift changes the shape of the throw far more than its length -- flattening it by a
+		-- third costs barely a metre -- and the number does not behave the way it looks: the
+		-- rise goes with the *square* of the vertical speed, so taking a third off the lift
+		-- takes more than half off the arc.
+		throwSpeed = 10.0,      -- m/s out of the hand
+		throwLift = 0.3,       -- ...thrown this far above where you are looking (rad, ~20 deg)
+
+		-- A fixed fuse counted from the throw, and nothing else: not from where it lands, not
+		-- from when it stops rolling. That is what lets the player count -- three seconds is
+		-- a thing you can lead a moving crowd by and a thing you can get out of the way of.
+		-- It follows that a grenade thrown far or high can go off in mid-air.
+		fuse = 3.0,
+
+		blastRadius = 8.0,      -- everything standing inside this dies (m)
+		-- Distance at which the blast has half the momentum it has at the centre. Well inside
+		-- blastRadius, so the middle is fatal in a way you can see and the rim is a shove.
+		blastHalf = 2.2,
+		-- Momentum handed to a body at the centre, in the same units as corpse.knockback --
+		-- the rag doll's total mass is around eleven, so 100 is a nine-metre-a-second
+		-- whole-body throw against the rifle's four and a half.
+		blastImpulse = 100.0,
+		blastLift = 30.0        -- ...plus this much straight up, so the pile goes over the trees
+	},
+
+	-- ---- What happens to a dead zombie ----
+	--
+	-- Shared by the rifle, the kill-all shortcut and a ward's flare, so a zombie only ever
+	-- dies one way. Distributed across the limbs by RagDollPoseController, so the knockback
+	-- is total momentum: with ~11 unit-mass limbs an impulse of 18 is roughly a 1.6 m/s
+	-- whole-body shove.
+	corpse = {
+		knockback = 50.0,       -- impulse magnitude along the shot direction
+		knockbackLift = 10.0,   -- extra upward impulse so the corpse flops back, not just slides
+		lifetime = 6.0          -- how long a rag doll corpse lingers before it despawns
+	},
+
+	-- ---- The horde ----
+	enemy = {
+		-- Per-instance pace, drawn once per zombie and kept for its lifetime. A horde whose
+		-- members all move at exactly the same speed reads as one rigid blob: it never
+		-- spreads out, and two zombies that start side by side stay glued together forever.
+		paceMin = 0.8,          -- multiplier floor...
+		paceRange = 0.4,        -- ...plus up to this much
+
+		patrolSpeed = 0.55,
+		attackSpeed = 1.2,
+		-- Between the two and nearer patrol than chase: a zombie on its way to a noise has
+		-- somewhere to be but nothing to run at yet, and the difference between the shamble
+		-- and the lunge is most of what tells the player they have been seen.
+		investigateSpeed = 0.85,
+
+		sightRange = 20.0,      -- furthest the player can be spotted (m)
+		attackMemory = 2.5,     -- keep chasing this long after losing sight (s)
+		-- How long a freshly spawned zombie hunts the player without having seen them.
+		-- Deliberately the same as attackMemory: a zombie the spawner has just placed behind
+		-- cover gets exactly the grace one that has just lost sight gets. NOTE these are not
+		-- seconds -- the timer only burns down inside the one-in-four perception sample, so
+		-- this is about ten seconds of hunting.
+		spawnHunt = 2.5,
+		-- Zombies rise before they walk: stay put this long after spawning (s), so the first
+		-- one reads as getting up rather than sliding off the instant it appears.
+		spawnDelay = 2.5,
+
+		-- Steering.
+		turnRate = 2.0,         -- max turn speed (rad/s); reversals happen gradually
+		avoidRadius = 2.5,      -- start avoiding other zombies within this distance (m)
+		separation = 2.0,       -- how strongly avoidance overrides path following
+		-- How much room a zombie leaves the *player*. Not there to keep its distance -- there
+		-- to stop it standing inside the man it is eating. The push ramps from nothing here to
+		-- `separation` at the player's own position against a unit path direction, so the two
+		-- cancel at exactly half of it: at 1.2 the rest point is 0.6 m, chest to chest and
+		-- comfortably inside player.hurtRange. Anything at or above twice hurtRange parks the
+		-- horde outside its own reach, where it crowds forever without ever biting.
+		playerSpace = 1.2,
+		-- Inside this range of the player a chasing zombie faces the player rather than the
+		-- way it is steering. Sized as playerSpace plus a hair and no more: inside it the step
+		-- is taken at the player rather than along the route, so widening it would start
+		-- overriding the route while there is still route to follow.
+		closeQuarters = 1.4,
+
+		-- Hearing. Every shot fired is thirty zombies quietly taking a step towards the man
+		-- who fired it. Range is well past sightRange, which is the whole point -- a shot has
+		-- to reach zombies that cannot see the player, or it only tells them what they know.
+		hearRange = 35.0,
+		-- ...and a rough idea of where it came from, not a fix. The guess is scattered inside
+		-- a square of this half-width, growing with range, so a distant horde converges on a
+		-- neighbourhood and has to find the player inside it.
+		hearSpread = 2.0,
+		hearSpreadPerM = 0.15,
+		-- Close enough to the guess to count as having got there. Sized to the spread's near
+		-- end -- no sense walking to a point more precisely than it was ever known.
+		investigateArrive = 2.5,
+		-- ...and the most time spent on one guess (s). Deliberately less than the walk in from
+		-- the edge of earshot: the aim is to close the distance, not to arrive.
+		investigateTime = 20.0,
+
+		-- The patrol leash. A random walk has no preferred direction, so half the horde
+		-- drifts outward and keeps drifting -- costing what the ones in front of the player
+		-- cost and contributing nothing. Beyond the leash each new patrol leg is drawn from a
+		-- disc shifted towards the player, ramping in over the next `patrolPull` metres so
+		-- there is no line in the forest that zombies visibly bounce off.
+		--
+		-- The leash sits a little past sightRange on purpose, and is the knob to reach for if
+		-- the night starts feeling crowded.
+		patrolLeash = 25.0,
+		patrolPull = 20.0,
+		patrolStep = 2.0,       -- how far a patrol leg reaches (m)
+		patrolBias = 1.6,       -- ...and how far its disc shifts inward at full strength
+
+		-- Voices. Range first: past this a zombie is silent, which is what keeps thirty of
+		-- them from all being mixed at once. A little beyond the fog's 22 m, so something can
+		-- be heard before it can be seen.
+		voiceRange = 28.0,
+		voiceCloseRange = 6.0,  -- ...and this near, while chasing, it gets insistent
+		voiceIntervalMin = 4.0, -- shortest wait between utterances (s)
+		voiceIntervalMax = 7.0, -- ...plus up to this much, drawn per zombie
+		voiceIntervalClose = 1.2
+	},
+
+	-- ---- Where the horde comes from ----
+	spawner = {
+		maxEnemies = 30,
+		spawnMin = 8.0,         -- nearest a zombie may be placed to the player (m)
+		spawnMax = 20.0,        -- ...and furthest
+		despawnDist = 60.0,     -- past this from the player a zombie is taken away again
+		spawnInterval = 0.5,    -- seconds between placement attempts
+		candidates = 12,        -- nav-mesh points considered per attempt
+
+		aheadBias = 9.0,        -- how far in front of the player placement is biased
+		coverMin = 2.5,         -- how hidden a spot has to be to be used
+
+		-- The behind-the-player top-up: when the player is walking away from the horde,
+		-- place one behind them on a faster beat so the night follows.
+		behindDist = 28.0,
+		behindDot = -0.25,
+		recedeMin = 0.5,
+		behindInterval = 0.4,
+		velSmooth = 6.0,        -- how hard the player's travel direction is smoothed
+
+		-- Steepest ground a zombie may be stood on, as the surface normal's Y.
+		groundMinNormalY = 0.7
+	},
+
+	-- ---- Hives ----
+	hive = {
+		brood = 5,              -- zombies sent up when one opens
+		riseGap = 1.2,          -- seconds between each of them
+		wallMargin = 0.4,       -- how far off the pen's walls they are placed (m)
+
+		-- How long a lit ward gets to itself before the hive it wakes opens and the camera
+		-- leaves for it. Two lengths, because the wait is only worth having if there is
+		-- something in it: a purge that took nobody leaves an empty pause.
+		wakeDelay = 2.0,        -- ...when the light took zombies with it
+		wakeDelayQuiet = 0.8    -- ...and when it took none
+	},
+
+	-- ---- Wards ----
+	--
+	-- A relic is spent by carrying it to a ward post and setting it down, which lights that
+	-- ward. It does *not* hold the horde off -- zombies walk over consecrated ground like any
+	-- other ground, so a lit ward is a place nothing rises, not a place nothing reaches.
+	ward = {
+		igniteRate = 0.9,       -- how fast a lit post eases up to full
+		-- How much ground one ward consecrates. A room, not a district: now that nothing
+		-- steers around it, the radius only decides how much ground the Spawner is barred
+		-- from and how big a disc the minimap draws.
+		--
+		-- Retuned 2026-08-10 from 15 m, which was too much on two counts. Six lit wards at
+		-- 15 m is roughly 4200 m2 of a map with about 10000 m2 of content, so most of the
+		-- night was spent inside safe ground; and Scene 2's twelve posts stand 11-20 m apart,
+		-- so at 15 m every disc overlapped its neighbours and the horde spent its time wedged
+		-- in the pockets between rims rather than coming at the player. At 7 m only the one
+		-- deliberately-adjacent pair (the two cemetery posts 10.9 m apart) still overlaps at
+		-- all -- and that overlap is the point, since wasting a relic on a neighbour is meant
+		-- to be a bad choice the player can see on the map before making it.
+		radius = 7.0,
+		-- How far the flare reaches when a post takes light. Its own knob since the same
+		-- retune, because it was never really the same quantity as the radius above -- it only
+		-- shared the number. The disc is permanent and has to stay small enough for the horde
+		-- to walk around; the flare is one moment and answers to nothing but how it feels, so
+		-- shrinking the disc must not quietly shrink it too.
+		--
+		-- One hard constraint: it must not be *less* than `radius`, or lighting a post leaves
+		-- zombies standing inside the ground it just cleared and the Spawner's no-spawn patch
+		-- starts occupied -- which is the whole reason the purge exists. Beyond that it is
+		-- free, and since it is now the only thing a ward does to the zombies already in the
+		-- forest, it is the knob to reach for if lighting a post stops feeling like it bought
+		-- anything.
+		purgeRadius = 15.0,
+		-- The bill: each ward lit makes the forest outside it this much faster. You are buying
+		-- an island and paying for it with a worse forest, so the last relic run is the bad one.
+		pacePerWard = 0.1
+	},
+
+	-- ---- Relics ----
+	relic = {
+		reachRange = 2.2,       -- how close to a relic you must be to take it (m)
+		wardRange = 3.5,        -- ...and to a ward post to set one down on it
+		snapRadius = 1.0,       -- how close to the post a placed relic settles
+		dropAhead = 0.7,        -- how far in front of the player a dropped one lands
+		-- How much nearer a rival ward post has to be before the objective compass gives up
+		-- the one it is already pointing at. Without it, carrying a relic along the midline
+		-- between two dark posts flips the needle back and forth, and each flip reads as an
+		-- instruction changing rather than as jitter.
+		markerSwitchMargin = 4.0
+	},
+
+	-- ---- Pickups ----
+	pickup = {
+		takeRange = 1.2,        -- how close the player's origin must come to collect one
+
+		-- Respawns turn the map into a renewable supply that has to be *travelled* to.
+		-- Camping one is prevented by where rather than when: the stage holds a pickup back
+		-- until the player is respawnClearance away from the spot.
+		respawnClearance = 12.0,
+
+		ammoRounds = 12,
+		ammoRespawn = 45.0,
+
+		-- Health is the stronger of the two: rounds only let you keep killing, while health is
+		-- what lets you take a bad decision and survive it. So these come back slowly.
+		healAmount = 35.0,
+		healthRespawn = 180.0,
+
+		-- Between the two, which is about where a grenade sits: unlike ammunition it answers
+		-- a situation the rifle cannot, and unlike health it cannot undo a mistake already made.
+		grenades = 4,
+		grenadeRespawn = 90.0
+	},
+
+	-- ---- The sunrise, once the night is won ----
+	dawn = {
+		sunTime = 3.5,          -- seconds for the moon to become a low warm sun
+		hold = 8.0,             -- ...how long the sunrise is held before the victory card
+		washTime = 3.5          -- ...and how long the full-screen warm wash takes to flood up
+	},
+
+	-- ---- The hive cutscene ----
+	--
+	-- Timings only. The camera's framing -- where it stands, what it looks at, how it pushes
+	-- in -- lives in Main, because composing a shot is not a balance decision.
+	cutscene = {
+		-- Deliberately longer than the shot usually lasts, so the camera is still moving when
+		-- it cuts away: a camera that arrives early and sits still reads as the game freezing.
+		pushTime = 6.0,
+		-- Held at least this long, so a hive whose act is missing still reads as a deliberate
+		-- beat rather than a one-frame glitch...
+		min = 2.5,
+		max = 12.0,             -- ...and never longer than this, whatever the hive says
+		-- How much of the world stays awake around the hive: zombies inside this radius keep
+		-- running (its brood, walking out -- the subject of the shot), everything beyond holds
+		-- still. Comfortably clear of the pen, which is about 7 m deep.
+		radius = 12.0
+	}
+}
+]]></text>
+</object>

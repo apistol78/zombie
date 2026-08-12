@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
+#using {6E9AD100-0000-4000-8000-000000000010}
 import(traktor)
 
 -- Relic
@@ -27,8 +28,8 @@ Relic = Relic or class("Relic", traktor.world.ScriptComponent)
 -- Two-argument atan; math.atan2 was folded into math.atan.
 local atan2 < const > = math.atan2 or math.atan
 
-local WARD_RADIUS < const > = 1.0    -- how far out from the post a spent relic stands (m)
-local DROP_AHEAD < const > = 0.7     -- how far in front of the player a dropped relic lands (m)
+local WARD_RADIUS < const > = Config.relic.snapRadius    -- how far out from the post a spent relic stands (m)
+local DROP_AHEAD < const > = Config.relic.dropAhead     -- how far in front of the player a dropped relic lands (m)
 
 -- Put the relic down in front of the player, standing on the ground and facing
 -- the way they are. This is the move that buys the rifle back.

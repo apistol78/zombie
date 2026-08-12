@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
-	<text><![CDATA[import(traktor)
+	<text><![CDATA[#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
 
 local ENEMY < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
 
 -- Tuning.
-local MAX_ENEMIES < const > = 30      -- keep at most this many spawned alive
-local SPAWN_MIN < const > = 8.0       -- nearest a spawn may appear to the player (m)
-local SPAWN_MAX < const > = 20.0      -- farthest a spawn may appear (m)
-local DESPAWN_DIST < const > = 60.0   -- remove spawned enemies past this distance (m)
-local SPAWN_INTERVAL < const > = 0.5  -- seconds between spawn attempts
-local CANDIDATES < const > = 12       -- spawn-point tries per attempt
+local MAX_ENEMIES < const > = Config.spawner.maxEnemies      -- keep at most this many spawned alive
+local SPAWN_MIN < const > = Config.spawner.spawnMin       -- nearest a spawn may appear to the player (m)
+local SPAWN_MAX < const > = Config.spawner.spawnMax      -- farthest a spawn may appear (m)
+local DESPAWN_DIST < const > = Config.spawner.despawnDist   -- remove spawned enemies past this distance (m)
+local SPAWN_INTERVAL < const > = Config.spawner.spawnInterval  -- seconds between spawn attempts
+local CANDIDATES < const > = Config.spawner.candidates       -- spawn-point tries per attempt
 
 -- Putting the horde where the player is going rather than where it has been.
 --
@@ -28,20 +30,20 @@ local CANDIDATES < const > = 12       -- spawn-point tries per attempt
 -- So: sample a ring pushed AHEAD_BIAS metres up the player's forward, score every
 -- candidate on how far round from forward it sits and take the best rather than the
 -- first, and trace cover against the static world only.
-local AHEAD_BIAS < const > = 9.0      -- how far ahead of the player the ring is centred (m)
-local COVER_MIN < const > = 2.5       -- cover must be at least this far from the eye, so
+local AHEAD_BIAS < const > = Config.spawner.aheadBias      -- how far ahead of the player the ring is centred (m)
+local COVER_MIN < const > = Config.spawner.coverMin       -- cover must be at least this far from the eye, so
                                       -- standing in a bush cannot make everywhere "hidden"
 
 -- Taking them back off again once the player has left them behind. Without this the
 -- population sits in the trail at up to DESPAWN_DIST, eating the slots that the rule
 -- above wants to spend in front -- the two halves are the same mechanism.
-local BEHIND_DIST < const > = 28.0    -- ...at which a zombie left behind may be removed (m)
-local BEHIND_DOT < const > = -0.25    -- how far round from forward counts as behind (~105 deg)
-local RECEDE_MIN < const > = 0.5      -- and how fast the player has to be leaving it (m/s)
-local BEHIND_INTERVAL < const > = 0.4 -- seconds between removals, so the trail thins at a
+local BEHIND_DIST < const > = Config.spawner.behindDist    -- ...at which a zombie left behind may be removed (m)
+local BEHIND_DOT < const > = Config.spawner.behindDot    -- how far round from forward counts as behind (~105 deg)
+local RECEDE_MIN < const > = Config.spawner.recedeMin      -- and how fast the player has to be leaving it (m/s)
+local BEHIND_INTERVAL < const > = Config.spawner.behindInterval -- seconds between removals, so the trail thins at a
                                       -- deliberate rate; one a frame would empty it in half
                                       -- a second and read as the forest going quiet
-local VEL_SMOOTH < const > = 6.0      -- player velocity easing (1/s); raw frame deltas jitter
+local VEL_SMOOTH < const > = Config.spawner.velSmooth      -- player velocity easing (1/s); raw frame deltas jitter
 
 local EYE < const > = 1.6             -- eye height, and the height a zombie is sighted at (m)
 
@@ -51,7 +53,7 @@ local EYE < const > = 1.6             -- eye height, and the height a zombie is 
 -- of the ground the nav point meant.
 local GROUND_UP < const > = 1.0        -- begin the trace this far above the nav point (m)
 local GROUND_DOWN < const > = 3.0      -- ...and look this far below it (m)
-local GROUND_MIN_NORMAL_Y < const > = 0.7   -- reject ground steeper than ~45 degrees
+local GROUND_MIN_NORMAL_Y < const > = Config.spawner.groundMinNormalY   -- reject ground steeper than ~45 degrees
 
 -- Static world only (terrain, boulders, logs, props). The player and the zombies are in
 -- the Interactable group, so this keeps them from being mistaken for ground - without it

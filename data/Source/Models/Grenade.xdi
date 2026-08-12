@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Models/PickupHealth.tmd</fileName>
+	<fileName>Models/Grenade.tmd</fileName>
 	<importFilter/>
-	<meshType>MtInstance</meshType>
+	<meshType>MtStatic</meshType>
 	<materialShaders>
 		<item>
-			<first>Cork</first>
-			<second>{B1CCEE00-0000-4000-8000-0000000000C0}</second>
-		</item>
-		<item>
-			<first>Glass</first>
-			<second>{130BC3FC-B38D-AC47-843A-DF02406067EF}</second>
+			<first>Grenade</first>
+			<second>{31A268E8-FC20-E744-803D-94F43495FECF}</second>
 		</item>
 	</materialShaders>
 	<materialTextures/>
@@ -20,7 +16,7 @@
 	<center>None</center>
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
-	<enableRaytracing>false</enableRaytracing>
+	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
 	<previewAngle>0</previewAngle>

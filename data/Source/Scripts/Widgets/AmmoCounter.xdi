@@ -178,6 +178,11 @@ end
 function AmmoCounter:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
+	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
+	-- Every animation in update is behind a condition -- kick, eject, reload, flash,
+	-- dry pulse -- so a counter which isn't being shot holds its cache.
+	mc.cacheAsBitmap = true
+
 	self._halign = Widget.ALIGN_CENTER
 	self._valign = Widget.ALIGN_CENTER
 

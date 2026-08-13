@@ -63,6 +63,12 @@ end
 function Title:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
+	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
+	-- NOTE the glow and flame alphas are driven by a sine product which never settles,
+	-- so this re-captures every frame and currently costs more than it saves; drop this
+	-- line if the title screen shows up in a profile.
+	mc.cacheAsBitmap = true
+
 	self._halign = Widget.ALIGN_CENTER
 	self._valign = Widget.ALIGN_CENTER
 

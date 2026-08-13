@@ -154,6 +154,11 @@ end
 function ObjectiveMarker:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
+	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
+	-- The needle eases toward its target and then stops moving, at which point the
+	-- transform stops changing and the cache holds until the bearing shifts again.
+	mc.cacheAsBitmap = true
+
 	self._halign = Widget.ALIGN_CENTER
 	self._valign = Widget.ALIGN_CENTER
 

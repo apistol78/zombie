@@ -67,6 +67,11 @@ end
 function Crosshair:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
+	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
+	-- Rests between shots -- the ticks are only written while the kick decays -- so
+	-- the cache holds for most frames.
+	mc.cacheAsBitmap = true
+
 	self._halign = Widget.ALIGN_CENTER
 	self._valign = Widget.ALIGN_CENTER
 

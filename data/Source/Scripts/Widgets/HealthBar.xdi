@@ -180,6 +180,12 @@ end
 function HealthBar:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
+	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
+	-- NOTE the heartbeat in update scales the badge every frame, so this re-captures
+	-- every frame and currently costs more than it saves; drop this line, or gate the
+	-- thump on the badge actually having moved, if the HUD shows up in a profile.
+	mc.cacheAsBitmap = true
+
 	-- Fixed size art, so never let a layout stretch the placement past it.
 	self._halign = Widget.ALIGN_CENTER
 	self._valign = Widget.ALIGN_CENTER

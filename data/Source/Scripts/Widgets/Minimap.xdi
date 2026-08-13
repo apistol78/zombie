@@ -226,6 +226,13 @@ end
 function Minimap:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
+	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
+	-- NOTE setPlayer writes the blip's rotation and position every frame the player
+	-- moves, so this only pays off while standing still. The static half -- bezel,
+	-- landmarks and their labels, built once -- would be the better thing to cache,
+	-- which means splitting it into its own child sprite first.
+	mc.cacheAsBitmap = true
+
 	self._halign = Widget.ALIGN_LEFT
 	self._valign = Widget.ALIGN_TOP
 

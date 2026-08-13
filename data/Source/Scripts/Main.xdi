@@ -9,6 +9,10 @@
 #using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
 #using \{5E1A4C77-2B90-4D36-9F41-7C8A2D0E6B15}
 #using \{6E9AD100-0000-4000-8000-000000000010}
+-- Scripts/EnemyController, for the class itself rather than for anything it does: the rifle
+-- identifies what its ray hit by asking whether the struck entity's script component is one
+-- (see _fireWeapon), and `isa` needs the class in scope to ask.
+#using \{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}
 
 import(traktor)
 
@@ -27,6 +31,12 @@ local DAWN_SUN < const > = Vector4(1.0, 0.86, 0.62, 1.0) * 26.0
 
 -- Two-argument atan; math.atan2 was folded into math.atan.
 local atan2 < const > = math.atan2 or math.atan
+
+-- The two collision groups this game uses. Default is the world -- terrain, buildings,
+-- props, and the thrown grenade; Interactable is everything that walks -- the player and
+-- the horde. Same values Scripts/EnemyController and Scripts/Spawner trace against.
+local COLLISION_DEFAULT < const > = 0x00000001
+local COLLISION_INTERACTABLE < const > = 0x00000002
 
 -- The two halves of a grenade. Both are the same mesh and they are deliberately separate
 -- entities, because they want opposite things from their transform: the held one is written
@@ -308,7 +318,8 @@ function Main:new(params, environment)
 	self._kills = 0
 	self._corpseLifetime = Config.corpse.lifetime   -- how long a ragdoll corpse lingers before it despawns
 	self._fireRange = Config.rifle.range       -- max shot distance (m)
-	self._fireRadius = Config.rifle.radius       -- aim-assist radius around the shot ray (m)
+	-- (There is no aim-assist radius any more. The rifle traces a real ray, so what it hits
+	-- is whatever is under the crosshair -- see _fireWeapon.)
 
 	-- The last round fired, published to Scripts/EnemyController: { x, z, seq }. A
 	-- patrolling zombie near enough to hear it walks over to have a look -- see the
@@ -334,12 +345,12 @@ function Main:new(params, environment)
 	self._reloadTimer = 0.0      -- counts down to the magazine being refilled
 	self._ammo:setAmmo(self._mag, self._reserve)
 
-	-- Melee: right mouse swings the rifle butt (see _meleeAttack). It kills nothing and
-	-- costs no rounds -- it knocks the zombie in front of you two metres back and leaves it
-	-- reeling for a couple of seconds (Scripts/EnemyController:hit owns both). What it is
-	-- for is the moment the economy above runs out: a dry rifle mid-reload with something
-	-- already on you used to be the end of it, and now there is one answer left that does
-	-- not need ammunition.
+	-- Melee: right mouse swings the rifle butt (see _meleeAttack). It kills nothing and costs
+	-- no rounds -- it knocks *every* zombie in the cone in front of you two metres back and
+	-- leaves them reeling for a couple of seconds (Scripts/EnemyController:hit owns both).
+	-- What it is for is the moment the economy above runs out: a dry rifle mid-reload with a
+	-- crowd already on you used to be the end of it, and now there is one answer left that
+	-- does not need ammunition.
 	--
 	-- Range along the aim from the eye to the zombie's chest, and how far off that line a
 	-- zombie may be and still be caught -- together a stubby cone rather than a ray.
@@ -1868,8 +1879,7 @@ end
 -- pick the nearest live zombie close to the ray (with clear line of sight) and mark
 -- it dead. Its EnemyController switches to rag doll; Main despawns the corpse later.
 function Main:_fireWeapon()
-	local world = self.world.world
-	if self._humanoid == nil or world == nil then
+	if self._humanoid == nil then
 		return
 	end
 
@@ -1928,64 +1938,78 @@ function Main:_fireWeapon()
 	shot.z = origin.z
 	shot.seq = shot.seq + 1
 
-	local bestT = self._fireRange
-	local bestEnemy = nil
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
-		if self._deadEnemies[e] == nil then
-			-- Aim at the zombie's chest; project onto the ray and keep the closest one
-			-- whose perpendicular distance is within the aim-assist radius.
-			local rel = (e.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
-			local t = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
-			if t > 0.0 and t < bestT then
-				local hx = rel.x - dir.x * t
-				local hy = rel.y - dir.y * t
-				local hz = rel.z - dir.z * t
-				if hx * hx + hy * hy + hz * hz < self._fireRadius * self._fireRadius then
-					bestT = t
-					bestEnemy = e
-				end
-			end
+	-- One ray, out of the eye along the aim, against the world and everything standing in
+	-- it. Whatever it meets first is what the round hit.
+	--
+	-- This replaces a scan that projected every zombie onto the aim and kept the nearest
+	-- within an assist radius. Two things fall out of the swap for free, and both were
+	-- missing before: cover works, because a wall is simply the nearer hit (the old code had
+	-- a line-of-sight check commented out beside it, which is what that dead block was); and
+	-- a round has somewhere to land when it hits nothing alive, which is where the dust
+	-- comes from below.
+	--
+	-- The filter takes in both groups: the world is COLLISION_DEFAULT, the horde and the
+	-- player are COLLISION_INTERACTABLE, and a shot has to be stopped by either.
+	local pm < const > = self.environment.physics.physicsManager
+	if pm == nil then
+		return
+	end
+	local hit < const > = pm:queryRay(
+		origin, dir, self._fireRange,
+		traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE), true
+	)
+	if hit == nil then
+		return   -- nothing within range; the round is simply gone
+	end
+
+	-- What owns the body that stopped it. Every character controller and rigid body in the
+	-- engine hands its owning *entity* to the bodies it creates, so this is the one question
+	-- that has to be asked -- no matching hit positions against entity positions, and no
+	-- guessing from a name.
+	local struck < const > = hit.body ~= nil and hit.body.owner or nil
+
+	-- A zombie is an entity whose script component is an EnemyController. Asked of the class
+	-- rather than of the entity's name, so it stays true for anything else that ever gets one.
+	--
+	-- The player's own capsule is explicitly not a target: it is in the same collision group
+	-- as the horde and the ray starts inside it, so a stray hit on it would otherwise put a
+	-- dust puff in the player's face.
+	local enemy = nil
+	if struck ~= nil and struck ~= self._humanoid and isa(struck, traktor.world.Entity) then
+		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and isa(sc, EnemyController) then
+			enemy = struck
 		end
 	end
 
-	if bestEnemy == nil then
+	if enemy == nil or self._deadEnemies[enemy] ~= nil then
+		-- Hit the world, or something already dead: a puff of dust where the round landed.
+		--
+		-- Raised on the player's own event set with an offset, because that is how an effect
+		-- is put at an arbitrary point -- SpawnEffectEvent spawns at sender-transform times
+		-- offset, so the offset is the impact point expressed in the player's frame. The
+		-- event is follow=false, so the puff stays where it was put while the player walks on.
+		if self._bloodEvents ~= nil and self._humanoid ~= nil then
+			local localPoint < const > = self._humanoid.transform:inverse():transform(hit.position.xyz1)
+			self._bloodEvents:raise("dust", Transform(localPoint, Quaternion.identity))
+		end
 		return
 	end
---[[
-	-- Reject the shot if geometry blocks the line of sight to the target.
-	local pm = self.environment.physics.physicsManager
-	if pm ~= nil then
-		local to = (bestEnemy.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
-		local dist = to.length
-		if dist > 0.6 then
-			local d = to / dist
-			local s = origin + d * 0.5
-			local hit = pm:queryRay(s.xyz1, d.xyz0, dist - 0.7, traktor.physics.QueryFilter(), true)
-			if hit ~= nil then
-				return
-			end
-		end
-	end
-]]
-	-- Kill it at the shot's impact point (along the aim, at the target's range), knocked
-	-- back along the aim with a little lift.
+
+	-- Kill it where the round actually arrived, knocked back along the aim with a little
+	-- lift. The impact point is the ray's own hit position now rather than a guess along the
+	-- aim, so the limb the impulse lands on is the limb that was struck.
 	self:_killEnemy(
-		bestEnemy,
-		origin + dir * bestT,
+		enemy,
+		hit.position.xyz1,
 		dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
 	)
 end
 
--- Swing the rifle butt: pick the nearest live zombie in the short cone in front of the
--- player and shove it. Nothing dies here and no round is spent -- see _meleeRange in :new
--- for what this is for, and Scripts/EnemyController:hit for the shove and the reel, which
--- belong to the zombie because it is the zombie that has to walk them off.
+-- Swing the rifle butt: shove every live zombie in the short cone in front of the player.
+-- Nothing dies here and no round is spent -- see _meleeRange in :new for what this is for,
+-- and Scripts/EnemyController:hit for the shove and the reel, which belong to the zombie
+-- because it is the zombie that has to walk them off.
 function Main:_meleeAttack()
 	local world = self.world.world
 	if self._humanoid == nil or world == nil then
@@ -2007,12 +2031,18 @@ function Main:_meleeAttack()
 	local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
 	local dir < const > = aim * Vector4(0.0, 0.0, 1.0, 0.0)
 
-	-- Nearest zombie in front, picked the way _fireWeapon picks one -- project the chest
-	-- onto the aim, keep the closest whose perpendicular distance is inside the radius --
-	-- only over arm's length instead of forty metres. Same loop over the same list, and it
-	-- runs about once a second at most, so there is nothing here to be clever about.
-	local bestT = self._meleeRange
-	local best = nil
+	-- Everything in the cone, not just the nearest of them. A swing is a sweep, so every
+	-- zombie whose chest falls inside it takes the shove -- which matters precisely because
+	-- of when the butt gets used: it is the answer to being *surrounded*, and one that only
+	-- ever reached one of the three zombies already on top of you would be failing at the one
+	-- job it has.
+	--
+	-- The cone test itself is _fireWeapon's: project the chest onto the aim and accept it
+	-- within _meleeRadius of that line, only over arm's length rather than forty metres.
+	-- Same loop over the same list, and it runs about once a second at most, so there is
+	-- nothing here to be clever about.
+	local playerPos < const > = self._humanoid.transform.translation
+	local r2 < const > = self._meleeRadius * self._meleeRadius
 	local i = 0
 	while true do
 		local e = world:getEntity("Enemy", i)
@@ -2021,46 +2051,47 @@ function Main:_meleeAttack()
 		end
 		i = i + 1
 		if self._deadEnemies[e] == nil then
-			local rel < const > = (e.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
+			local p < const > = e.transform.translation
+			local rel < const > = (p + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
 			local t < const > = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
-			if t > 0.0 and t < bestT then
+			if t > 0.0 and t < self._meleeRange then
 				local hx < const > = rel.x - dir.x * t
 				local hy < const > = rel.y - dir.y * t
 				local hz < const > = rel.z - dir.z * t
-				if hx * hx + hy * hy + hz * hz < self._meleeRadius * self._meleeRadius then
-					bestT = t
-					best = e
+				if hx * hx + hy * hy + hz * hz < r2 then
+					-- Which way this one goes: straight out from the player along the ground,
+					-- rather than along the aim. The two agree on a zombie square in front and
+					-- differ on one caught at the edge of the cone, where shoving along the
+					-- aim would slide it past the player's shoulder instead of off them -- and
+					-- off them is the entire point of the swing. Taken per zombie, so a swing
+					-- through a crowd fans it apart rather than driving the whole lot off
+					-- along one shared heading.
+					local ax, az = p.x - playerPos.x, p.z - playerPos.z
+					if ax * ax + az * az < 0.0001 then
+						ax, az = dir.x, dir.z   -- standing exactly on the player; shove along the aim
+					end
+
+					-- Each zombie owns its own shove and reel, and refuses one if it is
+					-- already a corpse -- so the sound only plays for one that was standing.
+					--
+					-- "hit" is the same cue the rifle raises on a kill: something arriving on
+					-- a zombie, from where that zombie is. Raised per zombie rather than once
+					-- for the swing, which is what makes a sweep through three of them sound
+					-- like three impacts spread across the arc -- the bank draws its own pitch
+					-- per utterance, so they do not stack into one flat slap.
+					--
+					-- No blood with it: a rifle butt does not open anything, and the burst is
+					-- what a round looks like.
+					local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+					if sc ~= nil and sc:hit(ax, az) then
+						local fx < const > = e:getComponent(traktor.world.EventSetComponent)
+						if fx ~= nil then
+							fx:raise("hit")
+						end
+					end
 				end
 			end
 		end
-	end
-	if best == nil then
-		return
-	end
-
-	-- Which way it goes: straight out from the player along the ground, rather than along
-	-- the aim. Those agree on a zombie square in front and differ on one caught at the edge
-	-- of the cone, where shoving along the aim would slide it past the player's shoulder
-	-- instead of off them -- and off them is the entire point of the swing.
-	local away < const > = best.transform.translation - self._humanoid.transform.translation
-	local ax, az = away.x, away.z
-	if ax * ax + az * az < 0.0001 then
-		ax, az = dir.x, dir.z   -- standing exactly on the player; shove along the aim
-	end
-
-	-- The zombie refuses the shove if it is already a corpse, so the sound below only plays
-	-- on a swing that landed on something still standing.
-	local sc < const > = best:getComponent(traktor.world.ScriptComponent)
-	if sc == nil or not sc:hit(ax, az) then
-		return
-	end
-
-	-- The same "hit" the rifle raises on a kill: the sound of something arriving on a
-	-- zombie, coming from where the zombie is. No blood with it -- a rifle butt does not
-	-- open anything, and the burst is what a round looks like.
-	local fx < const > = best:getComponent(traktor.world.EventSetComponent)
-	if fx ~= nil then
-		fx:raise("hit")
 	end
 end
 

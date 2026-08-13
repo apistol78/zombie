@@ -40,6 +40,18 @@
 		<item type="traktor.world.EventSetComponentData">
 			<eventData>
 				<item>
+					<first>dust</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{6E9AD100-0000-4000-8000-000000000021}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>false</follow>
+						<useRotation>false</useRotation>
+					</second>
+				</item>
+				<item>
 					<first>blood</first>
 					<second type="traktor.spray.SpawnEffectEventData" version="3">
 						<effect>{B966DF7D-D625-0344-BADD-9B27BCFA12FF}</effect>

@@ -56,8 +56,11 @@ Config = {
 	-- With zombies spawning forever and one shot killing one of them, this is the whole
 	-- economy of the night: tune these first.
 	rifle = {
-		range = 40.0,           -- max shot distance (m)
-		radius = 0.9,           -- aim-assist radius around the shot ray (m)
+		-- Max shot distance (m). The rifle traces a real physics ray out of the eye, so this
+		-- is the length of that ray and nothing else -- there is no aim-assist radius to go
+		-- with it any more. What is under the crosshair is what gets hit, and a wall in the
+		-- way stops the round.
+		range = 40.0,
 		magSize = 6,            -- rounds the rifle holds
 		mag = 6,                -- ...and how many are in it at the start of the night
 		reserve = 24,           -- spare rounds carried at the start
@@ -69,22 +72,27 @@ Config = {
 
 	-- ---- The rifle butt ----
 	--
-	-- Kills nothing and costs no rounds: it knocks one zombie back and leaves it reeling.
-	-- What it is for is the moment the economy above runs out -- a dry rifle mid-reload with
-	-- something already on you.
+	-- Kills nothing and costs no rounds: it knocks every zombie in the cone back and leaves
+	-- them reeling. What it is for is the moment the economy above runs out -- a dry rifle
+	-- mid-reload with a crowd already on you.
 	melee = {
 		-- Range along the aim from the eye to the zombie's chest, and how far off that line
-		-- it may be and still be caught -- together a stubby cone rather than a ray. Both
+		-- one may be and still be caught -- together a stubby cone rather than a ray. Both
 		-- generous on purpose: a swing is a panic button pressed with a zombie's face
 		-- filling the screen.
+		--
+		-- These two now size a *sweep*, so widening either does not just make the swing easier
+		-- to land, it raises how many zombies one swing can hold off at once. That is the knob
+		-- to watch if being surrounded stops being frightening.
 		range = 2.2,
 		radius = 1.0,
 		-- Long enough that chaining swings is a decision rather than a mash.
 		interval = 0.8,
 
 		-- The shove, read by Scripts/EnemyController rather than by Main -- it is the zombie
-		-- that has to walk it off. Distance is the mechanic: two metres is the difference
-		-- between a zombie that is biting and one that has to come back in.
+		-- that has to walk it off, and each one caught by a swing gets its own. Distance is
+		-- the mechanic: two metres is the difference between a zombie that is biting and one
+		-- that has to come back in.
 		knockback = 2.0,        -- metres it carries
 		pushTime = 0.6,         -- ...delivered over this long (s)
 		-- ...and how long it is out of the fight altogether. This is the length of the Hit
@@ -117,8 +125,8 @@ Config = {
 		-- third costs barely a metre -- and the number does not behave the way it looks: the
 		-- rise goes with the *square* of the vertical speed, so taking a third off the lift
 		-- takes more than half off the arc.
-		throwSpeed = 10.0,      -- m/s out of the hand
-		throwLift = 0.3,       -- ...thrown this far above where you are looking (rad, ~20 deg)
+		throwSpeed = 11.0,      -- m/s out of the hand
+		throwLift = 0.35,       -- ...thrown this far above where you are looking (rad, ~20 deg)
 
 		-- A fixed fuse counted from the throw, and nothing else: not from where it lands, not
 		-- from when it stops rolling. That is what lets the player count -- three seconds is
@@ -126,7 +134,7 @@ Config = {
 		-- It follows that a grenade thrown far or high can go off in mid-air.
 		fuse = 3.0,
 
-		blastRadius = 8.0,      -- everything standing inside this dies (m)
+		blastRadius = 6.0,      -- everything standing inside this dies (m)
 		-- Distance at which the blast has half the momentum it has at the centre. Well inside
 		-- blastRadius, so the middle is fatal in a way you can see and the rim is a shove.
 		blastHalf = 2.2,
@@ -339,7 +347,7 @@ Config = {
 
 		-- Between the two, which is about where a grenade sits: unlike ammunition it answers
 		-- a situation the rifle cannot, and unlike health it cannot undo a mistake already made.
-		grenades = 4,
+		grenades = 1,
 		grenadeRespawn = 90.0
 	},
 

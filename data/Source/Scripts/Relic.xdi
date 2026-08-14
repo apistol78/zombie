@@ -11,13 +11,13 @@ import(traktor)
 -- leaves the player's hands:
 --
 --   * Relic:drop(context)         put it down on the ground in front of the player
---   * Relic:place(context, ward)  stand it at the foot of that ward post and flare it
+--   * Relic:place(context, ward)  hand it over to that ward post, which shows its own
 --
 -- Both are called by Main -- via entity:getComponent(world.ScriptComponent) -- in
 -- place of the old Main:_dropRelic / Main:_placeRelic. context is the Stage (the
--- Main instance), so the relic reads the player straight off it and grounds itself
--- with the Stage's own ground query; ward is one of the Stage's ward records
--- (see Main:resolve), which is what carries the entity to stand at.
+-- Main instance), so a dropped relic reads the player straight off it and grounds
+-- itself with the Stage's own ground query; ward is one of the Stage's ward records
+-- (see Main:resolve), which is what carries the entity to hand it over to.
 --
 -- Everything around the move stays with the Stage, which owns it: whether a relic
 -- is in hand, which wards burn, and the dawn that breaks. Carrying is likewise
@@ -25,10 +25,6 @@ import(traktor)
 
 Relic = Relic or class("Relic", traktor.world.ScriptComponent)
 
--- Two-argument atan; math.atan2 was folded into math.atan.
-local atan2 < const > = math.atan2 or math.atan
-
-local WARD_RADIUS < const > = Config.relic.snapRadius    -- how far out from the post a spent relic stands (m)
 local DROP_AHEAD < const > = Config.relic.dropAhead     -- how far in front of the player a dropped relic lands (m)
 
 -- Put the relic down in front of the player, standing on the ground and facing
@@ -43,42 +39,38 @@ function Relic:drop(context)
 	self.owner.transform = Transform(context:_groundAt(at), heading)
 end
 
--- Spend the relic on a ward: stand it at the foot of that post and let it flare.
--- Left standing in the world afterwards, so which ground the player has bought is
--- legible out in the dark and not only on the HUD.
+-- Spend the relic on a ward: hand it over to the post. The ward has a relic of its
+-- own standing at the pillar, held dark behind its facade with the flame and brought
+-- up the moment it is lit (see Scripts/Ward), so this one is put out of sight rather
+-- than stood on the ground -- otherwise the player would be looking at two.
 --
--- It goes on the side the player walked in from, rather than a fixed compass point,
--- so it is never planted through the pillar's back and is always facing whoever set
--- it down as the flame catches.
+-- Parked on the post it bought before it goes: it is still the entity the Stage reads
+-- a relic's position off (the minimap dot, the objective compass), so leaving it lying
+-- wherever the player's hands happened to be would put that dot beside the post rather
+-- than on it. Nothing else moves it afterwards -- carrying is what drives a relic's
+-- transform, and this one is no longer carried.
 function Relic:place(context, ward)
 	if ward == nil then
 		return
 	end
-	local w < const > = ward.entity.transform.translation
+	self.owner.transform = ward.entity.transform
+	self:_setVisible(false)
+end
 
-	-- Outward bearing: from the post towards the player. Falls back to +Z for the
-	-- degenerate case of standing exactly on it.
-	local dx, dz = 0.0, 1.0
-	local player < const > = context._humanoid
-	if player ~= nil then
-		local pp < const > = player.transform.translation
-		local ax < const > = pp.x - w.x
-		local az < const > = pp.z - w.z
-		local l < const > = math.sqrt(ax * ax + az * az)
-		if l > 0.001 then
-			dx, dz = ax / l, az / l
-		end
+-- Show or hide the relic and everything hanging off it. Entity visibility does not
+-- carry to the children a GroupComponent holds -- each one is an entity of the world
+-- in its own right -- so the relic's own little light has to be switched by hand, or
+-- a hidden relic leaves its glow burning at the post with nothing to come from.
+function Relic:_setVisible(visible)
+	self.owner.visible = visible
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return
 	end
-
-	-- The mesh's cross lies in XY and looks along +Z, so yawing it to that same
-	-- outward bearing turns its face away from the pillar rather than into it.
-	local facing < const > = Quaternion.fromEulerAngles(atan2(dx, dz), 0.0, 0.0)
-	local at < const > = Vector4(w.x + dx * WARD_RADIUS, w.y, w.z + dz * WARD_RADIUS, 1.0)
-	self.owner.transform = Transform(context:_groundAt(at), facing)
-
-	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
-	if fx ~= nil then
-		fx:raise("sparkle")
+	local children < const > = group.entities
+	for i = 0, children.size - 1 do
+		local child = children:get(i)
+		child.visible = visible
 	end
 end
 ]]></text>

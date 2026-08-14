@@ -990,13 +990,22 @@ function Main:_wardDistance(w)
 	return math.sqrt(dx * dx + dz * dz)
 end
 
+-- Has this relic been spent? Tracked in _placedRelics for the night, but read off the
+-- entity as well: a spent relic is hidden where it was set (the post shows a relic of
+-- its own -- see Relic:place), and _placedRelics starts empty again after a script hot
+-- reload while the world does not, so without the visibility test a reload would put
+-- every spent relic back up for grabs as a ghost with no mesh to walk up to.
+function Main:_relicSpent(r)
+	return self._placedRelics[r] ~= nil or not r.visible
+end
+
 -- The closest relic still up for grabs, and how far off it is. Pass maxDist to
 -- limit it (the E prompt wants arm's reach); omit it for the nearest anywhere on
 -- the map, which is what the objective compass points at.
 --
--- Spent relics are skipped: they stay in the world standing at the ward they lit,
--- so without the _placedRelics guard the player could pick one straight back up
--- again -- and the compass would send them to a post that is already burning.
+-- Spent relics are skipped: they stay in the world, parked on the ward they lit, so
+-- without the guard the player could pick one straight back up again -- and the
+-- compass would send them to a post that is already burning.
 function Main:_nearestRelic(maxDist)
 	local world = self.world.world
 	if world == nil or self._humanoid == nil then
@@ -1012,7 +1021,7 @@ function Main:_nearestRelic(maxDist)
 			break
 		end
 		i = i + 1
-		if self._placedRelics[r] == nil and r ~= self._carried then
+		if not self:_relicSpent(r) and r ~= self._carried then
 			local q = r.transform.translation
 			local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
 			local d = dx * dx + dy * dy + dz * dz
@@ -1538,7 +1547,7 @@ function Main:_updateMinimap()
 			local r = world:getEntity("Relic", i - 1)
 			if r ~= nil then
 				local p < const > = r.transform.translation
-				self._minimap:setRelic(i, p.x, p.z, self._placedRelics[r] ~= nil)
+				self._minimap:setRelic(i, p.x, p.z, self:_relicSpent(r))
 			end
 		end
 	end
@@ -1673,8 +1682,10 @@ function Main:_interact()
 		local sc < const > = relic:getComponent(traktor.world.ScriptComponent)
 		local ward < const > = self:_nearestUnlitWard(self._wardRange)
 		if ward ~= nil then
-			-- Spend it here. The relic is left standing at the post rather than
-			-- removed, so which ground has been bought is legible out in the dark.
+			-- Spend it here. The post takes the relic over: it brings up one of its
+			-- own as it lights (Scripts/Ward), so which ground has been bought stays
+			-- legible out in the dark, while the one the player carried goes out of
+			-- sight rather than standing on the ground beside it.
 			self._carried = nil
 			self._placedRelics[relic] = true
 			if sc ~= nil then

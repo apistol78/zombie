@@ -23,29 +23,93 @@
 		<item type="traktor.world.GroupComponentData">
 			<entityData>
 				<item type="traktor.world.EntityData" version="2">
-					<id>{EC64C457-A7F7-4525-9A4B-A23F2C5DC033}</id>
-					<name>Flame</name>
+					<id>{79C632F0-7D6A-0F4F-9D19-F3FECDC022BB}</id>
+					<name>Switch</name>
 					<state>
 						<visible>true</visible>
 						<dynamic>false</dynamic>
 						<locked>false</locked>
 					</state>
 					<transform>
-						<translation>0, 2.336636, 0, 0</translation>
+						<translation>0, 0, 0, 0</translation>
 						<rotation>0, 0, 0, 1</rotation>
 					</transform>
 					<components>
-						<item type="traktor.world.LightComponentData" version="13">
-							<lightType>Point</lightType>
-							<color>1, 0.62, 0.26, 1</color>
-							<intensity>1100</intensity>
-							<castShadow>false</castShadow>
-							<nearRange>0</nearRange>
-							<farRange>13</farRange>
-							<radius>1.570796</radius>
-							<flickerAmount>0.5</flickerAmount>
-							<flickerFilter>0.25</flickerFilter>
-							<bakeMode>LbmDisabled</bakeMode>
+						<item type="traktor.world.FacadeComponentData">
+							<show/>
+						</item>
+						<item type="traktor.world.GroupComponentData">
+							<entityData>
+								<item type="traktor.world.EntityData" version="2">
+									<id>{6BD0F41E-3C87-4A29-9E5C-7B21A0F4D318}</id>
+									<name>SpentRelic</name>
+									<state>
+										<visible>true</visible>
+										<dynamic>true</dynamic>
+										<locked>false</locked>
+									</state>
+									<transform>
+										<translation>0, 0.721192, 0, 0</translation>
+										<rotation>0, 0, 0, 1</rotation>
+									</transform>
+									<components>
+										<item type="traktor.mesh.MeshComponentData" version="1">
+											<mesh>{DF131619-EC0E-4043-A3D4-FFC68CF3CE5E}</mesh>
+										</item>
+										<item type="traktor.world.EventSetComponentData">
+											<eventData>
+												<item>
+													<first>sparkle</first>
+													<second type="traktor.spray.SpawnEffectEventData" version="3">
+														<effect>{460B33C8-81D2-4168-9F66-558B18628CF1}</effect>
+														<transform>
+															<translation>0, 0.4, 0, 0</translation>
+															<rotation>0, 0, 0, 1</rotation>
+														</transform>
+														<follow>false</follow>
+														<useRotation>false</useRotation>
+													</second>
+												</item>
+											</eventData>
+										</item>
+										<item type="traktor.world.ScriptComponentData" version="2">
+											<class>{34D2D28B-4B5F-46D2-A9F9-EC993BE3034C}</class>
+											<properties/>
+											<editorSupport>false</editorSupport>
+										</item>
+										<item type="traktor.world.GroupComponentData">
+											<entityData/>
+										</item>
+									</components>
+								</item>
+								<item type="traktor.world.EntityData" version="2">
+									<id>{F1590A18-20AF-2B46-B321-006FFCA936AD}</id>
+									<name>Flame</name>
+									<state>
+										<visible>true</visible>
+										<dynamic>false</dynamic>
+										<locked>false</locked>
+									</state>
+									<transform>
+										<translation>0, 2.536455, 0, 0</translation>
+										<rotation>0, 0, 0, 1</rotation>
+									</transform>
+									<components>
+										<item type="traktor.world.LightComponentData" version="13">
+											<lightType>Point</lightType>
+											<color>1, 0.62, 0.26, 1</color>
+											<intensity>1100</intensity>
+											<castShadow>false</castShadow>
+											<nearRange>0</nearRange>
+											<farRange>13</farRange>
+											<radius>1.570796</radius>
+											<flickerAmount>0.5</flickerAmount>
+											<flickerFilter>0.5</flickerFilter>
+											<bakeMode>LbmDisabled</bakeMode>
+										</item>
+									</components>
+								</item>
+							</entityData>
 						</item>
 					</components>
 				</item>

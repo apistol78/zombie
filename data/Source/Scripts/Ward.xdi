@@ -6,19 +6,25 @@ import(traktor)
 
 -- Ward
 --
--- A consecration ward: a stone pillar with a flame at its top. The pillar is
--- always there; the flame -- a point LightComponent on a "Flame" child entity
--- held 1.9 m up the pillar by this entity's GroupComponent -- stays dark until the
--- player carries a relic to this post and sets it down, at which point Main calls
--- turnOn() on this component. Once lit it eases up to full with a flare and holds.
+-- A consecration ward: a stone pillar that stands bare and dark until the player
+-- carries a relic to this post and spends it here, at which point Main calls
+-- turnOn() on this component.
+--
+-- Everything a lit ward *shows* hangs off a "Switch" child entity: the relic set at
+-- the post ("SpentRelic") and the flame above it ("Flame", a point LightComponent),
+-- held by that child's own GroupComponent and fronted by a FacadeComponent whose
+-- authored show list is empty -- so the engine hides the lot as the ward is built.
+-- Lighting the ward brings them up; the flame then eases to full with a flare and
+-- holds. The relic the player carried is not left on the ground for this: it is put
+-- out of sight and the post shows its own (see Scripts/Relic).
 --
 -- The Stage owns *which* ward lights and the no-spawn ground each one buys (see
--- Main:_publishWards); this component owns only the look of the flame. The light's
--- authored colour -- stored premultiplied by intensity -- is the lit target, and
--- the component blacks it out until turnOn.
+-- Main:_publishWards); this component owns only what the post looks like. The flame
+-- light's authored colour -- stored premultiplied by intensity -- is the lit target,
+-- and the component blacks it out until turnOn.
 --
--- Attach to an entity whose GroupComponent holds a child named "Flame" carrying a
--- point LightComponent.
+-- Attach to an entity whose GroupComponent holds a child named "Switch" carrying a
+-- FacadeComponent and a GroupComponent, that group holding "Flame" and "SpentRelic".
 
 Ward = Ward or class("Ward", traktor.world.ScriptComponent)
 
@@ -34,18 +40,38 @@ function Ward:turnOn(instant)
 	end
 	self._lit = true
 	self._ignite = instant and 1.0 or 0.0
+	self._flare = not instant
 end
 
 function Ward:isOn()
 	return self._lit == true
 end
 
--- Find (once) and cache the flame's LightComponent off the "Flame" child entity.
+-- Find (once) and cache the "Switch" child: the entity whose facade holds everything
+-- a lit ward shows.
+function Ward:_resolveSwitch()
+	if self._switch ~= nil then
+		return self._switch
+	end
+	local group = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return nil
+	end
+	self._switch = group:getEntity("Switch", 0)
+	return self._switch
+end
+
+-- Find (once) and cache the flame's LightComponent off the "Flame" entity behind
+-- the switch.
 function Ward:_resolveLight()
 	if self._light ~= nil then
 		return self._light
 	end
-	local group = self.owner:getComponent(traktor.world.GroupComponent)
+	local sw = self:_resolveSwitch()
+	if sw == nil then
+		return nil
+	end
+	local group = sw:getComponent(traktor.world.GroupComponent)
 	if group == nil then
 		return nil
 	end
@@ -57,7 +83,46 @@ function Ward:_resolveLight()
 	return self._light
 end
 
+-- Bring up everything the lit ward shows: whatever the switch is authored with, in
+-- one call, so adding to the post in the editor needs nothing in here.
+--
+-- Driven from update rather than done in turnOn so it cannot be missed: turnOn is
+-- also called from Main:resolve, while the world is still being put together, and a
+-- reveal dropped there would leave a lit ward standing dark for the rest of the night.
+function Ward:_reveal()
+	if not self._lit or self._revealed then
+		return
+	end
+	local sw < const > = self:_resolveSwitch()
+	if sw == nil then
+		return
+	end
+	local facade < const > = sw:getComponent(traktor.world.FacadeComponent)
+	if facade == nil then
+		return
+	end
+	facade:showAll()
+	self._revealed = true
+
+	-- The relic catching as the post takes it, raised on the relic that just came up
+	-- rather than on the one the player was holding -- that one is already out of
+	-- sight. Skipped on the reload-restore path, which is putting a ward that already
+	-- burns back the way it was rather than consecrating anything.
+	if self._flare then
+		local group < const > = sw:getComponent(traktor.world.GroupComponent)
+		local relic < const > = group ~= nil and group:getEntity("SpentRelic", 0) or nil
+		if relic ~= nil then
+			local fx < const > = relic:getComponent(traktor.world.EventSetComponent)
+			if fx ~= nil then
+				fx:raise("sparkle")
+			end
+		end
+	end
+end
+
 function Ward:update(context, totalTime, deltaTime)
+	self:_reveal()
+
 	local light = self:_resolveLight()
 	if light == nil then
 		return

@@ -3,7 +3,16 @@
 	<fileName>Models/Trees/Pine 01.glb</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
-	<materialShaders/>
+	<materialShaders>
+		<item>
+			<first>branches</first>
+			<second>{A170F361-6D47-F849-811E-6DA5601B1A69}</second>
+		</item>
+		<item>
+			<first>leaves</first>
+			<second>{6CB27174-5951-BC41-8D9C-8BF809AB763B}</second>
+		</item>
+	</materialShaders>
 	<materialTextures>
 		<item>
 			<first>base_color_texture_1</first>

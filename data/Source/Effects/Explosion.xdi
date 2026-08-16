@@ -1,41 +1,279 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.spray.EffectData">
-	<duration>4.4</duration>
+	<duration>5</duration>
 	<loopStart>0</loopStart>
 	<loopEnd>0</loopEnd>
 	<layers>
 		<item type="traktor.spray.EffectLayerData" version="4">
-			<name>Fireball</name>
+			<name>Smoke</name>
+			<time>0.05</time>
+			<duration>0</duration>
+			<emitter type="traktor.spray.EmitterData" version="9">
+				<source type="traktor.spray.BoxSourceData">
+					<constantRate>40</constantRate>
+					<velocityRate>0</velocityRate>
+					<position>0, 0.6, 0, 1</position>
+					<extent>2.2, 1, 2.2, 0</extent>
+					<velocity>
+						<min>1.4</min>
+						<max>3.8</max>
+					</velocity>
+					<orientation>
+						<min>-0.3</min>
+						<max>0.3</max>
+					</orientation>
+					<angularVelocity>
+						<min>-0.06</min>
+						<max>0.06</max>
+					</angularVelocity>
+					<age>
+						<min>1.8</min>
+						<max>3.6</max>
+					</age>
+					<mass>
+						<min>1.3</min>
+						<max>2.4</max>
+					</mass>
+					<size>
+						<min>1.1</min>
+						<max>2.6</max>
+					</size>
+				</source>
+				<modifiers>
+					<item type="traktor.spray.IntegrateModifierData" version="1">
+						<timeScale>1</timeScale>
+						<linear>true</linear>
+						<angular>true</angular>
+					</item>
+					<item type="traktor.spray.GravityModifierData">
+						<gravity>0, 0.9, 0, 0</gravity>
+						<world>true</world>
+					</item>
+					<item type="traktor.spray.DragModifierData">
+						<linearDrag>1.6</linearDrag>
+						<angularDrag>0.6</angularDrag>
+					</item>
+					<item type="traktor.spray.BrownianModifierData">
+						<factor>0.8</factor>
+					</item>
+					<item type="traktor.spray.SizeModifierData">
+						<adjustRate>1</adjustRate>
+					</item>
+				</modifiers>
+				<shader>{768AE1E4-85BD-4D0B-ADC0-835FE5B148D7}</shader>
+				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
+				<effect/>
+				<middleAge>0.14</middleAge>
+				<cullNearDistance>0.001</cullNearDistance>
+				<cullMeshDistance>200</cullMeshDistance>
+				<fadeNearRange>0.01</fadeNearRange>
+				<viewOffset>0</viewOffset>
+				<warmUp>0</warmUp>
+				<sort>true</sort>
+				<worldSpace>true</worldSpace>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
+				<gpu>false</gpu>
+				<capacity>256</capacity>
+			</emitter>
+			<trail/>
+			<sequence/>
+			<triggerEnable/>
+			<triggerDisable/>
+		</item>
+		<item type="traktor.spray.EffectLayerData" version="4">
+			<name>Smoke plume</name>
+			<time>0.08</time>
+			<duration>0.95</duration>
+			<emitter type="traktor.spray.EmitterData" version="9">
+				<source type="traktor.spray.ConeSourceData" version="1">
+					<constantRate>26</constantRate>
+					<velocityRate>0</velocityRate>
+					<position>0, 0.7, 0, 1</position>
+					<normal>0, 1, 0, 0</normal>
+					<angle1>0.7</angle1>
+					<angle2>0.7</angle2>
+					<velocity>
+						<min>1.6</min>
+						<max>3.6</max>
+					</velocity>
+					<inheritVelocity>
+						<min>0</min>
+						<max>0</max>
+					</inheritVelocity>
+					<orientation>
+						<min>-0.3</min>
+						<max>0.3</max>
+					</orientation>
+					<angularVelocity>
+						<min>-0.06</min>
+						<max>0.06</max>
+					</angularVelocity>
+					<age>
+						<min>2</min>
+						<max>3.8</max>
+					</age>
+					<mass>
+						<min>1.4</min>
+						<max>2.5</max>
+					</mass>
+					<size>
+						<min>1</min>
+						<max>2.2</max>
+					</size>
+				</source>
+				<modifiers>
+					<item type="traktor.spray.IntegrateModifierData" version="1">
+						<timeScale>1</timeScale>
+						<linear>true</linear>
+						<angular>true</angular>
+					</item>
+					<item type="traktor.spray.GravityModifierData">
+						<gravity>0, 1.1, 0, 0</gravity>
+						<world>true</world>
+					</item>
+					<item type="traktor.spray.DragModifierData">
+						<linearDrag>1.2</linearDrag>
+						<angularDrag>0.5</angularDrag>
+					</item>
+					<item type="traktor.spray.BrownianModifierData">
+						<factor>0.7</factor>
+					</item>
+					<item type="traktor.spray.SizeModifierData">
+						<adjustRate>0.95</adjustRate>
+					</item>
+				</modifiers>
+				<shader>{768AE1E4-85BD-4D0B-ADC0-835FE5B148D7}</shader>
+				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
+				<effect/>
+				<middleAge>0.13</middleAge>
+				<cullNearDistance>0.001</cullNearDistance>
+				<cullMeshDistance>200</cullMeshDistance>
+				<fadeNearRange>0.01</fadeNearRange>
+				<viewOffset>0</viewOffset>
+				<warmUp>0</warmUp>
+				<sort>true</sort>
+				<worldSpace>true</worldSpace>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
+				<gpu>false</gpu>
+				<capacity>256</capacity>
+			</emitter>
+			<trail/>
+			<sequence/>
+			<triggerEnable/>
+			<triggerDisable/>
+		</item>
+		<item type="traktor.spray.EffectLayerData" version="4">
+			<name>Dust ring</name>
 			<time>0</time>
 			<duration>0</duration>
 			<emitter type="traktor.spray.EmitterData" version="9">
-				<source type="traktor.spray.PointSourceData">
-					<constantRate>200</constantRate>
+				<source type="traktor.spray.ConeSourceData" version="1">
+					<constantRate>30</constantRate>
 					<velocityRate>0</velocityRate>
-					<position>0, 0.45, 0, 1</position>
+					<position>0, 0.12, 0, 1</position>
+					<normal>0, 1, 0, 0</normal>
+					<angle1>1.5</angle1>
+					<angle2>1.5</angle2>
 					<velocity>
-						<min>3</min>
-						<max>9</max>
+						<min>6</min>
+						<max>12</max>
+					</velocity>
+					<inheritVelocity>
+						<min>0</min>
+						<max>0</max>
+					</inheritVelocity>
+					<orientation>
+						<min>-0.3</min>
+						<max>0.3</max>
+					</orientation>
+					<angularVelocity>
+						<min>-0.06</min>
+						<max>0.06</max>
+					</angularVelocity>
+					<age>
+						<min>1.1</min>
+						<max>2.2</max>
+					</age>
+					<mass>
+						<min>1.6</min>
+						<max>2.6</max>
+					</mass>
+					<size>
+						<min>0.6</min>
+						<max>1.6</max>
+					</size>
+				</source>
+				<modifiers>
+					<item type="traktor.spray.IntegrateModifierData" version="1">
+						<timeScale>1</timeScale>
+						<linear>true</linear>
+						<angular>true</angular>
+					</item>
+					<item type="traktor.spray.GravityModifierData">
+						<gravity>0, 0.2, 0, 0</gravity>
+						<world>true</world>
+					</item>
+					<item type="traktor.spray.DragModifierData">
+						<linearDrag>3.4</linearDrag>
+						<angularDrag>0.8</angularDrag>
+					</item>
+					<item type="traktor.spray.SizeModifierData">
+						<adjustRate>1.3</adjustRate>
+					</item>
+				</modifiers>
+				<shader>{768AE1E4-85BD-4D0B-ADC0-835FE5B148D7}</shader>
+				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
+				<effect/>
+				<middleAge>0.12</middleAge>
+				<cullNearDistance>0.001</cullNearDistance>
+				<cullMeshDistance>200</cullMeshDistance>
+				<fadeNearRange>0.01</fadeNearRange>
+				<viewOffset>0</viewOffset>
+				<warmUp>0</warmUp>
+				<sort>true</sort>
+				<worldSpace>true</worldSpace>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
+				<gpu>false</gpu>
+				<capacity>256</capacity>
+			</emitter>
+			<trail/>
+			<sequence/>
+			<triggerEnable/>
+			<triggerDisable/>
+		</item>
+		<item type="traktor.spray.EffectLayerData" version="4">
+			<name>Flash</name>
+			<time>0</time>
+			<duration>0</duration>
+			<emitter type="traktor.spray.EmitterData" version="9">
+				<source type="traktor.spray.BoxSourceData">
+					<constantRate>8</constantRate>
+					<velocityRate>0</velocityRate>
+					<position>0, 0.25, 0, 1</position>
+					<extent>0.5, 0.4, 0.5, 0</extent>
+					<velocity>
+						<min>2.05</min>
+						<max>4.15</max>
 					</velocity>
 					<orientation>
 						<min>0</min>
 						<max>6.283185</max>
 					</orientation>
 					<angularVelocity>
-						<min>-6</min>
-						<max>6</max>
+						<min>-1.5</min>
+						<max>1.5</max>
 					</angularVelocity>
 					<age>
-						<min>0.22</min>
-						<max>0.55</max>
+						<min>0.1</min>
+						<max>0.2</max>
 					</age>
 					<mass>
-						<min>0.2</min>
-						<max>0.5</max>
+						<min>1</min>
+						<max>1.5</max>
 					</mass>
 					<size>
-						<min>0.5</min>
-						<max>1.3</max>
+						<min>2.85</min>
+						<max>4.35</max>
 					</size>
 				</source>
 				<modifiers>
@@ -45,14 +283,17 @@
 						<angular>true</angular>
 					</item>
 					<item type="traktor.spray.DragModifierData">
-						<linearDrag>5.5</linearDrag>
-						<angularDrag>0</angularDrag>
+						<linearDrag>3</linearDrag>
+						<angularDrag>1</angularDrag>
+					</item>
+					<item type="traktor.spray.SizeModifierData">
+						<adjustRate>3</adjustRate>
 					</item>
 				</modifiers>
-				<shader>{E9F5281A-BC6D-41D3-905C-CCCDE2A2EBEB}</shader>
+				<shader>{AAAC60AF-E1E6-48F2-9E34-2FF82A966726}</shader>
 				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
 				<effect/>
-				<middleAge>0.15</middleAge>
+				<middleAge>0.05</middleAge>
 				<cullNearDistance>0.001</cullNearDistance>
 				<cullMeshDistance>200</cullMeshDistance>
 				<fadeNearRange>0.01</fadeNearRange>
@@ -60,9 +301,9 @@
 				<warmUp>0</warmUp>
 				<sort>false</sort>
 				<worldSpace>true</worldSpace>
-				<meshOrientationFromVelocity>true</meshOrientationFromVelocity>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
 				<gpu>false</gpu>
-				<capacity>1000</capacity>
+				<capacity>256</capacity>
 			</emitter>
 			<trail/>
 			<sequence type="traktor.spray.SequenceData">
@@ -82,36 +323,186 @@
 			<triggerDisable/>
 		</item>
 		<item type="traktor.spray.EffectLayerData" version="4">
-			<name>Debris</name>
+			<name>Fireball</name>
 			<time>0</time>
 			<duration>0</duration>
 			<emitter type="traktor.spray.EmitterData" version="9">
-				<source type="traktor.spray.PointSourceData">
-					<constantRate>150</constantRate>
+				<source type="traktor.spray.BoxSourceData">
+					<constantRate>46</constantRate>
 					<velocityRate>0</velocityRate>
-					<position>0, 0.3, 0, 1</position>
+					<position>0, 0.35, 0, 1</position>
+					<extent>0.9, 0.7, 0.9, 0</extent>
 					<velocity>
-						<min>6</min>
-						<max>17</max>
+						<min>3.5</min>
+						<max>9</max>
 					</velocity>
 					<orientation>
 						<min>0</min>
 						<max>6.283185</max>
 					</orientation>
 					<angularVelocity>
-						<min>-6</min>
-						<max>6</max>
+						<min>-2</min>
+						<max>2</max>
 					</angularVelocity>
 					<age>
-						<min>0.5</min>
-						<max>1.2</max>
+						<min>0.35</min>
+						<max>0.8</max>
 					</age>
 					<mass>
-						<min>0.1</min>
-						<max>0.3</max>
+						<min>1</min>
+						<max>1.7</max>
 					</mass>
 					<size>
-						<min>0.06</min>
+						<min>1.45</min>
+						<max>3.25</max>
+					</size>
+				</source>
+				<modifiers>
+					<item type="traktor.spray.IntegrateModifierData" version="1">
+						<timeScale>1</timeScale>
+						<linear>true</linear>
+						<angular>true</angular>
+					</item>
+					<item type="traktor.spray.GravityModifierData">
+						<gravity>0, 1.4, 0, 0</gravity>
+						<world>true</world>
+					</item>
+					<item type="traktor.spray.DragModifierData">
+						<linearDrag>4.5</linearDrag>
+						<angularDrag>1.2</angularDrag>
+					</item>
+					<item type="traktor.spray.BrownianModifierData">
+						<factor>1.4</factor>
+					</item>
+					<item type="traktor.spray.SizeModifierData">
+						<adjustRate>2.2</adjustRate>
+					</item>
+				</modifiers>
+				<shader>{AAAC60AF-E1E6-48F2-9E34-2FF82A966726}</shader>
+				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
+				<effect/>
+				<middleAge>0.06</middleAge>
+				<cullNearDistance>0.001</cullNearDistance>
+				<cullMeshDistance>200</cullMeshDistance>
+				<fadeNearRange>0.01</fadeNearRange>
+				<viewOffset>-0.75</viewOffset>
+				<warmUp>0</warmUp>
+				<sort>false</sort>
+				<worldSpace>true</worldSpace>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
+				<gpu>false</gpu>
+				<capacity>256</capacity>
+			</emitter>
+			<trail/>
+			<sequence/>
+			<triggerEnable/>
+			<triggerDisable/>
+		</item>
+		<item type="traktor.spray.EffectLayerData" version="4">
+			<name>Jets</name>
+			<time>0</time>
+			<duration>0</duration>
+			<emitter type="traktor.spray.EmitterData" version="9">
+				<source type="traktor.spray.BoxSourceData">
+					<constantRate>34</constantRate>
+					<velocityRate>0</velocityRate>
+					<position>0, 0.3, 0, 1</position>
+					<extent>0.4, 0.4, 0.4, 0</extent>
+					<velocity>
+						<min>9</min>
+						<max>19</max>
+					</velocity>
+					<orientation>
+						<min>0</min>
+						<max>6.283185</max>
+					</orientation>
+					<angularVelocity>
+						<min>-3</min>
+						<max>3</max>
+					</angularVelocity>
+					<age>
+						<min>0.22</min>
+						<max>0.5</max>
+					</age>
+					<mass>
+						<min>1.1</min>
+						<max>1.9</max>
+					</mass>
+					<size>
+						<min>0.45</min>
+						<max>1.1</max>
+					</size>
+				</source>
+				<modifiers>
+					<item type="traktor.spray.IntegrateModifierData" version="1">
+						<timeScale>1</timeScale>
+						<linear>true</linear>
+						<angular>true</angular>
+					</item>
+					<item type="traktor.spray.GravityModifierData">
+						<gravity>0, 0.6, 0, 0</gravity>
+						<world>true</world>
+					</item>
+					<item type="traktor.spray.DragModifierData">
+						<linearDrag>6.5</linearDrag>
+						<angularDrag>1</angularDrag>
+					</item>
+					<item type="traktor.spray.SizeModifierData">
+						<adjustRate>1.2</adjustRate>
+					</item>
+				</modifiers>
+				<shader>{AAAC60AF-E1E6-48F2-9E34-2FF82A966726}</shader>
+				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
+				<effect/>
+				<middleAge>0.04</middleAge>
+				<cullNearDistance>0.001</cullNearDistance>
+				<cullMeshDistance>200</cullMeshDistance>
+				<fadeNearRange>0.01</fadeNearRange>
+				<viewOffset>0</viewOffset>
+				<warmUp>0</warmUp>
+				<sort>false</sort>
+				<worldSpace>true</worldSpace>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
+				<gpu>false</gpu>
+				<capacity>256</capacity>
+			</emitter>
+			<trail/>
+			<sequence/>
+			<triggerEnable/>
+			<triggerDisable/>
+		</item>
+		<item type="traktor.spray.EffectLayerData" version="4">
+			<name>Embers</name>
+			<time>0.02</time>
+			<duration>0</duration>
+			<emitter type="traktor.spray.EmitterData" version="9">
+				<source type="traktor.spray.BoxSourceData">
+					<constantRate>65.400002</constantRate>
+					<velocityRate>0</velocityRate>
+					<position>0, 0.4, 0, 1</position>
+					<extent>0.5, 0.6, 0.5, 0</extent>
+					<velocity>
+						<min>9.75</min>
+						<max>18.85</max>
+					</velocity>
+					<orientation>
+						<min>0</min>
+						<max>6.283185</max>
+					</orientation>
+					<angularVelocity>
+						<min>-4</min>
+						<max>4</max>
+					</angularVelocity>
+					<age>
+						<min>0.8</min>
+						<max>2</max>
+					</age>
+					<mass>
+						<min>1.3</min>
+						<max>2.4</max>
+					</mass>
+					<size>
+						<min>0.05</min>
 						<max>0.16</max>
 					</size>
 				</source>
@@ -122,18 +513,18 @@
 						<angular>true</angular>
 					</item>
 					<item type="traktor.spray.GravityModifierData">
-						<gravity>0, -9, 0, 0</gravity>
+						<gravity>0, -5.5, 0, 0</gravity>
 						<world>true</world>
 					</item>
 					<item type="traktor.spray.DragModifierData">
-						<linearDrag>1.2</linearDrag>
-						<angularDrag>0</angularDrag>
+						<linearDrag>1.8</linearDrag>
+						<angularDrag>0.4</angularDrag>
 					</item>
 				</modifiers>
-				<shader>{E9F5281A-BC6D-41D3-905C-CCCDE2A2EBEB}</shader>
+				<shader>{AAAC60AF-E1E6-48F2-9E34-2FF82A966726}</shader>
 				<mesh>{00000000-0000-0000-0000-000000000000}</mesh>
 				<effect/>
-				<middleAge>0.3</middleAge>
+				<middleAge>0.02</middleAge>
 				<cullNearDistance>0.001</cullNearDistance>
 				<cullMeshDistance>200</cullMeshDistance>
 				<fadeNearRange>0.01</fadeNearRange>
@@ -141,14 +532,12 @@
 				<warmUp>0</warmUp>
 				<sort>false</sort>
 				<worldSpace>true</worldSpace>
-				<meshOrientationFromVelocity>true</meshOrientationFromVelocity>
+				<meshOrientationFromVelocity>false</meshOrientationFromVelocity>
 				<gpu>false</gpu>
-				<capacity>1000</capacity>
+				<capacity>256</capacity>
 			</emitter>
 			<trail/>
-			<sequence type="traktor.spray.SequenceData">
-				<keys/>
-			</sequence>
+			<sequence/>
 			<triggerEnable/>
 			<triggerDisable/>
 		</item>

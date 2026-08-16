@@ -887,13 +887,27 @@ function Main:_killEnemy(enemy, point, impulse, whole)
 		return false
 	end
 
-	-- The event uses follow=false, so the burst stays where the zombie was hit while its
-	-- corpse ragdolls away -- and outlives the corpse when Main despawns it. "hit" is the
-	-- sound of the round arriving, raised on the zombie so it comes from out there where
-	-- the shot landed rather than from the rifle.
+	-- Open the wound where the round arrived rather than at the zombie's origin.
+	-- SpawnEffectEvent spawns at sender-transform times offset, so the offset is `point` --
+	-- a world position -- taken back into the zombie's own frame, and the two multiply out
+	-- to exactly the place that was hit. A leg shot opens at the leg and a head shot at the
+	-- head, which is the whole reason _fireWeapon passes the ray's own hit position down
+	-- here instead of a guess along the aim. The other three callers have no ray to speak of
+	-- and pass a chest point, so a blast or a ward's flare still bursts at the chest.
+	--
+	-- Effects/BloodSplat emits about its own origin for this to work: the lift that used to
+	-- be baked into its emitters could only ever be right for one caller, and putting it
+	-- here instead is what lets each of them say where their own blood belongs.
+	--
+	-- The zombie's event follows the sender, so the wound keeps pouring from the same spot
+	-- on the body as the corpse ragdolls away, while the emitters being world-space leaves
+	-- what is already in the air where it was shed. "hit" is the sound of the round
+	-- arriving, raised on the zombie so it comes from out there where the shot landed
+	-- rather than from the rifle.
 	local hitEvents = enemy:getComponent(traktor.world.EventSetComponent)
 	if hitEvents ~= nil then
-		hitEvents:raise("blood")
+		local wound < const > = enemy.transform:inverse():transform(point)
+		hitEvents:raise("blood", Transform(wound, Quaternion.identity))
 		hitEvents:raise("hit")
 	end
 
@@ -2613,10 +2627,15 @@ function Main:update(info)
 				-- timer, each raise spawning a short blood-splatter effect at the player.
 				-- "hurt" rides the same timer -- the player's own voice, and the only
 				-- warning that the thing behind you has reached you.
+				--
+				-- Placed at chest height by hand. Nothing is traced for a bite -- it lands
+				-- somewhere on a body the camera is inside -- so this is simply the middle of
+				-- the player, and it has to be said here now that the effect no longer carries
+				-- a lift of its own (see _killEnemy).
 				if self._bloodEvents ~= nil then
 					self._biteTimer = self._biteTimer - dt
 					if self._biteTimer <= 0.0 then
-						self._bloodEvents:raise("blood")
+						self._bloodEvents:raise("blood", Transform(Vector4(0.0, 1.05, 0.0, 0.0), Quaternion.identity))
 						self._bloodEvents:raise("hurt")
 						self._biteTimer = 0.3
 					end

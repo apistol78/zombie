@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.render.ShaderGraph" version="traktor.render.Graph:1">
+	<nodes>
+		<item type="traktor.render.External" version="3,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B811}</id>
+			<comment/>
+			<position>
+				<first>-40</first>
+				<second>260</second>
+			</position>
+			<fragmentGuid>{6DE0FC81-3E61-0D45-81F4-8FB4B950B941}</fragmentGuid>
+			<inputPins/>
+			<outputPins>
+				<item>
+					<id>{8BB6F055-2258-8F4D-B44C-F443961D973E}</id>
+					<name>Position</name>
+				</item>
+				<item>
+					<id>{75B6E28A-E83A-1B4B-9312-590487A95175}</id>
+					<name>TexCoord</name>
+				</item>
+			</outputPins>
+		</item>
+		<item type="traktor.render.Parameter" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B812}</id>
+			<comment><![CDATA[
+
+1/proj[0][0], 1/proj[1][1]; the tangent of the source frustum's half angles.
+
+			]]></comment>
+			<position>
+				<first>-40</first>
+				<second>330</second>
+			</position>
+			<parameterDeclaration>{3E3E9AB5-18C7-1D4A-B02F-71C6FC00F817}</parameterDeclaration>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B813}</id>
+			<comment><![CDATA[
+
+Panini distance; 0 is plain perspective, 1 the classic "Pannini" look.
+
+			]]></comment>
+			<position>
+				<first>-40</first>
+				<second>400</second>
+			</position>
+			<value>0.25</value>
+		</item>
+		<item type="traktor.render.Script" version="8,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B814}</id>
+			<comment/>
+			<position>
+				<first>240</first>
+				<second>310</second>
+			</position>
+			<name>Panini</name>
+			<technique/>
+			<domain>Undefined</domain>
+			<localSize>
+				<X>1</X>
+				<Y>1</Y>
+				<Z>1</Z>
+			</localSize>
+			<useRayTracing>false</useRayTracing>
+			<include/>
+			<inputPins>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50001}</id>
+					<name>TexCoord</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50002}</id>
+					<name>MagicCoeffs</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50003}</id>
+					<name>Distance</name>
+				</item>
+			</inputPins>
+			<outputPins>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50011}</id>
+					<name>Output</name>
+					<type>Vector</type>
+				</item>
+			</outputPins>
+			<script><![CDATA[
+
+// Inverse Panini projection; where in the source image does this pixel come from?
+//
+// A view ray is described by its horizontal angle t and its vertical slope h, and
+// crosses the unit cylinder at (sin t, h, cos t). Projecting that point onto the
+// tangent plane from an eye placed d behind the cylinder axis gives the Panini
+// image
+//
+//   U = (d + 1) * sin t / (d + cos t)
+//   V = (d + 1) * h     / (d + cos t)
+//
+// where d = 0 degenerates to ordinary perspective. Since the source is already a
+// perspective render we run this backwards; the pixel gives us U and V, and what
+// we want are the perspective coordinates (tan t, h / cos t) to sample at.
+
+const vec2 tanHalfFov = $MagicCoeffs.xy;
+const float d = max($Distance, 0.0f);
+
+// Pixel in [-1,1]; y flips as we come in as a texture coordinate.
+const vec2 ndc = vec2($TexCoord.x, 1.0f - $TexCoord.y) * 2.0f - 1.0f;
+
+// Scaled by the Panini image of the frustum edge, so the left and right edges of
+// the screen stay put instead of pulling content in from outside the source.
+const float tEdge = atan(tanHalfFov.x);
+const float cEdge = cos(tEdge);
+const float u = ndc.x * (d + 1.0f) * sin(tEdge) / (d + cEdge);
+const float v = ndc.y * tanHalfFov.y;
+
+// Invert U for t, i.e. solve sin t - k * cos t = k * d with k = U / (d + 1).
+const float k = u / (d + 1.0f);
+const float r = sqrt(1.0f + k * k);
+const float t = atan(k) + asin(clamp(k * d / r, -1.0f, 1.0f));
+
+const float c = cos(t);
+const float h = v * (d + c) / (d + 1.0f);
+
+// Vertically the corners are the ones reaching furthest outside the source
+// frustum; crop by exactly that much, uniformly to keep the aspect, so that no
+// pixel ends up sampling past the edge.
+const float fit = (d + 1.0f) / (d / cEdge + 1.0f);
+
+const vec2 p = fit * vec2(tan(t), h / c) / tanHalfFov;
+
+$Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
+
+]]></script>
+		</item>
+		<item type="traktor.render.Swizzle" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B815}</id>
+			<comment/>
+			<position>
+				<first>500</first>
+				<second>330</second>
+			</position>
+			<swizzle>xy</swizzle>
+		</item>
+		<item type="traktor.render.Parameter" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B816}</id>
+			<comment/>
+			<position>
+				<first>500</first>
+				<second>260</second>
+			</position>
+			<parameterDeclaration>{47E54562-59A3-3444-BC33-FCC82C7BC1E0}</parameterDeclaration>
+		</item>
+		<item type="traktor.render.Sampler" version="6,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B817}</id>
+			<comment/>
+			<position>
+				<first>700</first>
+				<second>290</second>
+			</position>
+			<minFilter>Linear</minFilter>
+			<mipFilter>Point</mipFilter>
+			<magFilter>Linear</magFilter>
+			<addressU>Clamp</addressU>
+			<addressV>Clamp</addressV>
+			<addressW>Clamp</addressW>
+			<compare>None</compare>
+			<mipBias>0</mipBias>
+			<ignoreMips>true</ignoreMips>
+			<useAnisotropic>false</useAnisotropic>
+		</item>
+		<item type="traktor.render.PixelOutput" version="10,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B818}</id>
+			<comment/>
+			<position>
+				<first>940</first>
+				<second>280</second>
+			</position>
+			<technique>Default</technique>
+			<priority>
+				<setup>false</setup>
+				<opaque>false</opaque>
+				<postOpaque>false</postOpaque>
+				<alphaBlend>false</alphaBlend>
+				<postAlphaBlend>false</postAlphaBlend>
+				<overlay>false</overlay>
+			</priority>
+			<cullMode>Never</cullMode>
+			<blendEnable>false</blendEnable>
+			<blendColorOperation>BoAdd</blendColorOperation>
+			<blendColorSource>BfOne</blendColorSource>
+			<blendColorDestination>BfZero</blendColorDestination>
+			<blendAlphaOperation>BoAdd</blendAlphaOperation>
+			<blendAlphaSource>BfOne</blendAlphaSource>
+			<blendAlphaDestination>BfOne</blendAlphaDestination>
+			<colorWriteMask>
+				<red>true</red>
+				<green>true</green>
+				<blue>true</blue>
+				<alpha>false</alpha>
+			</colorWriteMask>
+			<depthEnable>false</depthEnable>
+			<depthWriteEnable>false</depthWriteEnable>
+			<depthFunction>CfLessEqual</depthFunction>
+			<alphaTestEnable>false</alphaTestEnable>
+			<alphaTestFunction>CfLess</alphaTestFunction>
+			<alphaTestReference>128</alphaTestReference>
+			<alphaToCoverageEnable>false</alphaToCoverageEnable>
+			<wireframe>false</wireframe>
+			<stencilEnable>false</stencilEnable>
+			<stencilFail>SoKeep</stencilFail>
+			<stencilZFail>SoKeep</stencilZFail>
+			<stencilPass>SoKeep</stencilPass>
+			<stencilFunction>CfAlways</stencilFunction>
+			<stencilReference>0</stencilReference>
+			<stencilMask>2147483648</stencilMask>
+			<precisionHint>Low</precisionHint>
+		</item>
+	</nodes>
+	<edges>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item"/>
+				<id>{75B6E28A-E83A-1B4B-9312-590487A95175}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[3]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50001}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[1]"/>
+				<id>{D101AE9F-E124-4371-8603-15D187427DDA}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[3]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50002}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[2]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[3]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50003}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[3]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50011}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[4]"/>
+				<id>{F2E22CA6-DFF3-4B20-A70A-0D7A44EACD8C}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[4]"/>
+				<id>{ADB4FC1D-3726-4CC5-B4D5-1E2468274325}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[6]"/>
+				<id>{6D5C5EFE-A35C-4748-B81E-B8EBACE433BC}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[5]"/>
+				<id>{D101AE9F-E124-4371-8603-15D187427DDA}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[6]"/>
+				<id>{32EB5230-1F0D-40B8-93F6-9C8E5469454E}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[6]"/>
+				<id>{AF6C971B-D67A-42EE-A12B-97D36927C89F}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[7]"/>
+				<id>{7174FE5A-D079-4452-AFEF-9FC2BCC2900F}</id>
+			</destination>
+		</item>
+	</edges>
+	<groups/>
+</object>

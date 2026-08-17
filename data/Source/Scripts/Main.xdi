@@ -38,6 +38,12 @@ local atan2 < const > = math.atan2 or math.atan
 local COLLISION_DEFAULT < const > = 0x00000001
 local COLLISION_INTERACTABLE < const > = 0x00000002
 
+-- Where the barrel ends, in the rifle view model's own space -- so where a round leaves
+-- from, and where its tracer starts. Kept here rather than on the entity because the trail
+-- that draws the tracer takes world space points: it has to be carried out through the
+-- weapon's own transform by hand each shot (see _fireWeapon).
+local MUZZLE < const > = Vector4(0.0, 0.01, 0.56, 1.0)
+
 -- The two halves of a grenade. Both are the same mesh and they are deliberately separate
 -- entities, because they want opposite things from their transform: the held one is written
 -- every frame to hang off the camera (see postUpdate), while the thrown one is a dynamic
@@ -834,13 +840,23 @@ function Main:resolve()
 		self._bloodEvents = self._humanoid:getComponent(traktor.world.EventSetComponent)
 	end
 	-- The gun is a child entity of the player (via GroupComponent). Cache it and its
-	-- event set so aiming can orient it and firing can raise its "fire" (muzzle bolt).
+	-- event set so aiming can orient it and firing can raise its "fire" (the report), plus
+	-- the trail that draws each round's tracer.
 	if self._weapon == nil and self._humanoid ~= nil then
 		local group = self._humanoid:getComponent(traktor.world.GroupComponent)
 		if group ~= nil then
 			self._weapon = group:getEntity("Weapon", 0)
 			if self._weapon ~= nil then
 				self._fireEvents = self._weapon:getComponent(traktor.world.EventSetComponent)
+				-- Switched off deliberately, and it has to be: left enabled the component
+				-- samples the weapon's transform every frame of its own accord, and since the
+				-- weapon is a view model welded to the camera that draws a ribbon smeared
+				-- along wherever the player has walked. Disabled it emits nothing by itself
+				-- and takes only the points a shot hands it -- see _fireWeapon.
+				self._trail = self._weapon:getComponent(traktor.spray.TrailComponent)
+				if self._trail ~= nil then
+					self._trail.enable = false
+				end
 			end
 		end
 	end
@@ -1935,10 +1951,11 @@ function Main:_fireWeapon()
 		self._crosshair:kick()
 	end
 
-	-- Muzzle: spawn the projectile particle bolt from the weapon along the current
-	-- aim. Raised on every shot (before target selection) so firing always shows the
-	-- projectile, hit or miss. The "fire" event lives on the Weapon child entity, whose
-	-- transform the aiming code orients by heading+pitch, so the bolt follows the aim.
+	-- The report. Raised on every shot before target selection, because a miss is exactly as
+	-- loud as a hit. The "fire" event lives on the Weapon child entity, so it comes from the
+	-- rifle rather than from the player. What the shot *looks* like is no longer an effect
+	-- raised here alongside it: the round draws a tracer into the trail on that same entity,
+	-- and that needs to know where the round stopped, so it is fed below once the ray is in.
 	if self._fireEvents ~= nil then
 		self._fireEvents:raise("fire")
 	end
@@ -1947,7 +1964,7 @@ function Main:_fireWeapon()
 	local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
 	local dir = aim * Vector4(0.0, 0.0, 1.0, 0.0)
 
-	-- The bang. Published here -- with the muzzle flash, above target selection -- because
+	-- The bang. Published here -- with the report, above target selection -- because
 	-- a miss is exactly as loud as a hit, and because the reload and rate-of-fire gates are
 	-- already behind us: a dry click and a trigger pulled faster than the rifle cycles both
 	-- returned above, so reaching this line means a round actually left the barrel.
@@ -1983,6 +2000,31 @@ function Main:_fireWeapon()
 		origin, dir, self._fireRange,
 		traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE), true
 	)
+
+	-- The tracer: two points into the rifle's trail, the barrel and wherever the round ended
+	-- up, and the component draws the ribbon between them. It cuts that span into pieces of
+	-- its own accord (lengthThreshold on the component), which is what makes two points
+	-- enough -- the ribbon renderer needs three to put anything on screen -- and the shader
+	-- grades the tracer across them, brightest at the far end.
+	--
+	-- That threshold and Config.rifle.range are a pair: 0.7m pieces across 40m come to 57,
+	-- inside the 64 points a trail holds. Cutting finer overruns that, and what a full trail
+	-- drops is its oldest points -- the ones at the muzzle -- so a long shot would begin in
+	-- mid air. Coarser, and a shot closer than three pieces (~2m) draws nothing at all.
+	--
+	-- Fed here rather than beside the report above because only the ray knows where the round
+	-- stopped: a hit ends the tracer at the hit, and a miss carries it to the end of the ray
+	-- so a shot into the dark still reads as having gone somewhere.
+	--
+	-- One shot's tracer has always aged out before the next is fired (the trail's `age`
+	-- against Config.rifle.fireInterval, 0.12s against 0.4s). That margin is load bearing:
+	-- points left over from the last shot would not be replaced by these two, they would be
+	-- continued -- joining the two shots into one ribbon bent at the muzzle.
+	if self._trail ~= nil and self._weapon ~= nil then
+		self._trail:addPoint(self._weapon.transform * MUZZLE)
+		self._trail:addPoint(hit ~= nil and hit.position or (origin + dir * self._fireRange))
+	end
+
 	if hit == nil then
 		return   -- nothing within range; the round is simply gone
 	end
@@ -2887,6 +2929,8 @@ function Main:reload()
 	self._camera = nil
 	self._weapon = nil
 	self._fireEvents = nil
+	-- Goes with the weapon it hangs off, and resolve disables the new one again.
+	self._trail = nil
 	-- The held grenade is a live entity handle like the rest of these, so it goes with them
 	-- and resolve builds a fresh one. _grenades itself is plain data and survives, which is
 	-- the point of the split -- a hot reload must not quietly refill the player's pouch.

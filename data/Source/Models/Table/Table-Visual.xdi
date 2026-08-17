@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.mesh.MeshAsset" version="26">
+<object type="traktor.mesh.MeshAsset" version="28">
 	<fileName>Models/Table.blend</fileName>
 	<importFilter/>
 	<meshType>MtStatic</meshType>
-	<materialShaders/>
+	<materialShaders>
+		<item>
+			<first>MAT_Wood</first>
+			<second>{F2085C21-ACB9-4044-934C-680B9333AE89}</second>
+		</item>
+	</materialShaders>
 	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
@@ -11,6 +16,8 @@
 	<center>None</center>
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
+	<raytracingReduce>1</raytracingReduce>
 	<previewAngle>0</previewAngle>
 </object>

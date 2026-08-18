@@ -30,7 +30,12 @@ Config = {
 		-- Enemies within this distance (m) drain health, and multiple stack. Also read by
 		-- Scripts/EnemyController, which plays the bite animation exactly while it is
 		-- draining -- so the range and the animation can never disagree.
-		hurtRange = 1.0,
+		--
+		-- Has to sit outside enemy.playerSpace's rest point (half of it, 0.95 m) with room
+		-- to spare, or the horde parks where it can no longer reach: the margin is what
+		-- covers a slope, since this is measured origin to origin in all three axes and a
+		-- zombie a metre away downhill is further away than a zombie a metre away flat.
+		hurtRange = 1.3,
 		enemyDps = 20.0,        -- health drained per second per touching enemy
 
 		walkSpeed = 3.0,
@@ -246,15 +251,83 @@ Config = {
 		-- How much room a zombie leaves the *player*. Not there to keep its distance -- there
 		-- to stop it standing inside the man it is eating. The push ramps from nothing here to
 		-- `separation` at the player's own position against a unit path direction, so the two
-		-- cancel at exactly half of it: at 1.2 the rest point is 0.6 m, chest to chest and
-		-- comfortably inside player.hurtRange. Anything at or above twice hurtRange parks the
-		-- horde outside its own reach, where it crowds forever without ever biting.
-		playerSpace = 1.2,
+		-- cancel at exactly half of it: at 1.9 the rest point is 0.95 m, and EnemyController
+		-- takes that same half as a hard floor no crowd can push a zombie through. Anything
+		-- at or above twice hurtRange parks the horde outside its own reach, where it crowds
+		-- forever without ever biting.
+		--
+		-- It was 1.2 -- chest to chest at 0.6 m -- until the camera started cutting through
+		-- the zombie eating you. The player's eye rides 1.6 m up and the attack animation
+		-- swings the zombie's head 0.31 m forward of its own origin and down to 1.24 m, which
+		-- at a 0.6 m standoff puts the front of the skull a hand's width from the near plane;
+		-- 0.95 leaves it about 0.6 m of air. Raise this and hurtRange together or the bite
+		-- stops landing -- and note the ring at 0.95 m holds half again as many zombies as the
+		-- ring at 0.6 m did, so the damage taken while surrounded goes up with it (enemyDps).
+		playerSpace = 1.9,
 		-- Inside this range of the player a chasing zombie faces the player rather than the
 		-- way it is steering. Sized as playerSpace plus a hair and no more: inside it the step
 		-- is taken at the player rather than along the route, so widening it would start
 		-- overriding the route while there is still route to follow.
-		closeQuarters = 1.4,
+		closeQuarters = 2.1,
+
+		-- Getting back out from under the player. Nothing physical separates the two -- both
+		-- character controllers are in the Interactable collision group and neither one's
+		-- mask contains it, so they are bodies to the world and ghosts to each other -- which
+		-- means the standoff above is the *only* thing keeping the camera out of a zombie,
+		-- and a player who walks forward at 3 m/s walks straight through the standoff.
+		--
+		-- So the recovery is a speed that rises with how far inside the floor the zombie
+		-- already is: 20 per second means it is leaving at 3 m/s once a player has pressed it
+		-- 0.15 m in, which is where walking into one balances out -- the zombie gives way
+		-- like water and the eye never reaches the chest. It is a gain, not a spring; at
+		-- 60 Hz it gives back a third of the overlap per frame, so it decays rather than
+		-- oscillates, and the whole term is zero for every zombie that is not overlapped.
+		pushOutGain = 20.0,
+		-- ...and the ceiling on it (m/s). It has to clear player.sprintSpeed, or the one
+		-- thing the player can always do -- run straight through a zombie at 6 m/s -- puts
+		-- the eye back inside the chest, and it is the case they are most likely to try. So
+		-- this is that plus a little, and nothing about it is a speed a zombie travels under
+		-- its own steam: it is only ever reached while a man is walking through one, and it
+		-- stops the moment he stops. Applied to the character's own maxVelocity for the
+		-- frame, the same way the melee shove does it; the normal path rewrites that from
+		-- attackSpeed every frame, so nothing has to put it back.
+		pushOutMax = 6.5,
+
+		-- ---- Coming at the player from the front ----
+		--
+		-- A chasing zombie walks round the player before it walks at them, so that what
+		-- reaches them comes into view first. See EnemyController:_chaseAim, which is also
+		-- where the reason the chase needed steering at all is written down.
+		--
+		-- What counts as being in front of the player, as the cosine of the bearing from
+		-- the way they are *looking*. Reaching it is what ends the manoeuvre and sends the
+		-- zombie in, so it wants to be inside the screen rather than merely ahead: the
+		-- camera is 70 degrees vertical, which on a 16:9 view is 51 degrees either side of
+		-- the aim, and 0.7 is 46 -- comfortably on screen with room for the ragged last
+		-- couple of metres. A wider arc (0.5, the front 120 degrees) has them commit from
+		-- the very corner of the eye and arrive at a shoulder, which is most of the
+		-- complaint this whole manoeuvre exists to answer.
+		frontDot = 0.7,
+		-- ...and how far back round it has to have slipped to start coming round again.
+		-- The gap between the two is what stops a player turning on the spot from setting
+		-- the whole horde orbiting: -0.5 is the rear 120 degrees, so a zombie that has
+		-- committed stays committed unless it is genuinely left behind.
+		frontReleaseDot = -0.5,
+		-- Inside this distance (m) it goes straight in whatever the bearing -- one the
+		-- player has backed into eats them rather than politely walking round. A little
+		-- outside playerSpace, so the manoeuvre is over before the crowding begins.
+		frontCommit = 2.5,
+		-- ...and outside this one it also does: a route round a player who is a walk away
+		-- is stale long before it is walked, and closing is the only thing worth doing.
+		-- Sized inside sightRange, so coming round starts once it is properly on them.
+		frontRange = 12.0,
+		-- The ring it comes round on (m), and how far round that ring one re-path aims
+		-- (rad, ~60 deg). The radius is a cap rather than a distance to hold -- a zombie
+		-- already closer circles at its own -- so the approach spirals in instead of
+		-- stopping at arm's length, and the step is what keeps each leg a diagonal that
+		-- closes distance rather than a tangent that only ever goes sideways.
+		frontRadius = 5.0,
+		frontStep = 1.05,
 
 		-- Hearing. Every shot fired is thirty zombies quietly taking a step towards the man
 		-- who fired it. Range is well past sightRange, which is the whole point -- a shot has

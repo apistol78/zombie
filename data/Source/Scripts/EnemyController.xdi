@@ -13,7 +13,10 @@ import(traktor)
 --   * INVESTIGATE - walk to where the player was heard firing (medium). See :investigate
 --              and the hearing block in update.
 --   * ATTACK - chase the player (fast). Entered the moment the player is "spotted":
---              within sight range AND with a clear physics line of sight.
+--              within sight range AND with a clear physics line of sight. The chase is
+--              steered rather than aimed: a zombie behind the player comes round to
+--              their front before it closes, so what reaches them is something they
+--              have seen coming. See :_chaseAim.
 --
 -- Losing sight does not drop ATTACK instantly; the enemy keeps chasing for a short
 -- memory window first. That feels natural ("I just saw you go that way") and also
@@ -67,6 +70,32 @@ local SPAWN_HUNT < const > = CFG.spawnHunt
 -- the way it is steering (see the facing block in update, which is also the story of why
 -- it exists).
 local CLOSE_QUARTERS < const > = CFG.closeQuarters
+
+-- The floor under all of that: however hard it is being pushed and by however many, no
+-- zombie walks nearer the player than this (see the personal space block in update). It
+-- is not a fourth number to keep in step with the other three -- it is exactly where the
+-- _playerSpace push already comes to rest, since that push cancels a unit path direction
+-- at half its radius, restated as a hard limit instead of a term in a blend.
+local PERSONAL_SPACE < const > = CFG.playerSpace * 0.5
+
+-- ...and how hard it gets back out when something has already pushed it through: a speed
+-- per metre of overlap, and a ceiling on it. Nothing physical separates a zombie from the
+-- player, so this is what a player walking into one meets.
+local PUSH_OUT_GAIN < const > = CFG.pushOutGain
+local PUSH_OUT_MAX < const > = CFG.pushOutMax
+
+-- Coming at the player from the front (see :_chaseAim). Where the chase aims while a
+-- zombie is still behind them, how far round the front counts as arrived, and the two
+-- distances the whole manoeuvre is skipped outside of.
+local FRONT_DOT < const > = CFG.frontDot
+local FRONT_RELEASE_DOT < const > = CFG.frontReleaseDot
+local FRONT_COMMIT < const > = CFG.frontCommit
+local FRONT_RANGE < const > = CFG.frontRange
+local FRONT_RADIUS < const > = CFG.frontRadius
+local FRONT_STEP < const > = CFG.frontStep
+-- ...and the same front arc as an angle, since the step below works in radians. Taken
+-- once here rather than per aim: FRONT_DOT is a constant and so is its arc cosine.
+local FRONT_ARC < const > = math.acos(FRONT_DOT)
 
 -- Being shoved (see :hit and :_stagger, and Scripts/Weapons/Melee, which swings the rifle
 -- butt). How far the shove carries, how long it takes to deliver, and how long the zombie
@@ -152,6 +181,7 @@ function EnemyController:new()
 
 	-- State machine.
 	self._state = "patrol"    -- "patrol" | "investigate" | "attack"
+	self._closing = false     -- done coming round, now going straight in (see :_chaseAim)
 	self._lostTimer = 0.0     -- remaining ATTACK memory after losing sight (s)
 	self._spotted = false     -- last perception sample: clear line of sight to the player
 	self._relentless = false  -- set by :hunt; ATTACK is then never given up
@@ -210,6 +240,7 @@ function EnemyController:alertTo(hunt)
 	self._state = "attack"
 	self._lostTimer = hunt or SPAWN_HUNT
 	self._patrolTarget = nil
+	self._closing = false     -- it has not come round yet; :_chaseAim starts it over
 	self._repathTimer = 0.0   -- path on the very first update rather than in half a second
 end
 
@@ -356,6 +387,89 @@ function EnemyController:investigate(x, z)
 	self._investigateTimer = INVESTIGATE_TIME
 	self._patrolTarget = nil
 	self._repathTimer = 0.0
+end
+
+-- Where a chasing zombie walks to: the player, or a point on the way round to their front.
+--
+-- A chase aimed at the player arrives from wherever it set off, and where it sets off is
+-- behind them. The player moves at three metres a second and the horde at barely more than
+-- one, so everything they walk past ends up in their wake and stays there; what they meet
+-- when they stop is what has been following them. Neither end of the Spawner fixes that --
+-- where a zombie is put down and when it is taken away both act on where it *appears*, and
+-- this is about where the walk that follows ends up.
+--
+-- So the last stretch of the chase is steered rather than aimed. While it is behind the
+-- player a zombie heads for a point on a ring around them, stepped FRONT_STEP round
+-- towards the way they are looking and re-aimed on the same half-second beat the chase
+-- re-paths on -- which walks it round them in a spiral, closing as it comes. Once it is
+-- inside the front FRONT_DOT arc it stops circling and goes straight in, and keeps going
+-- straight in until it has slipped right back round past FRONT_RELEASE_DOT. That gap is
+-- not decoration: with a single threshold, a player turning on the spot -- which is most
+-- of what a player does -- would flip every zombie between circling and closing frame by
+-- frame, and the horde would orbit them for ever without ever arriving.
+--
+-- Three ways out of the manoeuvre entirely, all cases where it costs more than it buys:
+--   * further off than FRONT_RANGE, where a route round a player who is a walk away is
+--     stale long before it is walked, and closing the distance is the only useful thing;
+--   * closer than FRONT_COMMIT, where it is already on the player -- one the player has
+--     backed into eats them rather than politely walking round;
+--   * no character controller on the player to ask which way they are looking, which is
+--     also what keeps this controller working with a player entity that has none.
+--
+-- Bearing is measured from the player's *look* direction rather than their travel, because
+-- what the manoeuvre buys is being seen: headAngle is the first person camera's yaw, so
+-- "in front of them" is exactly "on screen". A player who spins round to check their back
+-- therefore hands the ones behind them their commitment early, which is the right answer --
+-- they have been seen, which is all this was ever asking for.
+--
+-- Costs a handful of trig calls and a square root twice a second per chasing zombie --
+-- it is called from the re-path branch, not per frame.
+function EnemyController:_chaseAim(enemyPos, playerPos, pdist)
+	local character < const > = self._playerCharacter
+	if character == nil or pdist < FRONT_COMMIT or pdist > FRONT_RANGE then
+		return playerPos.x, playerPos.z
+	end
+
+	-- Where this zombie stands around the player, in the frame of what they are looking
+	-- at. `ahead` is the cosine of that bearing (+1 dead ahead of them, -1 dead behind);
+	-- `side` only has to be consistent, since all it decides is which way round is shorter.
+	local look < const > = character.headAngle
+	local fx < const > = math.sin(look)
+	local fz < const > = math.cos(look)
+	local dx < const > = enemyPos.x - playerPos.x
+	local dz < const > = enemyPos.z - playerPos.z
+	local d < const > = math.sqrt(dx * dx + dz * dz)
+	if d < 0.001 then
+		return playerPos.x, playerPos.z
+	end
+	local ahead < const > = (dx * fx + dz * fz) / d
+	local side < const > = (dx * fz - dz * fx) / d
+
+	-- Committed, and staying committed until it is well round the back again.
+	if self._closing then
+		if ahead > FRONT_RELEASE_DOT then
+			return playerPos.x, playerPos.z
+		end
+		self._closing = false
+	elseif ahead >= FRONT_DOT then
+		self._closing = true
+		return playerPos.x, playerPos.z
+	end
+
+	-- Still coming round. Step the bearing FRONT_STEP towards the front, stopping at the
+	-- arc rather than overshooting it -- a step past would swing the zombie out the far
+	-- side and back again, which reads as indecision -- and take the ring in at the same
+	-- time: the radius is this zombie's own distance capped at FRONT_RADIUS, so it cuts
+	-- the corner from far out and circles at its own radius when it is already inside.
+	-- Capped rather than held, so the manoeuvre never walks a zombie back out.
+	local offset = (math.atan2 or math.atan)(side, ahead)
+	local turned = (offset < 0.0 and -offset or offset) - FRONT_STEP
+	if turned < FRONT_ARC then
+		turned = FRONT_ARC
+	end
+	local aim < const > = look + (offset < 0.0 and -turned or turned)
+	local radius < const > = d < FRONT_RADIUS and d or FRONT_RADIUS
+	return playerPos.x + math.sin(aim) * radius, playerPos.z + math.cos(aim) * radius
 end
 
 -- Draw the next patrol destination: a random *reachable* nav point a couple of metres off
@@ -514,6 +628,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._player == nil then
 		self._player = world:getEntity("Humanoid")
 	end
+	-- Which way the player is *looking* only exists on their character controller:
+	-- Main writes its aim yaw to headAngle every frame (the same value the first person
+	-- camera is built from), while the Humanoid's own transform carries the body. Cached
+	-- rather than looked up per frame, and allowed to stay nil -- :_chaseAim treats a
+	-- player it cannot ask as one to walk straight at, which is what a standalone
+	-- controller with no such player does.
+	if self._playerCharacter == nil and self._player ~= nil then
+		self._playerCharacter = self._player:getComponent(traktor.physics.CharacterComponent)
+	end
 	if self._character == nil or self._navMesh == nil or self._player == nil then
 		return
 	end
@@ -556,6 +679,11 @@ function EnemyController:update(context, totalTime, deltaTime)
 			self._lostTimer = self._attackMemory
 			if self._state ~= "attack" then
 				self._state = "attack"
+				-- Noticing the player is the start of an approach, not the middle of one:
+				-- clear any commitment left over from the last time this zombie was on
+				-- them, or one that gave up and wandered off would charge the next
+				-- sighting from wherever it happened to be standing.
+				self._closing = false
 			end
 		elseif self._state == "attack" and not self._relentless then
 			-- ...unless it is hunting (see :hunt), in which case losing sight of the
@@ -703,15 +831,20 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._state == "attack" then
 		if self._repathTimer <= 0.0 and self._pathResult == nil then
 			self._repathTimer = 0.5
-			-- Where to chase to: the player, wherever they are standing. A lit ward used
-			-- to divert this to the ring outside it, on the grounds that consecrated
-			-- ground could not be entered -- it can now, so there is nothing to divert
-			-- for and a player standing in the light is chased like any other player.
+			-- Where to chase to: the player, or -- while this zombie is still behind them
+			-- -- a point on the way round to their front. See :_chaseAim, which is where
+			-- that choice and the reason for it live. A lit ward used to divert this to
+			-- the ring outside it, on the grounds that consecrated ground could not be
+			-- entered -- it can now, so there is nothing to divert for and a player
+			-- standing in the light is chased like any other player.
 			--
 			-- Jittered so the horde does not stack every one of its paths on one point.
+			-- Applied to either answer: two zombies coming round the same side are on the
+			-- same ring and would otherwise aim at very nearly the same metre of it.
 			local jitter = 1.5
-			local aimX = playerPos.x + (math.random() * 2.0 - 1.0) * jitter
-			local aimZ = playerPos.z + (math.random() * 2.0 - 1.0) * jitter
+			local chaseX, chaseZ = self:_chaseAim(enemyPos, playerPos, pdist)
+			local aimX = chaseX + (math.random() * 2.0 - 1.0) * jitter
+			local aimZ = chaseZ + (math.random() * 2.0 - 1.0) * jitter
 			-- Snap onto the ground beneath the aim. findClosestPointXZ ignores height, so
 			-- it still resolves to the terrain when the player has climbed a tower or a
 			-- roof -- where the old height-limited findClosestPoint failed (handing back the
@@ -835,6 +968,58 @@ function EnemyController:update(context, totalTime, deltaTime)
 		targetZ = 0.0
 	end
 
+	-- ---- The player's personal space is a floor, not a push ----
+	--
+	-- Everything above this point is a blend, and a blend can be outvoted. The push out of
+	-- the player rises to `separation` at the player's own position and stops there, while
+	-- every zombie in the rank behind is pushing this one forward with as much again --
+	-- three of them and the sum points at the player. So the horde presses its front rank
+	-- *through* the man it is eating, and the camera, which sits at his eye, ends up inside
+	-- a chest: the attack animation alone swings the head 0.31 m forward of the zombie's own
+	-- origin, so it does not take much crowding to put a skull where the near plane is.
+	--
+	-- Nothing got it out again, either. The step below is taken along the facing, and the
+	-- facing inside CLOSE_QUARTERS is the player, so a steering vector pointing away merely
+	-- fails the align gate: the zombie stops rather than retreats, and stands inside the
+	-- player until it dies. Two halves, and both are fixed here.
+	--
+	-- Inside PERSONAL_SPACE the inward part of the steering is removed outright, so no sum
+	-- of pushes can aim a zombie further in. What is left is the tangential part, and a
+	-- crowded zombie therefore slides round the player looking for a gap rather than
+	-- climbing into them -- which is also the better thing to watch. Getting one that is
+	-- already inside back out is the other half, and that is the step itself: see the
+	-- `depth > 0.0` branch further down, which is why `depth` and the way out are worked
+	-- out here and kept.
+	--
+	-- Costs nothing in the ordinary case -- `depth` is zero for everything but the front
+	-- rank -- and applies in every state, since a zombie that has not even noticed the
+	-- player has no more business standing inside them than one eating them has.
+	local depth = 0.0
+	local outX, outZ = 0.0, 0.0
+	do
+		local ox < const > = enemyPos.x - playerPos.x
+		local oz < const > = enemyPos.z - playerPos.z
+		local od < const > = math.sqrt(ox * ox + oz * oz)
+		if od > 0.001 and od < PERSONAL_SPACE then
+			depth = PERSONAL_SPACE - od
+			outX, outZ = ox / od, oz / od
+		end
+	end
+	if depth > 0.0 then
+		local inward < const > = -(targetX * outX + targetZ * outZ)
+		if inward > 0.0 then
+			targetX = targetX + outX * inward
+			targetZ = targetZ + outZ * inward
+			local dl < const > = math.sqrt(targetX * targetX + targetZ * targetZ)
+			if dl > 0.001 then
+				targetX = targetX / dl
+				targetZ = targetZ / dl
+			else
+				tl = 0.0
+			end
+		end
+	end
+
 	-- What to face. Normally the way it is steering -- but a zombie within reach of the
 	-- player faces the player, whatever the steering says.
 	--
@@ -892,7 +1077,41 @@ function EnemyController:update(context, totalTime, deltaTime)
 	end
 
 	local moving = false
-	if tl > 0.001 then
+	if depth > 0.0 then
+		-- Standing inside the player: get out, before anything else this frame (see the
+		-- personal space block above). Straight out, and along that rather than along the
+		-- facing -- the one place in this controller where the step leaves the facing, and
+		-- it has to, since the facing is the player and the whole point is to go the other
+		-- way. So the zombie keeps its eyes on the man it is clawing at and gives ground,
+		-- which is what being pushed off someone looks like.
+		--
+		-- Radially rather than along the steering, because the steering is a blend and being
+		-- squeezed is exactly when the crowd's half of that blend is largest: a zombie
+		-- pressed between the player and the rank behind it would leave along a mostly
+		-- sideways sum at a fraction of the speed asked for here. Out of the player is the
+		-- one direction that is always worth the whole of it.
+		--
+		-- ...and fast in proportion to how far in it is, rather than at a walk. A walk covers
+		-- a crowd squeezing it in by a few centimetres and nothing else; the case this exists
+		-- for is that the player has no collision with a zombie either, so they can simply
+		-- walk into one at three metres a second, and anything slower is a zombie being worn.
+		-- At PUSH_OUT_GAIN the two balance a hand's width inside the floor, which keeps the
+		-- eye clear of the chest, and a player who stops gets the metre back within a stride.
+		--
+		-- maxVelocity has to come up with it, exactly as in :_stagger -- it is the clamp the
+		-- impulse below accumulates against, so leaving it at walking pace would cap the
+		-- recovery at walking pace. The normal path rewrites it from _attackSpeed on the next
+		-- frame, so there is nothing to restore.
+		local back = depth * PUSH_OUT_GAIN
+		if back > PUSH_OUT_MAX then
+			back = PUSH_OUT_MAX
+		end
+		if back > speed then
+			self._character.maxVelocity = back
+		end
+		self._character:move(Vector4(outX * back, 0.0, outZ * back, 0.0), false)
+		moving = true
+	elseif tl > 0.001 then
 		local align = fx * targetX + fz * targetZ
 		if align > 0.05 then
 			self._character:move(Vector4(fx * speed * align, 0.0, fz * speed * align, 0.0), false)

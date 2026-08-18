@@ -37,6 +37,16 @@ local GRENADE_PROJECTILE < const > = Guid("\{6E9AD100-0000-4000-8000-00000000000
 -- to arrive on a body that is still upright.
 local CHEST < const > = Vector4(0.0, 1.0, 0.0, 0.0)
 
+-- The world collision group, which is the one a rag doll's limbs are in (see the collisionGroup
+-- on Entities/Zombie/RDS - Zombie). Same value Scripts/Weapons/Rifle and Scripts/EnemyController
+-- trace against; each keeps its own copy rather than sharing one, as they always have.
+local COLLISION_DEFAULT < const > = 0x00000001
+
+-- PhysicsManager::QtDynamic. The enum is not registered with the script bindings, so the value is
+-- spelled out; it means "skip the static world", which for a sphere over a battlefield is most of
+-- what is in it -- terrain, gravestones, walls.
+local QUERY_DYNAMIC < const > = 2
+
 function Grenades:new(context)
 	Weapon.new(self, context)
 
@@ -341,19 +351,54 @@ function Grenades:_explode(g)
 	-- ...and everything already lying there. A blast that stepped over the bodies read as though
 	-- they had become scenery the moment they went down -- and worse, it read as the blast having
 	-- a smaller radius than it has, since the corpses are exactly what the player can see it
-	-- reach. They are thrown by the same falloff as the living, from the same centre, and each
-	-- one caught gets its despawn clock wound back (Main:shoveCorpse).
+	-- reach. They are thrown by the same falloff as the living, from the same centre, and each one
+	-- caught gets its despawn clock wound back (Main:shoveCorpse).
 	--
-	-- One point rather than two, and it is the middle of the body: a corpse has no feet to stand
-	-- on and its entity transform is still back where it died, so where it *is* has to be asked
-	-- of the pose (Main:corpsePosition). That one point answers both questions -- caught, and
-	-- which way -- which is right for a body already lying in the blast rather than standing up
-	-- out of it.
-	for _, corpse in ipairs(context:corpses()) do
-		local p < const > = context:corpsePosition(corpse)
-		if (p - centre).length < self._blastRadius then
-			context:shoveCorpse(corpse, p, self:_blastShove(centre, p), true)
+	-- Found by sweeping physics rather than by walking the corpses and asking each where it is,
+	-- because a corpse cannot be asked: the rag doll drives the *pose* and never the entity, and
+	-- the character controller that used to drive the entity is switched off the moment the zombie
+	-- goes down (EnemyController:_enterRagDoll) -- so its entity transform sits on the spot it
+	-- died on while the body itself is metres away. The limbs are the only thing that knows, and
+	-- they are exactly what a sphere over the blast finds.
+	--
+	-- Each limb names its corpse, which is the whole reason this can be done at all: rag doll
+	-- limbs carry their owner (RagDollPoseController takes the one SkeletonComponent hands down
+	-- and stamps every limb with it), the same route the rifle uses to tell whose body a round
+	-- struck. Only unowned or living bodies come back otherwise, and neither survives the test
+	-- below -- a living zombie's limbs are not in the world at all until it dies.
+	--
+	-- One shove per corpse, taken at its *nearest* limb: a body sprawled half out of the blast is
+	-- thrown from the end that was in it, and a body is thrown once rather than eleven times --
+	-- the impulse is a whole-body one (see the `true` below), so it is already spread across every
+	-- limb by the time it lands.
+	local pm < const > = context.environment.physics.physicsManager
+	if pm == nil then
+		return
+	end
+	local bodies < const > = pm:querySphere(
+		centre, self._blastRadius,
+		traktor.physics.QueryFilter(COLLISION_DEFAULT), QUERY_DYNAMIC
+	)
+	local caught = {}
+	for i = 0, bodies.size - 1 do
+		local body < const > = bodies:get(i)
+		local corpse < const > = (body ~= nil) and body.owner or nil
+		if corpse ~= nil and context:isEnemyDead(corpse) then
+			local p < const > = body.transform.translation
+			local d < const > = (p - centre).length
+			-- The query is deliberately generous -- it accepts a body whose bounds merely reach
+			-- the sphere -- so the radius is enforced here, on the limb's own centre, exactly as
+			-- it is on a standing zombie's feet above.
+			if d < self._blastRadius then
+				local best = caught[corpse]
+				if best == nil or d < best.d then
+					caught[corpse] = { at = p, d = d }
+				end
+			end
 		end
+	end
+	for corpse, hit in pairs(caught) do
+		context:shoveCorpse(corpse, hit.at, self:_blastShove(centre, hit.at), true)
 	end
 end
 

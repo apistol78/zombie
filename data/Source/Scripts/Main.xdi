@@ -42,10 +42,6 @@ local atan2 < const > = math.atan2 or math.atan
 -- out.
 local EYE_OFFSET < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 
--- The rag doll's root joint, i.e. the middle of the body -- see the root bone's influences in
--- Entities/Zombie/RDS - Zombie. Read to find where a corpse actually lies (corpsePosition).
-local CORPSE_ROOT_JOINT < const > = "Hips"
-
 
 -- How much nearer a rival ward post has to be before the objective compass gives up
 -- the one it is already pointing at. Without it, carrying a relic along the midline
@@ -997,43 +993,6 @@ function Main:shoveCorpse(enemy, point, impulse, whole)
 	self._deadEnemies[enemy] = self._corpseLifetime
 	self:_queueImpulse(enemy, point, impulse, whole)
 	return true
-end
-
--- Every corpse still lying in the world. Handed out as a plain list rather than as the set it
--- is built from, so a caller can sweep them and shove what it finds without iterating a table
--- it is writing to.
-function Main:corpses()
-	local list = {}
-	for e in pairs(self._deadEnemies) do
-		table.insert(list, e)
-	end
-	return list
-end
-
--- Where a corpse actually is, as against where it died.
---
--- Worth spelling out, because the two are genuinely different and the difference is metres. The
--- rag doll drives the *pose* and never the entity (RagDollPoseController:evaluate only reads its
--- limbs), and the character controller that used to drive the entity is switched off the moment
--- the zombie goes down (EnemyController:_enterRagDoll) -- so a corpse's entity transform stays
--- exactly where it was killed while the body itself is thrown across the ground by the shot that
--- did it. Anything asking "what is near this point" has to ask the pose.
---
--- Read off the hip joint, the rag doll's root: a pose transform is in the entity's own space, so
--- carrying it out through the entity transform gives the world position of the middle of the
--- body. A skeleton with no such joint answers identity, which lands this back on the entity
--- origin -- the old behaviour, and the right thing to fall back to.
---
--- xyz1 on the way out through the entity transform, and it is load bearing: Transform times
--- Vector4 adds the translation scaled by w, so a pose offset that happens to carry w = 0 would
--- come back rotated but still sitting at the world origin.
-function Main:corpsePosition(enemy)
-	local tf < const > = enemy.transform
-	local skeleton < const > = enemy:getComponent(traktor.animation.SkeletonComponent)
-	if skeleton == nil then
-		return tf.translation.xyz1
-	end
-	return tf * skeleton:getPoseTransform(CORPSE_ROOT_JOINT).translation.xyz1
 end
 
 -- Kill every live zombie in the world at once (K). Each one dies through killEnemy, so

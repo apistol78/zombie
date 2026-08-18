@@ -29,8 +29,6 @@ import(traktor)
 --   context:killEnemy(e, p, i, w)  the one way anything in this game dies
 --   context:isEnemyDead(e)         ...and whether it already has
 --   context:shoveCorpse(...)       ...and what hitting one that already has does
---   context:corpses()              every body still lying in the world...
---   context:corpsePosition(e)      ...and where one of them actually lies
 --   context:knockbackImpulse(dir)  what a corpse is shoved with
 --   context:reportGunshot(x, z)    published to the horde, which comes to look
 --   context:kickCrosshair()        recoil bloom on the reticle

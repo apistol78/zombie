@@ -45,7 +45,7 @@ Panini distance; 0 is plain perspective, 1 the classic "Pannini" look.
 				<first>-40</first>
 				<second>400</second>
 			</position>
-			<value>0.25</value>
+			<value>0.125</value>
 		</item>
 		<item type="traktor.render.Script" version="8,traktor.render.Node:1">
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B814}</id>
@@ -159,7 +159,7 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 				<second>290</second>
 			</position>
 			<minFilter>Linear</minFilter>
-			<mipFilter>Point</mipFilter>
+			<mipFilter>Linear</mipFilter>
 			<magFilter>Linear</magFilter>
 			<addressU>Clamp</addressU>
 			<addressV>Clamp</addressV>
@@ -214,7 +214,7 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 			<stencilFunction>CfAlways</stencilFunction>
 			<stencilReference>0</stencilReference>
 			<stencilMask>2147483648</stencilMask>
-			<precisionHint>Low</precisionHint>
+			<precisionHint>Undefined</precisionHint>
 		</item>
 	</nodes>
 	<edges>

@@ -68,7 +68,7 @@ local SPAWN_HUNT < const > = CFG.spawnHunt
 -- it exists).
 local CLOSE_QUARTERS < const > = CFG.closeQuarters
 
--- Being shoved (see :hit and :_stagger, and Main:_meleeAttack, which swings the rifle
+-- Being shoved (see :hit and :_stagger, and Scripts/Weapons/Melee, which swings the rifle
 -- butt). How far the shove carries, how long it takes to deliver, and how long the zombie
 -- is out of the fight altogether. The distance is delivered exactly, by metres owed rather
 -- than by a speed held for a time -- see :_stagger.
@@ -229,7 +229,7 @@ function EnemyController:hunt()
 	self._relentless = true
 end
 
--- Take a shove. Called by Main:_meleeAttack on the zombie the player has just swung the
+-- Take a shove. Called by Scripts/Weapons/Melee on the zombie the player has just swung the
 -- rifle butt at, with the direction to go -- which is out from the player, and so
 -- backwards, since anything close enough to be hit is facing the man it is trying to eat.
 --
@@ -570,7 +570,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 
 		-- ---- Hearing: has the player fired? ----
 		--
-		-- Published by the Stage as a single record with a sequence number (Main:_fireWeapon)
+		-- Published by the Stage as a single record with a sequence number (Rifle:attack, via Main:reportGunshot)
 		-- rather than pushed at the zombies shot by shot. The state machine lives here, so
 		-- the decision about whether a zombie is in any position to care belongs here too --
 		-- and a stage that only writes three numbers per shot does not care how many zombies

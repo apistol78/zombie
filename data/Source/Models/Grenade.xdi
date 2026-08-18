@@ -2,7 +2,7 @@
 <object type="traktor.mesh.MeshAsset" version="28">
 	<fileName>Models/Grenade.tmd</fileName>
 	<importFilter/>
-	<meshType>MtStatic</meshType>
+	<meshType>MtInstance</meshType>
 	<materialShaders>
 		<item>
 			<first>Grenade</first>
@@ -16,7 +16,7 @@
 	<center>None</center>
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
-	<enableRaytracing>true</enableRaytracing>
+	<enableRaytracing>false</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
 	<previewAngle>0</previewAngle>

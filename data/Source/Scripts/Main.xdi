@@ -4,15 +4,15 @@
 #using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
-#using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 #using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
 #using \{5E1A4C77-2B90-4D36-9F41-7C8A2D0E6B15}
 #using \{6E9AD100-0000-4000-8000-000000000010}
--- Scripts/EnemyController, for the class itself rather than for anything it does: the rifle
--- identifies what its ray hit by asking whether the struck entity's script component is one
--- (see _fireWeapon), and `isa` needs the class in scope to ask.
-#using \{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}
+-- Scripts/Weapons/Loadout, which owns what the player has in their hands. Everything
+-- about the weapons themselves is behind it -- see Scripts/Weapons/Weapon for the
+-- interface, and "what a weapon is given" further down for the part of this stage a
+-- weapon is allowed to use.
+#using \{7EA9C000-0000-4000-8000-000000000005}
 
 import(traktor)
 
@@ -20,9 +20,13 @@ import(traktor)
 --
 -- Every gameplay number this stage runs on comes from Scripts/Config. The fields below are
 -- still the stage's own -- other scripts read them off the context (EnemyController takes
--- _hurtRange and _enemyPace, the pickups take _reserveMax and _grenadesMax), and several are
--- state that moves during the night -- but their starting values are Config's, and the ones
--- that never move are Config's outright. Retune the night there, not here.
+-- _hurtRange and _enemyPace), and several are state that moves during the night -- but
+-- their starting values are Config's, and the ones that never move are Config's outright.
+-- Retune the night there, not here.
+--
+-- The weapons' own numbers are not among them any more: each weapon reads its section of
+-- Config for itself (Config.rifle, Config.melee, Config.grenade), which is the same split
+-- as the rest of this refactor -- the stage does not hold a magazine size it never looks at.
 
 -- Where the Sky entity's directional light ends up at dawn: a low warm sun, an
 -- order of magnitude brighter than the cool moonlight it is authored with. Stored
@@ -32,27 +36,11 @@ local DAWN_SUN < const > = Vector4(1.0, 0.86, 0.62, 1.0) * 26.0
 -- Two-argument atan; math.atan2 was folded into math.atan.
 local atan2 < const > = math.atan2 or math.atan
 
--- The two collision groups this game uses. Default is the world -- terrain, buildings,
--- props, and the thrown grenade; Interactable is everything that walks -- the player and
--- the horde. Same values Scripts/EnemyController and Scripts/Spawner trace against.
-local COLLISION_DEFAULT < const > = 0x00000001
-local COLLISION_INTERACTABLE < const > = 0x00000002
-
--- Where the barrel ends, in the rifle view model's own space -- so where a round leaves
--- from, and where its tracer starts. Kept here rather than on the entity because the trail
--- that draws the tracer takes world space points: it has to be carried out through the
--- weapon's own transform by hand each shot (see _fireWeapon).
-local MUZZLE < const > = Vector4(0.0, 0.01, 0.56, 1.0)
-
--- The two halves of a grenade. Both are the same mesh and they are deliberately separate
--- entities, because they want opposite things from their transform: the held one is written
--- every frame to hang off the camera (see postUpdate), while the thrown one is a dynamic
--- rigid body that writes its own. Giving either the other's job fights the simulation.
---
--- The escaped form is what makes these tracked dependencies as well as guids, exactly as
--- Scripts/Spawner references the zombie.
-local GRENADE < const > = Guid("\{6E9AD100-0000-4000-8000-000000000002}")
-local GRENADE_PROJECTILE < const > = Guid("\{6E9AD100-0000-4000-8000-000000000005}")
+-- How high the player's eye rides above the Humanoid's origin. What the first person
+-- camera looks out of, and -- through Main:eye -- what every shot, swing and throw leaves
+-- from, so the weapons and the view agree by construction rather than by both spelling it
+-- out.
+local EYE_OFFSET < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 
 
 -- How much nearer a rival ward post has to be before the objective compass gives up
@@ -187,34 +175,33 @@ function Main:new(params, environment)
 	self._lblGodMode:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblGodMode:setVerticalAlign(Widget.ALIGN_TOP)
 
+	-- What the player is carrying. Built before the HUD row below, because the row reserves
+	-- a column per weapon tile -- so the arsenal decides how wide the row is rather than the
+	-- row deciding how many weapons there can be.
+	--
+	-- This is the only handle this stage has on the weapons, and it is deliberately the only
+	-- one: Main routes buttons and frames at it (update, place, attack, altAttack, reload,
+	-- cycle) and never asks what is in it. See Scripts/Weapons/Loadout.
+	self._loadout = Loadout(self)
+
 	-- HUD: one row along the bottom, reading left to right as where to go, how alive
-	-- you are, and what you have to shoot with. Ammo sits next to health because those
-	-- two are what the player is actually spending. All three are custom widgets
-	-- (Scripts/Widgets) whose art comes from the UI/Hud movie, and all three want a
-	-- per-frame :update to run their animations.
-	self._hud = Container(self._frame, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 18, 0))
+	-- you are, and what you have to fight with. The compass and the health bar are the
+	-- stage's own -- they are about the night and the player, not about a weapon -- and
+	-- everything after them is a tile some weapon built for itself.
+	--
+	-- Ammunition sits next to health because those two are what the player is actually
+	-- spending. All of them want a per-frame :update to run their animations, which is what
+	-- the loadout's updateHud does for the weapon tiles.
+	local hudColumns = { 0, 0 }   -- the compass and the health bar...
+	for _ = 1, self._loadout:hudColumns() do
+		table.insert(hudColumns, 0)   -- ...then one for each weapon that shows something
+	end
+	self._hud = Container(self._frame, TableLayout(hudColumns, { 0 }, 0, 0, 18, 0))
 	self._hud:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._hud:setVerticalAlign(Widget.ALIGN_BOTTOM)
 	self._marker = ObjectiveMarker(self._hud)
 	self._healthBar = HealthBar(self._hud)
-	self._ammo = AmmoCounter(self._hud)
-
-	-- ...and the grenade count, in the fourth column. A plain Static rather than a fourth
-	-- art widget: the other three are movie clips exported from data/Assets/UI/Hud.svg, and
-	-- a tile for this would mean re-authoring that SVG. It is doing two jobs at once, so it
-	-- earns its place in the row either way -- how many are left, and, by its colour,
-	-- whether the left button currently throws one or fires the rifle. See
-	-- _updateGrenadeHud, which owns both.
-	-- Built with the text it will actually carry rather than blank, which matters more than
-	-- it looks: a Static clamps its text bounds to the width it was placed at, and the frame
-	-- below lays this row out long before anything sets a count -- so an empty one would be
-	-- placed at no width at all and every later count would be clipped away to nothing. The
-	-- string never changes length afterwards (the count is a single digit, capped by
-	-- _grenadesMax), so one honest placement here holds for the night.
-	self._grenadeLabel = Static(self._hud, "GRENADES  0")
-	self._grenadeLabel:setTextSize(24)
-	self._grenadeLabel:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
-	self._grenadeLabel:setVerticalAlign(Widget.ALIGN_BOTTOM)
+	self._loadout:createHud(self._hud)
 
 	-- Aiming crosshair: a Crosshair widget (Scripts/Widgets/Crosshair) whose art is the
 	-- MC_Crosshair export of the same UI/Hud movie the other HUD widgets use. It is not
@@ -319,13 +306,12 @@ function Main:new(params, environment)
 	self._sprintSpeed = Config.player.sprintSpeed
 	self._running = false   -- true while sprinting and moving; hides the crosshair, lowers the rifle
 
-	-- Shooting: left mouse fires a hitscan that ragdolls the nearest zombie in front.
+	-- The dead. Whatever killed them -- a round, a blast, a ward taking light -- every zombie
+	-- goes through Main:killEnemy and lands in here, so there is one corpse timer and one kill
+	-- tally however many weapons the player ends up carrying.
 	self._deadEnemies = {}       -- live set: enemy entity -> remaining corpse lifetime (s)
 	self._kills = 0
 	self._corpseLifetime = Config.corpse.lifetime   -- how long a ragdoll corpse lingers before it despawns
-	self._fireRange = Config.rifle.range       -- max shot distance (m)
-	-- (There is no aim-assist radius any more. The rifle traces a real ray, so what it hits
-	-- is whatever is under the crosshair -- see _fireWeapon.)
 
 	-- The last round fired, published to Scripts/EnemyController: { x, z, seq }. A
 	-- patrolling zombie near enough to hear it walks over to have a look -- see the
@@ -337,62 +323,6 @@ function Main:new(params, environment)
 	-- shot is heard exactly once by each of them and no clock has to be shared between
 	-- the stage and thirty controllers to decide whether it is still news.
 	self._gunshot = nil
-
-	-- Ammunition. The rifle holds a magazine, the player carries a reserve, and rounds only
-	-- move from one to the other on a reload. Spent in _fireWeapon and topped up by
-	-- "AmmoPickup" crates, which Scene 2 scatters around the landmarks.
-	self._magSize = Config.rifle.magSize            -- rounds the rifle holds
-	self._mag = Config.rifle.mag                -- rounds in it right now
-	self._reserve = Config.rifle.reserve           -- spare rounds carried
-	self._reserveMax = Config.rifle.reserveMax        -- most that can be carried at once
-	self._reloadTime = Config.rifle.reloadTime       -- seconds to refill the magazine
-	self._fireInterval = Config.rifle.fireInterval     -- minimum seconds between shots
-	self._fireTimer = 0.0        -- counts down to the next shot being allowed
-	self._reloadTimer = 0.0      -- counts down to the magazine being refilled
-	self._ammo:setAmmo(self._mag, self._reserve)
-
-	-- Melee: right mouse swings the rifle butt (see _meleeAttack). It kills nothing and costs
-	-- no rounds -- it knocks *every* zombie in the cone in front of you two metres back and
-	-- leaves them reeling for a couple of seconds (Scripts/EnemyController:hit owns both).
-	-- What it is for is the moment the economy above runs out: a dry rifle mid-reload with a
-	-- crowd already on you used to be the end of it, and now there is one answer left that
-	-- does not need ammunition.
-	--
-	-- Range along the aim from the eye to the zombie's chest, and how far off that line a
-	-- zombie may be and still be caught -- together a stubby cone rather than a ray.
-	self._meleeRange = Config.melee.range       -- how far in front the butt reaches (m)
-	self._meleeRadius = Config.melee.radius     -- ...and how far off the aim a zombie may be (m)
-	self._meleeInterval = Config.melee.interval -- minimum seconds between swings
-	self._meleeTimer = 0.0       -- counts down to the next swing being allowed
-
-	-- Grenades. The other thing the player can throw at the night, and the only one that
-	-- does not go through the rifle at all: the mouse wheel swaps which of the two the left
-	-- button does, and the swap is the whole interface -- there is no separate throw key.
-	self._grenades = Config.grenade.start        -- carried right now
-	self._grenadesMax = Config.grenade.max       -- most that can be carried at once
-	self._weaponSlot = "rifle"   -- "rifle" | "grenade" -- what the left button does
-	self._throwInterval = Config.grenade.interval -- minimum seconds between throws
-	self._throwTimer = 0.0       -- counts down to the next throw being allowed
-	self._liveGrenades = {}      -- thrown and still in the air or ticking
-
-	-- The throw. Speed and lift together decide the arc; there is no gravity constant here,
-	-- since the projectile is a rigid body and falls at whatever the physics world falls at.
-	self._throwSpeed = Config.grenade.throwSpeed -- m/s out of the hand
-	self._throwLift = Config.grenade.throwLift   -- ...thrown this far above where you are looking (rad)
-
-	-- ...and the bang. The fuse is counted from the throw and from nothing else -- not from
-	-- where it lands, not from when it stops rolling -- so a grenade thrown far or high can
-	-- go off in mid-air.
-	self._grenadeFuse = Config.grenade.fuse           -- seconds from the throw to the bang
-	self._blastRadius = Config.grenade.blastRadius    -- everything standing inside this dies (m)
-	self._blastHalf = Config.grenade.blastHalf        -- ...where the blast has half its centre momentum
-	self._blastImpulse = Config.grenade.blastImpulse  -- momentum handed to a body at the centre
-	self._blastLift = Config.grenade.blastLift        -- ...plus this much straight up
-
-	-- Push the starting count and colour into the tile built above, now that there is a
-	-- count to push. Only the digit and the colour change from here on -- the string keeps
-	-- the width it was laid out at.
-	self:_updateGrenadeHud()
 
 	-- Collected pickups waiting to be put back, as { entity, timer } -- see
 	-- _respawnLater. Held by the Stage because a pickup that has left the world is
@@ -495,7 +425,9 @@ function Main:new(params, environment)
 	-- Sign is worth reading twice: pitch turns about +X, so the forward vector it builds is
 	-- (0, -sin(pitch), cos(pitch)) -- positive pitch aims *down*. Everything that only ever
 	-- passes _pitch straight through to fromEulerAngles is indifferent to that; anything
-	-- that offsets it (see _throwGrenade's lift) gets it backwards if it assumes otherwise.
+	-- that offsets it gets it backwards if it assumes otherwise -- which is why the bias
+	-- Main:aim takes is documented as negative-is-upward, and why the grenade's lift passes
+	-- one (Grenades:attack).
 	self._pitch = 0.0            -- current aim pitch (radians; + = down)
 	self._pitchMin = Config.player.pitchMin       -- clamp low (~ -66 deg)
 	self._pitchMax = Config.player.pitchMax        -- clamp high (~ +66 deg)
@@ -839,42 +771,12 @@ function Main:resolve()
 	if self._bloodEvents == nil and self._humanoid ~= nil then
 		self._bloodEvents = self._humanoid:getComponent(traktor.world.EventSetComponent)
 	end
-	-- The gun is a child entity of the player (via GroupComponent). Cache it and its
-	-- event set so aiming can orient it and firing can raise its "fire" (the report), plus
-	-- the trail that draws each round's tracer.
-	if self._weapon == nil and self._humanoid ~= nil then
-		local group = self._humanoid:getComponent(traktor.world.GroupComponent)
-		if group ~= nil then
-			self._weapon = group:getEntity("Weapon", 0)
-			if self._weapon ~= nil then
-				self._fireEvents = self._weapon:getComponent(traktor.world.EventSetComponent)
-				-- Switched off deliberately, and it has to be: left enabled the component
-				-- samples the weapon's transform every frame of its own accord, and since the
-				-- weapon is a view model welded to the camera that draws a ribbon smeared
-				-- along wherever the player has walked. Disabled it emits nothing by itself
-				-- and takes only the points a shot hands it -- see _fireWeapon.
-				self._trail = self._weapon:getComponent(traktor.spray.TrailComponent)
-				if self._trail ~= nil then
-					self._trail.enable = false
-				end
-			end
-		end
-	end
-	-- The grenade in the player's hand: the same entity the throw builds, kept aside as a
-	-- view model and hidden until the wheel calls for it. Built once and toggled rather than
-	-- created and destroyed on every swap, because the wheel is cheap to spin and building
-	-- an entity is not.
-	--
-	-- Not a child of the player like the rifle is -- it is not part of the Humanoid's own
-	-- entity data -- so it is placed in world space each frame in postUpdate, from the same
-	-- eye and aim the rifle is placed from.
-	if self._heldGrenade == nil and self.world ~= nil then
-		local held = self.world:createEntity(GRENADE)
-		if held ~= nil then
-			held.visible = false
-			self._heldGrenade = held
-		end
-	end
+	-- The weapons. What each one needs off the world it finds for itself -- the rifle's own
+	-- child entity, its event set and its tracer trail; the grenade kept aside as a view
+	-- model -- so a new weapon adds nothing here. Called every frame, exactly as the rest of
+	-- this function is, and cheap once each of them has what it wants (Weapon:resolve).
+	self._loadout:resolve()
+
 	-- Last, because it fits itself to the wards resolved above *and* to where the
 	-- player is standing. Survives a hot reload untouched: _minimapBuilt is plain
 	-- data on the stage and the widget keeps the marker clips it already made, so
@@ -883,6 +785,119 @@ function Main:resolve()
 		self._minimapBuilt = true
 		self._minimapMapped = self:_buildMinimap(world)
 	end
+end
+
+-- ---- What a weapon is given ----
+--
+-- The whole of this stage that a Scripts/Weapons/Weapon may use. It is written out in one
+-- place because it is an interface, not an accident: the weapons are ignorant of Main (they
+-- are handed a context and ask it questions) and Main is ignorant of the weapons (it hands
+-- the loadout buttons and frames and never asks what is in it). What a second or third
+-- weapon turns out to need belongs here, next to these, rather than reached for off a field.
+
+-- Where the player is looking from, and along. Every shot, swing and throw starts at these,
+-- so changing how the player aims moves all of them together -- and the first person camera
+-- with them, since postUpdate places it from the same two.
+--
+-- aim() takes an optional pitch bias in radians for a weapon that does not leave the hand
+-- along the sightline -- the grenade's lift. Mind the sign: pitch grows *downward* (see
+-- _pitch in :new), so leaving above the crosshair means a negative bias.
+function Main:eye()
+	if self._humanoid == nil then
+		-- Asked before resolve found the player, which nothing has fired through yet. xyz1
+		-- because EYE_OFFSET is an offset (w = 0) and this is a position.
+		return EYE_OFFSET.xyz1
+	end
+	return self._humanoid.transform.translation + EYE_OFFSET
+end
+
+function Main:aim(pitchBias)
+	return Quaternion.fromEulerAngles(self._heading, self._pitch + (pitchBias or 0.0), 0.0)
+end
+
+function Main:aimDirection(pitchBias)
+	return self:aim(pitchBias) * Vector4(0.0, 0.0, 1.0, 0.0)
+end
+
+-- The player's entity, or nil before resolve has found it -- a weapon is updated from the
+-- first frame and has to cope with the world not being up yet.
+function Main:player()
+	return self._humanoid
+end
+
+-- Sprinting while actually moving, and whether a relic fills the off hand. Both are things a
+-- view model answers to: the first drops it to a low ready, the second moves it over to make
+-- room. Weapons ask rather than being told, so a weapon that does not care says nothing.
+function Main:isRunning()
+	return self._running
+end
+
+function Main:isCarrying()
+	return self._carried ~= nil
+end
+
+-- Has this one already been handed to the rag doll path? Anything that sweeps the horde has
+-- to ask, or a corpse takes a second shove and is counted a second time.
+function Main:isEnemyDead(enemy)
+	return self._deadEnemies[enemy] ~= nil
+end
+
+-- What a corpse is shoved with, along `dir`: the knockback, plus the lift that makes it flop
+-- back rather than slide. One place, because a round, a ward's flare and the kill-all
+-- shortcut all want the same shove and only Config.corpse should have a say in how hard. A
+-- blast is the exception and says so itself -- it falls off with distance (Grenades:_explode).
+function Main:knockbackImpulse(dir)
+	return dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
+end
+
+-- A shot was heard, here. Published for Scripts/EnemyController: a patrolling zombie near
+-- enough walks over to have a look. Mutated rather than replaced, and seq counts up forever
+-- -- see _gunshot in :new for why both matter.
+function Main:reportGunshot(x, z)
+	local shot = self._gunshot
+	if shot == nil then
+		shot = { seq = 0 }
+		self._gunshot = shot
+	end
+	shot.x = x
+	shot.z = z
+	shot.seq = shot.seq + 1
+end
+
+-- Recoil bloom on the reticle. Called by anything that goes off, hit or miss -- on a miss it
+-- is the only answer the player gets.
+function Main:kickCrosshair()
+	if self._crosshair ~= nil then
+		self._crosshair:kick()
+	end
+end
+
+-- Put one of the player's own effects at a world point -- the dust a round kicks off a wall.
+-- Raised on the player's event set with an offset, because that is how this game places an
+-- effect at an arbitrary point: SpawnEffectEvent spawns at sender-transform times offset, so
+-- the offset is that point taken back into the player's frame. Those events are follow=false,
+-- so what is spawned stays where it was put while the player walks on.
+function Main:raisePlayerEffect(name, worldPoint)
+	if self._bloodEvents == nil or self._humanoid == nil then
+		return
+	end
+	local localPoint < const > = self._humanoid.transform:inverse():transform(worldPoint)
+	self._bloodEvents:raise(name, Transform(localPoint, Quaternion.identity))
+end
+
+-- ---- What a pickup is given ----
+--
+-- Ammunition by kind rather than by weapon, so a crate never names one: Scripts/AmmoPickup
+-- asks for "rounds" and Scripts/GrenadePickup for "grenades", and the loadout hands it to
+-- whichever weapon answers to that kind (Weapon:supplyKind). A new weapon with a new kind of
+-- ammunition therefore needs a new crate and nothing else -- no field here, and no line in
+-- either pickup.
+function Main:supply(kind, amount)
+	return self._loadout:supply(kind, amount)
+end
+
+function Main:supplyFull(kind)
+	return self._loadout:supplyFull(kind)
 end
 
 -- Mark one zombie dead: blood burst at the impact point, hand it over to its
@@ -898,7 +913,7 @@ end
 -- it is spread across every limb so the body's momentum changes by exactly `impulse` and
 -- nothing tumbles about anything: a pressure wave arrives everywhere at once, and picking a
 -- limb for it would tear the corpse apart round whichever one happened to be nearest.
-function Main:_killEnemy(enemy, point, impulse, whole)
+function Main:killEnemy(enemy, point, impulse, whole)
 	if enemy == nil or self._deadEnemies[enemy] ~= nil then
 		return false
 	end
@@ -907,7 +922,7 @@ function Main:_killEnemy(enemy, point, impulse, whole)
 	-- SpawnEffectEvent spawns at sender-transform times offset, so the offset is `point` --
 	-- a world position -- taken back into the zombie's own frame, and the two multiply out
 	-- to exactly the place that was hit. A leg shot opens at the leg and a head shot at the
-	-- head, which is the whole reason _fireWeapon passes the ray's own hit position down
+	-- head, which is the whole reason Rifle:attack passes the ray's own hit position down
 	-- here instead of a guess along the aim. The other three callers have no ray to speak of
 	-- and pass a chest point, so a blast or a ward's flare still bursts at the chest.
 	--
@@ -933,18 +948,18 @@ function Main:_killEnemy(enemy, point, impulse, whole)
 	return true
 end
 
--- Kill every live zombie in the world at once (K). Each one dies through _killEnemy, so
+-- Kill every live zombie in the world at once (K). Each one dies through killEnemy, so
 -- they rag doll, spray blood, count as kills and get despawned on the usual corpse timer
 -- -- no separate teardown path that could leak them. The impulse points radially away
 -- from the player so the pile scatters outward instead of every corpse taking the same
--- shove. Safe to iterate by index: _killEnemy only marks, it never removes entities.
+-- shove. Safe to iterate by index: killEnemy only marks, it never removes entities.
 function Main:_killAllEnemies()
 	local world = self.world.world
 	if world == nil or self._humanoid == nil then
 		return
 	end
 
-	local origin = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
+	local origin = self:eye()
 	local i = 0
 	while true do
 		local e = world:getEntity("Enemy", i)
@@ -960,7 +975,7 @@ function Main:_killAllEnemies()
 		else
 			away = Vector4(0.0, 0.0, 1.0, 0.0)   -- standing exactly on the eye; shove forward
 		end
-		self:_killEnemy(e, chest, away * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0))
+		self:killEnemy(e, chest, self:knockbackImpulse(away))
 	end
 end
 
@@ -1106,7 +1121,7 @@ end
 -- single moment and can reach as far as it wants to.
 --
 -- Flat XZ test, the same way the Spawner reads a ward. They die
--- through _killEnemy like everything else -- rag doll, blood, kill tally, the usual
+-- through killEnemy like everything else -- rag doll, blood, kill tally, the usual
 -- corpse timer -- shoved radially out from the post, so the pile scatters off the
 -- consecrated ground instead of collapsing onto it. Returns how many were taken.
 function Main:_purgeWard(ward)
@@ -1137,7 +1152,7 @@ function Main:_purgeWard(ward)
 				away = Vector4(0.0, 0.0, 1.0, 0.0)   -- standing on the post itself
 			end
 			local chest < const > = p + Vector4(0.0, 1.0, 0.0, 0.0)
-			if self:_killEnemy(e, chest, away * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)) then
+			if self:killEnemy(e, chest, self:knockbackImpulse(away)) then
 				killed = killed + 1
 			end
 		end
@@ -1654,10 +1669,11 @@ end
 -- the relic), and not while the game is paused, lost or won. Called from update above
 -- its early-returns, so those "not playing" states can hide it.
 function Main:_updateCrosshair(dt)
-	-- Hidden whenever the magazine is empty -- during a reload and when fully dry. The
-	-- reticle is an aiming aid for a loaded rifle; with no round chambered there is no
-	-- shot to line up, so it comes back the instant the magazine is refilled.
-	local loaded = self._mag > 0
+	-- Whether there is an aim worth drawing a reticle for is the drawn weapon's call rather
+	-- than this stage's: the rifle hides it while the magazine is empty, because with no round
+	-- chambered there is no shot to line up, and an empty grenade pouch answers the same way.
+	-- See Weapon:wantsCrosshair.
+	local loaded = self._loadout:wantsCrosshair()
 
 	local show = not self._gameOver
 		and not self._nightOver
@@ -1833,550 +1849,6 @@ function Main:_respawnLater(entityData, transform, delay)
 	return true
 end
 
--- Start refilling the magazine from the reserve. Refuses when one is already in progress,
--- when the magazine is full, or when there is nothing left to load with -- so its callers
--- (the R key, the empty-magazine rule in _updateWeapon, and an AmmoPickup collected while
--- dry) can all just ask, every frame if they like, without special casing.
--- Returns true when a reload actually began.
-function Main:_beginReload()
-	if self._reloadTimer > 0.0 then
-		return false
-	end
-	if self._mag >= self._magSize or self._reserve <= 0 then
-		return false
-	end
-	self._reloadTimer = self._reloadTime
-	self._ammo:setReload(0.0)
-	-- The bolt. On the Weapon child rather than the player, alongside its muzzle flash,
-	-- and non-positional because it is happening in the player's hands.
-	if self._fireEvents ~= nil then
-		self._fireEvents:raise("reload")
-	end
-	return true
-end
-
--- Weapon timers, the reload key, and the reload nobody has to ask for. Called from
--- Main:update *below* its paused and game over early returns, so the shot cadence and a
--- reload in flight both freeze with the rest of the game rather than ticking away behind
--- the pause menu.
-function Main:_updateWeapon(dt)
-	if self._fireTimer > 0.0 then
-		self._fireTimer = math.max(0.0, self._fireTimer - dt)
-	end
-
-	-- The butt swings on its own cadence, and on nothing else: it is not held up by a
-	-- reload (the point of it is that it works when the rifle does not) and it spends no
-	-- rounds, so this is the whole of what gates it.
-	if self._meleeTimer > 0.0 then
-		self._meleeTimer = math.max(0.0, self._meleeTimer - dt)
-	end
-
-	-- Likewise the throw, which shares nothing with the rifle but the button.
-	if self._throwTimer > 0.0 then
-		self._throwTimer = math.max(0.0, self._throwTimer - dt)
-	end
-
-	-- R still reloads on demand (edge triggered), which is now purely an option rather
-	-- than an obligation: the only thing it can do that the rule below cannot is top up a
-	-- *partial* magazine during a lull, so you are not caught at two rounds.
-	do
-		local mapping < const > = self.environment.input.inputMapping
-		if mapping ~= nil and mapping:isStatePressed("STATE_RELOAD") then
-			self:_beginReload()
-		end
-	end
-
-	-- An empty magazine reloads itself. The tension is meant to live in the 1.2 s the
-	-- reload takes -- the rifle dropping out of the sightline, the crosshair gone, the
-	-- horde still coming -- and none of it in having to remember to ask for it, which is
-	-- just a keystroke tax on a decision the player has already made by firing the last
-	-- round.
-	--
-	-- Expressed as a state rule rather than hung off the shot that emptied it, because
-	-- every route to an empty magazine wants the same answer: the last round fired, an
-	-- ammo crate walked over while dry, a magazine left empty because the reserve was.
-	-- _beginReload refuses when there is nothing to load with, so a genuinely dry rifle
-	-- costs two comparisons a frame and keeps its red HUD plate until a crate turns up.
-	if self._mag <= 0 and self._reloadTimer <= 0.0 then
-		self:_beginReload()
-	end
-
-	if self._reloadTimer > 0.0 then
-		self._reloadTimer = math.max(0.0, self._reloadTimer - dt)
-		self._ammo:setReload(1.0 - self._reloadTimer / self._reloadTime)
-		if self._reloadTimer <= 0.0 then
-			-- Whole magazines are not swapped: only as many rounds as are actually
-			-- left go in, so the last reload of a run is a short one.
-			local take < const > = math.min(self._magSize - self._mag, self._reserve)
-			self._mag = self._mag + take
-			self._reserve = self._reserve - take
-			self._ammo:setReload(nil)
-			self._ammo:setAmmo(self._mag, self._reserve)
-		end
-	end
-end
-
--- Fire the weapon: hitscan a ray out of the player's eye along the current facing,
--- pick the nearest live zombie close to the ray (with clear line of sight) and mark
--- it dead. Its EnemyController switches to rag doll; Main despawns the corpse later.
-function Main:_fireWeapon()
-	if self._humanoid == nil then
-		return
-	end
-
-	-- A relic fills only one hand, so the rifle still fires with one carried -- there
-	-- is deliberately no early-out here for carrying.
-
-	-- Nothing happens mid reload, and the rifle will not cycle faster than
-	-- _fireInterval however fast the trigger is pulled.
-	if self._reloadTimer > 0.0 or self._fireTimer > 0.0 then
-		return
-	end
-
-	-- Dry: no bang and no muzzle flash. Nothing to start here either -- an empty magazine
-	-- reloads itself in _updateWeapon, so reaching this at all means the reserve is empty
-	-- too and the red HUD plate is the only answer the rifle has.
-	if self._mag <= 0 then
-		return
-	end
-
-	self._mag = self._mag - 1
-	self._fireTimer = self._fireInterval
-	self._ammo:setAmmo(self._mag, self._reserve)
-	self._ammo:spend()
-
-	-- Bloom the crosshair as recoil feedback (it eases back in Crosshair:update). Harmless
-	-- while it is hidden mid-relic-carry -- it simply settles before it is shown again.
-	if self._crosshair ~= nil then
-		self._crosshair:kick()
-	end
-
-	-- The report. Raised on every shot before target selection, because a miss is exactly as
-	-- loud as a hit. The "fire" event lives on the Weapon child entity, so it comes from the
-	-- rifle rather than from the player. What the shot *looks* like is no longer an effect
-	-- raised here alongside it: the round draws a tracer into the trail on that same entity,
-	-- and that needs to know where the round stopped, so it is fed below once the ray is in.
-	if self._fireEvents ~= nil then
-		self._fireEvents:raise("fire")
-	end
-
-	local origin = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-	local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-	local dir = aim * Vector4(0.0, 0.0, 1.0, 0.0)
-
-	-- The bang. Published here -- with the report, above target selection -- because
-	-- a miss is exactly as loud as a hit, and because the reload and rate-of-fire gates are
-	-- already behind us: a dry click and a trigger pulled faster than the rifle cycles both
-	-- returned above, so reaching this line means a round actually left the barrel.
-	--
-	-- Mutated rather than reallocated; the counter has to survive so no zombie can mistake
-	-- a new shot for one it has already been to look at. See _gunshot in :new().
-	local shot = self._gunshot
-	if shot == nil then
-		shot = { seq = 0 }
-		self._gunshot = shot
-	end
-	shot.x = origin.x
-	shot.z = origin.z
-	shot.seq = shot.seq + 1
-
-	-- One ray, out of the eye along the aim, against the world and everything standing in
-	-- it. Whatever it meets first is what the round hit.
-	--
-	-- This replaces a scan that projected every zombie onto the aim and kept the nearest
-	-- within an assist radius. Two things fall out of the swap for free, and both were
-	-- missing before: cover works, because a wall is simply the nearer hit (the old code had
-	-- a line-of-sight check commented out beside it, which is what that dead block was); and
-	-- a round has somewhere to land when it hits nothing alive, which is where the dust
-	-- comes from below.
-	--
-	-- The filter takes in both groups: the world is COLLISION_DEFAULT, the horde and the
-	-- player are COLLISION_INTERACTABLE, and a shot has to be stopped by either.
-	local pm < const > = self.environment.physics.physicsManager
-	if pm == nil then
-		return
-	end
-	local hit < const > = pm:queryRay(
-		origin, dir, self._fireRange,
-		traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE), true
-	)
-
-	-- The tracer: two points into the rifle's trail, the barrel and wherever the round ended
-	-- up, and the component draws the ribbon between them. It cuts that span into pieces of
-	-- its own accord (lengthThreshold on the component), which is what makes two points
-	-- enough -- the ribbon renderer needs three to put anything on screen -- and the shader
-	-- grades the tracer across them, brightest at the far end.
-	--
-	-- That threshold and Config.rifle.range are a pair: 0.7m pieces across 40m come to 57,
-	-- inside the 64 points a trail holds. Cutting finer overruns that, and what a full trail
-	-- drops is its oldest points -- the ones at the muzzle -- so a long shot would begin in
-	-- mid air. Coarser, and a shot closer than three pieces (~2m) draws nothing at all.
-	--
-	-- Fed here rather than beside the report above because only the ray knows where the round
-	-- stopped: a hit ends the tracer at the hit, and a miss carries it to the end of the ray
-	-- so a shot into the dark still reads as having gone somewhere.
-	--
-	-- One shot's tracer has always aged out before the next is fired (the trail's `age`
-	-- against Config.rifle.fireInterval, 0.12s against 0.4s). That margin is load bearing:
-	-- points left over from the last shot would not be replaced by these two, they would be
-	-- continued -- joining the two shots into one ribbon bent at the muzzle.
-	if self._trail ~= nil and self._weapon ~= nil then
-		self._trail:addPoint(self._weapon.transform * MUZZLE)
-		self._trail:addPoint(hit ~= nil and hit.position or (origin + dir * self._fireRange))
-	end
-
-	if hit == nil then
-		return   -- nothing within range; the round is simply gone
-	end
-
-	-- What owns the body that stopped it. Every character controller and rigid body in the
-	-- engine hands its owning *entity* to the bodies it creates, so this is the one question
-	-- that has to be asked -- no matching hit positions against entity positions, and no
-	-- guessing from a name.
-	local struck < const > = hit.body ~= nil and hit.body.owner or nil
-
-	-- A zombie is an entity whose script component is an EnemyController. Asked of the class
-	-- rather than of the entity's name, so it stays true for anything else that ever gets one.
-	--
-	-- The player's own capsule is explicitly not a target: it is in the same collision group
-	-- as the horde and the ray starts inside it, so a stray hit on it would otherwise put a
-	-- dust puff in the player's face.
-	local enemy = nil
-	if struck ~= nil and struck ~= self._humanoid and isa(struck, traktor.world.Entity) then
-		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and isa(sc, EnemyController) then
-			enemy = struck
-		end
-	end
-
-	if enemy == nil or self._deadEnemies[enemy] ~= nil then
-		-- Hit the world, or something already dead: a puff of dust where the round landed.
-		--
-		-- Raised on the player's own event set with an offset, because that is how an effect
-		-- is put at an arbitrary point -- SpawnEffectEvent spawns at sender-transform times
-		-- offset, so the offset is the impact point expressed in the player's frame. The
-		-- event is follow=false, so the puff stays where it was put while the player walks on.
-		if self._bloodEvents ~= nil and self._humanoid ~= nil then
-			local localPoint < const > = self._humanoid.transform:inverse():transform(hit.position.xyz1)
-			self._bloodEvents:raise("dust", Transform(localPoint, Quaternion.identity))
-		end
-		return
-	end
-
-	-- Kill it where the round actually arrived, knocked back along the aim with a little
-	-- lift. The impact point is the ray's own hit position now rather than a guess along the
-	-- aim, so the limb the impulse lands on is the limb that was struck.
-	self:_killEnemy(
-		enemy,
-		hit.position.xyz1,
-		dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
-	)
-end
-
--- Swing the rifle butt: shove every live zombie in the short cone in front of the player.
--- Nothing dies here and no round is spent -- see _meleeRange in :new for what this is for,
--- and Scripts/EnemyController:hit for the shove and the reel, which belong to the zombie
--- because it is the zombie that has to walk them off.
-function Main:_meleeAttack()
-	local world = self.world.world
-	if self._humanoid == nil or world == nil then
-		return
-	end
-
-	if self._meleeTimer > 0.0 then
-		return
-	end
-	self._meleeTimer = self._meleeInterval
-
-	-- Bloom the crosshair, exactly as a shot does. The swing happened whether or not it
-	-- found anything, and on a miss this is the only answer the player gets.
-	if self._crosshair ~= nil then
-		self._crosshair:kick()
-	end
-
-	local origin < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-	local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-	local dir < const > = aim * Vector4(0.0, 0.0, 1.0, 0.0)
-
-	-- Everything in the cone, not just the nearest of them. A swing is a sweep, so every
-	-- zombie whose chest falls inside it takes the shove -- which matters precisely because
-	-- of when the butt gets used: it is the answer to being *surrounded*, and one that only
-	-- ever reached one of the three zombies already on top of you would be failing at the one
-	-- job it has.
-	--
-	-- The cone test itself is _fireWeapon's: project the chest onto the aim and accept it
-	-- within _meleeRadius of that line, only over arm's length rather than forty metres.
-	-- Same loop over the same list, and it runs about once a second at most, so there is
-	-- nothing here to be clever about.
-	local playerPos < const > = self._humanoid.transform.translation
-	local r2 < const > = self._meleeRadius * self._meleeRadius
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
-		if self._deadEnemies[e] == nil then
-			local p < const > = e.transform.translation
-			local rel < const > = (p + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
-			local t < const > = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
-			if t > 0.0 and t < self._meleeRange then
-				local hx < const > = rel.x - dir.x * t
-				local hy < const > = rel.y - dir.y * t
-				local hz < const > = rel.z - dir.z * t
-				if hx * hx + hy * hy + hz * hz < r2 then
-					-- Which way this one goes: straight out from the player along the ground,
-					-- rather than along the aim. The two agree on a zombie square in front and
-					-- differ on one caught at the edge of the cone, where shoving along the
-					-- aim would slide it past the player's shoulder instead of off them -- and
-					-- off them is the entire point of the swing. Taken per zombie, so a swing
-					-- through a crowd fans it apart rather than driving the whole lot off
-					-- along one shared heading.
-					local ax, az = p.x - playerPos.x, p.z - playerPos.z
-					if ax * ax + az * az < 0.0001 then
-						ax, az = dir.x, dir.z   -- standing exactly on the player; shove along the aim
-					end
-
-					-- Each zombie owns its own shove and reel, and refuses one if it is
-					-- already a corpse -- so the sound only plays for one that was standing.
-					--
-					-- "hit" is the same cue the rifle raises on a kill: something arriving on
-					-- a zombie, from where that zombie is. Raised per zombie rather than once
-					-- for the swing, which is what makes a sweep through three of them sound
-					-- like three impacts spread across the arc -- the bank draws its own pitch
-					-- per utterance, so they do not stack into one flat slap.
-					--
-					-- No blood with it: a rifle butt does not open anything, and the burst is
-					-- what a round looks like.
-					local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-					if sc ~= nil and sc:hit(ax, az) then
-						local fx < const > = e:getComponent(traktor.world.EventSetComponent)
-						if fx ~= nil then
-							fx:raise("hit")
-						end
-					end
-				end
-			end
-		end
-	end
-end
-
--- Swap what the left button does. Bound to the mouse wheel, which is why it is a cycle
--- rather than a pair of hotkeys -- and why an empty grenade slot can still be selected: with
--- only two of them, skipping the empty one would make the wheel do nothing at all and leave
--- the player with no way to find out why. Selecting it and reading "0" answers that.
-function Main:_cycleWeapon()
-	self._weaponSlot = (self._weaponSlot == "rifle") and "grenade" or "rifle"
-	self:_updateGrenadeHud()
-end
-
--- The grenade tile: how many are left, and which weapon the left button is on.
---
--- Colour carries the second of those rather than a separate marker, and reuses the ammo
--- counter's own palette so the HUD only has one language: bright when it is the thing you
--- are about to throw, dim when the rifle has the trigger, and the counter's empty-magazine
--- red when there is nothing left to throw at all.
---
--- Cheap enough to call from anywhere something changes -- and that is how it is called,
--- from the cycle, the throw and the pickup, rather than every frame.
-function Main:_updateGrenadeHud()
-	if self._grenadeLabel == nil then
-		return
-	end
-	self._grenadeLabel:setText("GRENADES  " .. tostring(self._grenades))
-	local selected < const > = self._weaponSlot == "grenade"
-	if self._grenades <= 0 then
-		self._grenadeLabel:setTextColor(selected and Color4f(1.0, 0.42, 0.34, 1.0) or Color4f(0.52, 0.34, 0.32, 1.0))
-	elseif selected then
-		self._grenadeLabel:setTextColor(Color4f(1.0, 0.9, 0.68, 1.0))
-	else
-		self._grenadeLabel:setTextColor(Color4f(0.55, 0.53, 0.46, 1.0))
-	end
-end
-
--- Throw one. The grenade is a GrenadeProjectile entity over a dynamic rigid body, so what
--- happens to it after it leaves the hand is the simulation's business and not this script's:
--- it arcs under real gravity, bounces off trees and gravestones, rolls into hollows and
--- comes to rest wherever the ground lets it. All this does is spawn it and push it.
---
--- Nothing here tracks it afterwards either. The fuse is a fixed count from this moment, so
--- the only thing kept is the entity -- to read a position off when it goes off, and to take
--- back out of the world.
-function Main:_throwGrenade()
-	local world = self.world.world
-	if self._humanoid == nil or world == nil then
-		return
-	end
-
-	if self._throwTimer > 0.0 then
-		return
-	end
-	-- Nothing left: no throw, and no sound either. The red plate on the HUD tile is the
-	-- only answer, exactly as an empty magazine's is.
-	if self._grenades <= 0 then
-		return
-	end
-
-	self._grenades = self._grenades - 1
-	self._throwTimer = self._throwInterval
-	self:_updateGrenadeHud()
-
-	if self._crosshair ~= nil then
-		self._crosshair:kick()
-	end
-
-	-- Out of the hand rather than out of the eye, so it does not appear to pass through the
-	-- player's own head on a throw aimed steeply up, and so it leaves from where the held
-	-- grenade was being drawn (see postUpdate).
-	--
-	-- Subtracted, not added: pitch grows *downward*. fromEulerAngles turns the pitch about
-	-- +X, so the forward vector is (0, -sin(pitch), cos(pitch)) -- and the mouse agrees,
-	-- since moving it up to look up is what drives _pitch down. Adding the lift here threw
-	-- the grenade at the floor.
-	local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch - self._throwLift, 0.0)
-	local eye < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-	local origin < const > = eye + aim * Vector4(0.16, -0.12, 0.45, 0.0)
-	local dir < const > = aim * Vector4(0.0, 0.0, 1.0, 0.0)
-
-	local entity < const > = self.world:createEntity(GRENADE_PROJECTILE)
-	if entity == nil then
-		return
-	end
-	local T < const > = Transform(origin, Quaternion.identity)
-	entity.transform = T
-
-	-- Hand the throw over to physics and let go.
-	--
-	-- Setting the body's transform as well as the entity's is belt and braces --
-	-- Entity::setTransform already pushes it down to every component -- but this is the one
-	-- frame where it has to be right, since a body still sitting at the world origin when the
-	-- velocity lands would be launched from there instead of from the hand.
-	--
-	-- The tumble is set in the aim's own frame, so it always turns end over end about the
-	-- throw regardless of where the player is facing, with a little yaw and roll on top so
-	-- it does not spin about one clean axis like a thrown tin.
-	local rb < const > = entity:getComponent(traktor.physics.RigidBodyComponent)
-	local body < const > = rb ~= nil and rb.body or nil
-	if body ~= nil then
-		body.transform = T
-		body.linearVelocity = dir * self._throwSpeed
-		body.angularVelocity = aim * Vector4(-9.0, 2.0, 1.5, 0.0)
-		-- Bodies are built asleep-able and this one has to move on the frame it is thrown.
-		body.active = true
-	end
-
-	-- The body is not kept: once it has been pushed, nothing here has any further business
-	-- with it. Where the grenade has got to is read off the entity when it goes off.
-	table.insert(self._liveGrenades, {
-		entity = entity,
-		fuse = self._grenadeFuse
-	})
-end
-
--- Count the fuses down and set off any that have run out. One pass over everything in the
--- air or on the ground; there is rarely more than one.
---
--- That is the whole of it, because both of the questions this used to answer have gone:
--- where the grenade is belongs to its rigid body, and *when* it goes off is a fixed three
--- seconds from the throw (see _grenadeFuse) rather than something to be inferred from
--- whether it has stopped moving. Iterated backwards so a spent one can be removed mid-loop.
-function Main:_updateGrenades(dt)
-	for i = #self._liveGrenades, 1, -1 do
-		local g = self._liveGrenades[i]
-		g.fuse = g.fuse - dt
-		if g.fuse <= 0.0 then
-			self:_explodeGrenade(g)
-			table.remove(self._liveGrenades, i)
-		end
-	end
-end
-
--- Go off: everything standing inside _blastRadius dies, thrown by a blast that falls off
--- with distance. Not damage -- there is no health on a zombie -- so this is the same one-way
--- door _fireWeapon uses, just applied to a crowd at once.
-function Main:_explodeGrenade(g)
-	local world = self.world.world
-
-	-- Where it went off has to be read off the projectile before the projectile goes, since
-	-- physics has been the only thing that knew where it was.
-	local centre = nil
-	if g.entity ~= nil then
-		centre = g.entity.transform.translation
-
-		-- Raise the burst, then unspawn the projectile in the same breath.
-		--
-		-- Safe in that order, and only in that order. The burst is spawned by the world's
-		-- own event manager rather than by the grenade, and with follow=false it reads the
-		-- grenade's transform once, here, and never looks at it again -- so the flash, the
-		-- debris and the four seconds of sound all outlive the thing that set them off. Do
-		-- it the other way round and there is nothing left to raise the event on.
-		local fx < const > = g.entity:getComponent(traktor.world.EventSetComponent)
-		if fx ~= nil then
-			fx:raise("explode")
-		end
-
-		-- removeEntity while the world is updating is deferred, and it clears the entity's
-		-- world pointer immediately -- which is what lets destroy() run here and free the
-		-- rigid body now rather than whenever the collector gets to it. Same pair the
-		-- Spawner uses to despawn a zombie, and Pickup to take itself out.
-		if world ~= nil then
-			world:removeEntity(g.entity)
-			g.entity:destroy()
-		end
-		g.entity = nil
-	end
-
-	if world == nil or centre == nil then
-		return
-	end
-
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
-		if self._deadEnemies[e] == nil then
-			-- Two points, for two different questions. Whether it is caught is asked of the
-			-- feet, so the radius means what it looks like on the ground; which way it goes
-			-- is asked of the chest, so a blast at ground level throws a zombie standing on
-			-- it almost straight up and one at the rim almost flat, with no special case for
-			-- either -- the geometry already says it.
-			-- Plain distance rather than the usual squared-distance trick: Vector4 exposes
-			-- `length` to script but not `length2`, and one square root per zombie per
-			-- explosion is not worth unpacking the components by hand to avoid.
-			local p < const > = e.transform.translation
-			local d < const > = p - centre
-			if d.length < self._blastRadius then
-				local rel = (p + Vector4(0.0, 1.0, 0.0, 0.0)) - centre
-				local dist = rel.length
-				local dir
-				if dist > 0.01 then
-					dir = rel / dist
-				else
-					dir = Vector4(0.0, 1.0, 0.0, 0.0)   -- standing exactly on it; straight up
-					dist = 0.01
-				end
-				-- Inverse-square falloff about _blastHalf rather than a straight ramp to
-				-- zero at the rim. A ramp gives the whole radius roughly the same shove and
-				-- makes the edge of the blast a visible circle; this is brutal in the middle
-				-- and a push at the edge, which is what the radius is meant to feel like.
-				local k < const > = dist / self._blastHalf
-				local falloff < const > = 1.0 / (1.0 + k * k)
-				self:_killEnemy(
-					e,
-					p + Vector4(0.0, 1.0, 0.0, 0.0),
-					dir * (self._blastImpulse * falloff)
-						+ Vector4(0.0, self._blastLift * falloff, 0.0, 0.0),
-					true
-				)
-			end
-		end
-	end
-end
-
 function Main:update(info)
 	self:resolve()
 
@@ -2386,12 +1858,13 @@ function Main:update(info)
 	-- and fast at low ones.
 	local dt < const > = info.simulationDeltaTime
 
-	-- Tick the HUD widgets' animations (health drain, hit flash, heartbeat).
+	-- Tick the HUD widgets' animations (health drain, hit flash, heartbeat), the weapons'
+	-- own tiles among them -- whichever weapons those happen to be.
 	-- Deliberately above every early-return below: the values they show are pushed to
 	-- them where they change, and letting the widgets keep animating means a hit taken
 	-- on the last frame still finishes its flash once the game is paused or over.
 	self._healthBar:update(dt)
-	self._ammo:update(dt)
+	self._loadout:updateHud(dt)
 	-- Ticks the compass widget itself, as well as re-aiming it.
 	self:_updateMarker(dt)
 
@@ -2500,15 +1973,25 @@ function Main:update(info)
 		end
 	end
 
-	-- Shot cadence and reload. Above the movement block below, which is guarded on
-	-- there being a character controller -- the rifle keeps cycling either way.
-	self:_updateWeapon(dt)
+	-- The reload action, edge triggered. Handed to the whole loadout rather than to the drawn
+	-- weapon: R is for topping up a rifle left at two rounds during a lull, and it should still
+	-- do that with a grenade in hand. Which weapons have anything to reload is their business
+	-- (Weapon:beginReload).
+	do
+		local mapping < const > = self.environment.input.inputMapping
+		if mapping ~= nil and mapping:isStatePressed("STATE_RELOAD") then
+			self._loadout:reload()
+		end
+	end
 
-	-- Grenades already in the air keep flying whether or not the player has a character
-	-- controller, and whichever weapon is currently selected -- a thrown grenade has left.
-	self:_updateGrenades(dt)
+	-- One step of every weapon: shot cadences, a reload in flight, the fuse of anything already
+	-- thrown. Above the movement block below, which is guarded on there being a character
+	-- controller -- the weapons keep their own time either way, and a grenade in the air has
+	-- left regardless of what is in the player's hands now.
+	self._loadout:update(dt)
 
-	-- The mouse wheel swaps which weapon the left button is on.
+	-- The mouse wheel swaps which weapon the left button is on. Which weapons there are, and
+	-- in what order, is the loadout's (Loadout:cycle).
 	--
 	-- Read as a value rather than as a press because that is what a wheel is: the device
 	-- reports the notches turned since it was last polled and then forgets them, and input
@@ -2521,7 +2004,7 @@ function Main:update(info)
 		if mapping ~= nil then
 			local wheel < const > = mapping:getStateValue("STATE_CYCLE_WEAPON")
 			if wheel > 0.5 or wheel < -0.5 then
-				self:_cycleWeapon()
+				self._loadout:cycle(1)
 			end
 		end
 	end
@@ -2604,19 +2087,18 @@ function Main:update(info)
 				end
 			end
 
-			-- Left mouse button (edge-triggered, one per click) does whatever the wheel has
-			-- it on -- fire the rifle, or throw a grenade.
+			-- Left mouse button (edge-triggered, one per click) uses whatever the wheel has it
+			-- on. What that weapon is and what using it does are both behind the loadout, which
+			-- is the whole point: a third weapon changes nothing on this line.
 			if mapping:isStatePressed("STATE_FIRE") then
-				if self._weaponSlot == "grenade" then
-					self:_throwGrenade()
-				else
-					self:_fireWeapon()
-				end
+				self._loadout:attack()
 			end
 
-			-- ...and right mouse swings the butt, likewise one swing per click.
+			-- ...and right mouse takes the alternate, likewise one per click. That is the rifle
+			-- butt whatever is drawn, unless the drawn weapon claims the button for itself --
+			-- see Loadout:altAttack and Scripts/Weapons/Melee.
 			if mapping:isStatePressed("STATE_MELEE") then
-				self:_meleeAttack()
+				self._loadout:altAttack()
 			end
 
 			if self._poseController ~= nil then
@@ -2673,7 +2155,7 @@ function Main:update(info)
 				-- Placed at chest height by hand. Nothing is traced for a bite -- it lands
 				-- somewhere on a body the camera is inside -- so this is simply the middle of
 				-- the player, and it has to be said here now that the effect no longer carries
-				-- a lift of its own (see _killEnemy).
+				-- a lift of its own (see killEnemy).
 				if self._bloodEvents ~= nil then
 					self._biteTimer = self._biteTimer - dt
 					if self._biteTimer <= 0.0 then
@@ -2726,7 +2208,7 @@ function Main:update(info)
 				if ragdolls.size > 0 then
 					for i = 0, ragdolls.size - 1 do
 						-- A blast pushes the whole body, a round pushes the limb it hit.
-						-- See _killEnemy for why the two cannot share one call.
+						-- See killEnemy for why the two cannot share one call.
 						if rec.whole then
 							ragdolls:get(i):addImpulse(rec.impulse)
 						else
@@ -2837,110 +2319,37 @@ function Main:postUpdate(info)
 	-- It rides the player rigidly (position is already smooth via the character controller)
 	-- so there is no boom, no follow smoothing and no view-blocking ray to worry about.
 	if self._camera ~= nil and self._humanoid ~= nil then
-		local eye = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-		local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-		local fwd = aim * Vector4(0.0, 0.0, 1.0, 0.0)
+		local eye < const > = self:eye()
+		local fwd < const > = self:aimDirection()
 		self._camera.transform = Transform.lookAt(eye, eye + fwd, Vector4(0.0, 1.0, 0.0, 0.0))
 	end
 
-	-- First-person view-model: hold the weapon just in front of the eye, offset to
-	-- the lower right, rotated by the full aim (heading+pitch) so it (and its muzzle
-	-- bolt) track exactly where the camera looks.
-	-- Which of the two is in shot. Selecting grenades puts the rifle away outright rather
-	-- than lowering it: with both drawn there is no telling at a glance what the left button
-	-- would do, and that is the one thing the view model has to answer.
-	--
-	-- Above the weapon block, so a stowed rifle costs nothing to place.
-	local throwing < const > = self._weaponSlot == "grenade"
-	if self._weapon ~= nil then
-		self._weapon.visible = not throwing
-	end
-	if self._heldGrenade ~= nil and self._humanoid ~= nil then
-		-- Held only while there is one to hold: an empty hand is what an empty pouch looks
-		-- like, and it agrees with the red HUD tile and with the throw refusing.
-		local show < const > = throwing and self._grenades > 0
-		self._heldGrenade.visible = show
-		if show then
-			local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-			local eye < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-			-- Where the rifle sits, a little closer in and lower -- a thing being held ready
-			-- to throw rather than a thing being aimed. The throw leaves from here too, so
-			-- what is seen and what is launched agree.
-			local offset = Vector4(0.16, -0.2, 0.42, 0.0)
-			if self._carried ~= nil then
-				offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
-			end
-			if self._running then
-				offset = offset + Vector4(0.0, -0.14, -0.08, 0.0)
-			end
-			self._heldGrenade.transform = Transform(eye + aim * offset, aim)
-		end
-	end
-
-	if self._weapon ~= nil and not throwing then
-		local aim = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-		local eye = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-		local offset = Vector4(0.18, -0.22, 0.35, 0.0)
-
-		-- Carrying a relic no longer stows the rifle -- the player can still shoot. The
-		-- off hand is full holding the relic on the left, so the rifle just rides a
-		-- little further right to make room for it.
-		if self._carried ~= nil then
-			offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
-		end
-
-		-- Lowered on the run: while sprinting the rifle drops to a low ready and the
-		-- crosshair is hidden (see _updateCrosshair). You can still fire, but from the
-		-- hip -- a gentler cousin of the reload dip.
-		if self._running then
-			offset = offset + Vector4(0.0, -0.14, -0.08, 0.0)
-			aim = aim * Quaternion.fromEulerAngles(0.0, -0.4, 0.18)
-		end
-
-		-- Drop the rifle out of the sightline and roll it over while reloading: it eases
-		-- all the way down and back up across _reloadTime. It is the tell that costs the
-		-- player -- it is obvious the gun cannot be fired, and roughly how much longer
-		-- that lasts. Still plays with a relic in the off hand.
-		local dip = 0.0
-		if self._reloadTimer > 0.0 then
-			dip = math.sin((1.0 - self._reloadTimer / self._reloadTime) * math.pi)
-		end
-		if dip > 0.0 then
-			offset = offset + Vector4(0.06, -0.3, -0.14, 0.0) * dip
-			aim = aim * Quaternion.fromEulerAngles(0.0, -0.9 * dip, 0.6 * dip)
-		end
-
-		self._weapon.transform = Transform(eye + aim * offset, aim)
-	end
+	-- The view models. Which weapon is in shot, where it sits relative to the eye, and what
+	-- it does while reloading or on the run all belong to the weapons themselves -- this only
+	-- says "now, from here". Below the camera, so a model welded to the view is not a frame
+	-- behind it, and the drawn weapon is placed while every other is put away outright: with
+	-- two of them on screen there is no telling at a glance what the left button would do.
+	-- See Weapon:place, Weapon:stow and Loadout:place.
+	self._loadout:place()
 
 	-- Carried relic: held up in the player's left hand, off to the left so it clears
 	-- both the rifle on the right and the aim straight down the middle. Rotated by the
 	-- full aim pitch, exactly like the weapon, so it rises and drops with the view
 	-- instead of lagging behind it.
 	if self._carried ~= nil and self._humanoid ~= nil then
-		local aim < const > = Quaternion.fromEulerAngles(self._heading, self._pitch, 0.0)
-		local eye < const > = self._humanoid.transform.translation + Vector4(0.0, 1.6, 0.0, 0.0)
-		self._carried.transform = Transform(eye + aim * Vector4(-0.38, -0.5, 0.62, 0.0), aim)
+		local aim < const > = self:aim()
+		self._carried.transform = Transform(self:eye() + aim * Vector4(-0.38, -0.5, 0.62, 0.0), aim)
 	end
 end
 
 function Main:reload()
 	self._humanoid = nil
 	self._camera = nil
-	self._weapon = nil
-	self._fireEvents = nil
-	-- Goes with the weapon it hangs off, and resolve disables the new one again.
-	self._trail = nil
-	-- The held grenade is a live entity handle like the rest of these, so it goes with them
-	-- and resolve builds a fresh one. _grenades itself is plain data and survives, which is
-	-- the point of the split -- a hot reload must not quietly refill the player's pouch.
-	self._heldGrenade = nil
-	-- ...and anything in the air is dropped outright, for the same reason the respawn queue
-	-- below is: a reload brings the world back new, so those entities are gone with the old
-	-- one and every handle here is stale. A grenade in flight across a reload is therefore
-	-- simply lost, which is the right trade -- the alternative is calling destroy on an
-	-- entity belonging to a world that no longer exists.
-	self._liveGrenades = {}
+	-- Every weapon lets go of its own live handles here -- the rifle's entity, event set and
+	-- trail, the held grenade, anything thrown and still in the air -- and keeps its plain
+	-- numbers, so a reload cannot quietly resupply the player. Which of those a weapon has
+	-- is its own business; this only says the world is about to be new. See Weapon:reset.
+	self._loadout:reset()
 	-- Goes with the humanoid above: it is that entity's event set, and every cue the
 	-- player owns is raised through it (_playCue), so a stale one means a silent night.
 	self._bloodEvents = nil

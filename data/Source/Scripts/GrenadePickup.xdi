@@ -31,7 +31,7 @@ local RESPAWN_DELAY < const > = Config.pickup.grenadeRespawn
 local ENTITY < const > = Guid("\{6E9AD100-0000-4000-8000-000000000003}")
 
 function GrenadePickup:canTake(context)
-	return context._grenades < context._grenadesMax
+	return not context:supplyFull("grenades")
 end
 
 function GrenadePickup:respawnDelay()
@@ -42,9 +42,12 @@ function GrenadePickup:entityData()
 	return ENTITY
 end
 
+-- Named by kind rather than by weapon, exactly as Scripts/AmmoPickup is: the Stage's
+-- loadout hands "grenades" to whichever weapon answers to that kind (Main:supply,
+-- Weapon:supplyKind), so nothing here knows how many the player is allowed to carry or
+-- what a grenade does when thrown.
 function GrenadePickup:take(context)
-	context._grenades = math.min(context._grenadesMax, context._grenades + GRENADES_PER_PICKUP)
-	context:_updateGrenadeHud()
+	context:supply("grenades", GRENADES_PER_PICKUP)
 end
 ]]></text>
 </object>

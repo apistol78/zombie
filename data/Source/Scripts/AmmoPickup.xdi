@@ -8,11 +8,17 @@ import(traktor)
 
 -- AmmoPickup
 --
--- A pickup that tops up the rifle's reserve. Only taken while there is room for
--- it, so a full player leaves the crate on the ground for the trip back. Grabbed
--- with an empty rifle, it also kicks off a reload so the player does not have to
--- ask. The collect-and-remove machinery lives in Pickup; this only decides when
--- it may be taken and what taking it does.
+-- A crate of rifle rounds. Only taken while there is room for it, so a full player
+-- leaves it on the ground for the trip back; grabbed with an empty rifle, it also
+-- kicks off a reload so the player does not have to ask. The collect-and-remove
+-- machinery lives in Pickup; this only decides when it may be taken and what taking
+-- it does.
+--
+-- What it does is name a supply *kind* -- "rounds" -- and let the Stage's loadout hand
+-- it to whichever weapon answers to that kind (Main:supply, Weapon:supplyKind). So this
+-- knows nothing about the rifle: not its reserve, not its magazine, not that a dry one
+-- starts loading itself. Swap the rifle for something else that eats rounds and the
+-- crate keeps working.
 
 AmmoPickup = AmmoPickup or class("AmmoPickup", Pickup)
 
@@ -39,7 +45,7 @@ local ENTITY < const > = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
 local RESPAWN_DELAY < const > = Config.pickup.ammoRespawn
 
 function AmmoPickup:canTake(context)
-	return context._reserve < context._reserveMax
+	return not context:supplyFull("rounds")
 end
 
 function AmmoPickup:respawnDelay()
@@ -51,13 +57,7 @@ function AmmoPickup:entityData()
 end
 
 function AmmoPickup:take(context)
-	context._reserve = math.min(context._reserveMax, context._reserve + AMMO_PER_PICKUP)
-	context._ammo:setAmmo(context._mag, context._reserve)
-	-- Picked up standing over it with an empty rifle: start loading without
-	-- making the player ask for it.
-	if context._mag <= 0 then
-		context:_beginReload()
-	end
+	context:supply("rounds", AMMO_PER_PICKUP)
 end
 ]]></text>
 </object>

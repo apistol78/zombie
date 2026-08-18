@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Melee
+--
+-- The rifle butt: right mouse swings it. It kills nothing and costs no rounds -- it knocks
+-- *every* zombie in the cone in front of you two metres back and leaves them reeling for a
+-- couple of seconds (Scripts/EnemyController:hit owns both). What it is for is the moment the
+-- ammunition economy runs out: a dry rifle mid-reload with a crowd already on you used to be
+-- the end of it, and now there is one answer left that does not need ammunition.
+--
+-- A Weapon like the others -- it has a cadence, it has an attack, and it is ticked with them
+-- -- but deliberately *not* one of the loadout's slots: the wheel does not stop on it and it
+-- has no view model of its own. The loadout keeps it aside as the alternate the right button
+-- always reaches, whatever is drawn (see Loadout:altAttack). That is not tidiness, it is the
+-- point of the swing: it is the answer to being surrounded, and one that stopped working the
+-- moment a grenade was in hand would be failing at the one job it has.
+--
+-- A machete or a bayonet is therefore a different Melee in the loadout rather than a change
+-- anywhere else; a weapon that wants its own swing instead can override :altAttack and the
+-- loadout will prefer it.
+--
+-- Its numbers come from Config.melee -- including the shove and the reel, which are read
+-- there by the zombie rather than here, since it is the zombie that has to walk them off.
+
+Melee = Melee or class("Melee", Weapon)
+
+function Melee:new(context)
+	Weapon.new(self, context)
+
+	-- Range along the aim from the eye to the zombie's chest, and how far off that line a
+	-- zombie may be and still be caught -- together a stubby cone rather than a ray.
+	self._range = Config.melee.range      -- how far in front the butt reaches (m)
+	self._radius = Config.melee.radius    -- ...and how far off the aim a zombie may be (m)
+	self._interval = Config.melee.interval -- minimum seconds between swings
+end
+
+function Melee:slot()
+	return "melee"
+end
+
+-- Swing: shove every live zombie in the short cone in front of the player. Nothing dies here
+-- and no round is spent.
+--
+-- The butt swings on its own cadence, and on nothing else: it is not held up by a reload (the
+-- point of it is that it works when the rifle does not) and it spends no rounds, so :ready is
+-- the whole of what gates it.
+function Melee:attack()
+	local context < const > = self._context
+	local player < const > = context:player()
+	local world < const > = context.world ~= nil and context.world.world or nil
+	if player == nil or world == nil then
+		return false
+	end
+
+	if not self:ready() then
+		return false
+	end
+	self._cooldown = self._interval
+
+	-- Bloom the crosshair, exactly as a shot does. The swing happened whether or not it found
+	-- anything, and on a miss this is the only answer the player gets.
+	context:kickCrosshair()
+
+	local origin < const > = context:eye()
+	local dir < const > = context:aimDirection()
+
+	-- Everything in the cone, not just the nearest of them. A swing is a sweep, so every
+	-- zombie whose chest falls inside it takes the shove -- which matters precisely because of
+	-- when the butt gets used: it is the answer to being *surrounded*, and one that only ever
+	-- reached one of the three zombies already on top of you would be failing at the one job
+	-- it has.
+	--
+	-- The cone test itself is the rifle's: project the chest onto the aim and accept it within
+	-- _radius of that line, only over arm's length rather than forty metres. Same loop over
+	-- the same list, and it runs about once a second at most, so there is nothing here to be
+	-- clever about.
+	local playerPos < const > = player.transform.translation
+	local r2 < const > = self._radius * self._radius
+	local i = 0
+	while true do
+		local e = world:getEntity("Enemy", i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		if not context:isEnemyDead(e) then
+			local p < const > = e.transform.translation
+			local rel < const > = (p + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
+			local t < const > = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
+			if t > 0.0 and t < self._range then
+				local hx < const > = rel.x - dir.x * t
+				local hy < const > = rel.y - dir.y * t
+				local hz < const > = rel.z - dir.z * t
+				if hx * hx + hy * hy + hz * hz < r2 then
+					-- Which way this one goes: straight out from the player along the ground,
+					-- rather than along the aim. The two agree on a zombie square in front and
+					-- differ on one caught at the edge of the cone, where shoving along the aim
+					-- would slide it past the player's shoulder instead of off them -- and off
+					-- them is the entire point of the swing. Taken per zombie, so a swing
+					-- through a crowd fans it apart rather than driving the whole lot off along
+					-- one shared heading.
+					local ax, az = p.x - playerPos.x, p.z - playerPos.z
+					if ax * ax + az * az < 0.0001 then
+						ax, az = dir.x, dir.z   -- standing exactly on the player; shove along the aim
+					end
+
+					-- Each zombie owns its own shove and reel, and refuses one if it is already
+					-- a corpse -- so the sound only plays for one that was standing.
+					--
+					-- "hit" is the same cue the rifle raises on a kill: something arriving on a
+					-- zombie, from where that zombie is. Raised per zombie rather than once for
+					-- the swing, which is what makes a sweep through three of them sound like
+					-- three impacts spread across the arc -- the bank draws its own pitch per
+					-- utterance, so they do not stack into one flat slap.
+					--
+					-- No blood with it: a rifle butt does not open anything, and the burst is
+					-- what a round looks like.
+					local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+					if sc ~= nil and sc:hit(ax, az) then
+						local fx < const > = e:getComponent(traktor.world.EventSetComponent)
+						if fx ~= nil then
+							fx:raise("hit")
+						end
+					end
+				end
+			end
+		end
+	end
+	return true
+end
+]]></text>
+</object>

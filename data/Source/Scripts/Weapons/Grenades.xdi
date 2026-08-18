@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Grenades
+--
+-- The other thing the player can throw at the night, and the only one that does not go
+-- through the rifle at all: the mouse wheel swaps which of the two the left button does,
+-- and the swap is the whole interface -- there is no separate throw key.
+--
+-- A whole weapon rather than a special case, which is the point of the split: it holds a
+-- count instead of a magazine, its "shot" is a rigid body that arcs and rolls, and it kills
+-- a crowd rather than one zombie -- and none of that reaches Main, which only ever asks the
+-- drawn weapon to attack.
+--
+-- What it owns: the pouch, the throw, the fuses of everything already in the air, the blast
+-- when one runs out, the held view model, and its own HUD tile. Its numbers come from
+-- Config.grenade.
+
+Grenades = Grenades or class("Grenades", Weapon)
+
+-- The two halves of a grenade. Both are the same mesh and they are deliberately separate
+-- entities, because they want opposite things from their transform: the held one is written
+-- every frame to hang off the camera (see :place), while the thrown one is a dynamic rigid
+-- body that writes its own. Giving either the other's job fights the simulation.
+--
+-- The escaped form is what makes these tracked dependencies as well as guids, exactly as
+-- Scripts/Spawner references the zombie.
+local GRENADE < const > = Guid("\{6E9AD100-0000-4000-8000-000000000002}")
+local GRENADE_PROJECTILE < const > = Guid("\{6E9AD100-0000-4000-8000-000000000005}")
+
+-- Chest height above a standing zombie's origin, which is at its feet: where a blast is taken
+-- to arrive on a body that is still upright.
+local CHEST < const > = Vector4(0.0, 1.0, 0.0, 0.0)
+
+function Grenades:new(context)
+	Weapon.new(self, context)
+
+	self._count = Config.grenade.start        -- carried right now
+	self._max = Config.grenade.max            -- most that can be carried at once
+	self._interval = Config.grenade.interval  -- minimum seconds between throws
+	self._live = {}                           -- thrown and still in the air or ticking
+
+	-- The throw. Speed and lift together decide the arc; there is no gravity constant here,
+	-- since the projectile is a rigid body and falls at whatever the physics world falls at.
+	self._throwSpeed = Config.grenade.throwSpeed -- m/s out of the hand
+	self._throwLift = Config.grenade.throwLift   -- ...thrown this far above where you are looking (rad)
+
+	-- ...and the bang. The fuse is counted from the throw and from nothing else -- not from
+	-- where it lands, not from when it stops rolling -- so a grenade thrown far or high can
+	-- go off in mid-air.
+	self._fuse = Config.grenade.fuse                  -- seconds from the throw to the bang
+	self._blastRadius = Config.grenade.blastRadius    -- everything standing inside this dies (m)
+	self._blastHalf = Config.grenade.blastHalf        -- ...where the blast has half its centre momentum
+	self._blastImpulse = Config.grenade.blastImpulse  -- momentum handed to a body at the centre
+	self._blastLift = Config.grenade.blastLift        -- ...plus this much straight up
+end
+
+function Grenades:slot()
+	return "grenades"
+end
+
+function Grenades:supplyKind()
+	return "grenades"
+end
+
+-- The grenade in the player's hand: the same entity the throw builds, kept aside as a view
+-- model and hidden until the wheel calls for it. Built once and toggled rather than created
+-- and destroyed on every swap, because the wheel is cheap to spin and building an entity is
+-- not.
+--
+-- Not a child of the player like the rifle is -- it is not part of the Humanoid's own entity
+-- data -- so it is placed in world space each frame in :place, from the same eye and aim the
+-- rifle is placed from.
+function Grenades:resolve()
+	if self._held ~= nil or self._context.world == nil then
+		return
+	end
+	local held < const > = self._context.world:createEntity(GRENADE)
+	if held ~= nil then
+		held.visible = false
+		self._held = held
+	end
+end
+
+function Grenades:reset()
+	-- The held grenade is a live entity handle, so it goes and resolve builds a fresh one.
+	-- _count itself is plain data and survives, which is the point of the split -- a hot
+	-- reload must not quietly refill the player's pouch.
+	self._held = nil
+	-- ...and anything in the air is dropped outright, for the same reason: a reload brings
+	-- the world back new, so those entities are gone with the old one and every handle here
+	-- is stale. A grenade in flight across a reload is therefore simply lost, which is the
+	-- right trade -- the alternative is calling destroy on an entity belonging to a world
+	-- that no longer exists.
+	self._live = {}
+end
+
+function Grenades:hasHud()
+	return true
+end
+
+-- The grenade tile: how many are left, and whether the left button is currently on them.
+--
+-- A plain Static rather than an art widget like the ammunition counter: the other tiles are
+-- movie clips exported from data/Assets/UI/Hud.svg, and one for this would mean re-authoring
+-- that SVG.
+--
+-- Built with the text it will actually carry rather than blank, which matters more than it
+-- looks: a Static clamps its text bounds to the width it was placed at, and the HUD row is
+-- laid out long before anything sets a count -- so an empty one would be placed at no width
+-- at all and every later count would be clipped away to nothing. The string never changes
+-- length afterwards (the count is a single digit, capped by _max), so one honest placement
+-- here holds for the night.
+function Grenades:createHud(parent)
+	self._label = Static(parent, "GRENADES  0")
+	self._label:setTextSize(24)
+	self._label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	self._label:setVerticalAlign(Widget.ALIGN_BOTTOM)
+	self:_refreshHud()
+	return self._label
+end
+
+function Grenades:selectionChanged(selected)
+	self._selected = selected
+	self:_refreshHud()
+end
+
+-- Colour carries which weapon has the trigger rather than a separate marker, and reuses the
+-- ammunition counter's own palette so the HUD only has one language: bright when it is the
+-- thing you are about to throw, dim when the rifle has the trigger, and the counter's
+-- empty-magazine red when there is nothing left to throw at all.
+--
+-- Cheap enough to call from anywhere something changes -- and that is how it is called, from
+-- the swap, the throw and the pickup, rather than every frame.
+function Grenades:_refreshHud()
+	if self._label == nil then
+		return
+	end
+	self._label:setText("GRENADES  " .. tostring(self._count))
+	local selected < const > = self._selected == true
+	if self._count <= 0 then
+		self._label:setTextColor(selected and Color4f(1.0, 0.42, 0.34, 1.0) or Color4f(0.52, 0.34, 0.32, 1.0))
+	elseif selected then
+		self._label:setTextColor(Color4f(1.0, 0.9, 0.68, 1.0))
+	else
+		self._label:setTextColor(Color4f(0.55, 0.53, 0.46, 1.0))
+	end
+end
+
+function Grenades:full()
+	return self._count >= self._max
+end
+
+function Grenades:supply(count)
+	if self._count >= self._max then
+		return false
+	end
+	self._count = math.min(self._max, self._count + count)
+	self:_refreshHud()
+	return true
+end
+
+-- There is an aim worth a reticle for as long as there is something to throw at it. With an
+-- empty pouch the throw refuses, so there is nothing to line up.
+function Grenades:wantsCrosshair()
+	return self._count > 0
+end
+
+-- Throw one. The grenade is a GrenadeProjectile entity over a dynamic rigid body, so what
+-- happens to it after it leaves the hand is the simulation's business and not this script's:
+-- it arcs under real gravity, bounces off trees and gravestones, rolls into hollows and
+-- comes to rest wherever the ground lets it. All this does is spawn it and push it.
+--
+-- Nothing here tracks it afterwards either. The fuse is a fixed count from this moment, so
+-- the only thing kept is the entity -- to read a position off when it goes off, and to take
+-- back out of the world.
+function Grenades:attack()
+	local context < const > = self._context
+	local world < const > = context.world ~= nil and context.world.world or nil
+	if context:player() == nil or world == nil then
+		return false
+	end
+
+	if not self:ready() then
+		return false
+	end
+	-- Nothing left: no throw, and no sound either. The red plate on the HUD tile is the only
+	-- answer, exactly as an empty magazine's is.
+	if self._count <= 0 then
+		return false
+	end
+
+	self._count = self._count - 1
+	self._cooldown = self._interval
+	self:_refreshHud()
+
+	context:kickCrosshair()
+
+	-- Out of the hand rather than out of the eye, so it does not appear to pass through the
+	-- player's own head on a throw aimed steeply up, and so it leaves from where the held
+	-- grenade was being drawn (see :place).
+	--
+	-- Subtracted, not added: pitch grows *downward*. fromEulerAngles turns the pitch about
+	-- +X, so the forward vector is (0, -sin(pitch), cos(pitch)) -- and the mouse agrees,
+	-- since moving it up to look up is what drives the pitch down. Adding the lift here threw
+	-- the grenade at the floor.
+	local aim < const > = context:aim(-self._throwLift)
+	local origin < const > = context:eye() + aim * Vector4(0.16, -0.12, 0.45, 0.0)
+	local dir < const > = aim * Vector4(0.0, 0.0, 1.0, 0.0)
+
+	local entity < const > = context.world:createEntity(GRENADE_PROJECTILE)
+	if entity == nil then
+		return true
+	end
+	local T < const > = Transform(origin, Quaternion.identity)
+	entity.transform = T
+
+	-- Hand the throw over to physics and let go.
+	--
+	-- Setting the body's transform as well as the entity's is belt and braces --
+	-- Entity::setTransform already pushes it down to every component -- but this is the one
+	-- frame where it has to be right, since a body still sitting at the world origin when the
+	-- velocity lands would be launched from there instead of from the hand.
+	--
+	-- The tumble is set in the aim's own frame, so it always turns end over end about the
+	-- throw regardless of where the player is facing, with a little yaw and roll on top so it
+	-- does not spin about one clean axis like a thrown tin.
+	local rb < const > = entity:getComponent(traktor.physics.RigidBodyComponent)
+	local body < const > = rb ~= nil and rb.body or nil
+	if body ~= nil then
+		body.transform = T
+		body.linearVelocity = dir * self._throwSpeed
+		body.angularVelocity = aim * Vector4(-9.0, 2.0, 1.5, 0.0)
+		-- Bodies are built asleep-able and this one has to move on the frame it is thrown.
+		body.active = true
+	end
+
+	-- The body is not kept: once it has been pushed, nothing here has any further business
+	-- with it. Where the grenade has got to is read off the entity when it goes off.
+	table.insert(self._live, {
+		entity = entity,
+		fuse = self._fuse
+	})
+	return true
+end
+
+-- Count the fuses down and set off any that have run out. One pass over everything in the
+-- air or on the ground; there is rarely more than one.
+--
+-- Ticked whether or not the grenades are the weapon in hand, because a thrown grenade has
+-- left -- that is what the loadout ticking every weapon rather than only the drawn one is
+-- for.
+--
+-- That is the whole of it, because both of the questions this used to answer have gone:
+-- where the grenade is belongs to its rigid body, and *when* it goes off is a fixed three
+-- seconds from the throw (see _fuse) rather than something to be inferred from whether it
+-- has stopped moving. Iterated backwards so a spent one can be removed mid-loop.
+function Grenades:update(dt)
+	Weapon.update(self, dt)
+
+	for i = #self._live, 1, -1 do
+		local g = self._live[i]
+		g.fuse = g.fuse - dt
+		if g.fuse <= 0.0 then
+			self:_explode(g)
+			table.remove(self._live, i)
+		end
+	end
+end
+
+-- Go off: everything standing inside _blastRadius dies, thrown by a blast that falls off
+-- with distance. Not damage -- there is no health on a zombie -- so this is the same one-way
+-- door the rifle uses, just applied to a crowd at once.
+function Grenades:_explode(g)
+	local context < const > = self._context
+	local world = context.world ~= nil and context.world.world or nil
+
+	-- Where it went off has to be read off the projectile before the projectile goes, since
+	-- physics has been the only thing that knew where it was.
+	local centre = nil
+	if g.entity ~= nil then
+		centre = g.entity.transform.translation
+
+		-- Raise the burst, then unspawn the projectile in the same breath.
+		--
+		-- Safe in that order, and only in that order. The burst is spawned by the world's own
+		-- event manager rather than by the grenade, and with follow=false it reads the
+		-- grenade's transform once, here, and never looks at it again -- so the flash, the
+		-- debris and the four seconds of sound all outlive the thing that set them off. Do it
+		-- the other way round and there is nothing left to raise the event on.
+		local fx < const > = g.entity:getComponent(traktor.world.EventSetComponent)
+		if fx ~= nil then
+			fx:raise("explode")
+		end
+
+		-- removeEntity while the world is updating is deferred, and it clears the entity's
+		-- world pointer immediately -- which is what lets destroy() run here and free the
+		-- rigid body now rather than whenever the collector gets to it. Same pair the Spawner
+		-- uses to despawn a zombie, and Pickup to take itself out.
+		if world ~= nil then
+			world:removeEntity(g.entity)
+			g.entity:destroy()
+		end
+		g.entity = nil
+	end
+
+	if world == nil or centre == nil then
+		return
+	end
+
+	-- Everything still standing. Two points, for two different questions: whether it is caught
+	-- is asked of the feet, so the radius means what it looks like on the ground, and which way
+	-- it goes is asked of the chest, so a blast at ground level throws a zombie standing on it
+	-- almost straight up and one at the rim almost flat, with no special case for either -- the
+	-- geometry already says it.
+	--
+	-- Plain distance rather than the usual squared-distance trick: Vector4 exposes `length` to
+	-- script but not `length2`, and one square root per zombie per explosion is not worth
+	-- unpacking the components by hand to avoid.
+	local i = 0
+	while true do
+		local e = world:getEntity("Enemy", i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		if not context:isEnemyDead(e) then
+			local p < const > = e.transform.translation
+			if (p - centre).length < self._blastRadius then
+				local chest < const > = p + CHEST
+				context:killEnemy(e, chest, self:_blastShove(centre, chest), true)
+			end
+		end
+	end
+
+	-- ...and everything already lying there. A blast that stepped over the bodies read as though
+	-- they had become scenery the moment they went down -- and worse, it read as the blast having
+	-- a smaller radius than it has, since the corpses are exactly what the player can see it
+	-- reach. They are thrown by the same falloff as the living, from the same centre, and each
+	-- one caught gets its despawn clock wound back (Main:shoveCorpse).
+	--
+	-- One point rather than two, and it is the middle of the body: a corpse has no feet to stand
+	-- on and its entity transform is still back where it died, so where it *is* has to be asked
+	-- of the pose (Main:corpsePosition). That one point answers both questions -- caught, and
+	-- which way -- which is right for a body already lying in the blast rather than standing up
+	-- out of it.
+	for _, corpse in ipairs(context:corpses()) do
+		local p < const > = context:corpsePosition(corpse)
+		if (p - centre).length < self._blastRadius then
+			context:shoveCorpse(corpse, p, self:_blastShove(centre, p), true)
+		end
+	end
+end
+
+-- What a blast centred at `centre` hands a body whose middle is at `at`: straight out from the
+-- centre, falling off with distance.
+--
+-- Inverse-square about _blastHalf rather than a straight ramp to zero at the rim. A ramp gives
+-- the whole radius roughly the same shove and makes the edge of the blast a visible circle; this
+-- is brutal in the middle and a push at the edge, which is what the radius is meant to feel
+-- like.
+--
+-- Shared by the living and the dead so that a corpse is thrown exactly as hard as the zombie
+-- standing over it, and so there is one falloff to retune rather than two to keep in step.
+--
+-- Not named for the field it reads. _blastImpulse is the number out of Config, set on the
+-- instance in :new -- and an instance field shadows a class method of the same name, since Lua
+-- only consults the class metatable on a miss in the instance table. Calling it would have tried
+-- to call a number, which is exactly what it did until this was renamed: the throw and the bang
+-- were fine and every zombie in the radius walked away, because the error landed after the burst
+-- was raised and before anything took the shove.
+function Grenades:_blastShove(centre, at)
+	local rel < const > = at - centre
+	local dist = rel.length
+	local dir
+	if dist > 0.01 then
+		dir = rel / dist
+	else
+		dir = Vector4(0.0, 1.0, 0.0, 0.0)   -- lying exactly on it; straight up
+		dist = 0.01
+	end
+	local k < const > = dist / self._blastHalf
+	local falloff < const > = 1.0 / (1.0 + k * k)
+	return dir * (self._blastImpulse * falloff)
+		+ Vector4(0.0, self._blastLift * falloff, 0.0, 0.0)
+end
+
+-- Held only while there is one to hold: an empty hand is what an empty pouch looks like, and
+-- it agrees with the red HUD tile and with the throw refusing.
+function Grenades:place()
+	local held < const > = self._held
+	if held == nil or self._context:player() == nil then
+		return
+	end
+	local show < const > = self._count > 0
+	held.visible = show
+	if not show then
+		return
+	end
+
+	local context < const > = self._context
+	local aim < const > = context:aim()
+	-- Where the rifle sits, a little closer in and lower -- a thing being held ready to throw
+	-- rather than a thing being aimed. The throw leaves from here too, so what is seen and
+	-- what is launched agree.
+	local offset = Vector4(0.16, -0.2, 0.42, 0.0)
+	if context:isCarrying() then
+		offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
+	end
+	if context:isRunning() then
+		offset = offset + Vector4(0.0, -0.14, -0.08, 0.0)
+	end
+	held.transform = Transform(context:eye() + aim * offset, aim)
+end
+
+function Grenades:stow()
+	if self._held ~= nil then
+		self._held.visible = false
+	end
+end
+]]></text>
+</object>

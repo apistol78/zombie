@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000002}
+#using \{7EA9C000-0000-4000-8000-000000000003}
+#using \{7EA9C000-0000-4000-8000-000000000004}
+
+import(traktor)
+
+-- Loadout
+--
+-- What the player has in their hands, and the only thing the Stage talks to about it. Main
+-- hands it buttons and frames -- attack, altAttack, reload, cycle, update, place -- and it
+-- routes them at whichever Scripts/Weapons/Weapon is drawn. Which one that is never leaves
+-- this file.
+--
+-- The split is what makes a third weapon cheap. Adding one is a Weapon subclass and one entry
+-- in the list below: it gets a HUD column, a place in the wheel, its frames ticked, its view
+-- model placed and stowed, and its ammunition fed by whichever crate names its supply kind --
+-- with nothing to change in Main, in the HUD layout, or in the pickups.
+--
+-- Two rules here are deliberate and worth keeping:
+--
+--   * Every weapon is updated and resolved, not only the drawn one. A reload runs on while
+--     the grenades are in hand, and a grenade already in the air is nobody's weapon at all.
+--   * The alternate attack (right mouse) falls through to the shared Melee rather than
+--     belonging to a slot, so the rifle butt still answers with a grenade in hand. See
+--     Scripts/Weapons/Melee.
+
+Loadout = Loadout or class("Loadout")
+
+function Loadout:new(context)
+	self._context = context
+
+	-- The wheel's order, and the order the HUD tiles appear in along the bottom row. The rifle
+	-- first because it is what the night starts in the player's hands.
+	self._weapons = {
+		Rifle(context),
+		Grenades(context)
+	}
+	self._selected = 1
+
+	-- Not a slot: the alternate the right button always reaches, whatever is drawn.
+	self._melee = Melee(context)
+
+	self:_announce()
+end
+
+-- The drawn weapon. Nothing outside this file needs to know which of the list it is.
+function Loadout:current()
+	return self._weapons[self._selected]
+end
+
+function Loadout:count()
+	return #self._weapons
+end
+
+-- Look a weapon up by the name it answers to (Weapon:slot). For anything that genuinely has
+-- business with one particular weapon; the routing below deliberately does not use it.
+function Loadout:find(slot)
+	for _, w in ipairs(self._weapons) do
+		if w:slot() == slot then
+			return w
+		end
+	end
+	return nil
+end
+
+-- Swap what the left button does. Bound to the mouse wheel, which is why it is a cycle rather
+-- than a pair of hotkeys -- and why an empty slot can still be selected: with only two
+-- weapons, skipping the empty one would make the wheel do nothing at all and leave the player
+-- with no way to find out why. Selecting it and reading "0" answers that.
+--
+-- `step` is how many places to move; it wraps either way, so a wheel spun backwards works the
+-- day a third weapon makes the direction meaningful.
+function Loadout:cycle(step)
+	local n < const > = #self._weapons
+	if n < 2 then
+		return
+	end
+	self._selected = ((self._selected - 1 + (step or 1)) % n) + 1
+	self:_announce()
+end
+
+-- Tell every weapon whether it is the one with the trigger, so a tile that says so can
+-- repaint itself.
+function Loadout:_announce()
+	for i, w in ipairs(self._weapons) do
+		w:selectionChanged(i == self._selected)
+	end
+end
+
+-- How many columns the HUD row has to reserve for the arsenal: one per weapon that actually
+-- shows something. Asked by Main *before* the row is laid out, because a TableLayout is built
+-- with its column list and cannot grow one afterwards -- so the row is as wide as what the
+-- player is carrying rather than authored at a fixed four columns.
+function Loadout:hudColumns()
+	local n = 0
+	for _, w in ipairs(self._weapons) do
+		if w:hasHud() then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+function Loadout:createHud(parent)
+	for _, w in ipairs(self._weapons) do
+		if w:hasHud() then
+			w:createHud(parent)
+		end
+	end
+	self:_announce()
+end
+
+-- Above Main's freeze returns: a tile's own animation keeps running while the game does not.
+function Loadout:updateHud(dt)
+	for _, w in ipairs(self._weapons) do
+		w:updateHud(dt)
+	end
+end
+
+function Loadout:resolve()
+	for _, w in ipairs(self._weapons) do
+		w:resolve()
+	end
+	self._melee:resolve()
+end
+
+function Loadout:reset()
+	for _, w in ipairs(self._weapons) do
+		w:reset()
+	end
+	self._melee:reset()
+end
+
+-- Below Main's freeze returns: cadences, reloads and fuses all stop with the game.
+function Loadout:update(dt)
+	for _, w in ipairs(self._weapons) do
+		w:update(dt)
+	end
+	self._melee:update(dt)
+end
+
+-- Left button. Whatever the wheel has it on.
+function Loadout:attack()
+	return self:current():attack()
+end
+
+-- Right button. Offered to the drawn weapon first -- a weapon with its own alternate says so
+-- by overriding it -- and otherwise the shared butt swing.
+function Loadout:altAttack()
+	if self:current():altAttack() then
+		return true
+	end
+	return self._melee:attack()
+end
+
+-- R. Offered to every weapon rather than only the drawn one: topping up a half-empty rifle
+-- with a grenade in hand is exactly the lull the key exists for.
+function Loadout:reload()
+	local any = false
+	for _, w in ipairs(self._weapons) do
+		if w:beginReload() then
+			any = true
+		end
+	end
+	return any
+end
+
+function Loadout:wantsCrosshair()
+	return self:current():wantsCrosshair()
+end
+
+-- The view models: the drawn weapon placed at the eye, every other one put away. Stowing
+-- outright rather than lowering is deliberate -- with two weapons on screen there is no
+-- telling at a glance what the left button would do.
+function Loadout:place()
+	for i, w in ipairs(self._weapons) do
+		if i == self._selected then
+			w:place()
+		else
+			w:stow()
+		end
+	end
+end
+
+-- Ammunition, routed by kind rather than by weapon: a crate says what it is carrying
+-- ("rounds", "grenades") and whoever answers to that kind takes it. See Weapon:supplyKind,
+-- Scripts/AmmoPickup and Scripts/GrenadePickup.
+function Loadout:supply(kind, amount)
+	local any = false
+	for _, w in ipairs(self._weapons) do
+		if w:supplyKind() == kind and w:supply(amount) then
+			any = true
+		end
+	end
+	return any
+end
+
+-- Is everything that takes this kind already carrying all it can? What gates a crate being
+-- taken at all, so a full player leaves it standing for the trip back. True for a kind
+-- nothing in the loadout answers to, which is what leaves a crate for a weapon the player
+-- does not have alone.
+function Loadout:supplyFull(kind)
+	for _, w in ipairs(self._weapons) do
+		if w:supplyKind() == kind and not w:full() then
+			return false
+		end
+	end
+	return true
+end
+]]></text>
+</object>

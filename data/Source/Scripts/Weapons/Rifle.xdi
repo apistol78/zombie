@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
+#using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+-- Scripts/EnemyController, for the class itself rather than for anything it does: the
+-- rifle identifies what its ray hit by asking whether the struck entity's script component
+-- is one (see Rifle:attack), and `isa` needs the class in scope to ask.
+#using \{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}
+
+import(traktor)
+
+-- Rifle
+--
+-- The weapon the night is built around: a hitscan rifle with a magazine, a reserve carried
+-- in the pockets, and a reload long enough that *where* it is taken matters. Everything
+-- that used to live on the Stage as _mag / _reserve / _fireWeapon / _beginReload is here,
+-- behind the Scripts/Weapons/Weapon interface -- so Main neither knows the rifle exists nor
+-- how many rounds are in it.
+--
+-- It owns three things at once, which is why they are worth naming: the ammunition economy,
+-- the shot itself (one ray out of the eye, and the tracer that draws it), and the
+-- first-person view model welded to the camera -- including the dip that tells the player
+-- the rifle cannot be fired right now.
+--
+-- Its numbers come straight from Config.rifle; retune the rifle there, not here.
+
+Rifle = Rifle or class("Rifle", Weapon)
+
+-- Where the barrel ends, in the rifle view model's own space -- so where a round leaves
+-- from, and where its tracer starts. Kept here rather than on the entity because the trail
+-- that draws the tracer takes world space points: it has to be carried out through the
+-- weapon's own transform by hand each shot (see Rifle:attack).
+local MUZZLE < const > = Vector4(0.0, 0.01, 0.56, 1.0)
+
+-- The two collision groups this game uses. Default is the world -- terrain, buildings,
+-- props, and the thrown grenade; Interactable is everything that walks -- the player and
+-- the horde. Same values Scripts/EnemyController and Scripts/Spawner trace against, and a
+-- round has to be stopped by either.
+local COLLISION_DEFAULT < const > = 0x00000001
+local COLLISION_INTERACTABLE < const > = 0x00000002
+
+function Rifle:new(context)
+	Weapon.new(self, context)
+
+	-- Ammunition. The rifle holds a magazine, the player carries a reserve, and rounds only
+	-- move from one to the other on a reload. Spent in :attack and topped up by "AmmoPickup"
+	-- crates (Scripts/AmmoPickup, which asks the loadout for "rounds" rather than reaching
+	-- in here).
+	self._magSize = Config.rifle.magSize        -- rounds the rifle holds
+	self._mag = Config.rifle.mag                -- rounds in it right now
+	self._reserve = Config.rifle.reserve        -- spare rounds carried
+	self._reserveMax = Config.rifle.reserveMax  -- most that can be carried at once
+	self._reloadTime = Config.rifle.reloadTime  -- seconds to refill the magazine
+	self._interval = Config.rifle.fireInterval  -- minimum seconds between shots
+	self._range = Config.rifle.range            -- max shot distance (m)
+	self._reloadTimer = 0.0                     -- counts down to the magazine being refilled
+end
+
+function Rifle:slot()
+	return "rifle"
+end
+
+function Rifle:supplyKind()
+	return "rounds"
+end
+
+-- The rifle is a child entity of the player (via GroupComponent). Cache it and its event
+-- set so aiming can orient it and firing can raise its "fire" (the report), plus the trail
+-- that draws each round's tracer.
+function Rifle:resolve()
+	if self._entity ~= nil then
+		return
+	end
+	local player < const > = self._context:player()
+	if player == nil then
+		return
+	end
+	local group < const > = player:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return
+	end
+	self._entity = group:getEntity("Weapon", 0)
+	if self._entity == nil then
+		return
+	end
+	self._events = self._entity:getComponent(traktor.world.EventSetComponent)
+	-- Switched off deliberately, and it has to be: left enabled the component samples the
+	-- weapon's transform every frame of its own accord, and since the weapon is a view model
+	-- welded to the camera that draws a ribbon smeared along wherever the player has walked.
+	-- Disabled it emits nothing by itself and takes only the points a shot hands it -- see
+	-- :attack.
+	self._trail = self._entity:getComponent(traktor.spray.TrailComponent)
+	if self._trail ~= nil then
+		self._trail.enable = false
+	end
+end
+
+-- Live handles only; the ammunition is plain numbers and survives, which is the whole point
+-- of the split -- a hot reload must not refill the magazine. resolve disables the new
+-- trail again.
+function Rifle:reset()
+	self._entity = nil
+	self._events = nil
+	self._trail = nil
+end
+
+function Rifle:hasHud()
+	return true
+end
+
+function Rifle:createHud(parent)
+	self._ammo = AmmoCounter(parent)
+	self:_pushAmmo()
+	return self._ammo
+end
+
+function Rifle:updateHud(dt)
+	if self._ammo ~= nil then
+		self._ammo:update(dt)
+	end
+end
+
+-- The two ways this weapon writes to its tile, gathered so the nil check is written once: a
+-- weapon may be carried in a stage that never built a HUD.
+function Rifle:_pushAmmo()
+	if self._ammo ~= nil then
+		self._ammo:setAmmo(self._mag, self._reserve)
+	end
+end
+
+function Rifle:_pushReload(progress)
+	if self._ammo ~= nil then
+		self._ammo:setReload(progress)
+	end
+end
+
+-- Weapon timers and the reload nobody has to ask for. Ticked from Main *below* its paused
+-- and game over early returns, so the shot cadence and a reload in flight both freeze with
+-- the rest of the game rather than running on behind the pause menu.
+function Rifle:update(dt)
+	Weapon.update(self, dt)
+
+	-- An empty magazine reloads itself. The tension is meant to live in the 1.2 s the reload
+	-- takes -- the rifle dropping out of the sightline, the crosshair gone, the horde still
+	-- coming -- and none of it in having to remember to ask for it, which is just a keystroke
+	-- tax on a decision the player has already made by firing the last round.
+	--
+	-- Expressed as a state rule rather than hung off the shot that emptied it, because every
+	-- route to an empty magazine wants the same answer: the last round fired, an ammo crate
+	-- walked over while dry, a magazine left empty because the reserve was. beginReload
+	-- refuses when there is nothing to load with, so a genuinely dry rifle costs two
+	-- comparisons a frame and keeps its red HUD plate until a crate turns up.
+	if self._mag <= 0 and self._reloadTimer <= 0.0 then
+		self:beginReload()
+	end
+
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = math.max(0.0, self._reloadTimer - dt)
+		self:_pushReload(1.0 - self._reloadTimer / self._reloadTime)
+		if self._reloadTimer <= 0.0 then
+			-- Whole magazines are not swapped: only as many rounds as are actually left go
+			-- in, so the last reload of a run is a short one.
+			local take < const > = math.min(self._magSize - self._mag, self._reserve)
+			self._mag = self._mag + take
+			self._reserve = self._reserve - take
+			self:_pushReload(nil)
+			self:_pushAmmo()
+		end
+	end
+end
+
+-- Start refilling the magazine from the reserve. Refuses when one is already in progress,
+-- when the magazine is full, or when there is nothing left to load with -- so its callers
+-- (the R key routed through the loadout, the empty-magazine rule above, and an AmmoPickup
+-- collected while dry) can all just ask, every frame if they like, without special casing.
+-- Returns true when a reload actually began.
+function Rifle:beginReload()
+	if self._reloadTimer > 0.0 then
+		return false
+	end
+	if self._mag >= self._magSize or self._reserve <= 0 then
+		return false
+	end
+	self._reloadTimer = self._reloadTime
+	self:_pushReload(0.0)
+	-- The bolt. On the Weapon child rather than the player, alongside its muzzle flash, and
+	-- non-positional because it is happening in the player's hands.
+	if self._events ~= nil then
+		self._events:raise("reload")
+	end
+	return true
+end
+
+-- Hidden whenever the magazine is empty -- during a reload and when fully dry. The reticle
+-- is an aiming aid for a loaded rifle; with no round chambered there is no shot to line up,
+-- so it comes back the instant the magazine is refilled.
+function Rifle:wantsCrosshair()
+	return self._mag > 0
+end
+
+function Rifle:full()
+	return self._reserve >= self._reserveMax
+end
+
+function Rifle:supply(rounds)
+	if self._reserve >= self._reserveMax then
+		return false
+	end
+	self._reserve = math.min(self._reserveMax, self._reserve + rounds)
+	self:_pushAmmo()
+	-- Taken standing over the crate with an empty rifle: start loading without making the
+	-- player ask for it.
+	if self._mag <= 0 then
+		self:beginReload()
+	end
+	return true
+end
+
+-- Fire: hitscan a ray out of the player's eye along the current aim, and mark whatever live
+-- zombie it meets dead. Its EnemyController switches the body to rag doll; Main despawns
+-- the corpse later.
+function Rifle:attack()
+	local context < const > = self._context
+	if context:player() == nil then
+		return false
+	end
+
+	-- A relic fills only one hand, so the rifle still fires with one carried -- there is
+	-- deliberately no early-out here for carrying.
+
+	-- Nothing happens mid reload, and the rifle will not cycle faster than its interval
+	-- however fast the trigger is pulled.
+	if self._reloadTimer > 0.0 or not self:ready() then
+		return false
+	end
+
+	-- Dry: no bang and no muzzle flash. Nothing to start here either -- an empty magazine
+	-- reloads itself in :update, so reaching this at all means the reserve is empty too and
+	-- the red HUD plate is the only answer the rifle has.
+	if self._mag <= 0 then
+		return false
+	end
+
+	self._mag = self._mag - 1
+	self._cooldown = self._interval
+	self:_pushAmmo()
+	if self._ammo ~= nil then
+		self._ammo:spend()
+	end
+
+	-- Bloom the crosshair as recoil feedback (it eases back in Crosshair:update). Harmless
+	-- while it is hidden mid-relic-carry -- it simply settles before it is shown again.
+	context:kickCrosshair()
+
+	-- The report. Raised on every shot before target selection, because a miss is exactly as
+	-- loud as a hit. The "fire" event lives on the Weapon child entity, so it comes from the
+	-- rifle rather than from the player. What the shot *looks* like is no longer an effect
+	-- raised here alongside it: the round draws a tracer into the trail on that same entity,
+	-- and that needs to know where the round stopped, so it is fed below once the ray is in.
+	if self._events ~= nil then
+		self._events:raise("fire")
+	end
+
+	local origin < const > = context:eye()
+	local dir < const > = context:aimDirection()
+
+	-- The bang. Published here -- with the report, above target selection -- because a miss
+	-- is exactly as loud as a hit, and because the reload and rate-of-fire gates are already
+	-- behind us: a dry click and a trigger pulled faster than the rifle cycles both returned
+	-- above, so reaching this line means a round actually left the barrel. What the horde
+	-- does about it is Main's to publish and Scripts/EnemyController's to read.
+	context:reportGunshot(origin.x, origin.z)
+
+	-- One ray, out of the eye along the aim, against the world and everything standing in
+	-- it. Whatever it meets first is what the round hit.
+	--
+	-- This replaces a scan that projected every zombie onto the aim and kept the nearest
+	-- within an assist radius. Two things fall out of the swap for free, and both were
+	-- missing before: cover works, because a wall is simply the nearer hit; and a round has
+	-- somewhere to land when it hits nothing alive, which is where the dust comes from below.
+	local pm < const > = context.environment.physics.physicsManager
+	if pm == nil then
+		return true
+	end
+	local hit < const > = pm:queryRay(
+		origin, dir, self._range,
+		traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE), true
+	)
+
+	-- The tracer: two points into the rifle's trail, the barrel and wherever the round ended
+	-- up, and the component draws the ribbon between them. It cuts that span into pieces of
+	-- its own accord (lengthThreshold on the component), which is what makes two points
+	-- enough -- the ribbon renderer needs three to put anything on screen -- and the shader
+	-- grades the tracer across them, brightest at the far end.
+	--
+	-- That threshold and Config.rifle.range are a pair: 0.7m pieces across 40m come to 57,
+	-- inside the 64 points a trail holds. Cutting finer overruns that, and what a full trail
+	-- drops is its oldest points -- the ones at the muzzle -- so a long shot would begin in
+	-- mid air. Coarser, and a shot closer than three pieces (~2m) draws nothing at all.
+	--
+	-- Fed here rather than beside the report above because only the ray knows where the
+	-- round stopped: a hit ends the tracer at the hit, and a miss carries it to the end of
+	-- the ray so a shot into the dark still reads as having gone somewhere.
+	--
+	-- One shot's tracer has always aged out before the next is fired (the trail's `age`
+	-- against Config.rifle.fireInterval, 0.12s against 0.4s). That margin is load bearing:
+	-- points left over from the last shot would not be replaced by these two, they would be
+	-- continued -- joining the two shots into one ribbon bent at the muzzle.
+	if self._trail ~= nil and self._entity ~= nil then
+		self._trail:addPoint(self._entity.transform * MUZZLE)
+		self._trail:addPoint(hit ~= nil and hit.position or (origin + dir * self._range))
+	end
+
+	if hit == nil then
+		return true   -- nothing within range; the round is simply gone
+	end
+
+	-- What owns the body that stopped it. Every character controller and rigid body in the
+	-- engine hands its owning *entity* to the bodies it creates, so this is the one question
+	-- that has to be asked -- no matching hit positions against entity positions, and no
+	-- guessing from a name.
+	local struck < const > = hit.body ~= nil and hit.body.owner or nil
+
+	-- A zombie is an entity whose script component is an EnemyController. Asked of the class
+	-- rather than of the entity's name, so it stays true for anything else that ever gets
+	-- one.
+	--
+	-- The player's own capsule is explicitly not a target: it is in the same collision group
+	-- as the horde and the ray starts inside it, so a stray hit on it would otherwise put a
+	-- dust puff in the player's face.
+	local enemy = nil
+	if struck ~= nil and struck ~= context:player() and isa(struck, traktor.world.Entity) then
+		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and isa(sc, EnemyController) then
+			enemy = struck
+		end
+	end
+
+	if enemy == nil then
+		-- Hit the world: a puff of dust where the round landed. Put there through the player's
+		-- own event set, which is how this game places an effect at an arbitrary point -- see
+		-- Main:raisePlayerEffect.
+		context:raisePlayerEffect("dust", hit.position.xyz1)
+		return true
+	end
+
+	-- Already a corpse. Shot bodies are worth shooting: the round throws the rag doll about
+	-- from wherever it struck it, opens a wound there, and buys the body another full lifetime
+	-- before it despawns -- see Main:shoveCorpse. No dust and no kill; this is meat, and it has
+	-- already been counted.
+	--
+	-- Reaching this at all depends on the corpse's limbs knowing whose limbs they are, which the
+	-- engine arranges: RagDollPoseController takes the owner handed down from SkeletonComponent
+	-- and stamps every limb with it, so the ray comes back naming the entity. Without that a round
+	-- into a body cannot be told from a round into a wall, and draws the dust above.
+	if context:isEnemyDead(enemy) then
+		context:shoveCorpse(enemy, hit.position.xyz1, context:knockbackImpulse(dir))
+		return true
+	end
+
+	-- Kill it where the round actually arrived, knocked back along the aim with a little
+	-- lift. The impact point is the ray's own hit position rather than a guess along the aim,
+	-- so the limb the impulse lands on is the limb that was struck.
+	context:killEnemy(enemy, hit.position.xyz1, context:knockbackImpulse(dir))
+	return true
+end
+
+-- First-person view model: hold the rifle just in front of the eye, offset to the lower
+-- right, rotated by the full aim so it (and its muzzle flash) track exactly where the
+-- camera looks.
+function Rifle:place()
+	local entity < const > = self._entity
+	if entity == nil then
+		return
+	end
+	entity.visible = true
+
+	local context < const > = self._context
+	local aim = context:aim()
+	local eye < const > = context:eye()
+	local offset = Vector4(0.18, -0.22, 0.35, 0.0)
+
+	-- Carrying a relic does not stow the rifle -- the player can still shoot. The off hand is
+	-- full holding the relic on the left, so the rifle just rides a little further right to
+	-- make room for it.
+	if context:isCarrying() then
+		offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
+	end
+
+	-- Lowered on the run: while sprinting the rifle drops to a low ready and the crosshair is
+	-- hidden (see Main:_updateCrosshair). You can still fire, but from the hip -- a gentler
+	-- cousin of the reload dip.
+	if context:isRunning() then
+		offset = offset + Vector4(0.0, -0.14, -0.08, 0.0)
+		aim = aim * Quaternion.fromEulerAngles(0.0, -0.4, 0.18)
+	end
+
+	-- Drop the rifle out of the sightline and roll it over while reloading: it eases all the
+	-- way down and back up across _reloadTime. It is the tell that costs the player -- it is
+	-- obvious the gun cannot be fired, and roughly how much longer that lasts. Still plays
+	-- with a relic in the off hand.
+	local dip = 0.0
+	if self._reloadTimer > 0.0 then
+		dip = math.sin((1.0 - self._reloadTimer / self._reloadTime) * math.pi)
+	end
+	if dip > 0.0 then
+		offset = offset + Vector4(0.06, -0.3, -0.14, 0.0) * dip
+		aim = aim * Quaternion.fromEulerAngles(0.0, -0.9 * dip, 0.6 * dip)
+	end
+
+	entity.transform = Transform(eye + aim * offset, aim)
+end
+
+-- Put away outright rather than lowered: with two weapons drawn at once there is no telling
+-- at a glance what the left button would do, and that is the one thing a view model has to
+-- answer.
+function Rifle:stow()
+	if self._entity ~= nil then
+		self._entity.visible = false
+	end
+end
+]]></text>
+</object>

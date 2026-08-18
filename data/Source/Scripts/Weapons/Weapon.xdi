@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Weapon
+--
+-- Base class for anything the player carries and uses. It exists so that the Stage does
+-- not have to know what is in the player's hands: Main routes buttons and frames at a
+-- Scripts/Weapons/Loadout, the loadout routes them at whichever Weapon is drawn, and what
+-- a trigger pull actually *does* lives in the subclass -- Scripts/Weapons/Rifle,
+-- Scripts/Weapons/Grenades, Scripts/Weapons/Melee.
+--
+-- Adding a weapon is therefore a subclass and one line in the Loadout, with nothing to
+-- change in Main. What is below is the whole of what the stage promises to call, and every
+-- method has a default here, so a subclass writes only the ones it has an opinion about.
+--
+-- `context` is the Stage -- the Main instance -- exactly as in Scripts/Pickup, and it is
+-- the only thing a weapon is handed. What it may ask of it (see "what a weapon is given"
+-- in Main, which is where these are defined):
+--
+--   context:eye()                  where a shot, a swing or a throw starts from
+--   context:aim()                  ...the rotation it goes out along, and
+--   context:aimDirection()         the same thing as a direction
+--   context:player()               the Humanoid entity, or nil before it is resolved
+--   context:isRunning()            sprinting, so a view model can drop to a low ready
+--   context:isCarrying()           a relic fills the off hand, so a view model moves over
+--   context:killEnemy(e, p, i, w)  the one way anything in this game dies
+--   context:isEnemyDead(e)         ...and whether it already has
+--   context:shoveCorpse(...)       ...and what hitting one that already has does
+--   context:corpses()              every body still lying in the world...
+--   context:corpsePosition(e)      ...and where one of them actually lies
+--   context:knockbackImpulse(dir)  what a corpse is shoved with
+--   context:reportGunshot(x, z)    published to the horde, which comes to look
+--   context:kickCrosshair()        recoil bloom on the reticle
+--   context:raisePlayerEffect(...) a puff of dust where a round landed
+--   context.world                  the WorldLayer, for building and removing entities
+--   context.environment            physics, input and resources
+--
+-- Everything a weapon needs about where the player is looking comes through those first
+-- three rather than off the fields behind them, which is what keeps this from being a
+-- second copy of the aiming code: change how the player aims and every weapon follows.
+--
+-- Cadence is the one piece of behaviour the base owns outright, because every weapon has
+-- it and no two agree on the number: set _interval in the constructor, ask self:ready()
+-- before acting, and set self._cooldown = self._interval when you do.
+
+Weapon = Weapon or class("Weapon")
+
+function Weapon:new(context)
+	self._context = context
+	self._interval = 0.0   -- minimum seconds between uses; the subclass sets it
+	self._cooldown = 0.0   -- ...and counts down to the next one being allowed
+end
+
+-- What this weapon is called. The loadout looks weapons up by it (Loadout:find), and it
+-- is the name a save file would remember a drawn weapon by, so keep it stable.
+function Weapon:slot()
+	return "weapon"
+end
+
+-- What a pickup has to be carrying for this weapon to want it -- "rounds", "grenades" --
+-- or nil for a weapon that takes no ammunition at all.
+--
+-- This is what keeps the crates as ignorant of the arsenal as the stage is:
+-- Scripts/AmmoPickup and Scripts/GrenadePickup name a kind, and the loadout hands it to
+-- whichever weapon answers to that kind (Loadout:supply). A new weapon with a new kind of
+-- ammunition needs a new crate and nothing else.
+function Weapon:supplyKind()
+	return nil
+end
+
+-- Live handles off the world: a view model entity, its event set, its trail. Called every
+-- frame from Loadout:resolve, exactly as Main:resolve is called from Main:update -- so it
+-- has to be cheap once it has what it wants, and it has to cope with a world that is not
+-- there yet.
+function Weapon:resolve()
+end
+
+-- Let go of every live entity handle, for a script hot reload: the world comes back new
+-- and anything held here belongs to the old one. Plain numbers -- rounds carried,
+-- grenades in the pouch -- deliberately stay, which is the point of the split: a reload
+-- must not quietly resupply the player. See Main:reload.
+function Weapon:reset()
+end
+
+-- Does this weapon show a tile on the HUD row? Asked before the row is laid out, because
+-- a TableLayout is built with its column list and cannot grow one afterwards -- see
+-- Loadout:hudColumns and the HUD block in Main:new.
+function Weapon:hasHud()
+	return false
+end
+
+-- Build that tile into the bottom row. Called once, from Main:new.
+function Weapon:createHud(parent)
+	return nil
+end
+
+-- Tick the tile's own animation. Called from Main:update *above* its freeze returns, so a
+-- magazine spent on the last frame before a pause still finishes counting down.
+function Weapon:updateHud(dt)
+end
+
+-- The drawn weapon changed. Only of interest to a tile that says whether the trigger is
+-- currently on this weapon (see Grenades:_refreshHud).
+function Weapon:selectionChanged(selected)
+end
+
+-- One simulation step of the weapon itself -- below Main's freeze returns, so a reload in
+-- flight and a grenade in the air both stop with the rest of the game.
+--
+-- Every weapon in the loadout is ticked, not only the drawn one: a reload continues while
+-- the other weapon is in hand, and a thrown grenade has left regardless of what is being
+-- held afterwards.
+function Weapon:update(dt)
+	if self._cooldown > 0.0 then
+		self._cooldown = math.max(0.0, self._cooldown - dt)
+	end
+end
+
+function Weapon:ready()
+	return self._cooldown <= 0.0
+end
+
+-- The trigger, one press per call -- Main edge-triggers the button, so nothing here has to
+-- think about a key being held. Returns true when something actually went off.
+function Weapon:attack()
+	return false
+end
+
+-- The alternate attack (right mouse). Left unanswered here, and unanswered is the normal
+-- case: the loadout falls through to the shared rifle butt (Scripts/Weapons/Melee), so the
+-- swing still lands with a grenade in hand. Override it only for a weapon that has an
+-- alternate of its own -- an underslung launcher, a bayonet -- and return true to claim the
+-- button.
+function Weapon:altAttack()
+	return false
+end
+
+-- The reload action (R). Offered to *every* weapon in the loadout rather than only the
+-- drawn one, because topping up a half-empty rifle with a grenade in hand is exactly the
+-- lull the key exists for. Returns true when a reload began.
+function Weapon:beginReload()
+	return false
+end
+
+-- Ammunition, asked and answered in the weapon's own units. full() is what gates a pickup
+-- being taken at all, so a crate is left standing on the ground until it is worth
+-- something; supply() adds and returns whether any of it was taken.
+function Weapon:full()
+	return true
+end
+
+function Weapon:supply(amount)
+	return false
+end
+
+-- Is there an aim worth drawing a reticle for? Asked of the drawn weapon only, so the
+-- crosshair follows what is in hand rather than being wired to the rifle's magazine.
+function Weapon:wantsCrosshair()
+	return true
+end
+
+-- Where the view model goes while this weapon is the one in hand, and what becomes of it
+-- while it is not. Called from Main:postUpdate after the camera has been placed from the
+-- same eye and aim, so a model is welded to the view rather than trailing a frame behind
+-- it.
+function Weapon:place()
+end
+
+function Weapon:stow()
+end
+]]></text>
+</object>

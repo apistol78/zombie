@@ -42,6 +42,10 @@ local atan2 < const > = math.atan2 or math.atan
 -- out.
 local EYE_OFFSET < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 
+-- The rag doll's root joint, i.e. the middle of the body -- see the root bone's influences in
+-- Entities/Zombie/RDS - Zombie. Read to find where a corpse actually lies (corpsePosition).
+local CORPSE_ROOT_JOINT < const > = "Hips"
+
 
 -- How much nearer a rival ward post has to be before the objective compass gives up
 -- the one it is already pointing at. Without it, carrying a relic along the midline
@@ -438,7 +442,7 @@ function Main:new(params, environment)
 	-- unit-mass limbs an impulse of 18 is roughly a 1.6 m/s whole-body shove.
 	self._knockback = Config.corpse.knockback       -- impulse magnitude along the shot direction
 	self._knockbackLift = Config.corpse.knockbackLift    -- extra upward impulse so the corpse flops back, not just slides
-	self._pendingImpulse = {}    -- enemy -> impulse to apply once its rag doll turns active
+	self._pendingImpulse = {}    -- enemy -> list of impulses, applied once its rag doll turns active
 
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
 	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
@@ -917,35 +921,119 @@ function Main:killEnemy(enemy, point, impulse, whole)
 	if enemy == nil or self._deadEnemies[enemy] ~= nil then
 		return false
 	end
-
-	-- Open the wound where the round arrived rather than at the zombie's origin.
-	-- SpawnEffectEvent spawns at sender-transform times offset, so the offset is `point` --
-	-- a world position -- taken back into the zombie's own frame, and the two multiply out
-	-- to exactly the place that was hit. A leg shot opens at the leg and a head shot at the
-	-- head, which is the whole reason Rifle:attack passes the ray's own hit position down
-	-- here instead of a guess along the aim. The other three callers have no ray to speak of
-	-- and pass a chest point, so a blast or a ward's flare still bursts at the chest.
-	--
-	-- Effects/BloodSplat emits about its own origin for this to work: the lift that used to
-	-- be baked into its emitters could only ever be right for one caller, and putting it
-	-- here instead is what lets each of them say where their own blood belongs.
-	--
-	-- The zombie's event follows the sender, so the wound keeps pouring from the same spot
-	-- on the body as the corpse ragdolls away, while the emitters being world-space leaves
-	-- what is already in the air where it was shed. "hit" is the sound of the round
-	-- arriving, raised on the zombie so it comes from out there where the shot landed
-	-- rather than from the rifle.
-	local hitEvents = enemy:getComponent(traktor.world.EventSetComponent)
-	if hitEvents ~= nil then
-		local wound < const > = enemy.transform:inverse():transform(point)
-		hitEvents:raise("blood", Transform(wound, Quaternion.identity))
-		hitEvents:raise("hit")
-	end
-
+	self:_woundEnemy(enemy, point)
 	self._deadEnemies[enemy] = self._corpseLifetime
-	self._pendingImpulse[enemy] = { point = point, impulse = impulse, whole = whole }
+	self:_queueImpulse(enemy, point, impulse, whole)
 	self._kills = self._kills + 1
 	return true
+end
+
+-- Open a wound where something arrived on a zombie, rather than at the zombie's origin.
+--
+-- SpawnEffectEvent spawns at sender-transform times offset, so the offset is `point` -- a world
+-- position -- taken back into the zombie's own frame, and the two multiply out to exactly the
+-- place that was hit. A leg shot opens at the leg and a head shot at the head, which is the
+-- whole reason Rifle:attack passes the ray's own hit position down here instead of a guess along
+-- the aim. Callers with no ray to speak of pass the middle of the body instead, so a blast or a
+-- ward's flare still bursts at the chest.
+--
+-- Effects/BloodSplat emits about its own origin for this to work: the lift that used to be baked
+-- into its emitters could only ever be right for one caller, and putting it here instead is what
+-- lets each of them say where their own blood belongs.
+--
+-- The zombie's event follows the sender, so the wound keeps pouring from the same spot on the
+-- body as the corpse ragdolls away, while the emitters being world-space leaves what is already
+-- in the air where it was shed. "hit" is the sound of the round arriving, raised on the zombie so
+-- it comes from out there where the shot landed rather than from the rifle.
+--
+-- Raised for a hit on a body that is already a corpse as well (shoveCorpse), which is the point
+-- of it being its own function: a round into one is still a round into meat.
+function Main:_woundEnemy(enemy, point)
+	local hitEvents < const > = enemy:getComponent(traktor.world.EventSetComponent)
+	if hitEvents == nil then
+		return
+	end
+	local wound < const > = enemy.transform:inverse():transform(point)
+	hitEvents:raise("blood", Transform(wound, Quaternion.identity))
+	hitEvents:raise("hit")
+end
+
+-- Book an impulse for a zombie's rag doll. It cannot simply be applied: on the frame a zombie
+-- dies its rag doll controller is not active yet -- the state graph has to reach the dead state
+-- and reset the limbs into the pose -- so this is held until the pass in update finds a
+-- controller to hand it to.
+--
+-- A list per zombie rather than one record, because impulses arrive in bursts and each is a
+-- different force in a different place: a second round into a body still blending into its rag
+-- doll, a grenade going off over a corpse that went down the same frame. Keeping only the last
+-- silently threw the rest away.
+function Main:_queueImpulse(enemy, point, impulse, whole)
+	local queued = self._pendingImpulse[enemy]
+	if queued == nil then
+		queued = {}
+		self._pendingImpulse[enemy] = queued
+	end
+	table.insert(queued, { point = point, impulse = impulse, whole = whole })
+end
+
+-- Shove a zombie that is already a corpse: the same wound and the same impulse a standing one
+-- would have taken, handed to the rag doll it has become, and its despawn countdown wound back
+-- to a full lifetime.
+--
+-- Two things this is for. A body is worth shooting -- a round into one that has just gone down
+-- should throw it about, not vanish into the dirt, and a blast should scatter what is lying
+-- around it as well as what is standing. And a corpse being hit is the player still spending
+-- attention on it, so it should not evaporate mid-magazine: the clock is *reset* rather than
+-- extended, so a body that keeps being hit keeps lying there and one left alone still goes on
+-- the usual six seconds.
+--
+-- Refuses anything not already dead, which is what keeps this and killEnemy from overlapping:
+-- that one is the one-way door, this is only what happens afterwards. No kill is counted.
+function Main:shoveCorpse(enemy, point, impulse, whole)
+	if enemy == nil or self._deadEnemies[enemy] == nil then
+		return false
+	end
+	self:_woundEnemy(enemy, point)
+	self._deadEnemies[enemy] = self._corpseLifetime
+	self:_queueImpulse(enemy, point, impulse, whole)
+	return true
+end
+
+-- Every corpse still lying in the world. Handed out as a plain list rather than as the set it
+-- is built from, so a caller can sweep them and shove what it finds without iterating a table
+-- it is writing to.
+function Main:corpses()
+	local list = {}
+	for e in pairs(self._deadEnemies) do
+		table.insert(list, e)
+	end
+	return list
+end
+
+-- Where a corpse actually is, as against where it died.
+--
+-- Worth spelling out, because the two are genuinely different and the difference is metres. The
+-- rag doll drives the *pose* and never the entity (RagDollPoseController:evaluate only reads its
+-- limbs), and the character controller that used to drive the entity is switched off the moment
+-- the zombie goes down (EnemyController:_enterRagDoll) -- so a corpse's entity transform stays
+-- exactly where it was killed while the body itself is thrown across the ground by the shot that
+-- did it. Anything asking "what is near this point" has to ask the pose.
+--
+-- Read off the hip joint, the rag doll's root: a pose transform is in the entity's own space, so
+-- carrying it out through the entity transform gives the world position of the middle of the
+-- body. A skeleton with no such joint answers identity, which lands this back on the entity
+-- origin -- the old behaviour, and the right thing to fall back to.
+--
+-- xyz1 on the way out through the entity transform, and it is load bearing: Transform times
+-- Vector4 adds the translation scaled by w, so a pose offset that happens to carry w = 0 would
+-- come back rotated but still sitting at the world origin.
+function Main:corpsePosition(enemy)
+	local tf < const > = enemy.transform
+	local skeleton < const > = enemy:getComponent(traktor.animation.SkeletonComponent)
+	if skeleton == nil then
+		return tf.translation.xyz1
+	end
+	return tf * skeleton:getPoseTransform(CORPSE_ROOT_JOINT).translation.xyz1
 end
 
 -- Kill every live zombie in the world at once (K). Each one dies through killEnemy, so
@@ -2195,24 +2283,29 @@ function Main:update(info)
 		end
 	end
 
-	-- Apply each fresh kill's knockback the moment its rag doll controller becomes active.
+	-- Hand out every booked impulse the moment the zombie's rag doll controller becomes active:
+	-- the knockback of the shot that killed it, and anything that has hit the body since.
 	-- getPoseControllersOf only descends the state graph's *current* state, so the list is
 	-- empty for living zombies and during the blend, and becomes non-empty once the "dead"
 	-- state is current (after reset). That naturally waits for the right frame; we then
-	-- impulse every rag doll controller found and forget the pending entry.
+	-- impulse every rag doll controller found and forget the pending entries.
 	do
-		for e, rec in pairs(self._pendingImpulse) do
+		for e, queued in pairs(self._pendingImpulse) do
 			local skeleton = e:getComponent(traktor.animation.SkeletonComponent)
 			if skeleton ~= nil then
 				local ragdolls = skeleton:getPoseControllersOf(traktor.animation.RagDollPoseController)
 				if ragdolls.size > 0 then
 					for i = 0, ragdolls.size - 1 do
-						-- A blast pushes the whole body, a round pushes the limb it hit.
-						-- See killEnemy for why the two cannot share one call.
-						if rec.whole then
-							ragdolls:get(i):addImpulse(rec.impulse)
-						else
-							ragdolls:get(i):addImpulseAt(rec.point, rec.impulse)
+						local ragdoll < const > = ragdolls:get(i)
+						for k = 1, #queued do
+							-- A blast pushes the whole body, a round pushes the limb it hit.
+							-- See killEnemy for why the two cannot share one call.
+							local rec < const > = queued[k]
+							if rec.whole then
+								ragdoll:addImpulse(rec.impulse)
+							else
+								ragdoll:addImpulseAt(rec.point, rec.impulse)
+							end
 						end
 					end
 					self._pendingImpulse[e] = nil

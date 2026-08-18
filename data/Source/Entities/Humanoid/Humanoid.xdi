@@ -152,6 +152,55 @@
 						</item>
 					</components>
 				</item>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5EBB}</id>
+					<name>MachineGun</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0.32, 1.14, 0.22, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{C76A6187-C664-48AD-A4D7-785110CA8444}</mesh>
+						</item>
+						<item type="traktor.spray.TrailComponentData">
+							<trail>
+								<shader>{59297221-C78C-124D-929F-3924F1357F1A}</shader>
+								<width>0.03</width>
+								<age>0.1</age>
+								<lengthThreshold>0.5</lengthThreshold>
+								<breakThreshold>0</breakThreshold>
+							</trail>
+						</item>
+						<item type="traktor.world.EventSetComponentData">
+							<eventData>
+								<item>
+									<first>fire</first>
+									<second type="traktor.spray.SoundEventData" version="1">
+										<sound>{171797FB-CA0E-4D92-91EC-DCFF00242AAD}</sound>
+										<positional>false</positional>
+										<follow>false</follow>
+										<autoStopFar>false</autoStopFar>
+									</second>
+								</item>
+								<item>
+									<first>reload</first>
+									<second type="traktor.spray.SoundEventData" version="1">
+										<sound>{50D1B000-0000-4000-8000-000000000006}</sound>
+										<positional>false</positional>
+										<follow>false</follow>
+										<autoStopFar>false</autoStopFar>
+									</second>
+								</item>
+							</eventData>
+						</item>
+					</components>
+				</item>
 			</entityData>
 		</item>
 	</components>

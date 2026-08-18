@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000002}
 #using \{7EA9C000-0000-4000-8000-000000000003}
+#using \{7EA9C000-0000-4000-8000-000000000006}
 #using \{7EA9C000-0000-4000-8000-000000000004}
 
 import(traktor)
@@ -32,9 +33,16 @@ function Loadout:new(context)
 	self._context = context
 
 	-- The wheel's order, and the order the HUD tiles appear in along the bottom row. The rifle
-	-- first because it is what the night starts in the player's hands.
+	-- first because it is what the night starts in the player's hands, then the two things that
+	-- answer a crowd rather than a target -- which is also roughly the order they get reached for.
+	--
+	-- This list is the whole of what it takes to add a weapon: it gets a place in the wheel, a HUD
+	-- column, its frames ticked, its view model placed and stowed, and its ammunition fed by
+	-- whichever crate names its supply kind. Nothing in Main, in the HUD layout or in the pickups
+	-- knows how long it is.
 	self._weapons = {
 		Rifle(context),
+		MachineGun(context),
 		Grenades(context)
 	}
 	self._selected = 1
@@ -141,9 +149,10 @@ function Loadout:update(dt)
 	self._melee:update(dt)
 end
 
--- Left button. Whatever the wheel has it on.
-function Loadout:attack()
-	return self:current():attack()
+-- Left button, handed over as both a press and a hold: the drawn weapon decides which of the
+-- two it reads (Weapon:trigger). Whatever the wheel has it on.
+function Loadout:trigger(pressed, held)
+	return self:current():trigger(pressed, held)
 end
 
 -- Right button. Offered to the drawn weapon first -- a weapon with its own alternate says so

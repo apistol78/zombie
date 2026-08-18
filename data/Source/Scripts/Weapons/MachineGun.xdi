@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+-- Scripts/EnemyController, for the class itself rather than for anything it does: a round
+-- identifies what it hit by asking whether the struck entity's script component is one (see
+-- :_fireRound), and `isa` needs the class in scope to ask.
+#using \{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}
+
+import(traktor)
+
+-- MachineGun
+--
+-- The automatic firearm: hold the button and it empties a belt into whatever is in front of you
+-- at about twelve rounds a second, walking off the sightline as it goes.
+--
+-- It is deliberately a trade against the rifle rather than an upgrade, and the trade is made of
+-- three things that all point the same way. It reaches 26 m where the rifle reaches 40. Its cone
+-- opens as it fires, so the tenth round of a burst is spending ammunition on the trees. And it
+-- feeds from the same crates the rifle does -- it answers to the same "rounds" supply kind -- so
+-- carrying it is a claim on the rifle's ammunition, and the night's total supply did not go up
+-- because the player picked one up.
+--
+-- What it is *for* is the thing the rifle is worst at: a crowd already inside arm's reach, where
+-- forty metres of range is worth nothing and six rounds is not enough. Which is exactly the
+-- moment the rifle butt was added for, so the two overlap on purpose -- one costs ammunition and
+-- kills, the other costs nothing and only buys distance.
+--
+-- Nothing about it reaches Main. It is a Scripts/Weapons/Weapon like the others: the stage hands
+-- the loadout a button state and a frame, and everything below is this file's business. Its
+-- numbers come from Config.machinegun.
+
+MachineGun = MachineGun or class("MachineGun", Weapon)
+
+-- Where the barrel ends, in the view model's own space. Further forward than the rifle's muzzle
+-- because the model rides further out (see :place) -- so a tracer still leaves from the end of
+-- the barrel rather than from the middle of it.
+local MUZZLE < const > = Vector4(0.0, 0.02, 0.68, 1.0)
+
+-- The two collision groups a round has to be stopped by: the world, and everything that walks.
+-- Same values Scripts/Weapons/Rifle and Scripts/EnemyController trace against.
+local COLLISION_DEFAULT < const > = 0x00000001
+local COLLISION_INTERACTABLE < const > = 0x00000002
+
+function MachineGun:new(context)
+	Weapon.new(self, context)
+
+	-- A belt rather than a magazine, and a much deeper reserve, but the same two-number economy
+	-- the rifle runs on: rounds only move from one to the other on a reload.
+	self._beltSize = Config.machinegun.magSize
+	self._belt = Config.machinegun.mag
+	self._reserve = Config.machinegun.reserve
+	self._reserveMax = Config.machinegun.reserveMax
+	self._reloadTime = Config.machinegun.reloadTime
+	self._interval = Config.machinegun.fireInterval
+	self._range = Config.machinegun.range
+	self._reloadTimer = 0.0
+
+	-- The cone. _spread is live state, in radians as a half-angle about the aim: opened by every
+	-- round and closed again by :update whenever the trigger is not being pulled.
+	self._spread = Config.machinegun.spreadMin
+	self._spreadMin = Config.machinegun.spreadMin
+	self._spreadMax = Config.machinegun.spreadMax
+	self._spreadPerShot = Config.machinegun.spreadPerShot
+	self._spreadDecay = Config.machinegun.spreadDecay
+
+	-- Where the last round actually went, as the yaw and pitch it was deviated by inside the cone
+	-- (see :_fireRound). Kept so the view model can be pointed along it rather than along the
+	-- clean aim: the tracer is drawn from the barrel of the model to wherever the round stopped,
+	-- so a barrel that does not agree with the round draws every tracer leaving the muzzle at an
+	-- angle -- which reads exactly as badly as it sounds, rounds spraying sideways out of the gun.
+	self._devX = 0.0
+	self._devY = 0.0
+
+	-- Tracers: one round in _tracerEvery draws one, counted off here. _tracerTo holds where a
+	-- tracer that is due this frame has to end -- it is drawn in :place rather than where the round
+	-- was traced, see there for why.
+	self._tracerEvery = Config.machinegun.tracerEvery
+	self._sinceTracer = 0
+	self._tracerTo = nil
+
+	-- The shake, same shape as the cone: kicked up per round, eased back per second.
+	self._recoil = 0.0
+	self._recoilKick = Config.machinegun.recoilKick
+	self._recoilMax = Config.machinegun.recoilMax
+	self._recoilDecay = Config.machinegun.recoilDecay
+
+	-- True on the frames the trigger is actually being held, so :update knows whether the gun is
+	-- settling or being fired. Written by :trigger, read by :update -- which runs after it.
+	self._firing = false
+end
+
+function MachineGun:slot()
+	return "machinegun"
+end
+
+-- The rifle's kind, on purpose. See the note at the top: the crates feed both, which is what
+-- keeps this from being free.
+function MachineGun:supplyKind()
+	return "rounds"
+end
+
+function MachineGun:automatic()
+	return true
+end
+
+-- Its own child entity of the player, beside the rifle's. Cached here for the same three reasons
+-- the rifle caches its own: aiming orients it, firing raises its report, and a tracer needs its
+-- trail.
+function MachineGun:resolve()
+	if self._entity ~= nil then
+		return
+	end
+	local player < const > = self._context:player()
+	if player == nil then
+		return
+	end
+	local group < const > = player:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return
+	end
+	self._entity = group:getEntity("MachineGun", 0)
+	if self._entity == nil then
+		return
+	end
+	self._events = self._entity:getComponent(traktor.world.EventSetComponent)
+	-- Off, for the same reason the rifle's is: enabled, the component samples the weapon's
+	-- transform every frame by itself, and since this is a view model welded to the camera that
+	-- smears a ribbon along wherever the player has walked. Disabled it takes only the points a
+	-- round hands it.
+	self._trail = self._entity:getComponent(traktor.spray.TrailComponent)
+	if self._trail ~= nil then
+		self._trail.enable = false
+	end
+end
+
+function MachineGun:reset()
+	self._entity = nil
+	self._events = nil
+	self._trail = nil
+end
+
+function MachineGun:hasHud()
+	return true
+end
+
+-- The belt tile: rounds on the belt, rounds in reserve, and whether the trigger is on this
+-- weapon.
+--
+-- A plain Static rather than an art widget like the rifle's ammunition counter, for the same
+-- reason the grenade tile is one: the art tiles are movie clips exported from
+-- data/Assets/UI/Hud.svg and another would mean re-authoring that SVG. It also keeps the HUD row
+-- inside the frame's 1280 virtual pixels, which a second 180 px counter would not.
+--
+-- Fixed width matters and is not decoration: a Static clamps its text bounds to the width it was
+-- placed at, and the row is laid out long before anything sets a count -- so the string is padded
+-- to a constant length here and stays that length for the night, however the numbers move. That
+-- is what %3s is for, and what "--" is for while reloading.
+function MachineGun:createHud(parent)
+	self._label = Static(parent, self:_hudText())
+	self._label:setTextSize(24)
+	self._label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	self._label:setVerticalAlign(Widget.ALIGN_BOTTOM)
+	self:_refreshHud()
+	return self._label
+end
+
+function MachineGun:_hudText()
+	local belt < const > = (self._reloadTimer > 0.0) and "--" or tostring(self._belt)
+	return string.format("MG %3s %3s", belt, tostring(self._reserve))
+end
+
+function MachineGun:selectionChanged(selected)
+	self._selected = selected
+	self:_refreshHud()
+end
+
+-- Same palette as the grenade tile, so the HUD only has one language: bright when this is what
+-- the button fires, dim when something else has it, and the ammunition counter's empty red when
+-- there is nothing left to fire at all.
+function MachineGun:_refreshHud()
+	if self._label == nil then
+		return
+	end
+	self._label:setText(self:_hudText())
+	local selected < const > = self._selected == true
+	if self._belt <= 0 and self._reserve <= 0 then
+		self._label:setTextColor(selected and Color4f(1.0, 0.42, 0.34, 1.0) or Color4f(0.52, 0.34, 0.32, 1.0))
+	elseif selected then
+		self._label:setTextColor(Color4f(1.0, 0.9, 0.68, 1.0))
+	else
+		self._label:setTextColor(Color4f(0.55, 0.53, 0.46, 1.0))
+	end
+end
+
+-- The trigger. Taken here rather than left to the base so the gun knows the difference between
+-- "not firing this frame because the button is up" and "not firing this frame because it is not
+-- ready yet" -- the cone and the shake settle on the first and hold on the second, which is what
+-- makes a burst read as one burst rather than as twelve unrelated rounds.
+function MachineGun:trigger(pressed, held)
+	self._firing = held == true
+	return Weapon.trigger(self, pressed, held)
+end
+
+function MachineGun:update(dt)
+	Weapon.update(self, dt)
+
+	-- The gun settling: the cone closes and the model comes back to rest, but only while the
+	-- trigger is up. Held, the cone stays where the last round left it and the next round opens it
+	-- further.
+	if not self._firing then
+		if self._spread > self._spreadMin then
+			self._spread = math.max(self._spreadMin, self._spread - self._spreadDecay * dt)
+		end
+		-- ...and the barrel comes back to the sightline with it, at the same rate, so a gun that
+		-- has stopped firing is not left aiming off at wherever its last round happened to go.
+		self._devX = self:_settle(self._devX, dt)
+		self._devY = self:_settle(self._devY, dt)
+	end
+	if self._recoil > 0.0 then
+		self._recoil = math.max(0.0, self._recoil - self._recoilDecay * dt)
+	end
+
+	-- An empty belt reloads itself, exactly as the rifle's magazine does and for the same reason:
+	-- the cost is meant to live in the three seconds the belt change takes, not in remembering to
+	-- ask for it.
+	if self._belt <= 0 and self._reloadTimer <= 0.0 then
+		self:beginReload()
+	end
+
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = math.max(0.0, self._reloadTimer - dt)
+		if self._reloadTimer <= 0.0 then
+			-- Only as many rounds as are actually left go on, so the last belt of a run is a
+			-- short one.
+			local take < const > = math.min(self._beltSize - self._belt, self._reserve)
+			self._belt = self._belt + take
+			self._reserve = self._reserve - take
+			self:_refreshHud()
+		end
+	end
+end
+
+-- Ease one deviation angle back toward the sightline, from either side of it. Its own function
+-- only because yaw and pitch want exactly the same treatment, and a second copy of it would be a
+-- place for the two to drift apart.
+function MachineGun:_settle(angle, dt)
+	local step < const > = self._spreadDecay * dt
+	if angle > step then
+		return angle - step
+	elseif angle < -step then
+		return angle + step
+	end
+	return 0.0
+end
+
+-- Refuses when one is already running, when the belt is full, or when there is nothing left to
+-- load with -- so every caller can just ask.
+function MachineGun:beginReload()
+	if self._reloadTimer > 0.0 then
+		return false
+	end
+	if self._belt >= self._beltSize or self._reserve <= 0 then
+		return false
+	end
+	self._reloadTimer = self._reloadTime
+	self:_refreshHud()
+	if self._events ~= nil then
+		self._events:raise("reload")
+	end
+	return true
+end
+
+-- Nothing to line up while the belt is empty, which is also the whole of the reload's tell on
+-- this weapon: the crosshair goes, the gun drops out of the sightline, and the horde keeps coming.
+function MachineGun:wantsCrosshair()
+	return self._belt > 0
+end
+
+function MachineGun:full()
+	return self._reserve >= self._reserveMax
+end
+
+function MachineGun:supply(rounds)
+	if self._reserve >= self._reserveMax then
+		return false
+	end
+	self._reserve = math.min(self._reserveMax, self._reserve + rounds)
+	self:_refreshHud()
+	-- Walked over a crate with an empty gun: start the belt without making the player ask.
+	if self._belt <= 0 then
+		self:beginReload()
+	end
+	return true
+end
+
+-- One round. Called by :trigger for as long as the button is down, gated by the cadence in
+-- :ready, so the rate of fire is Config's and not the frame rate's.
+function MachineGun:attack()
+	local context < const > = self._context
+	if context:player() == nil then
+		return false
+	end
+
+	if self._reloadTimer > 0.0 or not self:ready() then
+		return false
+	end
+	if self._belt <= 0 then
+		return false
+	end
+
+	self._belt = self._belt - 1
+	self._cooldown = self._interval
+	self:_refreshHud()
+
+	-- The gun walks. Both of these are raised before the round is traced, so the round that
+	-- opened the cone is itself thrown by it -- otherwise the first round of every burst would be
+	-- dead accurate and the last one perfect too.
+	self._spread = math.min(self._spreadMax, self._spread + self._spreadPerShot)
+	self._recoil = math.min(self._recoilMax, self._recoil + self._recoilKick)
+
+	context:kickCrosshair()
+
+	if self._events ~= nil then
+		self._events:raise("fire")
+	end
+
+	self:_fireRound(context)
+	return true
+end
+
+-- Where one round goes, and what it does when it arrives.
+--
+-- Split out from :attack because :attack is about the *gun* -- the belt, the cadence, the cone
+-- opening, the report -- and this is about the round. At twelve a second the two get read at
+-- different times.
+function MachineGun:_fireRound(context)
+	local origin < const > = context:eye()
+
+	-- Deviated inside the cone rather than sent along the aim. Built by turning the aim by a
+	-- small random amount in its *own* frame, which is what makes the deviation a cone about
+	-- wherever the player is looking rather than a wobble in world axes -- a cone that would
+	-- otherwise be wrong the moment the player looked up or down.
+	--
+	-- Two independent offsets, so the scatter fills a square rather than a ring: a ring is what
+	-- picking one angle and one radius gives you, and it looks like a pattern.
+	local dx < const > = (math.random() * 2.0 - 1.0) * self._spread
+	local dy < const > = (math.random() * 2.0 - 1.0) * self._spread
+	local aim < const > = context:aim() * Quaternion.fromEulerAngles(dx, dy, 0.0)
+	local dir < const > = aim * Vector4(0.0, 0.0, 1.0, 0.0)
+
+	-- Kept for the view model, which is turned by exactly this in :place -- so the barrel ends up
+	-- pointing along the round that just left it and the tracer runs straight out of the muzzle.
+	self._devX = dx
+	self._devY = dy
+
+	-- Heard, every round. That is a great deal of noise -- each one moves the record every
+	-- Scripts/EnemyController reads and walks the nearest of them over to look -- and it is meant
+	-- to be: a machine gun tells the whole forest where you are, which is the last part of the
+	-- price for carrying one.
+	context:reportGunshot(origin.x, origin.z)
+
+	local pm < const > = context.environment.physics.physicsManager
+	if pm == nil then
+		return
+	end
+	local hit < const > = pm:queryRay(
+		origin, dir, self._range,
+		traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE), true
+	)
+
+	-- Every third round draws its path. One in three rather than all of them, because a solid rope
+	-- of light hid the thing being shot at -- and one in three is enough to see where the gun has
+	-- walked to, which on this weapon is the tracer's whole job.
+	--
+	-- Only *where it ends* is settled here, and drawing it is left to :place. Both halves of a
+	-- tracer have to be decided at the same moment as the barrel they leave, and this is not that
+	-- moment: rounds are fired from the simulation step, while the view model is not placed until
+	-- postUpdate -- after physics has moved the player. Feeding the trail from here read the barrel
+	-- as it was left by the *previous* frame, so a tracer carried the previous round's deviation
+	-- and the previous recoil, and started from where the player was standing a step ago. All three
+	-- are wrong by a different amount every round, which is what a gun whose shake never lines up
+	-- with its own tracers looks like.
+	--
+	-- The end point is safe to keep: it is a world position and the round has already arrived.
+	self._sinceTracer = self._sinceTracer + 1
+	if self._sinceTracer >= self._tracerEvery then
+		self._sinceTracer = 0
+		self._tracerTo = hit ~= nil and hit.position or (origin + dir * self._range)
+	end
+
+	if hit == nil then
+		return   -- into the dark; the round is gone
+	end
+
+	-- Whose body stopped it. Same question the rifle asks, and the same one answer: every rigid
+	-- body and character controller in the engine hands its owning entity to the bodies it makes.
+	local struck < const > = hit.body ~= nil and hit.body.owner or nil
+	local enemy = nil
+	if struck ~= nil and struck ~= context:player() and isa(struck, traktor.world.Entity) then
+		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and isa(sc, EnemyController) then
+			enemy = struck
+		end
+	end
+
+	if enemy == nil then
+		context:raisePlayerEffect("dust", hit.position.xyz1)
+		return
+	end
+
+	-- A body already down still takes the round: it is thrown from where it was struck and gets
+	-- its despawn clock wound back. Hosing a pile is a thing the player will do, and it should
+	-- look like it is landing.
+	if context:isEnemyDead(enemy) then
+		context:shoveCorpse(enemy, hit.position.xyz1, context:knockbackImpulse(dir))
+		return
+	end
+
+	context:killEnemy(enemy, hit.position.xyz1, context:knockbackImpulse(dir))
+end
+
+-- The view model: held lower and further out than the rifle, and shaking under fire.
+function MachineGun:place()
+	local entity < const > = self._entity
+	if entity == nil then
+		return
+	end
+	entity.visible = true
+
+	local context < const > = self._context
+	local eye < const > = context:eye()
+
+	-- Turned by the deviation of the round that just left, before anything else is applied, so the
+	-- barrel lies along that round's line and its tracer leaves the muzzle straight. This is the
+	-- one rotation the model and the rounds share, and it has to come first: everything below turns
+	-- the gun *away* from where it is shooting, which is why the recoil below is a shove and no
+	-- longer a nose-up.
+	local aim = context:aim() * Quaternion.fromEulerAngles(self._devX, self._devY, 0.0)
+
+	-- Further right, lower and further forward than the rifle sits: a heavier thing, carried
+	-- rather than aimed.
+	local offset = Vector4(0.22, -0.26, 0.42, 0.0)
+
+	if context:isCarrying() then
+		offset = offset + Vector4(0.12, 0.0, 0.0, 0.0)
+	end
+
+	if context:isRunning() then
+		offset = offset + Vector4(0.0, -0.16, -0.10, 0.0)
+		aim = aim * Quaternion.fromEulerAngles(0.0, -0.4, 0.18)
+	end
+
+	-- The shake: back into the shoulder and a little down, and deliberately *only* a shove. It
+	-- used to nose the gun up as well, which was a rotation the rounds did not share -- six degrees
+	-- of it at full recoil against four of cone -- so the barrel spent a burst pointing somewhere
+	-- the rounds were never going, and every tracer left it sideways. Translating the gun shakes it
+	-- just as well and leaves the aim honest.
+	if self._recoil > 0.0 then
+		offset = offset + Vector4(0.0, -self._recoil * 0.5, -self._recoil, 0.0)
+	end
+
+	-- Dropped out of the sightline and rolled over through the belt change, as the rifle does
+	-- through its reload -- and for three seconds rather than one, which is most of what makes
+	-- running dry on this weapon frightening.
+	local dip = 0.0
+	if self._reloadTimer > 0.0 then
+		dip = math.sin((1.0 - self._reloadTimer / self._reloadTime) * math.pi)
+	end
+	if dip > 0.0 then
+		offset = offset + Vector4(0.08, -0.34, -0.16, 0.0) * dip
+		aim = aim * Quaternion.fromEulerAngles(0.0, -1.0 * dip, 0.7 * dip)
+	end
+
+	local pose < const > = Transform(eye + aim * offset, aim)
+	entity.transform = pose
+
+	-- The tracer of a round fired this step, drawn now that the barrel it leaves is where it is
+	-- going to be seen. Two points into the trail -- the muzzle and wherever the round stopped --
+	-- and the component cuts the span into pieces of its own accord; 0.5 m pieces across the gun's
+	-- 26 m range come to 52, inside the 64 points a trail holds, and a shot closer than three
+	-- pieces draws nothing at all.
+	--
+	-- `pose` rather than the entity's transform, which amounts to the same thing but says plainly
+	-- that this is the pose the tracer belongs to.
+	if self._tracerTo ~= nil then
+		if self._trail ~= nil then
+			self._trail:addPoint(pose * MUZZLE)
+			self._trail:addPoint(self._tracerTo)
+		end
+		self._tracerTo = nil
+	end
+end
+
+function MachineGun:stow()
+	if self._entity ~= nil then
+		self._entity.visible = false
+	end
+	-- A round fired on the frame the wheel turned away from this gun. Dropped rather than held,
+	-- since the barrel it belonged to is no longer on screen to leave.
+	self._tracerTo = nil
+end
+]]></text>
+</object>

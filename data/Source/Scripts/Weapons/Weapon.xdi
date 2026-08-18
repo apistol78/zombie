@@ -121,8 +121,33 @@ function Weapon:ready()
 	return self._cooldown <= 0.0
 end
 
--- The trigger, one press per call -- Main edge-triggers the button, so nothing here has to
--- think about a key being held. Returns true when something actually went off.
+-- The trigger, as the stage sees it: `pressed` is the one frame the button went down, `held`
+-- is every frame it is down, that first one included. A weapon reads whichever of the two it
+-- wants, and that is the whole of what makes a weapon automatic or not -- which is why there is
+-- no flag for it anywhere in Main.
+--
+-- Overriding this is the escape hatch for a trigger that is neither: a burst that fires three
+-- and stops, something that winds up while held and lets go on release.
+function Weapon:trigger(pressed, held)
+	if self:automatic() then
+		if held then
+			return self:attack()
+		end
+	elseif pressed then
+		return self:attack()
+	end
+	return false
+end
+
+-- Does the trigger keep firing while it is held, or go off once per press? Read only by
+-- :trigger above.
+function Weapon:automatic()
+	return false
+end
+
+-- What actually goes off. Called by :trigger once the button state says so, so nothing here has
+-- to think about how the button was read -- an automatic weapon's rate is its own cadence
+-- (:ready), never the frame rate of the press. Returns true when something happened.
 function Weapon:attack()
 	return false
 end

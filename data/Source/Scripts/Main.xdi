@@ -2134,12 +2134,15 @@ function Main:update(info)
 				end
 			end
 
-			-- Left mouse button (edge-triggered, one per click) uses whatever the wheel has it
-			-- on. What that weapon is and what using it does are both behind the loadout, which
-			-- is the whole point: a third weapon changes nothing on this line.
-			if mapping:isStatePressed("STATE_FIRE") then
-				self._loadout:attack()
-			end
+			-- The fire button, handed over as both a press and a hold rather than as one or the
+			-- other. Which of the two a weapon reads is its own business -- the rifle goes off
+			-- once per click, the machine gun runs for as long as the button is down -- and it is
+			-- precisely the sort of thing this stage should have no opinion about. See
+			-- Weapon:trigger.
+			self._loadout:trigger(
+				mapping:isStatePressed("STATE_FIRE"),
+				mapping:isStateDown("STATE_FIRE")
+			)
 
 			-- ...and right mouse takes the alternate, likewise one per click. That is the rifle
 			-- butt whatever is drawn, unless the drawn weapon claims the button for itself --

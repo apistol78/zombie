@@ -70,6 +70,61 @@ Config = {
 		fireInterval = 0.4      -- minimum seconds between shots
 	},
 
+	-- ---- The machine gun ----
+	--
+	-- The other end of the firearm trade, and it is a trade rather than an upgrade: the rifle
+	-- kills one zombie at a time from any distance and costs almost nothing to keep fed, while
+	-- this empties a belt into a crowd at arm's length and then leaves you standing there for
+	-- three seconds with nothing.
+	--
+	-- Both feed from the same crates (Scripts/AmmoPickup carries "rounds", which is the supply
+	-- kind both weapons answer to), so carrying it is also a claim on the rifle's ammunition --
+	-- which is what stops it simply replacing the rifle.
+	machinegun = {
+		-- Shorter than the rifle's forty metres, deliberately. It is a weapon for what is
+		-- already on top of you, and a rifle that reaches further is the reason to keep one.
+		range = 26.0,
+		magSize = 45,           -- rounds on a belt
+		mag = 45,               -- ...and how many are on it at the start of the night
+		reserve = 90,           -- spare rounds carried at the start
+		reserveMax = 180,       -- most that can be carried at once
+		-- A belt change, not a magazine swap: long enough that running dry in the open is the
+		-- mistake the weapon punishes you for, and the reason to break contact before it does.
+		reloadTime = 3.1,
+		fireInterval = 0.08,    -- ~12 rounds a second
+
+		-- ---- The cone ----
+		--
+		-- What makes it a different weapon rather than a faster rifle. The first round of a
+		-- burst goes almost where the crosshair is; by the tenth the gun is walking, and holding
+		-- the trigger down past that is spending rounds on the trees. So the weapon rewards
+		-- short bursts at close range and punishes leaning on it, without a single number
+		-- anywhere that says "accuracy".
+		--
+		-- Radians, as a half-angle about the aim. spreadMax of 0.075 is about four degrees off
+		-- the sightline, which at ten metres is a metre and a half across -- a crowd, and not
+		-- much use against one zombie behind it.
+		spreadMin = 0.008,      -- where a settled gun starts, so even the first round is not a laser
+		spreadMax = 0.075,      -- ...and how far it opens up under a held trigger
+		spreadPerShot = 0.0075, -- opened this much by each round, so ~9 rounds reaches the max
+		-- Closed at this many radians a second once the trigger is released. Tuned against
+		-- spreadPerShot rather than in isolation: this settles a fully open gun in about a
+		-- second, which is long enough to feel like waiting and short enough to be worth it.
+		spreadDecay = 0.07,
+
+		-- Only every third round draws a tracer. Every round drew a solid rope of light that hid
+		-- what was being shot at, and one in three is enough to see where the gun is walking --
+		-- which is the whole reason the tracer is there on this weapon.
+		tracerEvery = 3,
+
+		-- How far the view model is thrown back per round and how fast it recovers, so the gun
+		-- visibly shakes under a burst. Metres and metres a second; small, because it is
+		-- multiplied by a held trigger.
+		recoilKick = 0.012,
+		recoilMax = 0.055,
+		recoilDecay = 0.35
+	},
+
 	-- ---- The rifle butt ----
 	--
 	-- Kills nothing and costs no rounds: it knocks every zombie in the cone back and leaves

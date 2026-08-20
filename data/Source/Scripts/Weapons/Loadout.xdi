@@ -4,6 +4,7 @@
 #using \{7EA9C000-0000-4000-8000-000000000003}
 #using \{7EA9C000-0000-4000-8000-000000000006}
 #using \{7EA9C000-0000-4000-8000-000000000004}
+#using \{3C7F91A6-5D24-4E8B-9A03-7B61E2D4C085}
 
 import(traktor)
 
@@ -89,41 +90,56 @@ function Loadout:cycle(step)
 	self:_announce()
 end
 
--- Tell every weapon whether it is the one with the trigger, so a tile that says so can
--- repaint itself.
+-- Turn the carousel to whatever now has the trigger, and tell the weapons themselves for
+-- anything they want to do about it. The HUD is told once, here, rather than by each weapon
+-- repainting its own tile: with one widget for the whole arsenal there is only one thing that
+-- needs to know, and it needs to know *which*, not merely whether.
 function Loadout:_announce()
 	for i, w in ipairs(self._weapons) do
 		w:selectionChanged(i == self._selected)
 	end
+	if self._carousel ~= nil then
+		self._carousel:setSelected(self._hudSlot[self._selected])
+	end
 end
 
--- How many columns the HUD row has to reserve for the arsenal: one per weapon that actually
--- shows something. Asked by Main *before* the row is laid out, because a TableLayout is built
--- with its column list and cannot grow one afterwards -- so the row is as wide as what the
--- player is carrying rather than authored at a fixed four columns.
+-- How many columns the HUD row has to reserve for the arsenal. One, however many weapons are
+-- carried -- they share a single tile now -- or none at all if nothing in the loadout shows
+-- itself. Asked by Main *before* the row is laid out, because a TableLayout is built with its
+-- column list and cannot grow one afterwards.
 function Loadout:hudColumns()
-	local n = 0
 	for _, w in ipairs(self._weapons) do
 		if w:hasHud() then
-			n = n + 1
+			return 1
 		end
 	end
-	return n
+	return 0
 end
 
+-- Build that tile: one carousel, one seat per weapon that shows itself, in wheel order -- so
+-- the ring turns the same way the wheel does and a weapon is always where the last spin left
+-- it. Each weapon is handed its seat index and pushes its own state in from there.
+--
+-- _hudSlot maps a place in the loadout to a place on the ring, which are not the same list the
+-- moment one weapon does not show itself; _announce needs the second, and everything else here
+-- works in the first.
 function Loadout:createHud(parent)
-	for _, w in ipairs(self._weapons) do
+	self._carousel = WeaponCarousel(parent)
+	self._hudSlot = {}
+	for i, w in ipairs(self._weapons) do
 		if w:hasHud() then
-			w:createHud(parent)
+			self._hudSlot[i] = self._carousel:addSlot(w:slot(), w:hudName())
+			w:attachHud(self._carousel, self._hudSlot[i])
 		end
 	end
 	self:_announce()
 end
 
--- Above Main's freeze returns: a tile's own animation keeps running while the game does not.
+-- Above Main's freeze returns: the tile's own animations keep running while the game does not,
+-- so a magazine spent on the last frame before a pause still finishes counting down.
 function Loadout:updateHud(dt)
-	for _, w in ipairs(self._weapons) do
-		w:updateHud(dt)
+	if self._carousel ~= nil then
+		self._carousel:update(dt)
 	end
 end
 

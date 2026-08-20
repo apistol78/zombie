@@ -145,52 +145,17 @@ function MachineGun:hasHud()
 	return true
 end
 
--- The belt tile: rounds on the belt, rounds in reserve, and whether the trigger is on this
--- weapon.
---
--- A plain Static rather than an art widget like the rifle's ammunition counter, for the same
--- reason the grenade tile is one: the art tiles are movie clips exported from
--- data/Assets/UI/Hud.svg and another would mean re-authoring that SVG. It also keeps the HUD row
--- inside the frame's 1280 virtual pixels, which a second 180 px counter would not.
---
--- Fixed width matters and is not decoration: a Static clamps its text bounds to the width it was
--- placed at, and the row is laid out long before anything sets a count -- so the string is padded
--- to a constant length here and stays that length for the night, however the numbers move. That
--- is what %3s is for, and what "--" is for while reloading.
-function MachineGun:createHud(parent)
-	self._label = Static(parent, self:_hudText())
-	self._label:setTextSize(24)
-	self._label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
-	self._label:setVerticalAlign(Widget.ALIGN_BOTTOM)
-	self:_refreshHud()
-	return self._label
+function MachineGun:hudName()
+	return "MG"
 end
 
-function MachineGun:_hudText()
-	local belt < const > = (self._reloadTimer > 0.0) and "--" or tostring(self._belt)
-	return string.format("MG %3s %3s", belt, tostring(self._reserve))
-end
-
-function MachineGun:selectionChanged(selected)
-	self._selected = selected
-	self:_refreshHud()
-end
-
--- Same palette as the grenade tile, so the HUD only has one language: bright when this is what
--- the button fires, dim when something else has it, and the ammunition counter's empty red when
--- there is nothing left to fire at all.
-function MachineGun:_refreshHud()
-	if self._label == nil then
-		return
-	end
-	self._label:setText(self:_hudText())
-	local selected < const > = self._selected == true
-	if self._belt <= 0 and self._reserve <= 0 then
-		self._label:setTextColor(selected and Color4f(1.0, 0.42, 0.34, 1.0) or Color4f(0.52, 0.34, 0.32, 1.0))
-	elseif selected then
-		self._label:setTextColor(Color4f(1.0, 0.9, 0.68, 1.0))
-	else
-		self._label:setTextColor(Color4f(0.55, 0.53, 0.46, 1.0))
+-- Rounds on the belt and rounds in reserve, into this weapon's seat on the carousel. The tile
+-- decides for itself how to say it -- how it is coloured, whether it is the one in the socket,
+-- what a belt that is out reads as -- which is the whole reason the three weapons share one
+-- widget now instead of each dressing a label of its own.
+function MachineGun:_pushHud()
+	if self._hud ~= nil then
+		self._hud:setAmmo(self._hudSlot, self._belt, self._reserve)
 	end
 end
 
@@ -231,13 +196,23 @@ function MachineGun:update(dt)
 
 	if self._reloadTimer > 0.0 then
 		self._reloadTimer = math.max(0.0, self._reloadTimer - dt)
+		-- The sweep. New with the carousel: the old tile could only write "--" and leave the
+		-- player counting seconds, and a belt gun's reload is the longest wait in the game.
+		if self._hud ~= nil then
+			self._hud:setReload(self._hudSlot, 1.0 - self._reloadTimer / self._reloadTime)
+		end
 		if self._reloadTimer <= 0.0 then
 			-- Only as many rounds as are actually left go on, so the last belt of a run is a
 			-- short one.
 			local take < const > = math.min(self._beltSize - self._belt, self._reserve)
 			self._belt = self._belt + take
 			self._reserve = self._reserve - take
-			self:_refreshHud()
+			-- Clearing the sweep is what flashes the plate, so it goes after the belt is on
+			-- rather than with the timer running out.
+			if self._hud ~= nil then
+				self._hud:setReload(self._hudSlot, nil)
+			end
+			self:_pushHud()
 		end
 	end
 end
@@ -265,7 +240,7 @@ function MachineGun:beginReload()
 		return false
 	end
 	self._reloadTimer = self._reloadTime
-	self:_refreshHud()
+	self:_pushHud()
 	if self._events ~= nil then
 		self._events:raise("reload")
 	end
@@ -287,7 +262,7 @@ function MachineGun:supply(rounds)
 		return false
 	end
 	self._reserve = math.min(self._reserveMax, self._reserve + rounds)
-	self:_refreshHud()
+	self:_pushHud()
 	-- Walked over a crate with an empty gun: start the belt without making the player ask.
 	if self._belt <= 0 then
 		self:beginReload()
@@ -311,8 +286,11 @@ function MachineGun:attack()
 	end
 
 	self._belt = self._belt - 1
+	if self._hud ~= nil then
+		self._hud:spend(self._hudSlot)
+	end
 	self._cooldown = self._interval
-	self:_refreshHud()
+	self:_pushHud()
 
 	-- The gun walks. Both of these are raised before the round is traced, so the round that
 	-- opened the cone is itself thrown by it -- otherwise the first round of every burst would be

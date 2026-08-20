@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
-#using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
 #using \{6E9AD100-0000-4000-8000-000000000010}
 -- Scripts/EnemyController, for the class itself rather than for anything it does: the
 -- rifle identifies what its ray hit by asking whether the struck entity's script component
@@ -109,29 +108,25 @@ function Rifle:hasHud()
 	return true
 end
 
-function Rifle:createHud(parent)
-	self._ammo = AmmoCounter(parent)
+function Rifle:hudName()
+	return "RIFLE"
+end
+
+-- The two ways this weapon writes to its seat on the carousel, gathered so the nil check is
+-- written once: a weapon may be carried in a stage that never built a HUD.
+function Rifle:_pushHud()
 	self:_pushAmmo()
-	return self._ammo
 end
 
-function Rifle:updateHud(dt)
-	if self._ammo ~= nil then
-		self._ammo:update(dt)
-	end
-end
-
--- The two ways this weapon writes to its tile, gathered so the nil check is written once: a
--- weapon may be carried in a stage that never built a HUD.
 function Rifle:_pushAmmo()
-	if self._ammo ~= nil then
-		self._ammo:setAmmo(self._mag, self._reserve)
+	if self._hud ~= nil then
+		self._hud:setAmmo(self._hudSlot, self._mag, self._reserve)
 	end
 end
 
 function Rifle:_pushReload(progress)
-	if self._ammo ~= nil then
-		self._ammo:setReload(progress)
+	if self._hud ~= nil then
+		self._hud:setReload(self._hudSlot, progress)
 	end
 end
 
@@ -245,8 +240,8 @@ function Rifle:attack()
 	self._mag = self._mag - 1
 	self._cooldown = self._interval
 	self:_pushAmmo()
-	if self._ammo ~= nil then
-		self._ammo:spend()
+	if self._hud ~= nil then
+		self._hud:spend(self._hudSlot)
 	end
 
 	-- Bloom the crosshair as recoil feedback (it eases back in Crosshair:update). Harmless

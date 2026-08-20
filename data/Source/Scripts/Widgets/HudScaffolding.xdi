@@ -4,7 +4,7 @@
 #using \{218D113A-66DC-9049-8424-701FF60F2BC4}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
-#using \{100776ED-BB66-4B71-875A-0260C73DEE6C}
+#using \{3C7F91A6-5D24-4E8B-9A03-7B61E2D4C085}
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 
 import(traktor)
@@ -18,10 +18,11 @@ import(traktor)
 --
 -- The top row is driven by a scripted loop -- repeated hits down to nearly
 -- dead, a pause on empty, then a full heal, with the rifle emptied a round at a
--- time and reloaded -- so every animation path (damage lag, hit flash,
--- heartbeat, critical rim, shot kick, case eject, dry rim, reload sweep) is
--- exercised. The rows below are held at fixed values to check the colour ramp
--- and the critical/empty states.
+-- time and reloaded, and the carousel spun to the next weapon every few seconds
+-- -- so every animation path (damage lag, hit flash, heartbeat, critical rim,
+-- shot kick, case eject, dry rim, reload sweep, the ring turning and the socket
+-- lighting as a weapon arrives) is exercised. The rows below are held at fixed
+-- values to check the colour ramp and the critical/empty states.
 
 HudScaffolding = HudScaffolding or class("HudScaffolding", Scaffolding)
 
@@ -31,7 +32,7 @@ local RESERVE < const > = 24
 local RELOAD_TIME < const > = 1.9
 
 -- Both the widget art and UiKit itself; the widgets look up "MC_HealthBar" /
--- "MC_AmmoCounter" / "MC_ObjectiveMarker" in the first, Static and Panel come
+-- "MC_WeaponCarousel" / "MC_ObjectiveMarker" in the first, Static and Panel come
 -- from the second.
 function HudScaffolding:getResourceKits()
 	return {
@@ -48,6 +49,8 @@ function HudScaffolding:setup(frame)
 	self._reserve = RESERVE
 	self._fireTimer = 0.8
 	self._reloadTimer = nil
+	self._cycleTimer = 3.0
+	self._weapon = 1
 	self._bearing = 0.0
 
 	-- Dark backdrop, roughly the value the HUD sits against in game.
@@ -58,7 +61,12 @@ function HudScaffolding:setup(frame)
 	for _, v in ipairs(SAMPLES) do
 		local bar, ammo, marker = self:_row(panel, string.format("%d%%", math.floor(v * 100 + 0.5)))
 		bar:setValue(v)
-		ammo:setAmmo(math.floor(v * MAG_SIZE), math.floor(v * RESERVE))
+		ammo:setAmmo(1, math.floor(v * MAG_SIZE), math.floor(v * RESERVE))
+		ammo:setAmmo(2, math.floor(v * 40), math.floor(v * 120))
+		ammo:setAmmo(3, math.floor(v * 4), nil)
+		-- Each sample row holds a different weapon, so all three seats are seen at
+		-- the front and the two dim ones behind at every ammunition state.
+		ammo:setSelected(1 + (math.floor(v * 4) % 3))
 		marker:setTarget(v * 2.0 * math.pi, v * 140.0)
 	end
 end
@@ -94,10 +102,10 @@ function HudScaffolding:update()
 				self._reserve = RESERVE
 			end
 			self._reloadTimer = nil
-			self._liveAmmo:setReload(nil)
-			self._liveAmmo:setAmmo(self._mag, self._reserve)
+			self._liveAmmo:setReload(1, nil)
+			self._liveAmmo:setAmmo(1, self._mag, self._reserve)
 		else
-			self._liveAmmo:setReload(1.0 - self._reloadTimer / RELOAD_TIME)
+			self._liveAmmo:setReload(1, 1.0 - self._reloadTimer / RELOAD_TIME)
 		end
 	else
 		self._fireTimer = self._fireTimer - dt
@@ -105,16 +113,27 @@ function HudScaffolding:update()
 			if self._mag > 0 then
 				self._mag = self._mag - 1
 				self._fireTimer = 0.45
-				self._liveAmmo:setAmmo(self._mag, self._reserve)
-				self._liveAmmo:spend()
+				self._liveAmmo:setAmmo(1, self._mag, self._reserve)
+				self._liveAmmo:spend(1)
 				if self._mag <= 0 then
 					self._fireTimer = 1.6
 				end
 			else
 				self._reloadTimer = RELOAD_TIME
-				self._liveAmmo:setReload(0.0)
+				self._liveAmmo:setReload(1, 0.0)
 			end
 		end
+	end
+
+	-- Spin the wheel every few seconds, so the ring, the socket light and the way a
+	-- weapon's own little number hands over to the full count beside it are all on
+	-- show without anyone having to touch a mouse wheel. Back to the rifle whenever
+	-- it comes round, since that is the seat the firing loop above is aimed at.
+	self._cycleTimer = self._cycleTimer - dt
+	if self._cycleTimer <= 0.0 then
+		self._cycleTimer = 3.0
+		self._weapon = (self._weapon % 3) + 1
+		self._liveAmmo:setSelected(self._weapon)
 	end
 
 	-- Swing the compass right round and walk the range down, so the needle easing,
@@ -143,7 +162,17 @@ function HudScaffolding:_row(parent, caption)
 
 	local marker < const > = ObjectiveMarker(row)
 	local bar < const > = HealthBar(row)
-	local ammo < const > = AmmoCounter(row)
+	-- One carousel per row, carrying the same three weapons the loadout does; the
+	-- kinds are the seat names in the art, so a typo here is an assert and not a
+	-- silently empty ring.
+	local ammo < const > = WeaponCarousel(row)
+	ammo:addSlot("rifle", "RIFLE")
+	ammo:addSlot("machinegun", "MG")
+	ammo:addSlot("grenades", "GRENADES")
+	ammo:setAmmo(1, MAG_SIZE, RESERVE)
+	ammo:setAmmo(2, 40, 120)
+	ammo:setAmmo(3, 4, nil)
+	ammo:setSelected(1)
 
 	table.insert(self._widgets, marker)
 	table.insert(self._widgets, bar)

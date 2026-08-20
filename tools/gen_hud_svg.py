@@ -66,6 +66,21 @@ ROUND_S = 32                    # cartridge height
 RELOAD_X, RELOAD_W = 50, TC_W - 60  # reload bar, under the count and clear of
 RELOAD_Y, RELOAD_H = 39, 3          # the cartridge so it does not cut across it
 
+WC_W = 380                      # weapon carousel: one tile for the whole arsenal,
+WC_SEAT_X = 68                  # as wide as the three it replaced. Every seat is
+WC_SEAT_Y = 34                  # authored here, at the front of the ring, and the
+                                # widget translates it round (as the minimap does
+                                # with BLIP_C), so they overlap in the document
+WC_CX, WC_CY = 68, 25           # the ring the seats ride: centre...
+WC_RX, WC_RY = 44, 9            # ...and radii. Front of the ring = (CX, CY + RY),
+                                # which is what SEAT_X/SEAT_Y above are
+WC_ICON = 20                    # a seat's icon at the front, in plate pixels
+WC_SOCKET_W, WC_SOCKET_H = 34, 22   # the lit seat the selected weapon sits in
+WC_SOCKET_Y = 33
+WC_TEXT_X, WC_TEXT_W = 140, 232 # the selected weapon's name and count
+WC_RELOAD_X, WC_RELOAD_W = 160, 190
+WC_RELOAD_Y, WC_RELOAD_H = 41, 3
+
 OM_W = TC_W                     # objective marker: third tile on the same plate
 DIAL_X, DIAL_Y = 28, 28         # compass dial centre, and the needle's pivot
 DIAL_R = 17
@@ -113,6 +128,19 @@ LEAD = "#b9b9c2"                # bullet tip
 LEAD_HI = "#e8e8ef"
 LEAD_LO = "#6e6e78"
 RELOAD = "#4aa3ff"              # reload sweep, matching the ammo pickup's blue
+
+GREN_BODY = "#4a5236"           # grenade: olive body, scored band, steel spoon
+GREN_HI = "#79835c"
+GREN_LO = "#2b3020"
+GREN_RIM = "#171a10"
+GREN_METAL = "#9297a4"
+GREN_METAL_LO = "#4d515c"
+
+SEL = "#ffe6ad"                 # the carousel's lit socket, in the same warm cream
+SEL_RIM = "#4a3f27"             # the HUD writes the selected weapon's numbers in
+RAIL = "#141419"                # the groove the seats ride in; a shade under the
+                                # plate face and no more, or the top of the ring
+                                # reads as a bar drawn across the tile
 
 DIAL_RIM = "#4a4d57"            # compass dial
 DIAL_FACE = "#121218"
@@ -173,6 +201,11 @@ def rect(x, y, w, h, fill, opacity=None):
 def circle(cx, cy, r, fill, opacity=None):
     return ('<circle cx="%s" cy="%s" r="%s" style="%s"/>'
             % (n(cx), n(cy), n(r), style(fill, opacity)))
+
+
+def ellipse(cx, cy, rx, ry, fill, opacity=None):
+    return ('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" style="%s"/>'
+            % (n(cx), n(cy), n(rx), n(ry), style(fill, opacity)))
 
 
 def cut_rect(x, y, w, h, c):
@@ -442,6 +475,138 @@ def ammo_counter():
     return layers
 
 
+# --------------------------------------------------------- weapon carousel --
+
+def _belt_icon(cx, cy, s):
+    """Machine gun: a short length of belt, four rounds hanging off a link bar.
+    Deliberately a different silhouette from the rifle's single cartridge --
+    at twenty pixels the two have to be told apart by outline alone, not by
+    detail, so one is tall and narrow and the other wide and toothed."""
+    out = []
+    bar_h = s * 0.24
+    bar_w = s * 0.96
+    out.append(rect(cx - bar_w / 2 - 1, cy - s * 0.5 - 1, bar_w + 2, bar_h + 2, BRASS_RIM))
+    out.append(rect(cx - bar_w / 2, cy - s * 0.5, bar_w, bar_h, BRASS_LO))
+    out.append(rect(cx - bar_w / 2, cy - s * 0.5, bar_w, bar_h * 0.35, BRASS_HI, 0.55))
+
+    # Four rounds, tips down, spread across the bar.
+    rounds = 4
+    rw = s * 0.15
+    top = cy - s * 0.5 + bar_h
+    body_b = cy + s * 0.28
+    tip_b = cy + s * 0.5
+    for i in range(rounds):
+        rx = cx - bar_w / 2 + bar_w * (i + 0.5) / rounds
+        out.append(rect(rx - rw / 2 - 1, top, rw + 2, body_b - top + 1, BRASS_RIM))
+        out.append(rect(rx - rw / 2, top, rw, body_b - top, BRASS))
+        out.append(rect(rx - rw / 2, top, rw * 0.35, body_b - top, BRASS_HI, 0.6))
+        out.append(poly([(rx - rw / 2, body_b), (rx + rw / 2, body_b), (rx, tip_b)], LEAD))
+    return out
+
+
+def _grenade_icon(cx, cy, s):
+    """Grenades: scored olive body, steel spoon down the right flank and the
+    pull ring proud of the neck. Round where the other two are angular, which
+    is the whole of how it reads at this size."""
+    r = s * 0.34
+    body = [(cx + math.cos(math.radians(i * 30)) * r,
+             cy + s * 0.09 + math.sin(math.radians(i * 30)) * r) for i in range(12)]
+    rim = [(cx + math.cos(math.radians(i * 30)) * (r + 1.2),
+            cy + s * 0.09 + math.sin(math.radians(i * 30)) * (r + 1.2)) for i in range(12)]
+    cy_b = cy + s * 0.09
+    return [
+        poly(rim, GREN_RIM),
+        poly(body, GREN_BODY),
+        # Lit from the upper left, as every other plate on this HUD is.
+        poly([(cx - r * 0.9, cy_b - r * 0.35), (cx - r * 0.35, cy_b - r * 0.85),
+              (cx - r * 0.1, cy_b - r * 0.6), (cx - r * 0.7, cy_b - r * 0.05)], GREN_HI, 0.75),
+        # Scoring: the pineapple grid, two bands and one rib.
+        rect(cx - r, cy_b - r * 0.3, r * 2, s * 0.05, GREN_LO),
+        rect(cx - r, cy_b + r * 0.3, r * 2, s * 0.05, GREN_LO),
+        rect(cx - s * 0.02, cy_b - r, s * 0.05, r * 2, GREN_LO),
+        # Neck, spoon and ring.
+        rect(cx - s * 0.11, cy - s * 0.5, s * 0.22, s * 0.18, GREN_METAL_LO),
+        poly([(cx + s * 0.09, cy - s * 0.46), (cx + s * 0.2, cy - s * 0.44),
+              (cx + s * 0.17, cy + s * 0.06), (cx + s * 0.07, cy + s * 0.02)], GREN_METAL),
+        circle(cx - s * 0.2, cy - s * 0.42, s * 0.13, GREN_METAL),
+        circle(cx - s * 0.2, cy - s * 0.42, s * 0.06, GREN_METAL_LO),
+    ]
+
+
+def weapon_carousel():
+    """One tile for the whole arsenal: three seats riding a shallow ring, the
+    selected weapon at the front of it in a lit socket and the other two small
+    and dim behind. Cycling spins the ring rather than moving a highlight, so
+    which weapon is in hand is carried by *where* it is as well as by how it is
+    lit -- see Scripts/Widgets/WeaponCarousel, which drives every layer here.
+
+    Each seat is authored at the front of the ring (WC_SEAT_X/Y) and translated
+    into place by the widget, exactly as the minimap's markers are, so all three
+    sit on top of each other in the document. Toggle them to edit one."""
+    layers = []
+
+    layers.append(sprite("shadow", [
+        poly(cut_rect(2, TC_PLATE_Y + 3, WC_W - 4, TC_PLATE_H, 7), BLACK, 0.45),
+    ]))
+
+    # Under the plate, a couple of pixels proud of it, so only a rim shows -- the
+    # ammunition counter's warning, kept for the weapon that is in hand.
+    layers.append(sprite("warn", [
+        poly(cut_rect(0, TC_PLATE_Y - 3, WC_W, TC_PLATE_H + 6, 9), WARN, 0.35),
+        poly(cut_rect(1, TC_PLATE_Y - 1, WC_W - 2, TC_PLATE_H + 2, 7), WARN),
+    ]))
+
+    layers.append(sprite("plate", [
+        poly(cut_rect(2, TC_PLATE_Y, WC_W - 4, TC_PLATE_H, 7), EDGE),
+        poly(cut_rect(3, TC_PLATE_Y + 1, WC_W - 6, TC_PLATE_H - 2, 6), BEVEL),
+        poly(cut_rect(4, TC_PLATE_Y + 3, WC_W - 8, TC_PLATE_H - 4, 5), FACE),
+    ]))
+
+    # The ring itself, as a groove the seats travel in: an ellipse a shade under
+    # the plate face with the face punched back out of it, and a lit lower arc so
+    # the near side of the ring reads as nearer.
+    layers.append(sprite("rail", [
+        ellipse(WC_CX, WC_CY, WC_RX + 1.5, WC_RY + 1.5, RAIL),
+        ellipse(WC_CX, WC_CY, WC_RX - 1.5, WC_RY - 1.5, FACE),
+        ellipse(WC_CX, WC_CY + 1, WC_RX + 1.5, WC_RY + 1.5, BEVEL, 0.16),
+        ellipse(WC_CX, WC_CY, WC_RX - 1.5, WC_RY - 1.5, FACE),
+    ]))
+
+    # The seat at the front of the ring. Static: the ring turns, this does not.
+    layers.append(sprite("socket", [
+        ellipse(WC_SEAT_X, WC_SOCKET_Y, WC_SOCKET_W / 2 + 2, WC_SOCKET_H / 2 + 2, EDGE),
+        ellipse(WC_SEAT_X, WC_SOCKET_Y, WC_SOCKET_W / 2, WC_SOCKET_H / 2, SEL_RIM),
+        ellipse(WC_SEAT_X, WC_SOCKET_Y, WC_SOCKET_W / 2 - 1.5, WC_SOCKET_H / 2 - 1.5, FACE),
+    ]))
+    # ...and its light, which the widget pulses as a weapon comes to the front.
+    layers.append(sprite("socketglow", [
+        ellipse(WC_SEAT_X, WC_SOCKET_Y, WC_SOCKET_W / 2 + 1, WC_SOCKET_H / 2 + 1, SEL),
+    ]))
+
+    # The three weapons. Document order is depth order, but the widget sorts
+    # these by how far round the ring they are on every frame that moves them
+    # (DisplayList:swap), so whichever is at the front is drawn over the rest.
+    layers.append(sprite("seat_rifle", cartridge(WC_SEAT_X, WC_SEAT_Y, WC_ICON)))
+    layers.append(sprite("seat_machinegun", _belt_icon(WC_SEAT_X, WC_SEAT_Y, WC_ICON)))
+    layers.append(sprite("seat_grenades", _grenade_icon(WC_SEAT_X, WC_SEAT_Y, WC_ICON)))
+
+    # Spent brass, flung clear of the socket on each shot.
+    layers.append(sprite("casing", casing(WC_SEAT_X, WC_SEAT_Y)))
+
+    layers.append(sprite("reloadtrack", [
+        rect(WC_RELOAD_X, WC_RELOAD_Y, WC_RELOAD_W, WC_RELOAD_H, TRACK),
+    ]))
+    layers.append(sprite("reload", [
+        rect(WC_RELOAD_X, WC_RELOAD_Y, WC_RELOAD_W, WC_RELOAD_H, RELOAD),
+    ]))
+
+    layers.append(sprite("glow", [
+        poly(cut_rect(3, TC_PLATE_Y + 1, WC_W - 6, TC_PLATE_H - 2, 6), WHITE),
+    ]))
+
+    return layers
+
+
 # -------------------------------------------------------- objective marker --
 
 def _needle_shape(cx, cy, r, w, tail):
@@ -665,6 +830,12 @@ def main():
     doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
     doc.append('     style="display:none">')
     doc.extend(ammo_counter())
+    doc.append('  </g>')
+
+    doc.append('  <g id="MC_WeaponCarousel" inkscape:label="MC_WeaponCarousel"')
+    doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
+    doc.append('     style="display:none">')
+    doc.extend(weapon_carousel())
     doc.append('  </g>')
 
     doc.append('  <g id="MC_ObjectiveMarker" inkscape:label="MC_ObjectiveMarker"')

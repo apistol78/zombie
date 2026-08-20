@@ -133,6 +133,95 @@
       <polygon points="9,11 171,11 177,17 177,39 171,45 9,45 3,39 3,17" style="fill:#ffffff"/>
     </g>
   </g>
+  <g id="MC_WeaponCarousel" inkscape:label="MC_WeaponCarousel"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="shadow" inkscape:label="shadow" traktor:sprite="1">
+      <polygon points="9,13 371,13 378,20 378,42 371,49 9,49 2,42 2,20" style="fill:#000000;fill-opacity:0.45"/>
+    </g>
+    <g id="warn" inkscape:label="warn" traktor:sprite="1">
+      <polygon points="9,7 371,7 380,16 380,40 371,49 9,49 0,40 0,16" style="fill:#ff2a1a;fill-opacity:0.35"/>
+      <polygon points="8,9 372,9 379,16 379,40 372,47 8,47 1,40 1,16" style="fill:#ff2a1a"/>
+    </g>
+    <g id="plate" inkscape:label="plate" traktor:sprite="1">
+      <polygon points="9,10 371,10 378,17 378,39 371,46 9,46 2,39 2,17" style="fill:#050508"/>
+      <polygon points="9,11 371,11 377,17 377,39 371,45 9,45 3,39 3,17" style="fill:#5c5f6b"/>
+      <polygon points="9,13 371,13 376,18 376,40 371,45 9,45 4,40 4,18" style="fill:#1e1e24"/>
+    </g>
+    <g id="rail" inkscape:label="rail" traktor:sprite="1">
+      <ellipse cx="68" cy="25" rx="45.5" ry="10.5" style="fill:#141419"/>
+      <ellipse cx="68" cy="25" rx="42.5" ry="7.5" style="fill:#1e1e24"/>
+      <ellipse cx="68" cy="26" rx="45.5" ry="10.5" style="fill:#5c5f6b;fill-opacity:0.16"/>
+      <ellipse cx="68" cy="25" rx="42.5" ry="7.5" style="fill:#1e1e24"/>
+    </g>
+    <g id="socket" inkscape:label="socket" traktor:sprite="1">
+      <ellipse cx="68" cy="33" rx="19" ry="13" style="fill:#050508"/>
+      <ellipse cx="68" cy="33" rx="17" ry="11" style="fill:#4a3f27"/>
+      <ellipse cx="68" cy="33" rx="15.5" ry="9.5" style="fill:#1e1e24"/>
+    </g>
+    <g id="socketglow" inkscape:label="socketglow" traktor:sprite="1">
+      <ellipse cx="68" cy="33" rx="18" ry="12" style="fill:#ffe6ad"/>
+    </g>
+    <g id="seat_rifle" inkscape:label="seat_rifle" traktor:sprite="1">
+      <polygon points="63.67,43.35 72.33,43.35 72.33,45.4 63.67,45.4" style="fill:#3d2b07"/>
+      <polygon points="64.35,43.35 71.65,43.35 71.65,33.54 70.28,30.81 65.72,30.81 64.35,33.54" style="fill:#3d2b07"/>
+      <polygon points="65.72,30.81 70.28,30.81 70.23,29.17 70.09,27.52 69.82,25.88 69.37,24.24 68,22.6 66.63,24.24 66.18,25.88 65.91,27.52 65.77,29.17" style="fill:#3d2b07"/>
+      <polygon points="64.2,42.2 71.8,42.2 71.8,44 64.2,44" style="fill:#8a6416"/>
+      <polygon points="64.8,42.2 71.2,42.2 71.2,33.6 70,31.2 66,31.2 64.8,33.6" style="fill:#c8962a"/>
+      <polygon points="66,31.2 70,31.2 69.96,29.76 69.83,28.32 69.6,26.88 69.2,25.44 68,24 66.8,25.44 66.4,26.88 66.17,28.32 66.04,29.76" style="fill:#b9b9c2"/>
+      <rect x="65.6" y="33" width="1" height="6.4" style="fill:#f2d488;fill-opacity:0.85"/>
+      <polygon points="66.6,30.8 67.6,30.6 67.8,25.6 67,26" style="fill:#e8e8ef;fill-opacity:0.8"/>
+      <rect x="64.8" y="39.8" width="6.4" height="0.6" style="fill:#3d2b07;fill-opacity:0.7"/>
+    </g>
+    <g id="seat_machinegun" inkscape:label="seat_machinegun" traktor:sprite="1">
+      <rect x="57.4" y="23" width="21.2" height="6.8" style="fill:#3d2b07"/>
+      <rect x="58.4" y="24" width="19.2" height="4.8" style="fill:#8a6416"/>
+      <rect x="58.4" y="24" width="19.2" height="1.68" style="fill:#f2d488;fill-opacity:0.55"/>
+      <rect x="58.3" y="28.8" width="5" height="11.8" style="fill:#3d2b07"/>
+      <rect x="59.3" y="28.8" width="3" height="10.8" style="fill:#c8962a"/>
+      <rect x="59.3" y="28.8" width="1.05" height="10.8" style="fill:#f2d488;fill-opacity:0.6"/>
+      <polygon points="59.3,39.6 62.3,39.6 60.8,44" style="fill:#b9b9c2"/>
+      <rect x="63.1" y="28.8" width="5" height="11.8" style="fill:#3d2b07"/>
+      <rect x="64.1" y="28.8" width="3" height="10.8" style="fill:#c8962a"/>
+      <rect x="64.1" y="28.8" width="1.05" height="10.8" style="fill:#f2d488;fill-opacity:0.6"/>
+      <polygon points="64.1,39.6 67.1,39.6 65.6,44" style="fill:#b9b9c2"/>
+      <rect x="67.9" y="28.8" width="5" height="11.8" style="fill:#3d2b07"/>
+      <rect x="68.9" y="28.8" width="3" height="10.8" style="fill:#c8962a"/>
+      <rect x="68.9" y="28.8" width="1.05" height="10.8" style="fill:#f2d488;fill-opacity:0.6"/>
+      <polygon points="68.9,39.6 71.9,39.6 70.4,44" style="fill:#b9b9c2"/>
+      <rect x="72.7" y="28.8" width="5" height="11.8" style="fill:#3d2b07"/>
+      <rect x="73.7" y="28.8" width="3" height="10.8" style="fill:#c8962a"/>
+      <rect x="73.7" y="28.8" width="1.05" height="10.8" style="fill:#f2d488;fill-opacity:0.6"/>
+      <polygon points="73.7,39.6 76.7,39.6 75.2,44" style="fill:#b9b9c2"/>
+    </g>
+    <g id="seat_grenades" inkscape:label="seat_grenades" traktor:sprite="1">
+      <polygon points="76,35.8 74.93,39.8 72,42.73 68,43.8 64,42.73 61.07,39.8 60,35.8 61.07,31.8 64,28.87 68,27.8 72,28.87 74.93,31.8" style="fill:#171a10"/>
+      <polygon points="74.8,35.8 73.89,39.2 71.4,41.69 68,42.6 64.6,41.69 62.11,39.2 61.2,35.8 62.11,32.4 64.6,29.91 68,29 71.4,29.91 73.89,32.4" style="fill:#4a5236"/>
+      <polygon points="61.88,33.42 65.62,30.02 67.32,31.72 63.24,35.46" style="fill:#79835c;fill-opacity:0.75"/>
+      <rect x="61.2" y="33.76" width="13.6" height="1" style="fill:#2b3020"/>
+      <rect x="61.2" y="37.84" width="13.6" height="1" style="fill:#2b3020"/>
+      <rect x="67.6" y="29" width="1" height="13.6" style="fill:#2b3020"/>
+      <rect x="65.8" y="24" width="4.4" height="3.6" style="fill:#4d515c"/>
+      <polygon points="69.8,24.8 72,25.2 71.4,35.2 69.4,34.4" style="fill:#9297a4"/>
+      <circle cx="64" cy="25.6" r="2.6" style="fill:#9297a4"/>
+      <circle cx="64" cy="25.6" r="1.2" style="fill:#4d515c"/>
+    </g>
+    <g id="casing" inkscape:label="casing" traktor:sprite="1">
+      <rect x="60.5" y="30" width="15" height="8" style="fill:#3d2b07"/>
+      <rect x="61.5" y="31" width="13" height="6" style="fill:#c8962a"/>
+      <rect x="61.5" y="31" width="13" height="2" style="fill:#f2d488;fill-opacity:0.8"/>
+      <rect x="72.5" y="31" width="2" height="6" style="fill:#8a6416"/>
+    </g>
+    <g id="reloadtrack" inkscape:label="reloadtrack" traktor:sprite="1">
+      <rect x="160" y="41" width="190" height="3" style="fill:#0a0a0e"/>
+    </g>
+    <g id="reload" inkscape:label="reload" traktor:sprite="1">
+      <rect x="160" y="41" width="190" height="3" style="fill:#4aa3ff"/>
+    </g>
+    <g id="glow" inkscape:label="glow" traktor:sprite="1">
+      <polygon points="9,11 371,11 377,17 377,39 371,45 9,45 3,39 3,17" style="fill:#ffffff"/>
+    </g>
+  </g>
   <g id="MC_ObjectiveMarker" inkscape:label="MC_ObjectiveMarker"
      inkscape:groupmode="layer" traktor:sprite="1"
      style="display:none">

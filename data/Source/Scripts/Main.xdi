@@ -146,7 +146,7 @@ function Main:new(params, environment)
 
 	-- Initialize UiKit. Two resource kits: the HUD widgets' own art (UI/Hud,
 	-- imported from data/Assets/UI/Hud.svg) and UiKit's own movie, which the
-	-- menus and every Static come from. HealthBar/AmmoCounter look their
+	-- menus and every Static come from. HealthBar/WeaponCarousel look their
 	-- movie clips up by name across both, so the HUD one has to be listed here
 	-- or they cannot build themselves.
 	Widget.initialize(
@@ -187,14 +187,15 @@ function Main:new(params, environment)
 	-- HUD: one row along the bottom, reading left to right as where to go, how alive
 	-- you are, and what you have to fight with. The compass and the health bar are the
 	-- stage's own -- they are about the night and the player, not about a weapon -- and
-	-- everything after them is a tile some weapon built for itself.
+	-- what follows them is the arsenal's own tile, a carousel carrying every weapon at
+	-- once with whichever has the trigger at the front of it.
 	--
 	-- Ammunition sits next to health because those two are what the player is actually
 	-- spending. All of them want a per-frame :update to run their animations, which is what
-	-- the loadout's updateHud does for the weapon tiles.
+	-- the loadout's updateHud does for the weapon tile.
 	local hudColumns = { 0, 0 }   -- the compass and the health bar...
 	for _ = 1, self._loadout:hudColumns() do
-		table.insert(hudColumns, 0)   -- ...then one for each weapon that shows something
+		table.insert(hudColumns, 0)   -- ...then whatever the arsenal asks for, which is one
 	end
 	self._hud = Container(self._frame, TableLayout(hudColumns, { 0 }, 0, 0, 18, 0))
 	self._hud:setHorizontalAlign(Widget.ALIGN_CENTER)

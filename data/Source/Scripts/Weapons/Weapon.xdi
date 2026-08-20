@@ -83,25 +83,42 @@ end
 function Weapon:reset()
 end
 
--- Does this weapon show a tile on the HUD row? Asked before the row is laid out, because
--- a TableLayout is built with its column list and cannot grow one afterwards -- see
--- Loadout:hudColumns and the HUD block in Main:new.
+-- Does this weapon take a seat on the HUD's weapon carousel? Asked before the row is laid
+-- out, because a TableLayout is built with its column list and cannot grow one afterwards
+-- -- see Loadout:hudColumns and the HUD block in Main:new.
+--
+-- A weapon that says yes also needs a seat authored for it in data/Assets/UI/Hud.svg, under
+-- its own slot name; see Scripts/Widgets/WeaponCarousel, which refuses one it has no art for
+-- rather than turning past a gap.
 function Weapon:hasHud()
 	return false
 end
 
--- Build that tile into the bottom row. Called once, from Main:new.
-function Weapon:createHud(parent)
-	return nil
+-- What is written beside the ring while this weapon is the one in hand. Short: the space is
+-- the width of a word, and the icon in the socket has already said which weapon it is.
+function Weapon:hudName()
+	return string.upper(self:slot())
 end
 
--- Tick the tile's own animation. Called from Main:update *above* its freeze returns, so a
--- magazine spent on the last frame before a pause still finishes counting down.
-function Weapon:updateHud(dt)
+-- Which seat of the carousel is this weapon's. Handed over once, from Loadout:createHud, and
+-- kept so everything below can push into it -- nothing about the HUD is ever polled.
+--
+-- The nil check every push carries is not defensive noise: a weapon may be carried in a stage
+-- that never built a HUD at all, and both of the game's scenes are allowed to be that stage.
+function Weapon:attachHud(hud, index)
+	self._hud = hud
+	self._hudSlot = index
+	self:_pushHud()
 end
 
--- The drawn weapon changed. Only of interest to a tile that says whether the trigger is
--- currently on this weapon (see Grenades:_refreshHud).
+-- Write what this weapon has left into its seat. Overridden by anything that carries a count;
+-- called on attach, and thereafter from wherever that count changes.
+function Weapon:_pushHud()
+end
+
+-- The drawn weapon changed. The carousel is told separately, by the loadout, so this is now
+-- only for a weapon that wants to know for its own sake -- winding something down as it is
+-- put away, say.
 function Weapon:selectionChanged(selected)
 end
 

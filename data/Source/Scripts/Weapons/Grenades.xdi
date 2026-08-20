@@ -114,51 +114,19 @@ function Grenades:hasHud()
 	return true
 end
 
--- The grenade tile: how many are left, and whether the left button is currently on them.
---
--- A plain Static rather than an art widget like the ammunition counter: the other tiles are
--- movie clips exported from data/Assets/UI/Hud.svg, and one for this would mean re-authoring
--- that SVG.
---
--- Built with the text it will actually carry rather than blank, which matters more than it
--- looks: a Static clamps its text bounds to the width it was placed at, and the HUD row is
--- laid out long before anything sets a count -- so an empty one would be placed at no width
--- at all and every later count would be clipped away to nothing. The string never changes
--- length afterwards (the count is a single digit, capped by _max), so one honest placement
--- here holds for the night.
-function Grenades:createHud(parent)
-	self._label = Static(parent, "GRENADES  0")
-	self._label:setTextSize(24)
-	self._label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
-	self._label:setVerticalAlign(Widget.ALIGN_BOTTOM)
-	self:_refreshHud()
-	return self._label
+function Grenades:hudName()
+	return "GRENADES"
 end
 
-function Grenades:selectionChanged(selected)
-	self._selected = selected
-	self:_refreshHud()
-end
-
--- Colour carries which weapon has the trigger rather than a separate marker, and reuses the
--- ammunition counter's own palette so the HUD only has one language: bright when it is the
--- thing you are about to throw, dim when the rifle has the trigger, and the counter's
--- empty-magazine red when there is nothing left to throw at all.
+-- How many are left, into this weapon's seat on the carousel. One number and no reserve -- a
+-- grenade is either in the pouch or it is not -- and the tile writes it as the bare count
+-- rather than as a magazine over a supply, which is the whole reason setAmmo takes a nil.
 --
--- Cheap enough to call from anywhere something changes -- and that is how it is called, from
--- the swap, the throw and the pickup, rather than every frame.
-function Grenades:_refreshHud()
-	if self._label == nil then
-		return
-	end
-	self._label:setText("GRENADES  " .. tostring(self._count))
-	local selected < const > = self._selected == true
-	if self._count <= 0 then
-		self._label:setTextColor(selected and Color4f(1.0, 0.42, 0.34, 1.0) or Color4f(0.52, 0.34, 0.32, 1.0))
-	elseif selected then
-		self._label:setTextColor(Color4f(1.0, 0.9, 0.68, 1.0))
-	else
-		self._label:setTextColor(Color4f(0.55, 0.53, 0.46, 1.0))
+-- Cheap enough to call from anywhere something changes, and that is how it is called: from the
+-- throw and from the pickup, rather than every frame.
+function Grenades:_pushHud()
+	if self._hud ~= nil then
+		self._hud:setAmmo(self._hudSlot, self._count, nil)
 	end
 end
 
@@ -171,7 +139,7 @@ function Grenades:supply(count)
 		return false
 	end
 	self._count = math.min(self._max, self._count + count)
-	self:_refreshHud()
+	self:_pushHud()
 	return true
 end
 
@@ -207,7 +175,7 @@ function Grenades:attack()
 
 	self._count = self._count - 1
 	self._cooldown = self._interval
-	self:_refreshHud()
+	self:_pushHud()
 
 	context:kickCrosshair()
 

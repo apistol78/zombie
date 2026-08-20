@@ -173,8 +173,8 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B818}</id>
 			<comment/>
 			<position>
-				<first>940</first>
-				<second>280</second>
+				<first>1273</first>
+				<second>316</second>
 			</position>
 			<technique>Default</technique>
 			<priority>
@@ -215,6 +215,86 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 			<stencilReference>0</stencilReference>
 			<stencilMask>2147483648</stencilMask>
 			<precisionHint>Undefined</precisionHint>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B819}</id>
+			<comment><![CDATA[
+
+Vignette strength; how far the corners are taken down, 0 for none. At 0.22 they
+sit at about four fifths, which reads as the lens rather than as an effect.
+
+			]]></comment>
+			<position>
+				<first>833</first>
+				<second>436</second>
+			</position>
+			<value>1</value>
+		</item>
+		<item type="traktor.render.Script" version="8,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81A}</id>
+			<comment/>
+			<position>
+				<first>1033</first>
+				<second>346</second>
+			</position>
+			<name>Vignette</name>
+			<technique/>
+			<domain>Undefined</domain>
+			<localSize>
+				<X>1</X>
+				<Y>1</Y>
+				<Z>1</Z>
+			</localSize>
+			<useRayTracing>false</useRayTracing>
+			<include/>
+			<inputPins>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50021}</id>
+					<name>Color</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50022}</id>
+					<name>TexCoord</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50023}</id>
+					<name>Strength</name>
+				</item>
+			</inputPins>
+			<outputPins>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50031}</id>
+					<name>Output</name>
+					<type>Vector</type>
+				</item>
+			</outputPins>
+			<script><![CDATA[
+
+// A slight darkening towards the corners.
+//
+// Taken from where this pixel *is* on the screen rather than from where the
+// projection above went looking for it, so the shading stays welded to the frame
+// while Panini moves the image about underneath it. Folded into this pass rather
+// than given one of its own: a vignette is a multiply, and there is nothing to be
+// had from reading and writing the whole frame again to do it.
+
+// Screen position in [-1,1]. Deliberately not aspect corrected, so the falloff is
+// an ellipse that follows the frame and the corners come down by the same amount
+// at any aspect ratio -- a circular one on a 16:9 screen has to either miss the
+// corners or bite into the top and bottom.
+const vec2 p = vec2($TexCoord.x, $TexCoord.y) * 2.0f - 1.0f;
+const float r = length(p);
+
+// Flat across the middle of the frame and easing in to the full strength by the
+// corner (r = sqrt(2)). smoothstep rather than a linear ramp so there is no ring
+// on the ground where the darkening starts; the edge midpoints (r = 1) end up
+// about two thirds of the way in, so the sides are touched and the corners carry
+// it.
+const float v = 1.0f - $Strength * smoothstep(0.45f, 1.35f, r);
+
+$Output = vec4($Color.rgb * v, 1.0f);
+
+]]></script>
 		</item>
 	</nodes>
 	<edges>
@@ -282,6 +362,36 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 			<source>
 				<node ref="/object/nodes/item[6]"/>
 				<id>{AF6C971B-D67A-42EE-A12B-97D36927C89F}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[9]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50021}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item"/>
+				<id>{75B6E28A-E83A-1B4B-9312-590487A95175}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[9]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50022}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[8]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[9]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50023}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[9]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50031}</id>
 			</source>
 			<destination>
 				<node ref="/object/nodes/item[7]"/>

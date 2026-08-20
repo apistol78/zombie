@@ -78,9 +78,10 @@ local CLOSE_QUARTERS < const > = CFG.closeQuarters
 -- at half its radius, restated as a hard limit instead of a term in a blend.
 local PERSONAL_SPACE < const > = CFG.playerSpace * 0.5
 
--- ...and how hard it gets back out when something has already pushed it through: a speed
--- per metre of overlap, and a ceiling on it. Nothing physical separates a zombie from the
--- player, so this is what a player walking into one meets.
+-- ...and, well inside it, the line where the two capsules actually touch. Physics holds
+-- that one -- see Config's overlapSpace -- so what is left here is undoing an overlap that
+-- was never walked into: a speed per metre of overlap, and a ceiling on it.
+local OVERLAP_SPACE < const > = CFG.overlapSpace
 local PUSH_OUT_GAIN < const > = CFG.pushOutGain
 local PUSH_OUT_MAX < const > = CFG.pushOutMax
 
@@ -973,49 +974,64 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- Everything above this point is a blend, and a blend can be outvoted. The push out of
 	-- the player rises to `separation` at the player's own position and stops there, while
 	-- every zombie in the rank behind is pushing this one forward with as much again --
-	-- three of them and the sum points at the player. So the horde presses its front rank
-	-- *through* the man it is eating, and the camera, which sits at his eye, ends up inside
-	-- a chest: the attack animation alone swings the head 0.31 m forward of the zombie's own
-	-- origin, so it does not take much crowding to put a skull where the near plane is.
+	-- three of them and the sum points at the player. So the horde used to press its front
+	-- rank *through* the man it was eating, and the camera, which sits at his eye, ended up
+	-- inside a chest: the attack animation alone swings the head 0.31 m forward of the
+	-- zombie's own origin, so it did not take much crowding to put a skull on the near plane.
 	--
-	-- Nothing got it out again, either. The step below is taken along the facing, and the
-	-- facing inside CLOSE_QUARTERS is the player, so a steering vector pointing away merely
-	-- fails the align gate: the zombie stops rather than retreats, and stands inside the
-	-- player until it dies. Two halves, and both are fixed here.
+	-- Three things hold the line now, at three different distances, and they are worth
+	-- keeping straight:
+	--   * PERSONAL_SPACE (0.95 m, half of _playerSpace, which is where that push already
+	--     comes to rest) is where a zombie *chooses* to stand. It is what keeps the lunge of
+	--     the attack animation out of the camera, and it is enforced here, by steering.
+	--   * OVERLAP_SPACE (0.66 m) is where the two capsules touch, and physics holds it --
+	--     the player traces the Enemy collision group and every zombie traces Player, so
+	--     neither walks through the other however hard either tries.
+	--   * ...and an overlap that physics never saw made -- a spawn on top of the player, a
+	--     controller coming back from a rag doll -- is undone by the step itself, further
+	--     down. That is the one case a sweep cannot fix, since a character that starts
+	--     inside something has nowhere legal to sweep to.
 	--
-	-- Inside PERSONAL_SPACE the inward part of the steering is removed outright, so no sum
-	-- of pushes can aim a zombie further in. What is left is the tangential part, and a
-	-- crowded zombie therefore slides round the player looking for a gap rather than
-	-- climbing into them -- which is also the better thing to watch. Getting one that is
-	-- already inside back out is the other half, and that is the step itself: see the
-	-- `depth > 0.0` branch further down, which is why `depth` and the way out are worked
-	-- out here and kept.
+	-- This block is the first of the three. Inside PERSONAL_SPACE the inward part of the
+	-- steering is removed outright, so no sum of pushes can aim a zombie further in; what is
+	-- left is the tangential part, and a crowded zombie therefore slides round the player
+	-- looking for a gap rather than climbing into them, which is also the better thing to
+	-- watch. `depth` is the third case, measured against the tighter line and kept for the
+	-- step, along with the way out.
 	--
-	-- Costs nothing in the ordinary case -- `depth` is zero for everything but the front
-	-- rank -- and applies in every state, since a zombie that has not even noticed the
-	-- player has no more business standing inside them than one eating them has.
+	-- Costs nothing in the ordinary case, and applies in every state: a zombie that has not
+	-- even noticed the player has no more business standing inside them than one eating them
+	-- has.
 	local depth = 0.0
 	local outX, outZ = 0.0, 0.0
 	do
 		local ox < const > = enemyPos.x - playerPos.x
 		local oz < const > = enemyPos.z - playerPos.z
 		local od < const > = math.sqrt(ox * ox + oz * oz)
-		if od > 0.001 and od < PERSONAL_SPACE then
-			depth = PERSONAL_SPACE - od
+		if od <= 0.001 then
+			-- Dead centre, where there is no "out of" to speak of: leave along the way it is
+			-- already facing. Any direction would do -- what matters is that there *is* one,
+			-- since this is the one arrangement that has no radial escape and so the one that
+			-- would weld a zombie and a player together for good.
+			depth = OVERLAP_SPACE
+			outX, outZ = math.sin(self._heading), math.cos(self._heading)
+		elseif od < PERSONAL_SPACE then
 			outX, outZ = ox / od, oz / od
-		end
-	end
-	if depth > 0.0 then
-		local inward < const > = -(targetX * outX + targetZ * outZ)
-		if inward > 0.0 then
-			targetX = targetX + outX * inward
-			targetZ = targetZ + outZ * inward
-			local dl < const > = math.sqrt(targetX * targetX + targetZ * targetZ)
-			if dl > 0.001 then
-				targetX = targetX / dl
-				targetZ = targetZ / dl
-			else
-				tl = 0.0
+			if od < OVERLAP_SPACE then
+				depth = OVERLAP_SPACE - od
+			end
+
+			local inward < const > = -(targetX * outX + targetZ * outZ)
+			if inward > 0.0 then
+				targetX = targetX + outX * inward
+				targetZ = targetZ + outZ * inward
+				local dl < const > = math.sqrt(targetX * targetX + targetZ * targetZ)
+				if dl > 0.001 then
+					targetX = targetX / dl
+					targetZ = targetZ / dl
+				else
+					tl = 0.0
+				end
 			end
 		end
 	end
@@ -1078,25 +1094,24 @@ function EnemyController:update(context, totalTime, deltaTime)
 
 	local moving = false
 	if depth > 0.0 then
-		-- Standing inside the player: get out, before anything else this frame (see the
-		-- personal space block above). Straight out, and along that rather than along the
-		-- facing -- the one place in this controller where the step leaves the facing, and
-		-- it has to, since the facing is the player and the whole point is to go the other
-		-- way. So the zombie keeps its eyes on the man it is clawing at and gives ground,
-		-- which is what being pushed off someone looks like.
+		-- Sharing a space with the player: get out of it, before anything else this frame
+		-- (see the personal space block above). Nothing walked into this -- the two capsules
+		-- cannot be driven through each other any more -- so this is the leftover case:
+		-- something *arrived* overlapped, and a sweep started inside another body has no
+		-- legal move to make, which is a zombie welded to the player and, worse, a player
+		-- who cannot walk away from one.
 		--
-		-- Radially rather than along the steering, because the steering is a blend and being
-		-- squeezed is exactly when the crowd's half of that blend is largest: a zombie
+		-- Straight out, and along that rather than along the facing -- the one place in this
+		-- controller where the step leaves the facing, and it has to, since the facing is the
+		-- player and the whole point is to go the other way. So the zombie keeps its eyes on
+		-- the man it is clawing at and gives ground, which is what being pushed off someone
+		-- looks like.
+		--
+		-- Radially rather than along the steering, too, because the steering is a blend and
+		-- being squeezed is exactly when the crowd's half of that blend is largest: a zombie
 		-- pressed between the player and the rank behind it would leave along a mostly
 		-- sideways sum at a fraction of the speed asked for here. Out of the player is the
 		-- one direction that is always worth the whole of it.
-		--
-		-- ...and fast in proportion to how far in it is, rather than at a walk. A walk covers
-		-- a crowd squeezing it in by a few centimetres and nothing else; the case this exists
-		-- for is that the player has no collision with a zombie either, so they can simply
-		-- walk into one at three metres a second, and anything slower is a zombie being worn.
-		-- At PUSH_OUT_GAIN the two balance a hand's width inside the floor, which keeps the
-		-- eye clear of the chest, and a player who stops gets the metre back within a stride.
 		--
 		-- maxVelocity has to come up with it, exactly as in :_stagger -- it is the clamp the
 		-- impulse below accumulates against, so leaving it at walking pace would cap the

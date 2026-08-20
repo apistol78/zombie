@@ -9,7 +9,12 @@ local ENEMY < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
 
 -- Tuning.
-local MAX_ENEMIES < const > = Config.spawner.maxEnemies      -- keep at most this many spawned alive
+-- How many may be alive at once: the ceiling, what it starts at, and what each lit
+-- ward adds on the way there. See the note in Config, and the ward pressure block
+-- below, which is where the three become one number.
+local MAX_ENEMIES < const > = Config.spawner.maxEnemies
+local MAX_ENEMIES_START < const > = Config.spawner.maxEnemiesStart
+local MAX_ENEMIES_PER_WARD < const > = Config.spawner.maxEnemiesPerWard
 local SPAWN_MIN < const > = Config.spawner.spawnMin       -- nearest a spawn may appear to the player (m)
 local SPAWN_MAX < const > = Config.spawner.spawnMax      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = Config.spawner.despawnDist   -- remove spawned enemies past this distance (m)
@@ -219,7 +224,7 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- DESPAWN_DIST: past BEHIND_DIST, more than BEHIND_DOT round from where they are
 	-- looking, with the player measurably receding from it, and out of sight so it is
 	-- never seen to vanish. That is not only tidying -- those trailing followers are
-	-- holding MAX_ENEMIES slots, and freeing one is what lets the spawn rule below
+	-- holding slots against the cap, and freeing one is what lets the spawn rule below
 	-- put a zombie in front instead. Only the furthest such zombie goes per update,
 	-- which bounds this to a single extra ray per frame and thins the trail out from
 	-- the back rather than deleting it wholesale.
@@ -284,19 +289,29 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 
 	-- Ward pressure. Every ward the player lights buys a patch of safe ground and
-	-- pays for it by making everywhere else worse: spawns come faster and closer.
+	-- pays for it by making everywhere else worse: spawns come faster, closer, and now
+	-- in greater number.
 	--
-	-- Headcount is deliberately NOT scaled. MAX_ENEMIES is a performance ceiling
-	-- (each zombie carries thirteen physics bodies), not a difficulty knob -- the
-	-- escalation is speed and proximity, here and in EnemyController's pace.
+	-- Headcount used to be flat at the ceiling, on the grounds that MAX_ENEMIES is a
+	-- performance figure rather than a difficulty knob. It still is -- the *cap* is
+	-- what the frame can hold, and nothing here ever exceeds it -- but starting the
+	-- night well under it and climbing as the circle closes is free performance early
+	-- and a forest that visibly fills up as the player takes it apart. The escalation
+	-- is therefore all three: speed, proximity and now population.
+	--
+	-- Note this is a cap and not a target. It says how many the spawner may keep alive,
+	-- not how many there will be: the despawn rules above still take away whatever the
+	-- player has walked out on, so a raised cap is an allowance the night spends only
+	-- where the player actually is.
 	local lit < const > = context._wardsLit or 0
 	local wards < const > = context._litWards
 	local spawnMin < const > = math.max(SPAWN_MIN - 0.8 * lit, 4.0)
 	local interval < const > = SPAWN_INTERVAL * math.max(1.0 - 0.1 * lit, 0.5)
+	local cap < const > = math.min(MAX_ENEMIES_START + MAX_ENEMIES_PER_WARD * lit, MAX_ENEMIES)
 
 	-- 3) Only spawn while under the cap, and throttle attempts.
 	self._timer = self._timer - deltaTime
-	if #self._spawned >= MAX_ENEMIES or self._timer > 0.0 then
+	if #self._spawned >= cap or self._timer > 0.0 then
 		return
 	end
 	self._timer = interval

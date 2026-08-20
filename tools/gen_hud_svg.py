@@ -130,6 +130,9 @@ GREN_RIM = "#171a10"
 GREN_METAL = "#9297a4"
 GREN_METAL_LO = "#4d515c"
 
+DIALOG_FACE = "#0b0d12"         # the menu pane; see dialog()
+DIALOG_ALPHA = 0.25
+
 SEL = "#ffe6ad"                 # the carousel's lit socket, in the same warm cream
 SEL_RIM = "#4a3f27"             # the HUD writes the selected weapon's numbers in
 RAIL = "#141419"                # the groove the seats ride in; a shade under the
@@ -426,6 +429,43 @@ def treasure_counter():
     ]))
 
     return layers
+
+
+# ------------------------------------------------------------------ dialog --
+
+def dialog():
+    """MC_Dialog, overriding UiKit's own.
+
+    Widget._createResource walks the resource kits in the order the stage listed
+    them and takes the first movie that exports the name asked for, so an
+    MC_Dialog here replaces the system one for every stage whose kit list has
+    UI/Hud in front of UiKit -- which today is Scripts/Main and not
+    Scripts/Startup, whose kits are UI/Title and UiKit.
+
+    Two parts, and the names are not ours to choose: Dialog:_initialize looks
+    them up by name, and its place() drives the pane by setting .width and
+    .height on it. That is why both are authored with the top left corner *on
+    the origin* -- setWidth scales a clip about the movie origin, so a square
+    drawn anywhere else would walk away from the dialog as it grew.
+
+      background_mc      the pane itself; stretched to the dialog
+      innerContainer_mc  what Dialog:_getInnerClip returns, so the widgets
+                         inside the dialog are created into it -- empty, and
+                         last, so they draw over the pane
+
+    The two Dialog also looks for are deliberately absent, which is a thing this
+    movie can do only because Dialog nil checks them: `border_mc` is the border
+    there is not, and `shadow_mc` is the full screen dim there is not, so no
+    dialog in this game washes the screen behind it.
+
+    An empty sprite is still a sprite: ConvertSvg defines a character for a
+    traktor:sprite group whether or not it has any paths, which is what makes
+    innerContainer_mc possible."""
+    size = 100      # arbitrary: the pane is scaled to fit at runtime
+    return [
+        sprite("background_mc", [rect(0, 0, size, size, DIALOG_FACE, DIALOG_ALPHA)]),
+        sprite("innerContainer_mc", []),
+    ]
 
 
 # --------------------------------------------------------- weapon carousel --
@@ -777,6 +817,12 @@ def main():
     doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
     doc.append('     style="display:none">')
     doc.extend(treasure_counter())
+    doc.append('  </g>')
+
+    doc.append('  <g id="MC_Dialog" inkscape:label="MC_Dialog"')
+    doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
+    doc.append('     style="display:none">')
+    doc.extend(dialog())
     doc.append('  </g>')
 
     doc.append('  <g id="MC_WeaponCarousel" inkscape:label="MC_WeaponCarousel"')

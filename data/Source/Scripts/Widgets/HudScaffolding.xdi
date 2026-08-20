@@ -157,7 +157,6 @@ function HudScaffolding:_row(parent, caption)
 
 	local label < const > = Static(row, caption)
 	label:setTextColor(Color4f(0.85, 0.87, 0.8, 1.0))
-	label:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 	label:setVerticalAlign(Widget.ALIGN_CENTER)
 
 	local marker < const > = ObjectiveMarker(row)

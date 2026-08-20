@@ -7,6 +7,7 @@
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 #using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
 #using \{5E1A4C77-2B90-4D36-9F41-7C8A2D0E6B15}
+#using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{6E9AD100-0000-4000-8000-000000000010}
 -- Scripts/Weapons/Loadout, which owns what the player has in their hands. Everything
 -- about the weapons themselves is behind it -- see Scripts/Weapons/Weapon for the
@@ -50,8 +51,8 @@ local EYE_OFFSET < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 -- rather than as jitter. Comfortably wider than the tightest pair in Scene 2.
 local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
 
--- Where the minimap sits: its own corner, clear of the objective banner in the
--- middle and the HUD row along the bottom. The frame lays out at 1280x720 whatever
+-- Where the minimap sits: its own corner, clear of the prompt line in the middle and
+-- the HUD row along the bottom. The frame lays out at 1280x720 whatever
 -- it is constructed with, so these are that space's pixels (see the Frame gotcha in
 -- Main:new), and they match the frame's own 24/20 layout margins.
 local MAP_X < const > = 24
@@ -171,7 +172,6 @@ function Main:new(params, environment)
 	-- Blank unless god mode is on; the text is set by the toggle rather than each frame.
 	self._lblGodMode = Static(self._frame, "")
 	self._lblGodMode:setTextColor(Color4f(1.0, 0.85, 0.1, 1.0))
-	self._lblGodMode:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 	self._lblGodMode:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblGodMode:setVerticalAlign(Widget.ALIGN_TOP)
 
@@ -249,7 +249,6 @@ function Main:new(params, environment)
 	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblGameOver:setTextSize(60)
 	self._lblGameOver:setTextColor(Color4f(0.9, 0.05, 0.05, 1.0))
-	self._lblGameOver:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 	-- Restart: reload this stage from scratch via its "RESTART" self-transition.
 	self._restartButton = PushButton(self._gameOverDialog, "Restart")
 	self._restartButton:setMinimumWidth(220)
@@ -261,7 +260,7 @@ function Main:new(params, environment)
 	-- No explicit hide needed: Dialog starts hidden (Dialog:_initialize ends in
 	-- setVisible(false)), exactly as the pause dialog below relies on.
 
-	-- Objective banner and contextual prompt, both centred near the top.
+	-- Contextual prompt and transient notice, both centred near the top.
 	--
 	-- These are ILayout.FLOAT (the same escape hatch Dialog uses), so they sit
 	-- outside the frame's two-row layout and leave the god mode label and the HUD
@@ -269,17 +268,15 @@ function Main:new(params, environment)
 	-- clamps its text bounds to the width it was placed at, so a label whose text
 	-- changes -- and the prompt changes constantly -- gets the longer string cut
 	-- off unless it is re-placed. See _setLabel.
-	self._objective = { widget = Static(self._frame, ""), y = 30 }
-	self._objective.widget.__layout = ILayout.FLOAT
-	self._objective.widget:setTextSize(26)
-	self._objective.widget:setTextColor(Color4f(1.0, 0.82, 0.45, 1.0))
-	self._objective.widget:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
-
+	--
+	-- There was a standing objective banner above these ("WARDS 1 / 7", and "THE
+	-- WARDS ARE LIT" once the circle closed). It is gone: the count is on the minimap
+	-- as lit and unlit posts, and lighting one already reads out on the notice line
+	-- below, so the banner was saying a third time what the screen said twice.
 	self._prompt = { widget = Static(self._frame, ""), y = 66 }
 	self._prompt.widget.__layout = ILayout.FLOAT
 	self._prompt.widget:setTextSize(22)
 	self._prompt.widget:setTextColor(Color4f(0.92, 0.94, 0.9, 1.0))
-	self._prompt.widget:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 
 	-- Transient line for things that happen rather than things that are true --
 	-- currently only a ward catching light.
@@ -287,7 +284,6 @@ function Main:new(params, environment)
 	self._notice.widget.__layout = ILayout.FLOAT
 	self._notice.widget:setTextSize(24)
 	self._notice.widget:setTextColor(Color4f(1.0, 0.72, 0.34, 1.0))
-	self._notice.widget:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 
 	-- Ensure layouts are updated.
 	self._frame:update()
@@ -442,17 +438,36 @@ function Main:new(params, environment)
 	self._pendingImpulse = {}    -- enemy -> list of impulses, applied once its rag doll turns active
 
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
-	-- holding a "PAUSED" title and a Resume button. Dialog/PushButton come via UiKit.
+	-- holding a "PAUSED" title and Resume / Options / Exit. Dialog/PushButton come via
+	-- UiKit.
 	self._paused = false
-	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
+	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
 	local pauseTitle = Static(self._pauseDialog, "PAUSED")
 	pauseTitle:setTextSize(40)
 	pauseTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
+	-- Explicitly white. UiKit's Static styles its text black, which was legible
+	-- against the opaque grey panel this dialog used to have and is not against the
+	-- night showing through the one it has now.
+	pauseTitle:setTextColor(Color4f(1.0, 1.0, 1.0, 1.0))
 	self._resumeButton = PushButton(self._pauseDialog, "Resume")
 	self._resumeButton:setOnClick(function() self:_setPaused(false) end)
+	self._optionsButton = PushButton(self._pauseDialog, "Options")
+	self._optionsButton:setOnClick(function() self:_showOptions() end)
 	-- Exit back to the startup stage, via the loading screen (see _exitToStartup).
 	self._exitButton = PushButton(self._pauseDialog, "Exit")
 	self._exitButton:setOnClick(function() self:_exitToStartup() end)
+
+	-- The options, in a dialog of their own behind the pause menu: the same
+	-- Scripts/Views/OptionsView the Startup menu shows, and the reason it is a view
+	-- rather than a menu of its own. Worth having here rather than only on the way in,
+	-- because everything it changes is applied to the world already being rendered --
+	-- the forest is right there behind the dialog to judge a setting against.
+	--
+	-- On this Frame, like every other dialog here; see the one-Frame rule above the
+	-- Game Over menu, which is what it cost to learn.
+	self._optionsDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._options = OptionsView(self._optionsDialog, environment)
+	self._options:setOnClose(function() self:_hideOptions() end)
 
 	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
 	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
@@ -471,7 +486,6 @@ function Main:new(params, environment)
 	victoryTitle:setTextSize(60)
 	victoryTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
 	victoryTitle:setTextColor(Color4f(0.85, 0.5, 0.08, 1.0))
-	victoryTitle:setTextOutlineColor(Color4f(0.0, 0.0, 0.0, 1.0))
 	local victorySub = Static(self._victoryDialog, "THE NIGHT IS OVER")
 	victorySub:setTextSize(22)
 	victorySub:setHorizontalAlign(Widget.ALIGN_CENTER)
@@ -486,23 +500,67 @@ function Main:new(params, environment)
 	environment.render.renderView:hideCursor()
 end
 
--- Enter/leave pause. Toggles the menu, frees/recaptures the mouse cursor (so it can
--- click the menu, then return to mouse-look), and flips the freeze flag that
--- Main:update and every EnemyController honour.
+-- Show or hide the HUD as a whole.
+--
+-- Two of it are missing from here on purpose, and both because they already decide
+-- for themselves on every frame -- including the frames of a paused game, since both
+-- run above Main:update's freeze returns. The crosshair reads _paused in
+-- _updateCrosshair, and the minimap in _updateMinimap; hiding either from here would
+-- last exactly one frame.
+--
+-- Hiding the row hides everything in it: the compass, the health bar and the weapon
+-- carousel are children of that container, and Spark visibility is inherited.
+function Main:_showHud(show)
+	self._hud:setVisible(show)
+	self._prompt.widget:setVisible(show)
+	self._notice.widget:setVisible(show)
+	self._lblGodMode:setVisible(show)
+end
+
+-- Enter/leave pause. Toggles the menu, takes the HUD off screen with it, frees or
+-- recaptures the mouse cursor (so it can click the menu, then return to mouse-look),
+-- and flips the freeze flag that Main:update and every EnemyController honour.
+--
+-- The HUD goes because the menu is the one time the player is looking at the game
+-- rather than playing it -- the dialogs are panes now, so what is behind them is
+-- meant to be seen. Nothing here needs undoing on the way out: the labels keep their
+-- text and placement while hidden, and _updateHudText carries on writing them.
 function Main:_setPaused(paused)
 	if self._gameOver or self._nightOver then
 		return
 	end
 	self._paused = paused
+	self:_showHud(not paused)
 	if paused then
 		self._pauseDialog:show()
 		self.environment.input.inputSystem:setExclusive(false)
 		self.environment.render.renderView:showCursor()
 	else
+		-- Both, and in this order: leaving the pause while the options are up has to
+		-- put the options away too, or the dialog would be left over a running game
+		-- holding the modal -- and with the cursor taken back, nothing could close it.
+		self._optionsDialog:hide()
 		self._pauseDialog:hide()
 		self.environment.input.inputSystem:setExclusive(true)
 		self.environment.render.renderView:hideCursor()
 	end
+end
+
+-- Swap the pause menu for the options and back. Hidden first and shown second in
+-- both directions: Dialog:show takes the modal and Dialog:hide releases it, so doing
+-- it the other way round would leave the one being put away holding it.
+--
+-- The game stays paused throughout -- this is a page of the pause menu, not a state
+-- of its own -- which is why neither of these touches the cursor or _paused.
+function Main:_showOptions()
+	self._pauseDialog:hide()
+	self._options:refresh()
+	self._optionsDialog:show()
+end
+
+function Main:_hideOptions()
+	self._optionsDialog:hide()
+	self._pauseDialog:show()
 end
 
 -- Leave the level and go back to the Startup menu. Triggered from the pause and
@@ -593,6 +651,11 @@ function Main:finalize()
 	-- holds a Ref to whatever raised it and the event manager only ever drops an instance
 	-- whose sound has stopped, which a loop never does, so the bed kept the player entity
 	-- and its physics alive past the stage that owned them.
+	if self._optionsDialog ~= nil then
+		self._optionsDialog:remove()
+		self._optionsDialog = nil
+		self._options = nil
+	end
 	if self._pauseDialog ~= nil then
 		self._pauseDialog:remove()
 		self._pauseDialog = nil
@@ -1484,6 +1547,20 @@ function Main:_breakDawn()
 	end
 	self._nightOver = true
 	self._dawn = 0.0
+
+	-- The HUD is done here, not when the victory card finally goes up: what is left
+	-- is the sunrise, and a health bar and an ammunition count are the wrong things to
+	-- be reading over it. The same moment the minimap already takes itself off screen
+	-- (see _updateMinimap), so the corner does not empty out in two steps.
+	--
+	-- Nothing puts it back: winning ends this stage, and Again builds a new one.
+	self:_showHud(false)
+
+	-- ...except the notice, which is the one line of HUD this moment is *for*. It is
+	-- part of the HUD the pause menu hides, so it has to be asked back explicitly, and
+	-- it takes itself away again when _noticeTimer runs out and _setLabel writes the
+	-- empty string over it.
+	self._notice.widget:setVisible(true)
 	self:_showNotice("DAWN BREAKS")
 
 	-- The bell, and the wind out from under it. The bed is the stage's own "ambience"
@@ -1626,9 +1703,14 @@ function Main:_updateMinimap()
 	end
 
 	-- Hidden once the night is decided, so neither the victory card nor the Game
-	-- Over menu has a map sitting in the corner behind it. Widget:setVisible is
-	-- already a no-op when the state has not changed, so this needs no latch.
-	local show < const > = not self._gameOver and not self._nightOver
+	-- Over menu has a map sitting in the corner behind it -- and while paused, with
+	-- the rest of the HUD. Widget:setVisible is already a no-op when the state has
+	-- not changed, so this needs no latch.
+	--
+	-- The pause flag belongs here rather than in _showHud because this runs above the
+	-- freeze returns: anything hidden from outside would be shown again by the very
+	-- next frame of a paused game.
+	local show < const > = not self._gameOver and not self._nightOver and not self._paused
 	self._minimap:setVisible(show)
 	if not show then
 		return
@@ -1829,17 +1911,6 @@ end
 -- Objective line, the contextual prompt for whatever E would do right now, and
 -- the transient notice under them.
 function Main:_updateHudText(dt)
-	local total < const > = self._wardsNeeded or 0
-	local objective = ""
-	if total > 0 then
-		if self._wardsLit >= total then
-			objective = "THE WARDS ARE LIT"
-		else
-			objective = "WARDS  " .. tostring(self._wardsLit) .. " / " .. tostring(total)
-		end
-	end
-	self:_setLabel(self._objective, objective)
-
 	local prompt = ""
 	if not self._gameOver and not self._nightOver then
 		if self._carried ~= nil then
@@ -1906,6 +1977,17 @@ function Main:update(info)
 	-- and fast at low ones.
 	local dt < const > = info.simulationDeltaTime
 
+	-- Drive UiKit's own animation clocks. Nothing else in the engine does -- only the
+	-- editor's Scaffolding preview calls these -- so without this a Tween never
+	-- advances and an Interval never fires. That is not cosmetic: Slider animates its
+	-- knob through a Tween, so the options view's volume slider would track the value
+	-- while its knob sat still, and the same view's deferred "apply the volume" waits
+	-- on an Interval.
+	-- Above every early return below, since the menus that use them are exactly what is
+	-- up when this stage is frozen.
+	Tween.update(dt)
+	Interval.update(dt)
+
 	-- Tick the HUD widgets' animations (health drain, hit flash, heartbeat), the weapons'
 	-- own tiles among them -- whichever weapons those happen to be.
 	-- Deliberately above every early-return below: the values they show are pushed to
@@ -1970,7 +2052,16 @@ function Main:update(info)
 	do
 		local mapping = self.environment.input.inputMapping
 		if mapping ~= nil and mapping:isStatePressed("STATE_PAUSE") then
-			self:_setPaused(not self._paused)
+			-- With the options up, Escape is "back" rather than "resume": it is the
+			-- key that got the player into the menu, so it should walk them out of it
+			-- a page at a time rather than dropping them into the game from two
+			-- dialogs deep. isVisible(false) asks about this dialog alone -- the
+			-- recursive default would also be answering for the Frame above it.
+			if self._optionsDialog:isVisible(false) then
+				self:_hideOptions()
+			else
+				self:_setPaused(not self._paused)
+			end
 		end
 	end
 	if self._paused then
@@ -2234,6 +2325,11 @@ function Main:update(info)
 						end
 						self._carried = nil
 					end
+					-- Take the HUD off screen, as the pause menu does -- the dialogs
+					-- are panes now, and a health bar reading zero behind one is not
+					-- what the moment is about. One way only: dying ends this stage,
+					-- and Restart builds a new one.
+					self:_showHud(false)
 					-- Show the Game Over menu and free the mouse cursor so its
 					-- Restart / Exit buttons are clickable (as the pause menu does).
 					self._gameOverDialog:show()

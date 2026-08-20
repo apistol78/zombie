@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- OptionsView
+--
+-- The game's options -- graphics quality and sound volume -- as a UiKit Container
+-- that builds its own rows and knows nothing about where it is being shown. Both menus in the game put the same view
+-- up: Scripts/Startup drops it into a dialog beside its main menu, and Scripts/Main
+-- into one behind the pause menu -- so the options are written once and the two
+-- hosts differ only in what "Back" goes back to.
+--
+-- A view rather than a dialog of its own on purpose. Presentation belongs to the
+-- stage: it is the stage that knows whether there is a world behind the menu, which
+-- of its dialogs is modal at the time, and what has to be restored on the way out.
+-- All this hands back is `setOnClose`.
+--
+-- ---- What it is actually setting ----
+--
+-- Every one of these -- sound included -- is a property of the runtime's live
+-- settings PropertyGroup
+-- (`environment.settings`), read by traktor's WorldServer at startup and again on
+-- every reconfigure -- see WorldServer::create/reconfigure in the engine, which is
+-- also the list of what exists and what each one defaults to (Medium). The values
+-- are world::Quality: 0 Disabled, 1 Low, 2 Medium, 3 High, 4 Ultra.
+--
+-- Changing one is therefore three steps and no more: write the property, ask the
+-- environment to reconfigure, and the engine does the rest. `reconfigure` only
+-- raises a flag -- Application::update acts on it at the top of the next frame,
+-- with the render thread synchronised -- so it is safe to call from a click, and
+-- calling it several times in one frame costs nothing.
+--
+-- It takes effect immediately and everywhere, including in the world being rendered
+-- behind the pause menu: WorldLayer::preReconfigured destroys the world renderer and
+-- postReconfigured builds a fresh one, which is what picks the new quality up. That
+-- is the whole reason it is worth having these in the pause menu at all -- the
+-- forest is right there to judge them against.
+--
+-- ...and it persists without anything here writing a file. The standalone runtime
+-- saves that same PropertyGroup to Application.<user>.config as it shuts down
+-- (Runtime/App/Linux/Main.cpp), so what is chosen here is what starts next time.
+--
+-- ---- The sound half ----
+--
+-- `Audio.MasterVolume` is a float in the same settings group, applied by traktor's
+-- AudioServer on the same reconfigure as everything above (AudioServer::create and
+-- ::reconfigure, which hand it straight to AudioSystem::setVolume). So the volume
+-- row is the graphics rows with a different scale, and nothing else about it is
+-- special.
+--
+-- **It must be written as a float.** PropertyGroup:setProperty picks the property
+-- type from the Lua value, and the engine reads this one with
+-- getProperty< float >, which will not read a PropertyInteger -- so writing a bare
+-- 1 rather than 1.0 would leave the volume silently pinned to its default for good.
+-- See _setVolume, which adds 0.0 for exactly that reason.
+--
+-- One volume and not the usual music/effects pair, because there is nothing yet to
+-- split: per-category volume is `Audio.Volumes/<Category>`, keyed on a SoundCategory
+-- instance's configurationId, and every sound asset in this game carries a null
+-- category guid. Splitting them is a job in the sound library first -- categories
+-- authored, then assigned across all two dozen assets -- and a row here afterwards.
+--
+-- ---- Why "Off" is missing from some rows ----
+--
+-- Quality 0 is a real setting for most of these and simply turns the feature off,
+-- but for the terrain it means a detail distance of 0 metres and a surface cache of
+-- 0 bytes (the c_terrainDetailDistances / c_terrainSurfaceCacheSizes tables in
+-- WorldServer.cpp), which is not "low" -- it is a ground that stops being drawn
+-- properly. So a row can name the lowest level it is willing to offer, and the
+-- terrain's is Low.
+
+OptionsView = OptionsView or class("OptionsView", Container)
+
+-- world::Quality, in the engine's own order (World/WorldTypes.h).
+local QUALITY < const > = { [0] = "Off", [1] = "Low", [2] = "Medium", [3] = "High", [4] = "Ultra" }
+local QUALITY_MAX < const > = 4
+
+-- What the engine falls back to for any of these it does not find, so the menu
+-- shows the same thing the renderer is actually using rather than a guess.
+local QUALITY_DEFAULT < const > = 2
+
+-- One row each, in rough order of what costs the most on this game's forest.
+local SETTINGS < const > = {
+	{ key = "World.ShadowQuality", label = "Shadows" },
+	{ key = "World.AmbientOcclusionQuality", label = "Ambient occlusion" },
+	{ key = "World.AntiAliasQuality", label = "Anti-aliasing" },
+	{ key = "World.ImageProcessQuality", label = "Post processing" },
+	{ key = "World.ReflectionsQuality", label = "Reflections" },
+	{ key = "World.ParticleQuality", label = "Particles" },
+	-- See the note above: 0 is a broken terrain rather than a cheap one.
+	{ key = "World.TerrainQuality", label = "Terrain", min = 1 }
+}
+
+-- The preset row sets every setting at once, each clamped to whatever that row is
+-- willing to go down to. Anything that does not match one of these exactly reads as
+-- "Custom" -- which is the honest answer, and also what the game ships as: its
+-- Application.config carries a hand-picked mixture rather than any one level.
+local PRESETS < const > = {
+	{ label = "Low", value = 1 },
+	{ label = "Medium", value = 2 },
+	{ label = "High", value = 3 },
+	{ label = "Ultra", value = 4 }
+}
+local CUSTOM < const > = "Custom"
+
+-- The one sound setting there is, on a slider rather than a wheel of steps: it is a
+-- continuous quantity and the widget for that is a slider.
+local VOLUME_KEY < const > = "Audio.MasterVolume"
+
+-- How long after the last movement the new volume is actually applied (s).
+--
+-- It is not applied per scroll on purpose. The only way a script can put a volume
+-- into the mixer is to write the property and ask the environment to reconfigure,
+-- and a reconfigure is not a cheap thing aimed at one server: Application::update
+-- runs it across all of them with the render thread locked, and WorldLayer answers
+-- by destroying its world renderer and building a fresh one. Doing that on every
+-- mouse-move frame of a drag -- sixty world renderers a second, behind a pause menu
+-- that is showing the world -- is not on. So the property is written as the knob
+-- moves and the reconfigure waits for the drag to settle: one, not sixty.
+--
+-- Quarter of a second is long enough to swallow a drag and short enough that letting
+-- go and listening feels immediate.
+local VOLUME_APPLY_DELAY < const > = 0.25
+
+local VALUE_W < const > = 150   -- the value buttons, wide enough that a caption
+local ARROW_W < const > = 44    -- change never moves the column it is in
+local BACK_W < const > = 220
+
+local C_TITLE < const > = Color4f(1.0, 0.9, 0.68, 1.0)
+local C_LABEL < const > = Color4f(0.82, 0.85, 0.9, 1.0)
+local C_HINT < const > = Color4f(0.55, 0.58, 0.64, 1.0)
+
+-- Build the rows into this container. No margins of its own: the dialog the host
+-- wraps this in brings those, and a view that padded itself as well would sit in a
+-- box that no longer matched anything else the stage puts up.
+function OptionsView:new(parent, environment)
+	-- One column; every row auto-height, however many sections end up in it (a
+	-- TableLayout wraps its row list, so the single 0 covers all of them).
+	Container.new(self, parent, TableLayout({ 0 }, { 0 }, 0, 0, 0, 14))
+
+	self._environment = environment
+	self._settings = environment.settings
+
+	local title < const > = Static(self, "OPTIONS")
+	title:setTextSize(34)
+	title:setTextColor(C_TITLE)
+	title:setHorizontalAlign(Widget.ALIGN_CENTER)
+
+	self:_heading("GRAPHICS")
+
+	-- One grid for the section, so the labels and the values line up in columns of
+	-- their own: label, down, value, up. TableLayout fills a row at a time, so the
+	-- children are simply added in reading order.
+	local grid < const > = Container(self, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 10, 8))
+
+	self._presetButton = self:_row(grid, "Quality preset", function(step) self:_cyclePreset(step) end)
+
+	self._buttons = {}
+	for i, setting in ipairs(SETTINGS) do
+		self._buttons[i] = self:_row(grid, setting.label, function(step) self:_cycle(i, step) end)
+	end
+
+	-- A grid of its own rather than another row of the one above, and columns to suit
+	-- what is in it: the label sized to itself, the slider taking everything left over
+	-- so it lines up with the graphics rows' controls, and a fixed slice for the
+	-- reading -- proportional rather than sized to the text, or the track would shift
+	-- every time "100%" became "Off".
+	self:_heading("SOUND")
+	local audio < const > = Container(self, TableLayout({ 0, 100, 30 }, { 0 }, 0, 0, 10, 8))
+
+	local volumeLabel < const > = Static(audio, "Master volume")
+	volumeLabel:setTextSize(20)
+	volumeLabel:setTextColor(C_LABEL)
+	volumeLabel:setHorizontalAlign(Widget.ALIGN_LEFT)
+	volumeLabel:setVerticalAlign(Widget.ALIGN_CENTER)
+
+	self._volumeSlider = Slider(audio)
+	self._volumeSlider:setVerticalAlign(Widget.ALIGN_CENTER)
+	self._volumeSlider:setRange(0, 100)
+	self._volumeSlider:setOnScroll(function(_, position) self:_onVolume(position) end)
+
+	-- Built at its longest string and left aligned: a Static clamps its text bounds to
+	-- the width it was placed at, and only the layout ever places it, so starting at
+	-- "100%" is what keeps "Off" from being written into a box too small for it later.
+	self._volumeValue = Static(audio, "100%")
+	self._volumeValue:setTextSize(20)
+	self._volumeValue:setTextColor(C_LABEL)
+	self._volumeValue:setHorizontalAlign(Widget.ALIGN_LEFT)
+	self._volumeValue:setVerticalAlign(Widget.ALIGN_CENTER)
+
+	local hint < const > = Static(self, "Changes apply at once and are kept for next time.")
+	hint:setTextSize(15)
+	hint:setTextColor(C_HINT)
+	hint:setHorizontalAlign(Widget.ALIGN_CENTER)
+
+	local back < const > = PushButton(self, "Back")
+	back:setMinimumWidth(BACK_W)
+	back:setHorizontalAlign(Widget.ALIGN_CENTER)
+	back:setOnClick(function() self:_close() end)
+
+	self:refresh()
+end
+
+-- Told what to do when Back is pressed, which is the whole of what this view
+-- reports back: the menu that opened it is the one that knows what to show next.
+function OptionsView:setOnClose(fn)
+	self._closeFn = fn
+	return self
+end
+
+-- Write every caption from the settings group, so the view is always showing what
+-- the renderer is using and never a value it merely remembers having set. Public
+-- because a host should call it as it shows the view: nothing else writes these
+-- today, but the settings group is the whole application's and this is the wrong
+-- place to assume otherwise.
+function OptionsView:refresh()
+	for i = 1, #SETTINGS do
+		self._buttons[i]:setCaption(QUALITY[self:_get(i)])
+	end
+	local p < const > = self:_matchingPreset()
+	self._presetButton:setCaption(p ~= nil and PRESETS[p].label or CUSTOM)
+
+	-- The slider is moved immediately rather than tweened: this runs as the view is
+	-- shown, and a knob that slid into place from wherever it was left would read as
+	-- the volume changing by itself.
+	local pct < const > = self:_getVolume()
+	self._volumeSlider:setPosition(pct, true)
+	self._volumeValue:setText(self:_volumeText(pct))
+	return self
+end
+
+-- Private
+
+-- A section heading, aligned with the left edge of the grid under it.
+function OptionsView:_heading(text)
+	local heading < const > = Static(self, text)
+	heading:setTextSize(16)
+	heading:setTextColor(C_HINT)
+	heading:setHorizontalAlign(Widget.ALIGN_LEFT)
+	return heading
+end
+
+-- One row of the grid: a label, and a value between two arrows. Everything is a
+-- PushButton with a minimum width rather than a label that changes size, because
+-- the grid's columns are sized from what is in them -- a bare caption would move
+-- the whole row every time the value changed under it.
+function OptionsView:_row(grid, label, stepFn)
+	local caption < const > = Static(grid, label)
+	caption:setTextSize(20)
+	caption:setTextColor(C_LABEL)
+	caption:setHorizontalAlign(Widget.ALIGN_LEFT)
+	caption:setVerticalAlign(Widget.ALIGN_CENTER)
+
+	local down < const > = PushButton(grid, "<")
+	down:setMinimumWidth(ARROW_W)
+	down:setHorizontalAlign(Widget.ALIGN_CENTER)
+	down:setOnClick(function() stepFn(-1) end)
+
+	local value < const > = PushButton(grid, QUALITY[QUALITY_DEFAULT])
+	value:setMinimumWidth(VALUE_W)
+	value:setHorizontalAlign(Widget.ALIGN_CENTER)
+	-- Clicking the value itself steps up, so the common case -- turning one thing
+	-- up until it looks right -- never needs the arrows at all.
+	value:setOnClick(function() stepFn(1) end)
+
+	local up < const > = PushButton(grid, ">")
+	up:setMinimumWidth(ARROW_W)
+	up:setHorizontalAlign(Widget.ALIGN_CENTER)
+	up:setOnClick(function() stepFn(1) end)
+
+	return value
+end
+
+-- What this setting is set to right now, as a quality level. Anything the group has
+-- not got -- or has got as something other than a number -- reads as the engine's
+-- own default, and the result is clamped into what this row offers so a config
+-- edited by hand cannot put the view into a state it has no caption for.
+function OptionsView:_get(index)
+	local setting < const > = SETTINGS[index]
+	local v = self._settings:getProperty(setting.key)
+	if type(v) ~= "number" then
+		v = QUALITY_DEFAULT
+	end
+	v = math.floor(v)
+	local low < const > = setting.min or 0
+	if v < low then
+		v = low
+	end
+	if v > QUALITY_MAX then
+		v = QUALITY_MAX
+	end
+	return v
+end
+
+-- ...and set it. Writing the property is only half of it: the servers hold their own
+-- copies taken at startup, so without the reconfigure nothing would look at this
+-- again until the game was restarted.
+function OptionsView:_set(index, v)
+	self._settings:setProperty(SETTINGS[index].key, v)
+	self._environment:reconfigure()
+end
+
+-- Step one setting, wrapping at both ends so a wheel of four or five values can be
+-- reached from either arrow without ever dead-ending.
+function OptionsView:_cycle(index, step)
+	local low < const > = SETTINGS[index].min or 0
+	local n < const > = QUALITY_MAX - low + 1
+	local v < const > = low + ((self:_get(index) - low + step) % n)
+	self:_set(index, v)
+	self:refresh()
+end
+
+-- Step the preset, which writes every row. Coming off "Custom" starts at the first
+-- preset rather than trying to guess which way "up" was from a mixture.
+function OptionsView:_cyclePreset(step)
+	local current < const > = self:_matchingPreset()
+	local next = 1
+	if current ~= nil then
+		next = ((current - 1 + step) % #PRESETS) + 1
+	elseif step < 0 then
+		next = #PRESETS
+	end
+
+	local value < const > = PRESETS[next].value
+	for i, setting in ipairs(SETTINGS) do
+		self:_set(i, math.max(value, setting.min or 0))
+	end
+	self:refresh()
+end
+
+-- Which preset the current values are, if they are one. Compared against the same
+-- clamp _cyclePreset applies, or "Low" could never match while the terrain refuses
+-- to go below Low.
+function OptionsView:_matchingPreset()
+	for p, preset in ipairs(PRESETS) do
+		local match = true
+		for i, setting in ipairs(SETTINGS) do
+			if self:_get(i) ~= math.max(preset.value, setting.min or 0) then
+				match = false
+				break
+			end
+		end
+		if match then
+			return p
+		end
+	end
+	return nil
+end
+
+-- "Off" rather than "0%": what silence is called, not what it measures.
+function OptionsView:_volumeText(pct)
+	return pct > 0 and (tostring(pct) .. "%") or "Off"
+end
+
+-- The master volume as a whole percent, which is what the slider and the reading both
+-- work in. Anything the group has not got reads as full, and the result is clamped so
+-- a config edited by hand cannot put the knob off the end of its track.
+function OptionsView:_getVolume()
+	local v = self._settings:getProperty(VOLUME_KEY)
+	if type(v) ~= "number" then
+		v = 1.0
+	end
+	local pct = math.floor(v * 100 + 0.5)
+	if pct < 0 then
+		pct = 0
+	end
+	if pct > 100 then
+		pct = 100
+	end
+	return pct
+end
+
+-- The knob moved. Writes the value now and applies it in a moment -- see
+-- VOLUME_APPLY_DELAY for why those are two different times.
+--
+-- Deliberately does not call refresh(): that would put the knob back where the
+-- settings say it is, in the middle of the drag that is moving it.
+function OptionsView:_onVolume(position)
+	local pct = math.floor(position + 0.5)
+	if pct < 0 then
+		pct = 0
+	end
+	if pct > 100 then
+		pct = 100
+	end
+
+	-- As a *float* whatever the arithmetic did: the engine reads this with
+	-- getProperty< float >, which does not read the PropertyInteger that a whole
+	-- number would otherwise be stored as (see the note at the top). Adding 0.0 is
+	-- what keeps 0 and 1 from becoming integers.
+	self._settings:setProperty(VOLUME_KEY, (pct / 100) + 0.0)
+	self._volumeValue:setText(self:_volumeText(pct))
+
+	-- Restart the wait on every movement, so a drag applies once, when it stops.
+	if self._volumeApply ~= nil then
+		self._volumeApply:cancel()
+	end
+	self._volumeApply = Interval(VOLUME_APPLY_DELAY, function()
+		self._volumeApply = nil
+		self._environment:reconfigure()
+	end)
+end
+
+function OptionsView:_close()
+	if self._closeFn ~= nil then
+		self._closeFn()
+	end
+end
+]]></text>
+</object>

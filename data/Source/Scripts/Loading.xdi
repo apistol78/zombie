@@ -25,10 +25,17 @@ Loading = Loading or class("Loading", Stage)
 function Loading:new(params, environment)
 	Stage.new(self, params, environment)
 
-	-- Only UiKit's own movie: the panel is built from stock widgets, no HUD art.
+	-- UiKit's own movie, and the HUD's in front of it. No HUD is drawn here: UI/Hud
+	-- is listed for one export, its MC_Dialog, and Widget._createResource takes the
+	-- first kit that has the name asked for -- so being ahead of UiKit is what gives
+	-- this panel the same plain pane the menus and the in-game dialogs have. Both
+	-- other UI stages list it for exactly the same reason.
 	Widget.initialize(
 		environment.resource.resourceManager,
-		{ "\{5ABEAE05-EB26-934F-932F-7F3C7C582383}" }
+		{
+			"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
+			"\{5ABEAE05-EB26-934F-932F-7F3C7C582383}"
+		}
 	)
 
 	-- Same 640x360 virtual frame the Startup menu uses, so the panel lands in the
@@ -43,6 +50,10 @@ function Loading:new(params, environment)
 	local title = Static(self._dialog, "LOADING")
 	title:setTextSize(40)
 	title:setHorizontalAlign(Widget.ALIGN_CENTER)
+	-- Explicitly white. UiKit styles a Static's text black, which was legible against
+	-- the stock grey panel this dialog used to have and is not against the pane it
+	-- has now -- the same fix the pause menu's title needed.
+	title:setTextColor(Color4f(1.0, 1.0, 1.0, 1.0))
 
 	-- Activity bar. StageLoader only reports ready / not-ready, so there is no real
 	-- percentage to show: the bar pulses (fills, then drains again) rather than

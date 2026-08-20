@@ -373,7 +373,21 @@ Config = {
 
 	-- ---- Where the horde comes from ----
 	spawner = {
+		-- How many zombies may be alive at once, and how that grows through the night.
+		--
+		-- The ceiling is a performance figure and nothing else: each zombie carries
+		-- thirteen physics bodies, so `maxEnemies` is what the frame can hold, not a
+		-- difficulty setting. What *is* a difficulty setting is how quickly the night
+		-- climbs to it -- the forest starts a third full and fills as the player lights
+		-- the circle, so the horde grows with what the player has taken from it.
+		--
+		-- The numbers are picked to land exactly: Scene 2 needs 7 wards (12 posts, 7
+		-- relics, and the objective is the smaller of the two), so 9 + 3 per ward is 30
+		-- at the very moment the last one catches. Scenes with more wards than that are
+		-- held at the ceiling by the min, which is why it is still called the maximum.
 		maxEnemies = 30,
+		maxEnemiesStart = 9,    -- ...with nothing lit yet
+		maxEnemiesPerWard = 3,  -- ...and what each lit ward adds
 		spawnMin = 8.0,         -- nearest a zombie may be placed to the player (m)
 		spawnMax = 20.0,        -- ...and furthest
 		despawnDist = 60.0,     -- past this from the player a zombie is taken away again

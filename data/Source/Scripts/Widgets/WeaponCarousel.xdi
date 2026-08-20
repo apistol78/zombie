@@ -90,7 +90,6 @@ local C_TEXT_EMPTY < const > = Color4f(1.0, 0.42, 0.34, 1.0)
 local C_PIP < const > = Color4f(0.72, 0.69, 0.6, 1.0)
 local C_PIP_EMPTY < const > = Color4f(0.82, 0.36, 0.3, 1.0)
 local C_NAME < const > = Color4f(0.62, 0.66, 0.74, 1.0)
-local C_OUTLINE < const > = Color4f(0.0, 0.0, 0.0, 1.0)
 
 -- Horizontal scale about the vertical line x = px.
 local function scaleX(mc, px, s)
@@ -152,7 +151,6 @@ function WeaponCarousel:addSlot(kind, name)
 	local pip = Static(self, "000")
 	pip:setTextSize(13)
 	pip:setTextColor(C_PIP)
-	pip:setTextOutlineColor(C_OUTLINE)
 	pip:setHorizontalAlign(Widget.ALIGN_CENTER)
 
 	table.insert(self._slots, {
@@ -362,13 +360,11 @@ function WeaponCarousel:_initialize(parent, mc)
 	self._name = Static(self, "")
 	self._name:setTextSize(13)
 	self._name:setTextColor(C_NAME)
-	self._name:setTextOutlineColor(C_OUTLINE)
 	self._name:setHorizontalAlign(Widget.ALIGN_CENTER)
 
 	self._count = Static(self, "000 / 000")
 	self._count:setTextSize(22)
 	self._count:setTextColor(C_TEXT)
-	self._count:setTextOutlineColor(C_OUTLINE)
 	self._count:setHorizontalAlign(Widget.ALIGN_CENTER)
 
 	self:_layoutText()

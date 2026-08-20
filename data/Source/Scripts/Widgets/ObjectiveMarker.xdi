@@ -48,7 +48,6 @@ local TEXT_X < const > = 50
 local TEXT_W < const > = 120
 
 local C_TEXT < const > = Color4f(1.0, 0.88, 0.66, 1.0)
-local C_OUTLINE < const > = Color4f(0.0, 0.0, 0.0, 1.0)
 
 local TURN_RATE < const > = 14.0   -- needle easing (1/s); fast enough to feel direct
 local ARRIVED < const > = 3.0      -- range under which the dial reads as "here" (m)
@@ -179,7 +178,6 @@ function ObjectiveMarker:_initialize(parent, mc)
 	self._text = Static(self, "")
 	self._text:setTextSize(22)
 	self._text:setTextColor(C_TEXT)
-	self._text:setTextOutlineColor(C_OUTLINE)
 	self._text:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self:_layoutText()
 end

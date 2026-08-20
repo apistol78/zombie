@@ -4,6 +4,7 @@
 #using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{9B4E27DA-6C81-4F35-A70E-1D5C83B2F604}
+#using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 
 import(traktor)
 
@@ -12,20 +13,32 @@ import(traktor)
 -- A worldless stage: no scene, just a UiKit menu that lets the player pick
 -- which gameplay stage to enter. Each button hands the chosen stage over to the
 -- Loading stage, which shows a loading panel while it streams the world in.
+--
+-- Options live in a second Dialog on the same Frame, shown in place of this one
+-- rather than over it: two modal dialogs at once is one setModal too many, and
+-- there is nothing behind the menu worth seeing anyway. What is *in* that dialog
+-- is Scripts/Views/OptionsView, the same view the pause menu puts up mid-game.
 
 Startup = Startup or class("Startup", Stage)
 
 function Startup:new(params, environment)
 	Stage.new(self, params, environment)
 
-	-- Initialize UiKit. Two kits: the title logo's own movie (UI/Title) and UiKit's,
-	-- which every Static and PushButton comes from. Scripts/Widgets/Title looks its
-	-- export up across both, so UI/Title has to be listed here or it cannot build
-	-- itself. Deliberately not the HUD movie -- nothing on this stage is HUD.
+	-- Initialize UiKit. Three kits: the title logo's own movie (UI/Title), the HUD's
+	-- (UI/Hud) and UiKit's, which every Static and PushButton comes from.
+	-- Scripts/Widgets/Title looks its export up across all of them, so UI/Title has to
+	-- be listed here or it cannot build itself.
+	--
+	-- UI/Hud is here for one export and not for any HUD: it carries this game's own
+	-- MC_Dialog, and Widget._createResource takes the first kit that has the name asked
+	-- for -- so listing it *before* UiKit is what gives this stage's menus the same
+	-- plain pane the in-game ones have instead of UiKit's grey panel. Nothing else on
+	-- this stage reads from it; the cost is the movie being resident on the menu.
 	Widget.initialize(
 		environment.resource.resourceManager,
 		{
 			"\{2C9F5B10-4E73-4A18-B6D2-9A0F31E4C8B7}",
+			"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
 			"\{5ABEAE05-EB26-934F-932F-7F3C7C582383}"
 		}
 	)
@@ -34,8 +47,8 @@ function Startup:new(params, environment)
 	local root = self.ui.root
 	self._frame = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
 
-	-- Menu: the logo over one button per selectable stage, then Exit. The Dialog
-	-- auto-centers on its parent Frame; one column, three auto-height rows.
+	-- Menu: the logo over one button per selectable stage, then Options and Exit.
+	-- The Dialog auto-centers on its parent Frame; one column, four auto-height rows.
 	--
 	-- The logo goes *inside* the dialog rather than being floated over the frame
 	-- above it. A Dialog centres itself on its Frame and offers no way to be placed,
@@ -43,11 +56,11 @@ function Startup:new(params, environment)
 	-- from overlapping by hand at every window size; as a row it is laid out with
 	-- the buttons and the whole menu centres as one block. It replaces the old
 	-- "SELECT STAGE" heading, which the logo now says better.
-	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
 
 	self._title = Title(self._dialog)
 
-	-- Both buttons are explicitly centred. A Widget with no horizontal alignment set
+	-- Every button is explicitly centred. A Widget with no horizontal alignment set
 	-- falls through Widget:place to "take the whole cell", and PushButton:place then
 	-- stretches its background to match -- so against a 520 px logo they would each
 	-- have become 520 px wide instead of the 220 asked for here.
@@ -56,11 +69,25 @@ function Startup:new(params, environment)
 	buttonTerrain:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonTerrain:setOnClick(function() self:_select("TERRAIN") end)
 
+	-- Options: graphics quality, which is the whole of it for now.
+	local buttonOptions = PushButton(self._dialog, "Options")
+	buttonOptions:setMinimumWidth(220)
+	buttonOptions:setHorizontalAlign(Widget.ALIGN_CENTER)
+	buttonOptions:setOnClick(function() self:_showOptions() end)
+
 	-- Exit: quit the application.
 	local buttonExit = PushButton(self._dialog, "Exit")
 	buttonExit:setMinimumWidth(220)
 	buttonExit:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonExit:setOnClick(function() self:terminate() end)
+
+	-- The options dialog, built here and kept hidden: the view brings the rows, this
+	-- stage brings the box they sit in. Parented to the same Frame as the menu, which
+	-- is not a detail -- a Dialog on a Frame of its own would never receive a click
+	-- (see the one-Frame rule in Scripts/Main).
+	self._optionsDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._options = OptionsView(self._optionsDialog, environment)
+	self._options:setOnClose(function() self:_hideOptions() end)
 
 	self._frame:update()
 	self._dialog:show()
@@ -82,7 +109,26 @@ function Startup:_select(target)
 	self._loader = self:loadStageAsync("LOADING", { target = target })
 end
 
+-- Swap the menu for the options. Hidden first and shown second, in both directions:
+-- Dialog:show takes the modal, Dialog:hide releases it, and doing it the other way
+-- round would leave the one being put away holding it.
+function Startup:_showOptions()
+	self._dialog:hide()
+	self._options:refresh()
+	self._optionsDialog:show()
+end
+
+function Startup:_hideOptions()
+	self._optionsDialog:hide()
+	self._dialog:show()
+end
+
 function Startup:finalize()
+	if self._optionsDialog ~= nil then
+		self._optionsDialog:remove()
+		self._optionsDialog = nil
+		self._options = nil
+	end
 	if self._dialog ~= nil then
 		self._dialog:remove()
 		self._dialog = nil
@@ -94,6 +140,15 @@ function Startup:finalize()
 end
 
 function Startup:update(info)
+	-- Drive UiKit's own animation clocks. Nothing else in the engine does -- only the
+	-- editor's Scaffolding preview calls these -- so without this a Tween never
+	-- advances and an Interval never fires. That is not cosmetic: Slider animates its
+	-- knob through a Tween, so the options view's volume slider would track the value
+	-- while its knob sat still, and the same view's deferred "apply the volume" waits
+	-- on an Interval.
+	Tween.update(info.simulationDeltaTime)
+	Interval.update(info.simulationDeltaTime)
+
 	-- Keep the logo's flame alive. Above the loader poll, so it carries on burning
 	-- through the moment between clicking a stage and the loading screen appearing.
 	if self._title ~= nil then

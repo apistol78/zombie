@@ -32,7 +32,7 @@ import(traktor)
 --
 -- GOTCHA: the SVG importer bakes every shape at absolute movie coordinates, so a
 -- child sprite's origin is the movie's origin, not the art's. Rotating one swings
--- it away from that origin, hence spinAbout below (the same helper AmmoCounter
+-- it away from that origin, hence spinAbout below (the same helper WeaponCarousel
 -- uses for its ejected case).
 
 ObjectiveMarker = ObjectiveMarker or class("ObjectiveMarker", Widget)

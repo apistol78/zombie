@@ -60,12 +60,6 @@ GEM_X, GEM_Y = 28, 28
 GEM_S = 30
 SPARK_X, SPARK_Y = 21, 21
 
-AC_W = TC_W                     # ammo counter shares the treasure plate, so the
-ROUND_X, ROUND_Y = 28, 28       # two right hand HUD tiles read as a matched pair
-ROUND_S = 32                    # cartridge height
-RELOAD_X, RELOAD_W = 50, TC_W - 60  # reload bar, under the count and clear of
-RELOAD_Y, RELOAD_H = 39, 3          # the cartridge so it does not cut across it
-
 WC_W = 380                      # weapon carousel: one tile for the whole arsenal,
 WC_SEAT_X = 68                  # as wide as the three it replaced. Every seat is
 WC_SEAT_Y = 34                  # authored here, at the front of the ring, and the
@@ -434,47 +428,6 @@ def treasure_counter():
     return layers
 
 
-# ------------------------------------------------------------ ammo counter --
-
-def ammo_counter():
-    """Shares the treasure counter's plate so the two right hand tiles match.
-    'round' kicks on each shot, 'casing' is flung clear, 'reload' fills as the
-    magazine is refilled and 'warn' rims the plate once it runs dry."""
-    layers = []
-
-    layers.append(sprite("shadow", [
-        poly(cut_rect(2, TC_PLATE_Y + 3, AC_W - 4, TC_PLATE_H, 7), BLACK, 0.45),
-    ]))
-
-    # Under the plate, a couple of pixels proud of it, so only a rim shows.
-    layers.append(sprite("warn", [
-        poly(cut_rect(0, TC_PLATE_Y - 3, AC_W, TC_PLATE_H + 6, 9), WARN, 0.35),
-        poly(cut_rect(1, TC_PLATE_Y - 1, AC_W - 2, TC_PLATE_H + 2, 7), WARN),
-    ]))
-
-    layers.append(sprite("plate", [
-        poly(cut_rect(2, TC_PLATE_Y, AC_W - 4, TC_PLATE_H, 7), EDGE),
-        poly(cut_rect(3, TC_PLATE_Y + 1, AC_W - 6, TC_PLATE_H - 2, 6), BEVEL),
-        poly(cut_rect(4, TC_PLATE_Y + 3, AC_W - 8, TC_PLATE_H - 4, 5), FACE),
-    ]))
-
-    layers.append(sprite("reloadtrack", [
-        rect(RELOAD_X, RELOAD_Y, RELOAD_W, RELOAD_H, TRACK),
-    ]))
-    layers.append(sprite("reload", [
-        rect(RELOAD_X, RELOAD_Y, RELOAD_W, RELOAD_H, RELOAD),
-    ]))
-
-    layers.append(sprite("round", cartridge(ROUND_X, ROUND_Y, ROUND_S)))
-    layers.append(sprite("casing", casing(ROUND_X, ROUND_Y)))
-
-    layers.append(sprite("glow", [
-        poly(cut_rect(3, TC_PLATE_Y + 1, AC_W - 6, TC_PLATE_H - 2, 6), WHITE),
-    ]))
-
-    return layers
-
-
 # --------------------------------------------------------- weapon carousel --
 
 def _belt_icon(cx, cy, s):
@@ -824,12 +777,6 @@ def main():
     doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
     doc.append('     style="display:none">')
     doc.extend(treasure_counter())
-    doc.append('  </g>')
-
-    doc.append('  <g id="MC_AmmoCounter" inkscape:label="MC_AmmoCounter"')
-    doc.append('     inkscape:groupmode="layer" traktor:sprite="1"')
-    doc.append('     style="display:none">')
-    doc.extend(ammo_counter())
     doc.append('  </g>')
 
     doc.append('  <g id="MC_WeaponCarousel" inkscape:label="MC_WeaponCarousel"')

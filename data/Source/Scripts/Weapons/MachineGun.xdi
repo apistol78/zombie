@@ -384,6 +384,7 @@ function MachineGun:_fireRound(context)
 	end
 
 	if enemy == nil then
+		context:shoveBody(hit.body, hit.position.xyz1, dir)
 		context:raisePlayerEffect("dust", hit.position.xyz1)
 		return
 	end

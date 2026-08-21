@@ -3,19 +3,24 @@
 	<name>Loading</name>
 	<inherit>{00000000-0000-0000-0000-000000000000}</inherit>
 	<layers>
+		<item type="traktor.runtime.WorldLayerData">
+			<name>world</name>
+			<permitTransition>true</permitTransition>
+			<scene>{09EBD5F0-2321-4CDD-9A04-02A03EDBC740}</scene>
+		</item>
 		<item type="traktor.spark.SparkLayerData" version="1">
 			<name>ui</name>
 			<permitTransition>true</permitTransition>
 			<movie>{E7EB59C5-57F9-BE42-93A3-FE38268D507D}</movie>
 			<externalMovies/>
-			<clearBackground>true</clearBackground>
+			<clearBackground>false</clearBackground>
 			<enableSound>false</enableSound>
 		</item>
 	</layers>
 	<class>{0CAD25F2-2E6C-42AF-9317-A0625582BA6C}</class>
 	<shaderFade>{DC104971-11AE-5743-9AB1-53B830F74391}</shaderFade>
 	<fadeOutUpdate>false</fadeOutUpdate>
-	<fadeRate>1.5</fadeRate>
+	<fadeRate>1</fadeRate>
 	<transitions>
 		<item>
 			<first>STARTUP</first>

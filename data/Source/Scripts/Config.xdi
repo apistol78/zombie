@@ -205,6 +205,17 @@ Config = {
 		blastLift = 30.0        -- ...plus this much straight up, so the pile goes over the trees
 	},
 
+	-- ---- Shooting the scenery ----
+	--
+	-- A round into a loose body -- a door, a table -- hands it the shot's momentum at the
+	-- point it struck, so doors slam and tables skid. Same units as corpse.knockback, but
+	-- far smaller for a comparable shove: that number is spread over a rag doll's eleven
+	-- limbs, this one lands on a single unit-mass body. Off-centre hits spin it, which is
+	-- the whole point on something hinged.
+	props = {
+		bulletImpulse = 6.0
+	},
+
 	-- ---- What happens to a dead zombie ----
 	--
 	-- Shared by the rifle, the kill-all shortcut and a ward's flare, so a zombie only ever

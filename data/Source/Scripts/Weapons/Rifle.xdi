@@ -333,6 +333,9 @@ function Rifle:attack()
 	end
 
 	if enemy == nil then
+		-- Whatever stopped the round takes its momentum, if it is loose enough to move.
+		context:shoveBody(hit.body, hit.position.xyz1, dir)
+
 		-- Hit the world: a puff of dust where the round landed. Put there through the player's
 		-- own event set, which is how this game places an effect at an arbitrary point -- see
 		-- Main:raisePlayerEffect.

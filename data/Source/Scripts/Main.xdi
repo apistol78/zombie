@@ -435,6 +435,7 @@ function Main:new(params, environment)
 	-- unit-mass limbs an impulse of 18 is roughly a 1.6 m/s whole-body shove.
 	self._knockback = Config.corpse.knockback       -- impulse magnitude along the shot direction
 	self._knockbackLift = Config.corpse.knockbackLift    -- extra upward impulse so the corpse flops back, not just slides
+	self._bulletImpulse = Config.props.bulletImpulse     -- shove a round hands a loose body (door, table)
 	self._pendingImpulse = {}    -- enemy -> list of impulses, applied once its rag doll turns active
 
 	-- Pause menu: a modal dialog (hidden until Escape) floating centered over the HUD,
@@ -1056,6 +1057,21 @@ function Main:shoveCorpse(enemy, point, impulse, whole)
 	self:_woundEnemy(enemy, point)
 	self._deadEnemies[enemy] = self._corpseLifetime
 	self:_queueImpulse(enemy, point, impulse, whole)
+	return true
+end
+
+-- A round that hit the world rather than a zombie. Anything loose enough to move takes the
+-- shot's momentum at the point it struck: a door swings, a table skids and turns.
+--
+-- Static and kinematic bodies are the common case here -- terrain, walls, the character
+-- capsules -- and an impulse on those is silently ignored by the backend anyway, so the
+-- test is about intent rather than safety. A rag doll limb never reaches this: the weapons
+-- route corpses through shoveCorpse before they get here.
+function Main:shoveBody(body, point, dir)
+	if body == nil or body.static or body.kinematic then
+		return false
+	end
+	body:addImpulse(point, dir * self._bulletImpulse, false)
 	return true
 end
 

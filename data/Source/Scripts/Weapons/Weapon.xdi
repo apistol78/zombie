@@ -50,6 +50,7 @@ function Weapon:new(context)
 	self._context = context
 	self._interval = 0.0   -- minimum seconds between uses; the subclass sets it
 	self._cooldown = 0.0   -- ...and counts down to the next one being allowed
+	self._infiniteAmmo = false   -- the H cheat; see :setInfiniteAmmo
 end
 
 -- What this weapon is called. The loadout looks weapons up by it (Loadout:find), and it
@@ -132,6 +133,19 @@ function Weapon:update(dt)
 	if self._cooldown > 0.0 then
 		self._cooldown = math.max(0.0, self._cooldown - dt)
 	end
+
+	-- The cheat, applied here rather than at the trigger: a weapon spends its ammunition
+	-- exactly as it always did -- the shot still costs a round, and the HUD still counts it
+	-- down and flashes -- and the count is simply back at the top before the next one. That is
+	-- the whole reason it is done this way: no attack path grows an `if cheating`, and
+	-- everything hung off a count (the auto-reload, the crosshair, the red plate) keeps
+	-- working untouched, on numbers that never reach zero.
+	--
+	-- Main ticks the loadout before it hands it the trigger, so a weapon is topped up on the
+	-- frame it is fired rather than on the one after.
+	if self._infiniteAmmo then
+		self:_topUp()
+	end
 end
 
 function Weapon:ready()
@@ -194,6 +208,30 @@ end
 
 function Weapon:supply(amount)
 	return false
+end
+
+-- Infinite ammunition (H), set from Main through the loadout and offered to every weapon
+-- rather than only the drawn one -- a cheat that only refilled whatever happened to be in
+-- hand would be a strange thing to explain.
+--
+-- Kept as a plain field here so a weapon never has to ask the stage anything, and it
+-- deliberately survives Weapon:reset for the same reason the ammunition counts do: a script
+-- hot reload is not a way to turn a cheat off.
+function Weapon:setInfiniteAmmo(on)
+	self._infiniteAmmo = on
+	if on then
+		self:_topUp()
+	end
+end
+
+-- Fill whatever this weapon carries back to the top, in its own units. Called on the frame the
+-- cheat goes on and from :update while it is on, so it is written to cost nothing when there is
+-- nothing missing -- an early-out on the counts, not a HUD push a frame.
+--
+-- A weapon with nothing to count leaves it alone, which is why there is a default here at
+-- all: the loadout offers the cheat to everything it carries without asking first which of
+-- them has anything to fill.
+function Weapon:_topUp()
 end
 
 -- Is there an aim worth drawing a reticle for? Asked of the drawn weapon only, so the

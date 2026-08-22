@@ -169,11 +169,13 @@ function Main:new(params, environment)
 		TableLayout({ 100 }, { 100 }, 24, 20, 0, 0)
 	)
 
-	-- Blank unless god mode is on; the text is set by the toggle rather than each frame.
-	self._lblGodMode = Static(self._frame, "")
-	self._lblGodMode:setTextColor(Color4f(1.0, 0.85, 0.1, 1.0))
-	self._lblGodMode:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self._lblGodMode:setVerticalAlign(Widget.ALIGN_TOP)
+	-- Blank unless a cheat is on, and one label for all of them rather than one each: they
+	-- would otherwise want the same spot at the top of the screen. The text is composed by
+	-- _updateCheatLabel from the flags, and written by the toggles rather than each frame.
+	self._lblCheats = Static(self._frame, "")
+	self._lblCheats:setTextColor(Color4f(1.0, 0.85, 0.1, 1.0))
+	self._lblCheats:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._lblCheats:setVerticalAlign(Widget.ALIGN_TOP)
 
 	-- What the player is carrying. Built before the HUD row below, because the row reserves
 	-- a column per weapon tile -- so the arsenal decides how wide the row is rather than the
@@ -263,7 +265,7 @@ function Main:new(params, environment)
 	-- Contextual prompt and transient notice, both centred near the top.
 	--
 	-- These are ILayout.FLOAT (the same escape hatch Dialog uses), so they sit
-	-- outside the frame's two-row layout and leave the god mode label and the HUD
+	-- outside the frame's two-row layout and leave the cheat label and the HUD
 	-- row exactly where they were. They have to be placed by hand anyway: Static
 	-- clamps its text bounds to the width it was placed at, so a label whose text
 	-- changes -- and the prompt changes constantly -- gets the longer string cut
@@ -296,6 +298,10 @@ function Main:new(params, environment)
 	self._enemyDps = Config.player.enemyDps   -- health drained per second per touching enemy
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
 	self._godMode = false   -- G: skip contact damage entirely (zombies still bite, visibly)
+	-- H: every weapon's ammunition refills itself. Kept here only so the label can read it
+	-- back and so the toggle has something to flip -- what it *means* is each weapon's own
+	-- business, and it is pushed down to them through the loadout rather than asked for.
+	self._infiniteAmmo = false
 
 	-- Movement: WASD to move; hold Shift (STATE_SPRINT) to sprint. maxVelocity is set to
 	-- the current speed each frame so the character controller's velocity clamp permits it.
@@ -501,6 +507,25 @@ function Main:new(params, environment)
 	environment.render.renderView:hideCursor()
 end
 
+-- Write the cheat line: one row naming whatever is currently on, and blank when nothing is.
+--
+-- Composed from the flags rather than each toggle setting its own string, so two cheats at
+-- once cannot leave the label saying only the last one that was pressed. Called from the
+-- toggles, never per frame -- there is nothing here a frame could change.
+--
+-- Joined with a plain "+" on purpose: every string in this stage is ASCII, and the HUD font
+-- is not worth betting a separator glyph on.
+function Main:_updateCheatLabel()
+	local on = {}
+	if self._godMode then
+		table.insert(on, "GOD MODE")
+	end
+	if self._infiniteAmmo then
+		table.insert(on, "INFINITE AMMO")
+	end
+	self._lblCheats:setText(table.concat(on, " + "))
+end
+
 -- Show or hide the HUD as a whole.
 --
 -- Two of it are missing from here on purpose, and both because they already decide
@@ -515,7 +540,7 @@ function Main:_showHud(show)
 	self._hud:setVisible(show)
 	self._prompt.widget:setVisible(show)
 	self._notice.widget:setVisible(show)
-	self._lblGodMode:setVisible(show)
+	self._lblCheats:setVisible(show)
 end
 
 -- Enter/leave pause. Toggles the menu, takes the HUD off screen with it, frees or
@@ -2110,17 +2135,27 @@ function Main:update(info)
 		return
 	end
 
-	-- Cheat shortcuts: G toggles god mode, K kills every zombie in the world. Both are
-	-- edge-triggered, so holding the key fires once. Deliberately below the game-over and
-	-- paused returns above, so neither does anything while the frame is frozen. Not tied
-	-- to the movement block below either, since they work with or without a character.
+	-- Cheat shortcuts: G toggles god mode, H toggles infinite ammunition, K kills every zombie
+	-- in the world. All three are edge-triggered, so holding the key fires once. Deliberately
+	-- below the game-over and paused returns above, so none of them does anything while the
+	-- frame is frozen. Not tied to the movement block below either, since they work with or
+	-- without a character.
 	do
 		local mapping = self.environment.input.inputMapping
 		if mapping ~= nil then
 			if mapping:isStatePressed("STATE_GOD_MODE") then
 				self._godMode = not self._godMode
 				self._biteTimer = 0.0   -- so the next real bite spurts immediately
-				self._lblGodMode:setText(self._godMode and "GOD MODE" or "")
+				self:_updateCheatLabel()
+			end
+			if mapping:isStatePressed("STATE_INFINITE_AMMO") then
+				self._infiniteAmmo = not self._infiniteAmmo
+				-- Handed straight down rather than read back per shot: the stage does not
+				-- know what is in the player's hands, and it is not about to learn for this.
+				-- Switching it on tops every weapon up on the spot, so the tile answers the
+				-- keypress rather than waiting for the next trigger pull.
+				self._loadout:setInfiniteAmmo(self._infiniteAmmo)
+				self:_updateCheatLabel()
 			end
 			if mapping:isStatePressed("STATE_KILL_ALL") then
 				self:_killAllEnemies()

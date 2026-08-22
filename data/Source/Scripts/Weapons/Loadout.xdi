@@ -192,6 +192,16 @@ function Loadout:reload()
 	return any
 end
 
+-- H. The infinite ammunition cheat, handed to every weapon rather than only the drawn one --
+-- a cheat that refilled whatever happened to be in hand and nothing else would be a strange
+-- thing to explain. What "full" means is each weapon's own business (Weapon:setInfiniteAmmo),
+-- and a weapon that carries nothing quietly ignores it.
+function Loadout:setInfiniteAmmo(on)
+	for _, w in ipairs(self._weapons) do
+		w:setInfiniteAmmo(on)
+	end
+end
+
 function Loadout:wantsCrosshair()
 	return self:current():wantsCrosshair()
 end

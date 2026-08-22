@@ -270,6 +270,24 @@ function MachineGun:supply(rounds)
 	return true
 end
 
+-- Infinite ammunition (H): belt and reserve both back to the top, and any belt change caught
+-- in flight cut short -- three seconds of a gun lying out of the sightline with nothing left
+-- to load is the longest wait in the game, and the cheat exists to not have it.
+function MachineGun:_topUp()
+	if self._belt >= self._beltSize and self._reserve >= self._reserveMax then
+		return
+	end
+	self._belt = self._beltSize
+	self._reserve = self._reserveMax
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = 0.0
+		if self._hud ~= nil then
+			self._hud:setReload(self._hudSlot, nil)
+		end
+	end
+	self:_pushHud()
+end
+
 -- One round. Called by :trigger for as long as the button is down, gated by the cadence in
 -- :ready, so the rate of fire is Config's and not the frame rate's.
 function MachineGun:attack()

@@ -212,6 +212,25 @@ function Rifle:supply(rounds)
 	return true
 end
 
+-- Infinite ammunition (H): magazine and reserve both back to the top. Cheap to call every
+-- frame -- which is how :update calls it -- because it does nothing at all once there is
+-- nothing missing, which is the ordinary case between shots.
+function Rifle:_topUp()
+	if self._mag >= self._magSize and self._reserve >= self._reserveMax then
+		return
+	end
+	self._mag = self._magSize
+	self._reserve = self._reserveMax
+	-- A reload caught in flight -- the cheat switched on while the rifle was down -- has
+	-- nothing left to load, and leaving its timer running would keep the rifle out of the
+	-- sightline and unfireable for the rest of the 1.2 s. Cut it short and clear the sweep.
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = 0.0
+		self:_pushReload(nil)
+	end
+	self:_pushAmmo()
+end
+
 -- Fire: hitscan a ray out of the player's eye along the current aim, and mark whatever live
 -- zombie it meets dead. Its EnemyController switches the body to rag doll; Main despawns
 -- the corpse later.

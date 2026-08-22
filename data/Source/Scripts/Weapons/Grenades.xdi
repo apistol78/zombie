@@ -143,6 +143,16 @@ function Grenades:supply(count)
 	return true
 end
 
+-- Infinite ammunition (H): the pouch back to full. The throw interval is deliberately left
+-- alone -- the cheat is about supply, and a grenade every 0.9 s is already plenty of night.
+function Grenades:_topUp()
+	if self._count >= self._max then
+		return
+	end
+	self._count = self._max
+	self:_pushHud()
+end
+
 -- There is an aim worth a reticle for as long as there is something to throw at it. With an
 -- empty pouch the throw refuses, so there is nothing to line up.
 function Grenades:wantsCrosshair()

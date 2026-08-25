@@ -38,6 +38,19 @@ MachineGun = MachineGun or class("MachineGun", Weapon)
 -- the barrel rather than from the middle of it.
 local MUZZLE < const > = Vector4(0.0, 0.02, 0.68, 1.0)
 
+-- How long one round's muzzle flash burns, in seconds. Same idea as the rifle's -- a point
+-- light on a "MuzzleFlash" child entity of the view model, standing at MUZZLE, so the gun
+-- lights the forest rather than drawing a flare over it -- but half the length of it, because
+-- this weapon fires every 0.08 s (Config.machinegun.fireInterval) and a flash that outlasted
+-- the cadence would weld a burst into one steady lamp. At 0.04 s a held trigger strobes, which
+-- is both what a machine gun looks like and the only reading the player gets of how fast the
+-- belt is going.
+--
+-- Colour and reach are authored on the light and read back off it in :resolve; the gun's is
+-- deliberately dimmer and shorter than the rifle's, since twelve of them a second land on top
+-- of each other.
+local FLASH_TIME < const > = 0.04
+
 -- The two collision groups a round has to be stopped by: the world, and everything that walks.
 -- Same values Scripts/Weapons/Rifle and Scripts/EnemyController trace against.
 local COLLISION_DEFAULT < const > = 0x00000001
@@ -86,6 +99,10 @@ function MachineGun:new(context)
 	self._recoilMax = Config.machinegun.recoilMax
 	self._recoilDecay = Config.machinegun.recoilDecay
 
+	-- Counts down to the muzzle flash going out, exactly as the two above count down to a
+	-- settled gun. Set by :attack, burnt off by :update, written to the light by :place.
+	self._flash = 0.0
+
 	-- True on the frames the trigger is actually being held, so :update knows whether the gun is
 	-- settling or being fired. Written by :trigger, read by :update -- which runs after it.
 	self._firing = false
@@ -133,12 +150,31 @@ function MachineGun:resolve()
 	if self._trail ~= nil then
 		self._trail.enable = false
 	end
+
+	-- The muzzle flash's light, on a child entity of the view model rather than on the model
+	-- itself: a LightComponent burns at its owner's origin, and this gun's origin is the better
+	-- part of a metre behind the barrel. Its colour comes back premultiplied by the authored
+	-- intensity, which is what the peak of a flash is, so that is kept and everything below
+	-- scales down from it -- and the light is put out here and now, since it is authored bright
+	-- for the editor's sake and would otherwise burn from the first frame of the night. Same as
+	-- the rifle's, and as the flame in Scripts/Ward.
+	local parts < const > = self._entity:getComponent(traktor.world.GroupComponent)
+	local muzzleFlash < const > = parts ~= nil and parts:getEntity("MuzzleFlash", 0) or nil
+	self._light = muzzleFlash ~= nil and muzzleFlash:getComponent(traktor.world.LightComponent) or nil
+	if self._light ~= nil then
+		local c < const > = self._light.color
+		self._flashFull = Vector4(c.x, c.y, c.z, c.w)
+		self._light.color = Vector4(0.0, 0.0, 0.0, 0.0)
+	end
 end
 
 function MachineGun:reset()
 	self._entity = nil
 	self._events = nil
 	self._trail = nil
+	self._light = nil
+	self._flashFull = nil
+	self._flash = 0.0
 end
 
 function MachineGun:hasHud()
@@ -185,6 +221,13 @@ function MachineGun:update(dt)
 	end
 	if self._recoil > 0.0 then
 		self._recoil = math.max(0.0, self._recoil - self._recoilDecay * dt)
+	end
+
+	-- The flash burning down. Counted here and written in :place, on the far side of physics,
+	-- for the same reason the tracer is drawn there: both belong to a barrel that has not been
+	-- put where it will be seen yet.
+	if self._flash > 0.0 then
+		self._flash = math.max(0.0, self._flash - dt)
 	end
 
 	-- An empty belt reloads itself, exactly as the rifle's magazine does and for the same reason:
@@ -321,6 +364,10 @@ function MachineGun:attack()
 	if self._events ~= nil then
 		self._events:raise("fire")
 	end
+
+	-- ...and lit, before the round is traced and for the same reason the report is raised
+	-- there: a round that hits nothing lights the forest exactly as much as one that does.
+	self._flash = FLASH_TIME
 
 	self:_fireRound(context)
 	return true
@@ -473,6 +520,10 @@ function MachineGun:place()
 	local pose < const > = Transform(eye + aim * offset, aim)
 	entity.transform = pose
 
+	-- The muzzle light is a child of this entity and rides that transform, so whatever is left
+	-- of the flash is written now that the barrel has been shaken into its final place.
+	self:_pushFlash()
+
 	-- The tracer of a round fired this step, drawn now that the barrel it leaves is where it is
 	-- going to be seen. Two points into the trail -- the muzzle and wherever the round stopped --
 	-- and the component cuts the span into pieces of its own accord; 0.5 m pieces across the gun's
@@ -490,10 +541,26 @@ function MachineGun:place()
 	end
 end
 
+-- Write whatever is left of the flash out to the muzzle light: from :place once the view model
+-- has been carried to where the camera will see it, and from :stow, which is the only other way
+-- the light could be left burning. Putting the gun away does not put it out by itself -- the
+-- light hangs off a child entity, and clearing an entity's visible flag deliberately does not
+-- reach its children -- so a gun stowed mid-burst would go on lighting the forest from wherever
+-- the wheel turned away from it.
+function MachineGun:_pushFlash()
+	if self._light == nil or self._flashFull == nil then
+		return
+	end
+	self._light.color = self._flashFull * (self._flash / FLASH_TIME)
+end
+
 function MachineGun:stow()
 	if self._entity ~= nil then
 		self._entity.visible = false
 	end
+	-- The flash goes out with it; see :_pushFlash for why this is not free.
+	self._flash = 0.0
+	self:_pushFlash()
 	-- A round fired on the frame the wheel turned away from this gun. Dropped rather than held,
 	-- since the barrel it belonged to is no longer on screen to leave.
 	self._tracerTo = nil

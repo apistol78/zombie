@@ -32,6 +32,19 @@ Rifle = Rifle or class("Rifle", Weapon)
 -- weapon's own transform by hand each shot (see Rifle:attack).
 local MUZZLE < const > = Vector4(0.0, 0.01, 0.56, 1.0)
 
+-- How long a shot's muzzle flash burns, in seconds -- three frames at 60 Hz. It is a light
+-- rather than a sprite: a point light on a "MuzzleFlash" child entity of the view model,
+-- standing at MUZZLE, so a shot throws the trees and whatever is standing between them into
+-- relief for an instant instead of drawing a flare over the top of them. That is worth more on
+-- this game than on most, because the night is genuinely dark and the rifle is most of the
+-- light the player ever gets.
+--
+-- What colour it is and how far it reaches are authored on that light and read back off it in
+-- :resolve, so the flash is retuned in the editor rather than here; only how long it lasts is
+-- a number in this file. Comfortably shorter than Config.rifle.fireInterval (0.4 s), so no two
+-- shots ever share a flash and the barrel is dark between them.
+local FLASH_TIME < const > = 0.05
+
 -- The two collision groups this game uses. Default is the world -- terrain, buildings,
 -- props, and the thrown grenade; Interactable is everything that walks -- the player and
 -- the horde. Same values Scripts/EnemyController and Scripts/Spawner trace against, and a
@@ -54,6 +67,7 @@ function Rifle:new(context)
 	self._interval = Config.rifle.fireInterval  -- minimum seconds between shots
 	self._range = Config.rifle.range            -- max shot distance (m)
 	self._reloadTimer = 0.0                     -- counts down to the magazine being refilled
+	self._flash = 0.0                           -- ...and this to the muzzle flash going out
 end
 
 function Rifle:slot()
@@ -93,15 +107,39 @@ function Rifle:resolve()
 	if self._trail ~= nil then
 		self._trail.enable = false
 	end
+
+	-- The muzzle flash's light. On a child entity of the view model rather than on the model
+	-- itself, because a LightComponent burns at its owner's origin and the rifle's origin is
+	-- back at the trigger hand -- half a metre behind the barrel, which is half a metre of the
+	-- flash lighting the player's own hands instead of what is being shot at.
+	--
+	-- Its colour comes back premultiplied by the authored intensity (the engine folds the two
+	-- together when it builds the component), which is exactly what the peak of a flash is, so
+	-- it is kept as that and everything below scales down from it. Reading it here is also why
+	-- it has to be put out here: it is authored at full brightness so the editor shows what a
+	-- shot looks like, and left alone the rifle would begin the night with the barrel burning.
+	-- Same shape as the flame in Scripts/Ward, and for the same reason -- done before anything
+	-- is drawn, so there is no lit frame to see.
+	local parts < const > = self._entity:getComponent(traktor.world.GroupComponent)
+	local muzzleFlash < const > = parts ~= nil and parts:getEntity("MuzzleFlash", 0) or nil
+	self._light = muzzleFlash ~= nil and muzzleFlash:getComponent(traktor.world.LightComponent) or nil
+	if self._light ~= nil then
+		local c < const > = self._light.color
+		self._flashFull = Vector4(c.x, c.y, c.z, c.w)
+		self._light.color = Vector4(0.0, 0.0, 0.0, 0.0)
+	end
 end
 
 -- Live handles only; the ammunition is plain numbers and survives, which is the whole point
 -- of the split -- a hot reload must not refill the magazine. resolve disables the new
--- trail again.
+-- trail again and puts the new muzzle light out.
 function Rifle:reset()
 	self._entity = nil
 	self._events = nil
 	self._trail = nil
+	self._light = nil
+	self._flashFull = nil
+	self._flash = 0.0
 end
 
 function Rifle:hasHud()
@@ -135,6 +173,13 @@ end
 -- the rest of the game rather than running on behind the pause menu.
 function Rifle:update(dt)
 	Weapon.update(self, dt)
+
+	-- The flash burning down. Only counted here, not written: what the light is actually set
+	-- to is done in :place, on the far side of physics, so the flash is written against the
+	-- barrel where it is going to be seen rather than where the barrel was last frame.
+	if self._flash > 0.0 then
+		self._flash = math.max(0.0, self._flash - dt)
+	end
 
 	-- An empty magazine reloads itself. The tension is meant to live in the 1.2 s the reload
 	-- takes -- the rifle dropping out of the sightline, the crosshair gone, the horde still
@@ -269,12 +314,17 @@ function Rifle:attack()
 
 	-- The report. Raised on every shot before target selection, because a miss is exactly as
 	-- loud as a hit. The "fire" event lives on the Weapon child entity, so it comes from the
-	-- rifle rather than from the player. What the shot *looks* like is no longer an effect
-	-- raised here alongside it: the round draws a tracer into the trail on that same entity,
-	-- and that needs to know where the round stopped, so it is fed below once the ray is in.
+	-- rifle rather than from the player. What the shot *looks* like is not an effect raised
+	-- here alongside it: the flash is a light on that same entity, armed on this line and
+	-- written out in :place, and the round draws a tracer into the trail on it -- which needs
+	-- to know where the round stopped, so it is fed below once the ray is in.
 	if self._events ~= nil then
 		self._events:raise("fire")
 	end
+
+	-- Lit with the report and above target selection, for the same reason the report is: a
+	-- miss lights the forest exactly as much as a hit does.
+	self._flash = FLASH_TIME
 
 	local origin < const > = context:eye()
 	local dir < const > = context:aimDirection()
@@ -383,6 +433,22 @@ function Rifle:attack()
 	return true
 end
 
+-- Write whatever is left of the flash out to the muzzle light. Called from :place, so the
+-- light is set after the view model has been carried to where the camera will see it, and from
+-- :stow -- which is the only other way the light could be left burning. Putting the rifle away
+-- does not put it out by itself: the light hangs off a child entity, and clearing an entity's
+-- visible flag deliberately does not reach its children, so a rifle stowed mid-flash would go
+-- on lighting the forest from wherever it was stowed.
+--
+-- Written every frame rather than only while something is burning, which costs a multiply and
+-- saves having to remember whether the last frame left the light lit.
+function Rifle:_pushFlash()
+	if self._light == nil or self._flashFull == nil then
+		return
+	end
+	self._light.color = self._flashFull * (self._flash / FLASH_TIME)
+end
+
 -- First-person view model: hold the rifle just in front of the eye, offset to the lower
 -- right, rotated by the full aim so it (and its muzzle flash) track exactly where the
 -- camera looks.
@@ -427,6 +493,10 @@ function Rifle:place()
 	end
 
 	entity.transform = Transform(eye + aim * offset, aim)
+
+	-- The muzzle light rides that transform (it is a child of this entity), so the flash is
+	-- written now that the barrel is where it belongs.
+	self:_pushFlash()
 end
 
 -- Put away outright rather than lowered: with two weapons drawn at once there is no telling
@@ -436,6 +506,9 @@ function Rifle:stow()
 	if self._entity ~= nil then
 		self._entity.visible = false
 	end
+	-- ...and the flash goes out with it; see :_pushFlash for why this is not free.
+	self._flash = 0.0
+	self:_pushFlash()
 end
 ]]></text>
 </object>

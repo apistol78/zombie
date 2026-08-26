@@ -103,7 +103,7 @@
 									</item>
 									<item>
 										<T>9.832001</T>
-										<tcb>0, 0, 0, 0</tcb>
+										<tcb>1, 0, -1, 0</tcb>
 										<values>
 											<item>
 												<value>-8.385562, 25.321287, -32.2813, 1</value>
@@ -548,7 +548,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, -0</rotation>
+								<rotation>-0, -0.990216, 0.139543, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -558,6 +558,9 @@
 									<height>1</height>
 								</item>
 								<item type="traktor.spray.ListenerComponentData">
+								</item>
+								<item type="traktor.spray.EffectComponentData">
+									<effect>{2CC2F6D6-864E-8842-B23D-51E6481D3ED8}</effect>
 								</item>
 							</components>
 						</item>
@@ -5678,7 +5681,7 @@
 							</state>
 							<transform>
 								<translation>-96.217598, 11.997607, -69.669502, 0</translation>
-								<rotation>-0.097927, -0.045451, -0.08246, 0.990729</rotation>
+								<rotation>-0.097927, -0.045451, -0.08246, 0.99073</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6368,7 +6371,7 @@
 							</state>
 							<transform>
 								<translation>45.284401, 10.011322, -47.684799, 0</translation>
-								<rotation>-0.008565, 0.969306, -0.050182, 0.240527</rotation>
+								<rotation>-0.008565, 0.969307, -0.050182, 0.240527</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -6578,7 +6581,7 @@
 							</state>
 							<transform>
 								<translation>-61.8909, 24.005617, 95.598801, 0</translation>
-								<rotation>0.197187, -0.171265, 0.093447, 0.960756</rotation>
+								<rotation>0.197187, -0.171265, 0.093447, 0.960757</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -7103,7 +7106,7 @@
 							</state>
 							<transform>
 								<translation>1.49, 1.39653, -132.276093, 0</translation>
-								<rotation>0.012276, 0.989735, -0.025232, 0.140129</rotation>
+								<rotation>0.012276, 0.989736, -0.025232, 0.140129</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9173,7 +9176,7 @@
 							</state>
 							<transform>
 								<translation>-68.365601, 1.422192, -80.061798, 0</translation>
-								<rotation>-0.084963, 0.107066, -0.009183, 0.990572</rotation>
+								<rotation>-0.084963, 0.107066, -0.009183, 0.990573</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9293,7 +9296,7 @@
 							</state>
 							<transform>
 								<translation>24.232, 24.720196, 90.278603, 0</translation>
-								<rotation>-0.127932, 0.984303, -0.114576, 0.040651</rotation>
+								<rotation>-0.127932, 0.984304, -0.114576, 0.040651</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -9848,7 +9851,7 @@
 							</state>
 							<transform>
 								<translation>30.6577, 4.755725, -64.097702, 0</translation>
-								<rotation>-0.109226, 0.353856, -0.066015, 0.926551</rotation>
+								<rotation>-0.109226, 0.353856, -0.066015, 0.926552</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>
@@ -10197,7 +10200,7 @@
 							</state>
 							<transform>
 								<translation>27.178, 10.40786, -22.485001, 0</translation>
-								<rotation>-0.004512, 0.968148, 0.013119, 0.249992</rotation>
+								<rotation>-0.004512, 0.968149, 0.013119, 0.249992</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -10227,7 +10230,7 @@
 							</state>
 							<transform>
 								<translation>24.128, 10.42045, -25.347, 0</translation>
-								<rotation>0.01318, -0.138824, 0.009938, 0.990179</rotation>
+								<rotation>0.01318, -0.138824, 0.009938, 0.99018</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -11682,7 +11685,7 @@
 							</state>
 							<transform>
 								<translation>-66.249001, 31.53257, 12.984, 0</translation>
-								<rotation>-0.003744, 0.040738, -0.004062, 0.999154</rotation>
+								<rotation>-0.003744, 0.040738, -0.004062, 0.999155</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12072,7 +12075,7 @@
 							</state>
 							<transform>
 								<translation>-22.858, 22.819918, 66.522003, 0</translation>
-								<rotation>0.006018, -0.150602, -0.012787, 0.988493</rotation>
+								<rotation>0.006018, -0.150602, -0.012787, 0.988494</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12447,7 +12450,7 @@
 							</state>
 							<transform>
 								<translation>-10.578396, 23.175041, 12.316339, 0</translation>
-								<rotation>0.025882, 0.210628, -0.025126, 0.9769</rotation>
+								<rotation>0.025882, 0.210628, -0.025126, 0.976901</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -12507,7 +12510,7 @@
 							</state>
 							<transform>
 								<translation>-31.59969, 10.319496, -36.127056, 0</translation>
-								<rotation>0.00249, -0.967826, -0.001896, 0.251599</rotation>
+								<rotation>0.00249, -0.967827, -0.001896, 0.251599</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13062,7 +13065,7 @@
 							</state>
 							<transform>
 								<translation>-21.562, 23.041193, 55.957001, 0</translation>
-								<rotation>0.013098, -0.195096, -0.014563, 0.980588</rotation>
+								<rotation>0.013098, -0.195096, -0.014563, 0.980589</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13197,7 +13200,7 @@
 							</state>
 							<transform>
 								<translation>9.308, 23.206955, 33.686001, 0</translation>
-								<rotation>-0.00394, 0.00535, -0.007936, 0.999946</rotation>
+								<rotation>-0.00394, 0.00535, -0.007936, 0.999947</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -13662,7 +13665,7 @@
 							</state>
 							<transform>
 								<translation>19.627001, 22.7612, 23.195, 0</translation>
-								<rotation>0, -0.998888, 0, 0.047136</rotation>
+								<rotation>0, -0.998889, 0, 0.047136</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E06}</entityData>
@@ -15001,7 +15004,7 @@
 							</state>
 							<transform>
 								<translation>38.165058, 4.415276, -63.627113, 0</translation>
-								<rotation>0, -0.279504, 0, 0.960144</rotation>
+								<rotation>0, -0.279504, 0, 0.960145</rotation>
 							</transform>
 							<components/>
 							<entityData>{6E9AD100-0000-4000-8000-000000000003}</entityData>
@@ -15504,7 +15507,7 @@
 							</state>
 							<transform>
 								<translation>-7.809513, 20.994577, -30.248802, 0</translation>
-								<rotation>0, 0.998152, 0, 0.060759</rotation>
+								<rotation>0, 0.998153, 0, 0.060759</rotation>
 							</transform>
 							<components/>
 							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
@@ -15613,7 +15616,7 @@
 							</state>
 							<transform>
 								<translation>-37.164291, 10.329262, -30.858931, 0</translation>
-								<rotation>0.000417, -0, 0.000692, 1</rotation>
+								<rotation>0.000417, 0, 0.000692, 1</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -16097,7 +16100,7 @@
 							</state>
 							<transform>
 								<translation>-20.400761, 22.796177, 86.692444, 0</translation>
-								<rotation>-0.028217, -0.291465, 0.023416, 0.955878</rotation>
+								<rotation>-0.028217, -0.291465, 0.023416, 0.955879</rotation>
 							</transform>
 							<components/>
 							<entityData>{1FAC0C01-D95E-4F68-87AC-55A0CCBCDDB0}</entityData>
@@ -17901,7 +17904,7 @@
 							</state>
 							<transform>
 								<translation>-41.148994, 35.983685, 37.578918, 0</translation>
-								<rotation>0.01127, 0.300373, -0.016788, 0.953607</rotation>
+								<rotation>0.01127, 0.300373, -0.016788, 0.953608</rotation>
 							</transform>
 							<components/>
 							<entityData>{C58F4F5C-19C5-495C-B02B-76522AD1CAD4}</entityData>
@@ -19030,7 +19033,7 @@
 							</state>
 							<transform>
 								<translation>-63.229099, 31.5138, 19.824301, 0</translation>
-								<rotation>0, 0.027294, 0, 0.999627</rotation>
+								<rotation>0, 0.027294, 0, 0.999628</rotation>
 							</transform>
 							<components/>
 							<entityData>{23EC76E1-D671-4511-A928-28BE29E30BC3}</entityData>
@@ -20444,7 +20447,7 @@
 							</state>
 							<transform>
 								<translation>-44.9259, 10.8449, -40.0243, 0</translation>
-								<rotation>0, -0.999919, 0, 0.012691</rotation>
+								<rotation>0, -0.99992, 0, 0.012691</rotation>
 							</transform>
 							<components/>
 							<entityData>{4212B482-F79E-4F59-8736-BA3CC222C6E6}</entityData>
@@ -21869,7 +21872,7 @@
 							</state>
 							<transform>
 								<translation>35.4897, 9.9813, -46.6875, 0</translation>
-								<rotation>0, 0.170905, 0, 0.985287</rotation>
+								<rotation>0, 0.170905, 0, 0.985288</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>
@@ -26354,7 +26357,7 @@
 							</state>
 							<transform>
 								<translation>-7.590514, 23.204441, 22.25178, 0</translation>
-								<rotation>-0.000082, -0.999426, 0.001445, 0.033833</rotation>
+								<rotation>-0.000082, -0.999427, 0.001445, 0.033833</rotation>
 							</transform>
 							<components/>
 							<entityData>{D06865CA-F538-4C5F-9D56-6B05BA2FA504}</entityData>

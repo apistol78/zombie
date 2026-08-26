@@ -73,7 +73,355 @@
 			<phaseBlend>0.5</phaseBlend>
 		</item>
 		<item type="traktor.theater.TheaterWorldComponentData" version="1">
-			<acts/>
+			<acts>
+				<item type="traktor.theater.ActData">
+					<name>Dawn</name>
+					<duration>10</duration>
+					<tracks>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{1EDFF274-435F-324C-B0B2-5150AF30FB04}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-1.557285, 25.312046, 74.585243, 1</value>
+												<orientation>3.119998, 0.04, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>9.832001</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-8.385562, 25.321287, -32.2813, 1</value>
+												<orientation>3.119998, -0.68, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType>traktor.world.CameraComponent</componentType>
+										<propertyName>fieldOfView</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.CameraComponent</componentType>
+										<propertyName>width</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.CameraComponent</componentType>
+										<propertyName>height</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>1.221731, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData>
+											<item type="traktor.world.CameraComponentData">
+												<projection>Perspective</projection>
+												<fov>1.221731</fov>
+												<width>1</width>
+												<height>1</height>
+											</item>
+										</componentData>
+									</item>
+								</keys>
+							</properties>
+						</item>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{5D0E98B1-1FA8-1B43-95BD-649740C98C5B}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0, 0, 1</value>
+												<orientation>-2.582989, 1.066451, 0.000003, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>4.672</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0, 0, 1</value>
+												<orientation>-2.582989, 0.826451, 0.000003, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>color</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>nearRange</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>farRange</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>radius</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>flickerAmount</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>flickerFilter</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0.504</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>1.65, 1.98, 2.85, 3</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>20, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>3.824</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>37.64706, 37.960785, 21.803923, 40</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>20, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</properties>
+						</item>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{BA17DE03-0000-4000-8000-00000000001B}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform/>
+							<properties/>
+						</item>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{4835F4E9-3395-40F9-8712-C39559B20AF9}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform/>
+							<properties type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>color</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>nearRange</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>farRange</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>radius</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>flickerAmount</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>flickerFilter</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0.792</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>1000, 901.960999, 811.765015, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>10, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0.05, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0.2, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData>
+											<item type="traktor.world.LightComponentData" version="13">
+												<lightType>Spot</lightType>
+												<color>1, 0.901961, 0.811765, 0</color>
+												<intensity>1000</intensity>
+												<castShadow>true</castShadow>
+												<nearRange>0</nearRange>
+												<farRange>10</farRange>
+												<radius>1.570796</radius>
+												<flickerAmount>0.05</flickerAmount>
+												<flickerFilter>0.2</flickerFilter>
+												<bakeMode>LbmIndirect</bakeMode>
+											</item>
+										</componentData>
+									</item>
+									<item>
+										<T>3.555</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>10, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0.05, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0.2, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData>
+											<item type="traktor.world.LightComponentData" version="13">
+												<lightType>Spot</lightType>
+												<color>1, 0.901961, 0.811765, 0</color>
+												<intensity>0</intensity>
+												<castShadow>true</castShadow>
+												<nearRange>0</nearRange>
+												<farRange>10</farRange>
+												<radius>1.570796</radius>
+												<flickerAmount>0.05</flickerAmount>
+												<flickerFilter>0.2</flickerFilter>
+												<bakeMode>LbmIndirect</bakeMode>
+											</item>
+										</componentData>
+									</item>
+								</keys>
+							</properties>
+						</item>
+					</tracks>
+				</item>
+			</acts>
 			<randomizeActs>false</randomizeActs>
 		</item>
 	</worldComponents>
@@ -103,7 +451,7 @@
 							</state>
 							<transform>
 								<translation>0, 0, 0, 0</translation>
-								<rotation>0.140133, -0.8278, 0.488616, 0.237411</rotation>
+								<rotation>0.110704, -0.88034, 0.386005, 0.25248</rotation>
 							</transform>
 							<components>
 								<item type="traktor.weather.SkyComponentData" version="8">
@@ -154,13 +502,13 @@
 							<id>{1EDFF274-435F-324C-B0B2-5150AF30FB04}</id>
 							<name>Camera</name>
 							<state>
-								<visible>false</visible>
-								<dynamic>false</dynamic>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-1.562719, 0.790387, -1.110929, 0</translation>
-								<rotation>0.04456, 0.45232, -0.022635, 0.890454</rotation>
+								<translation>-8.385562, 22.47735, -32.2813, 0</translation>
+								<rotation>0.000216, 0.999742, -0.019997, 0.010795</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -200,7 +548,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -926,7 +1274,7 @@
 							</state>
 							<transform>
 								<translation>-26.772789, 23.1847, 25.535923, 0</translation>
-								<rotation>0.109156, -0.988321, 0.011673, -0.105691</rotation>
+								<rotation>-0.109156, 0.988321, -0.011673, 0.105691</rotation>
 							</transform>
 							<components>
 								<item type="traktor.mesh.MeshComponentData" version="1">
@@ -1414,7 +1762,7 @@
 						</item>
 						<item type="traktor.world.EntityData" version="2">
 							<id>{4835F4E9-3395-40F9-8712-C39559B20AF9}</id>
-							<name/>
+							<name>House spot light</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
@@ -1428,7 +1776,7 @@
 								<item type="traktor.world.LightComponentData" version="13">
 									<lightType>Spot</lightType>
 									<color>1, 0.901961, 0.811765, 0</color>
-									<intensity>5026.54834</intensity>
+									<intensity>1000</intensity>
 									<castShadow>true</castShadow>
 									<nearRange>0</nearRange>
 									<farRange>10</farRange>
@@ -15265,7 +15613,7 @@
 							</state>
 							<transform>
 								<translation>-37.164291, 10.329262, -30.858931, 0</translation>
-								<rotation>0.000417, 0, 0.000692, 1</rotation>
+								<rotation>0.000417, -0, 0.000692, 1</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -16243,8 +16591,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2.1112, 19.8507, -7.9251, 0</translation>
-								<rotation>0.012274, -0.374284, 0.017451, 0.927069</rotation>
+								<translation>-7.010832, 19.898472, -7.628529, 0</translation>
+								<rotation>-0.137, -0.258951, -0.041335, 0.955231</rotation>
 							</transform>
 							<components/>
 							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
@@ -16393,8 +16741,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>10.410232, 17.909479, -11.208423, 0</translation>
-								<rotation>0.03061, -0.782816, 0.005892, 0.621472</rotation>
+								<translation>6.448207, 18.910656, -9.671702, 0</translation>
+								<rotation>-0.174297, -0.447995, 0.078876, 0.873327</rotation>
 							</transform>
 							<components/>
 							<entityData>{4CED48CD-7F03-4427-BAD3-F97A23CAC920}</entityData>
@@ -18456,8 +18804,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-7.659, 21.160101, -19.7803, 0</translation>
-								<rotation>0, -0.706962, 0, 0.707252</rotation>
+								<translation>-5.202266, 21.150185, -17.187609, 0</translation>
+								<rotation>0.001026, 0.943226, 0.001389, 0.332146</rotation>
 							</transform>
 							<components/>
 							<entityData>{D1CEA339-74F7-42FA-8E4D-489EC6E48F65}</entityData>

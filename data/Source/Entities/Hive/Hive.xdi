@@ -65,6 +65,33 @@
 					<components/>
 					<entityData>{D5BC0743-545D-4A7A-8BA5-A2C18B985D69}</entityData>
 				</item>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{261BFAE2-FB2A-0F4F-ABE7-E41B14725D28}</id>
+					<name>Light</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 1.320168, -5.241265, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.world.LightComponentData" version="13">
+							<lightType>Point</lightType>
+							<color>1, 0.623529, 0, 1</color>
+							<intensity>0</intensity>
+							<castShadow>true</castShadow>
+							<nearRange>0</nearRange>
+							<farRange>10</farRange>
+							<radius>1.570796</radius>
+							<flickerAmount>0</flickerAmount>
+							<flickerFilter>0</flickerFilter>
+							<bakeMode>LbmIndirect</bakeMode>
+						</item>
+					</components>
+				</item>
 			</entityData>
 		</item>
 		<item type="traktor.theater.TheaterEntityComponentData">
@@ -73,37 +100,9 @@
 					<name>Unwield</name>
 					<duration>5</duration>
 					<tracks>
-						<item type="traktor.theater.TrackData" version="1">
+						<item type="traktor.theater.TrackData" version="4">
 							<entityId>{F13C9B88-F948-4271-9037-10259BA17ACB}</entityId>
 							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
-							<path>
-								<keys>
-									<item>
-										<T>0.294</T>
-										<tcb>0, 0, 0, 0</tcb>
-										<position>0, 0, 0, 1</position>
-										<orientation>0, 0, 0, 0</orientation>
-										<values>
-											<item>0</item>
-											<item>0</item>
-											<item>0</item>
-											<item>0</item>
-										</values>
-									</item>
-									<item>
-										<T>4.008</T>
-										<tcb>0, 0, 0, 0</tcb>
-										<position>0, -2.920642, 0, 1</position>
-										<orientation>0, 0, 0, 0</orientation>
-										<values>
-											<item>0</item>
-											<item>0</item>
-											<item>0</item>
-											<item>0</item>
-										</values>
-									</item>
-								</keys>
-							</path>
 							<events>
 								<item>
 									<T>0.492</T>
@@ -133,6 +132,194 @@
 									</event>
 								</item>
 							</events>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0.294</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0, 0, 1</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>4.008</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, -2.920642, 0, 1</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties/>
+						</item>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{261BFAE2-FB2A-0F4F-ABE7-E41B14725D28}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform/>
+							<properties type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>color</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>nearRange</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>farRange</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>radius</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>flickerAmount</propertyName>
+									</item>
+									<item>
+										<componentType>traktor.world.LightComponent</componentType>
+										<propertyName>flickerFilter</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0.12</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>10, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData>
+											<item type="traktor.world.LightComponentData" version="13">
+												<lightType>Point</lightType>
+												<color>1, 0.482353, 0, 1</color>
+												<intensity>0</intensity>
+												<castShadow>true</castShadow>
+												<nearRange>0</nearRange>
+												<farRange>10</farRange>
+												<radius>1.570796</radius>
+												<flickerAmount>0</flickerAmount>
+												<flickerFilter>0</flickerFilter>
+												<bakeMode>LbmIndirect</bakeMode>
+											</item>
+										</componentData>
+									</item>
+									<item>
+										<T>0.792</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>1000, 482.352966, 0, 1000</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>10, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData>
+											<item type="traktor.world.LightComponentData" version="13">
+												<lightType>Point</lightType>
+												<color>1, 0.482353, 0, 1</color>
+												<intensity>1000</intensity>
+												<castShadow>true</castShadow>
+												<nearRange>0</nearRange>
+												<farRange>10</farRange>
+												<radius>1.570796</radius>
+												<flickerAmount>0</flickerAmount>
+												<flickerFilter>0</flickerFilter>
+												<bakeMode>LbmIndirect</bakeMode>
+											</item>
+										</componentData>
+									</item>
+									<item>
+										<T>4.272</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>10, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>1.570796, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+											<item>
+												<value>0, 0, 0, 0</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</properties>
 						</item>
 					</tracks>
 				</item>

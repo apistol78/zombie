@@ -29,10 +29,18 @@ import(traktor)
 -- Config for itself (Config.rifle, Config.melee, Config.grenade), which is the same split
 -- as the rest of this refactor -- the stage does not hold a magazine size it never looks at.
 
--- Where the Sky entity's directional light ends up at dawn: a low warm sun, an
--- order of magnitude brighter than the cool moonlight it is authored with. Stored
--- premultiplied, because that is the form LightComponent.color takes.
-local DAWN_SUN < const > = Vector4(1.0, 0.86, 0.62, 1.0) * 26.0
+-- The dawn shot. Neither the framing nor the light is written down here: both halves of
+-- the sunrise -- the camera flying out over the forest and the Sky entity's directional
+-- light coming up under it -- are keyed in the scene as a theater act on the *world*
+-- (Scene 2's TheaterWorldComponent), so all Main does is play it by name and ask the layer
+-- to render through the camera it flies. Re-timing or re-framing the payoff is a scene
+-- edit, exactly as re-timing a hive's opening is.
+--
+-- DAWN_CAMERA is a second camera entity, standing apart from the first-person "Camera0"
+-- the rest of this script drives off the player's eye: the act owns one and Main owns the
+-- other, so there is no pose to save and restore across the cut.
+local DAWN_ACT < const > = "Dawn"
+local DAWN_CAMERA < const > = "Camera"
 
 -- Two-argument atan; math.atan2 was folded into math.atan.
 local atan2 < const > = math.atan2 or math.atan
@@ -399,30 +407,30 @@ function Main:new(params, environment)
 	self._cutscene = nil         -- the record while one is running, nil otherwise
 	self._pendingHive = nil      -- { hive, delay }: chosen, not yet open
 
-	-- The night director. There is exactly one way to win -- every ward burning --
-	-- and it fires a timed sequence rather than an instant cut, so the
-	-- payoff has room to land: the horde drops where it stands, the sun comes up
-	-- over several seconds, and the screen floods warm into the victory card.
+	-- The night director. There is exactly one way to win -- every ward burning -- and it
+	-- fires a sequence rather than an instant cut, so the payoff has room to land: the
+	-- horde drops where it stands, the DAWN_ACT shot plays, and the screen floods warm
+	-- into the victory card.
 	--
-	-- Only the directional light on the Sky entity carries the sunrise. SkyComponent
-	-- has no script bindings at all (nothing in Weather is registered), so its
-	-- intensity and horizon colours cannot be animated -- hence the wash, which
-	-- covers the sky staying night-dark underneath.
+	-- Only the directional light on the Sky entity carries the sunrise. SkyComponent has
+	-- no script bindings at all (nothing in Weather is registered), and the theater cannot
+	-- animate what is not bound either, so its intensity and horizon colours are out of
+	-- reach for the act as much as for this script -- hence the wash, which covers the sky
+	-- staying night-dark underneath.
 	self._nightOver = false      -- true from the moment the last relic is placed
 	self._victoryShown = false
-	-- The sequence, in seconds rather than as fractions of a total. Three beats that
-	-- want tuning independently: the light coming up has to be quick enough to catch
-	-- the horde still falling, while the stretch of daylight after it wants to be as
-	-- long as the player will sit through -- and expressing the second as a fraction
-	-- of the whole meant lengthening the outro pushed the sunrise later as well,
-	-- straight back into the dark.
+	-- What is left of the sequence now that the act carries the sunrise: how long the light
+	-- is held once the shot has played out, and how long the wash then takes to flood up.
+	-- The shot's own length is not among them -- it is the act's, read off the theater
+	-- component rather than copied out of it (see _updateDawn), so re-timing the act in the
+	-- editor re-times everything after it too.
 	self._dawn = 0.0             -- seconds since the last ward took light
-	self._dawnSunTime = Config.dawn.sunTime      -- moonlight to full sun; overlaps the horde collapsing
-	self._dawnHold = Config.dawn.hold         -- ...then this long standing in it, looking at the bodies
-	self._dawnWashTime = Config.dawn.washTime     -- ...then the warm flood up to the victory card
-	self._dawnTime = self._dawnSunTime + self._dawnHold + self._dawnWashTime
-	self._sun = nil              -- the Sky entity's directional light
-	self._sunNight = nil         -- ...and its authored colour, i.e. the moonlight
+	self._dawnHold = Config.dawn.hold         -- standing in the light, looking at the bodies
+	self._dawnWashTime = Config.dawn.washTime    -- ...then the warm flood up to the victory card
+	self._dawnMax = Config.dawn.max           -- never wait on the act longer than this
+	self._dawnPlaying = false    -- true while the act is running, and so owns the camera
+	self._dawnEnd = nil          -- _dawn when it let go; the two timings above run from there
+	self._dawnCamera = nil       -- the entity the act flies; the layer renders through it
 
 	-- Aiming: mouse Y pitches the view/weapon up and down (mouse X yaws, in update).
 	-- Sign is worth reading twice: pitch turns about +X, so the forward vector it builds is
@@ -707,18 +715,6 @@ function Main:resolve()
 	if world == nil then
 		return
 	end
-	-- The scene's moon: a directional LightComponent riding the Sky entity. Its
-	-- authored colour is captured as the night value the sunrise interpolates from.
-	if self._sun == nil then
-		local sky < const > = world:getEntity("Sky")
-		if sky ~= nil then
-			self._sun = sky:getComponent(traktor.world.LightComponent)
-			if self._sun ~= nil then
-				local c < const > = self._sun.color
-				self._sunNight = Vector4(c.x, c.y, c.z, c.w)
-			end
-		end
-	end
 	-- Collect the wards once. The player picks which one each relic lights, so the
 	-- order here is not a lighting sequence -- it only has to be *stable*, because a
 	-- ward's index in this list is the key _litWardIndex remembers it by across a
@@ -844,6 +840,16 @@ function Main:resolve()
 		-- Assigning it here is authoritative and survives any transition.
 		if self._camera ~= nil then
 			self.world.camera = self._camera
+		end
+	end
+	-- The camera the DAWN_ACT flies. Held like the first-person one above -- a live handle,
+	-- so it is dropped in reload() and found again here -- and re-asserted as the layer's
+	-- camera if the shot was already running when the script was reloaded, since the block
+	-- above will just have bound the first-person one back over it.
+	if self._dawnCamera == nil then
+		self._dawnCamera = world:getEntity(DAWN_CAMERA)
+		if self._dawnCamera ~= nil and self._dawnPlaying then
+			self.world.camera = self._dawnCamera
 		end
 	end
 	if self._character == nil and self._humanoid ~= nil then
@@ -1621,6 +1627,27 @@ function Main:_breakDawn()
 	-- above the freeze, so it would play out over the wrong shot.
 	self:_endCutscene()
 
+	-- ...and this is it taking it. The shot is the scene's DAWN_ACT -- a theater act on the
+	-- world, flying DAWN_CAMERA out over the forest while it raises the light on the Sky
+	-- entity -- so playing it and handing the layer that camera is the whole of it. The act
+	-- runs off world time, which the freeze below does not touch, so it plays out over a
+	-- frozen night exactly as a hive's opening does.
+	--
+	-- If there is no act to play, Performance:play has already logged as much and the night
+	-- is simply won without ceremony: the camera stays on the player, and _updateDawn -- which
+	-- finds nothing playing -- goes straight to the wash and the victory card. Same trade as a
+	-- hive whose opening will not play (Hive:activate); a payoff that cannot be shown must
+	-- still be reached.
+	local world < const > = self.world.world
+	local theater = nil
+	if world ~= nil then
+		theater = world:getComponent(traktor.theater.TheaterWorldComponent)
+	end
+	if theater ~= nil and self._dawnCamera ~= nil and theater:play(DAWN_ACT) then
+		self._dawnPlaying = true
+		self.world.camera = self._dawnCamera
+	end
+
 	-- The light takes them. Routed through the same rag doll path a shot zombie
 	-- takes, so the horde collapses in place rather than being deleted out from
 	-- under the player. EnemyController deliberately does *not* freeze on
@@ -1633,8 +1660,13 @@ function Main:_breakDawn()
 	self.environment.render.renderView:showCursor()
 end
 
--- Run the sunrise: ease the scene's directional light from moonlight to a low warm
--- sun, flood the screen warm on top of it, then raise the victory card.
+-- Run the payoff: let the DAWN_ACT shot play itself out, hold a beat in the light it
+-- leaves behind, then flood the screen warm and raise the victory card.
+--
+-- The sunrise is not here any more -- the act carries it -- so what is left is the two
+-- beats after it, and both are measured from where the act actually ended rather than from
+-- a duration copied out of it. Re-timing the shot in the editor therefore re-times the hold
+-- and the wash with it, and nothing here has to be kept in step by hand.
 function Main:_updateDawn(dt)
 	if not self._nightOver then
 		return
@@ -1642,27 +1674,41 @@ function Main:_updateDawn(dt)
 
 	self._dawn = self._dawn + dt
 
-	-- The two halves of the sequence deliberately do not share a curve, and the gap
-	-- between them is the point of the whole thing: the sun is up while the horde is
-	-- still coming apart, and then nothing happens for _dawnHold seconds except the
-	-- player standing in the light looking at what is lying in it. Ramping the wash
-	-- with the sun would have the screen white by the time the light arrived and
-	-- there would have been no reason to light the world at all.
-	if self._sun ~= nil and self._sunNight ~= nil then
-		local s < const > = math.min(1.0, self._dawn / self._dawnSunTime)
-		local e < const > = s * s   -- slow to start, so the first moments still read as night
-		self._sun.color = self._sunNight * (1.0 - e) + DAWN_SUN * e
+	-- Has the act let go? Asked of the theater component, exactly as the hive cutscene asks
+	-- the hive itself (Main:_updateCutscene), and bounded by _dawnMax for the same reason
+	-- CUTSCENE_MAX bounds that one: an act that will not end -- or one that was never there
+	-- to play -- must not be able to strand the player behind a shot with no way out of it.
+	--
+	-- _dawnEnd stamps the moment, so the beats below run from the end of the shot. Nil until
+	-- then, which is also what holds the wash off through it.
+	if self._dawnEnd == nil then
+		local playing = false
+		if self._dawnPlaying and self._dawn < self._dawnMax then
+			local world < const > = self.world.world
+			if world ~= nil then
+				local theater < const > = world:getComponent(traktor.theater.TheaterWorldComponent)
+				playing = theater ~= nil and theater.playing
+			end
+		end
+		if playing then
+			return
+		end
+		-- Cleared before the camera is left alone: postUpdate reads _dawnPlaying to know
+		-- the shot owns the view, and from here the first-person camera may move again --
+		-- the layer is still rendering through the act's, wherever the act parked it.
+		self._dawnEnd = self._dawn
+		self._dawnPlaying = false
 	end
 
-	-- Wash: holds off through the sun and the hold, then floods to opaque for the
-	-- card. It is what covers the sky staying night-dark through all of this,
-	-- SkyComponent being unscriptable.
-	local a < const > = math.max(0.0, (self._dawn - self._dawnSunTime - self._dawnHold) / self._dawnWashTime)
+	-- Wash: holds off through the shot and the hold after it, then floods to opaque for the
+	-- card. It is what covers the sky staying night-dark through all of this, SkyComponent
+	-- being unscriptable -- by the act as much as by this script.
+	local a < const > = math.max(0.0, (self._dawn - self._dawnEnd - self._dawnHold) / self._dawnWashTime)
 	local p < const > = self._frame:getPlacement()
 	self._flash:place(0, 0, p.width, p.height)
 	self._flash:setColor(Color4f(1.0, 0.94, 0.8, math.min(1.0, a * a)))
 
-	if self._dawn >= self._dawnTime and not self._victoryShown then
+	if a >= 1.0 and not self._victoryShown then
 		self._victoryShown = true
 		self._victoryDialog:show()
 	end
@@ -2136,10 +2182,12 @@ function Main:update(info)
 	end
 
 	-- Cheat shortcuts: G toggles god mode, H toggles infinite ammunition, K kills every zombie
-	-- in the world. All three are edge-triggered, so holding the key fires once. Deliberately
-	-- below the game-over and paused returns above, so none of them does anything while the
-	-- frame is frozen. Not tied to the movement block below either, since they work with or
-	-- without a character.
+	-- in the world, and L breaks the dawn on the spot -- the whole payoff, without having to
+	-- carry four relics across the forest first, which is what it takes to see it otherwise.
+	-- All four are edge-triggered, so holding the key fires once. Deliberately below the
+	-- game-over and paused returns above, so none of them does anything while the frame is
+	-- frozen. Not tied to the movement block below either, since they work with or without a
+	-- character.
 	do
 		local mapping = self.environment.input.inputMapping
 		if mapping ~= nil then
@@ -2159,6 +2207,14 @@ function Main:update(info)
 			end
 			if mapping:isStatePressed("STATE_KILL_ALL") then
 				self:_killAllEnemies()
+			end
+			-- Not guarded on the wards: it is the shot that is being reached for, not the
+			-- win. _breakDawn is idempotent, so leaning on the key does it once, and it is
+			-- also what the last ward calls -- so what L shows is the real thing rather than
+			-- a preview of it. No cheat label: like K, it happens once and is over, and
+			-- there is no state left switched on to name.
+			if mapping:isStatePressed("STATE_DAWN") then
+				self:_breakDawn()
 			end
 		end
 	end
@@ -2427,10 +2483,11 @@ function Main:update(info)
 	-- Despawn ragdoll corpses once their lifetime elapses (also frees their physics bodies).
 	--
 	-- Except at dawn, where the countdown is held: _breakDawn drops the entire horde
-	-- at once and the sunrise then spends _dawnHold seconds inviting the player to
-	-- look at them, which a _corpseLifetime of six seconds would spend deleting them
-	-- one by one in plain sight. The bodies are the payoff, so they stay for it -- the
-	-- stage is being torn down at the end of this either way.
+	-- at once and the shot that follows then spends every second of itself, and of the
+	-- hold after it, inviting the player to look at them -- which a _corpseLifetime of six
+	-- seconds would spend deleting them one by one in plain sight. The bodies are the
+	-- payoff, so they stay for it -- the stage is being torn down at the end of this
+	-- either way.
 	do
 		local world = self.world.world
 		local remove = {}
@@ -2518,6 +2575,14 @@ function Main:postUpdate(info)
 		return
 	end
 
+	-- The dawn shot has the camera: the act is flying its own one out over the forest, and
+	-- everything below hangs off the player's eye -- a view nobody is looking through. The
+	-- rifle and a carried relic are left where the frame froze them, as for a hive above,
+	-- which is down at the player and well out of a shot composed twenty metres up.
+	if self._dawnPlaying then
+		return
+	end
+
 	-- First-person: the camera sits at the eye and looks along the aim (heading+pitch).
 	-- It rides the player rigidly (position is already smooth via the character controller)
 	-- so there is no boom, no follow smoothing and no view-blocking ray to worry about.
@@ -2548,6 +2613,10 @@ end
 function Main:reload()
 	self._humanoid = nil
 	self._camera = nil
+	-- The dawn shot's camera goes with it. resolve() finds it again and, if the shot was
+	-- running, re-binds it as the layer's camera -- so reloading mid-payoff does not drop
+	-- the player back into a first-person view of a frozen night.
+	self._dawnCamera = nil
 	-- Every weapon lets go of its own live handles here -- the rifle's entity, event set and
 	-- trail, the held grenade, anything thrown and still in the air -- and keeps its plain
 	-- numbers, so a reload cannot quietly resupply the player. Which of those a weapon has

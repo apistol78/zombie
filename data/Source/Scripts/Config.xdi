@@ -507,10 +507,18 @@ Config = {
 	},
 
 	-- ---- The sunrise, once the night is won ----
+	--
+	-- The sunrise itself is not tuned here any more: both halves of it -- the camera flying
+	-- out over the forest and the Sky entity's light coming up under it -- are keyed in the
+	-- scene as the "Dawn" theater act, so its length is authored rather than configured.
+	-- What is left is what happens once the act has played out.
 	dawn = {
-		sunTime = 3.5,          -- seconds for the moon to become a low warm sun
-		hold = 8.0,             -- ...how long the sunrise is held before the victory card
-		washTime = 3.5          -- ...and how long the full-screen warm wash takes to flood up
+		hold = 4.0,             -- how long the light is held after the act, looking at the bodies
+		washTime = 3.5,         -- ...then how long the warm full-screen wash takes to flood up
+		-- Never wait on the act longer than this, whatever it says. A scene whose act is
+		-- missing or will not end must not be able to strand the player behind the shot with
+		-- no way out of it -- the same bound, for the same reason, as cutscene.max below.
+		max = 12.0
 	},
 
 	-- ---- The hive cutscene ----

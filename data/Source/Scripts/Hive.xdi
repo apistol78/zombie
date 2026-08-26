@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using {6E9AD100-0000-4000-8000-000000000010}
+#using {DB50346A-CE62-2E40-85C4-A0405A748D12}
 import(traktor)
 
 -- Hive
@@ -29,8 +30,9 @@ import(traktor)
 -- constant in code that has to be kept in step with it by hand. One such event sends up
 -- one brood; an author who wants them to come in waves adds more keys.
 --
--- They are the same Entities/Zombie the Spawner places, so everything that already
--- deals with a zombie deals with these: the player shoots them, Main rag dolls them
+-- They come off the same roster the Spawner draws from (Spawner.pickZombie), so a brood
+-- rises mixed like the rest of the night, and everything that already deals with a
+-- zombie deals with these: the player shoots them, Main rag dolls them
 -- and clears their corpses, and they steer out of lit wards. They are deliberately
 -- NOT part of the Spawner's managed population, so they neither count against its
 -- headcount ceiling nor are despawned once the player walks away -- a hive's brood is
@@ -42,8 +44,6 @@ import(traktor)
 -- with an act named ACT.
 
 Hive = Hive or class("Hive", traktor.world.ScriptComponent)
-
-local ZOMBIE < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
 
 -- Two-argument atan; math.atan2 was folded into math.atan.
 local atan2 < const > = math.atan2 or math.atan
@@ -236,7 +236,7 @@ function Hive:_rise(context)
 
 	-- createEntity builds it from the entity data AND adds it to the world (via the
 	-- entity builder), so there is no addEntity to follow -- see Scripts/Spawner.
-	local zombie = context.world:createEntity(ZOMBIE)
+	local zombie = context.world:createEntity(Spawner.pickZombie())
 	if zombie == nil then
 		return false
 	end

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{027E77CC-0D46-47E8-B1A1-46D92A1C1B97}</id>
+	<name>Enemy</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.animation.SkeletonComponentData">
+			<skeleton>{46BF4D91-E0C4-481F-B135-AC4CA5774753}</skeleton>
+			<poseController type="traktor.animation.AnimationGraphPoseControllerData" version="1">
+				<stateGraph>{43FCC179-4F16-40CA-90C3-492B7E905441}</stateGraph>
+			</poseController>
+		</item>
+		<item type="traktor.animation.AnimatedMeshComponentData" version="3">
+			<mesh>{71AA131B-0185-49D3-99F8-1A58F0F8FB65}</mesh>
+		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>blood</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{B966DF7D-D625-0344-BADD-9B27BCFA12FF}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>true</follow>
+						<useRotation>true</useRotation>
+					</second>
+				</item>
+				<item>
+					<first>groan</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-000000000001}</sound>
+						<positional>true</positional>
+						<follow>true</follow>
+						<autoStopFar>true</autoStopFar>
+					</second>
+				</item>
+				<item>
+					<first>hit</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-000000000003}</sound>
+						<positional>true</positional>
+						<follow>false</follow>
+						<autoStopFar>true</autoStopFar>
+					</second>
+				</item>
+			</eventData>
+		</item>
+		<item type="traktor.world.ScriptComponentData" version="2">
+			<class>{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}</class>
+			<properties/>
+			<editorSupport>false</editorSupport>
+		</item>
+		<item type="traktor.animation.FootPlacementComponentData">
+			<traceInclude>
+				<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+			</traceInclude>
+			<traceIgnore/>
+			<footJoints>
+				<item>LeftFoot</item>
+				<item>RightFoot</item>
+			</footJoints>
+			<offset>0.1</offset>
+			<range>0.5</range>
+		</item>
+		<item type="traktor.physics.AiCharacterComponentData">
+			<collisionGroup>
+				<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+				<item>{FD7626B1-645F-4A36-A534-B4598A1E8A2E}</item>
+			</collisionGroup>
+			<collisionMask>
+				<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+			</collisionMask>
+			<traceInclude>
+				<item>{54CA99BF-4F5F-4DD5-97E4-33BB23E1E784}</item>
+				<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+			</traceInclude>
+			<traceIgnore>
+				<item>{551BADB9-AF11-41BF-98A9-44A9391D0D30}</item>
+			</traceIgnore>
+			<radius>0.36</radius>
+			<height>2</height>
+			<step>0.6</step>
+			<jumpImpulse>4.5</jumpImpulse>
+			<maxVelocity>3</maxVelocity>
+			<velocityDamping>1</velocityDamping>
+		</item>
+	</components>
+</object>

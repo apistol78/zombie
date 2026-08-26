@@ -4,9 +4,39 @@
 
 import(traktor)
 
-local ENEMY < const > = Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}")
+-- The roster: every kind of zombie that may rise. One is drawn per spawn.
+--
+-- A single rig across the whole forest reads as one actor cloned, and a night is long
+-- enough for that to be noticed. The entries are interchangeable by construction rather
+-- than by convention: each is a complete EntityData named "Enemy" -- which is how Main
+-- finds anything shootable, and the one thing a new one MUST get right -- carrying its
+-- own skeleton, mesh, state graph, rag doll and an EnemyController. So nothing
+-- downstream of the draw knows or cares which one it got, and adding a third kind is a
+-- line here and nothing else.
+--
+-- These literals are also what gets the zombies *built*: ScriptPipeline scans the
+-- escaped script text for guid patterns and adds a build dependency for each one that
+-- resolves, and no scene references either zombie statically -- they only ever exist
+-- because something spawned them.
+local ZOMBIES < const > = {
+	Guid("\{25DFC254-D44A-4F97-8A57-72A212B74C8D}"),  -- Entities/Zombie/Zombie
+	Guid("\{EFE6DACB-FD57-41B2-B264-C7CE748A3C57}")   -- Entities/Zombie 02/Zombie 02
+}
 
 Spawner = Spawner or class("Spawner", traktor.world.ScriptComponent)
+
+-- Draw one kind, uniformly.
+--
+-- Per zombie rather than per wave or per night on purpose: the mix is meant to be
+-- visible standing still, so it has to happen inside whatever handful of them the
+-- player is currently looking at.
+--
+-- Hangs off the class rather than staying local so Scripts/Hive can send up a brood
+-- from the same roster. Its comment already promises its brood is what the spawner
+-- places, and this is what keeps that true as the roster grows.
+function Spawner.pickZombie()
+	return ZOMBIES[math.random(#ZOMBIES)]
+end
 
 -- Tuning.
 -- How many may be alive at once: the ceiling, what it starts at, and what each lit
@@ -384,7 +414,7 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- Only yaw: the body stays upright rather than tipping into the slope. Pitching it to
 	-- match the ground normal would not survive anyway, because the controller rebuilds
 	-- the rotation from headAngle alone on its first update.
-	local enemy = context.world:createEntity(ENEMY)
+	local enemy = context.world:createEntity(Spawner.pickZombie())
 	if enemy == nil then
 		return
 	end

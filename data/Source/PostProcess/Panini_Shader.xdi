@@ -173,8 +173,8 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B818}</id>
 			<comment/>
 			<position>
-				<first>1273</first>
-				<second>316</second>
+				<first>1893</first>
+				<second>324</second>
 			</position>
 			<technique>Default</technique>
 			<priority>
@@ -225,17 +225,17 @@ sit at about four fifths, which reads as the lens rather than as an effect.
 
 			]]></comment>
 			<position>
-				<first>833</first>
-				<second>436</second>
+				<first>1458</first>
+				<second>429</second>
 			</position>
-			<value>1</value>
+			<value>0.8</value>
 		</item>
 		<item type="traktor.render.Script" version="8,traktor.render.Node:1">
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81A}</id>
 			<comment/>
 			<position>
-				<first>1033</first>
-				<second>346</second>
+				<first>1653</first>
+				<second>354</second>
 			</position>
 			<name>Vignette</name>
 			<technique/>
@@ -293,6 +293,308 @@ const float r = length(p);
 const float v = 1.0f - $Strength * smoothstep(0.45f, 1.35f, r);
 
 $Output = vec4($Color.rgb * v, 1.0f);
+
+]]></script>
+		</item>
+		<item type="traktor.render.Parameter" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81B}</id>
+			<comment><![CDATA[
+
+The gbuffer, whose red channel is view depth in metres. Bound by the pass as
+"Depth", the same name the engine's own image graphs use for it.
+
+			]]></comment>
+			<position>
+				<first>860</first>
+				<second>40</second>
+			</position>
+			<parameterDeclaration>{983E0A0C-405E-534E-87CF-C617C3D588B8}</parameterDeclaration>
+		</item>
+		<item type="traktor.render.TextureState" version="1,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81C}</id>
+			<comment/>
+			<position>
+				<first>860</first>
+				<second>110</second>
+			</position>
+			<minFilter>Point</minFilter>
+			<mipFilter>Point</mipFilter>
+			<magFilter>Point</magFilter>
+			<addressU>Clamp</addressU>
+			<addressV>Clamp</addressV>
+			<addressW>Clamp</addressW>
+			<compare>None</compare>
+			<mipBias>0</mipBias>
+			<ignoreMips>true</ignoreMips>
+			<useAnisotropic>false</useAnisotropic>
+		</item>
+		<item type="traktor.render.TextureState" version="1,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81D}</id>
+			<comment/>
+			<position>
+				<first>860</first>
+				<second>180</second>
+			</position>
+			<minFilter>Linear</minFilter>
+			<mipFilter>Linear</mipFilter>
+			<magFilter>Linear</magFilter>
+			<addressU>Clamp</addressU>
+			<addressV>Clamp</addressV>
+			<addressW>Clamp</addressW>
+			<compare>None</compare>
+			<mipBias>0</mipBias>
+			<ignoreMips>true</ignoreMips>
+			<useAnisotropic>false</useAnisotropic>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81E}</id>
+			<comment><![CDATA[
+
+Focus distance in metres; where the lens is sharp. Fixed rather than pulled to
+whatever is under the crosshair, which would rack focus every time the player
+turned and would need a frame of history to damp.
+
+			]]></comment>
+			<position>
+				<first>860</first>
+				<second>480</second>
+			</position>
+			<value>5</value>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81F}</id>
+			<comment><![CDATA[
+
+Half the depth of the sharp zone, in metres. With the focus above, everything
+between 3 m and 13 m is untouched -- the range over which a zombie is worth
+shooting at, and wide enough that walking about does not pull the world in and
+out of focus. Widen this and the far ramp moves out with it.
+
+			]]></comment>
+			<position>
+				<first>860</first>
+				<second>550</second>
+			</position>
+			<value>2</value>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B820}</id>
+			<comment><![CDATA[
+
+Near blur; the circle of confusion radius in pixels at 1080p for something at
+the eye itself. The weapon sits about half a metre out and so takes four fifths
+of it, which reads as a lens and not as a fault. Kept to single pixels for the
+reason given in the script -- the near field cannot spread the way it should.
+
+			]]></comment>
+			<position>
+				<first>860</first>
+				<second>620</second>
+			</position>
+			<value>4</value>
+		</item>
+		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B821}</id>
+			<comment><![CDATA[
+
+Far blur; the same, for the distance. Full by 26 m and already half of it by 22,
+where the fog starts -- the two carry the treeline off together, rather than the
+blur waiting until the fog has finished and having nothing left to soften.
+
+			]]></comment>
+			<position>
+				<first>860</first>
+				<second>690</second>
+			</position>
+			<value>8</value>
+		</item>
+		<item type="traktor.render.Script" version="8,traktor.render.Node:1">
+			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B822}</id>
+			<comment/>
+			<position>
+				<first>1143</first>
+				<second>307</second>
+			</position>
+			<name>Depth of field</name>
+			<technique/>
+			<domain>Undefined</domain>
+			<localSize>
+				<X>1</X>
+				<Y>1</Y>
+				<Z>1</Z>
+			</localSize>
+			<useRayTracing>false</useRayTracing>
+			<include/>
+			<inputPins>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50041}</id>
+					<name>Source</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50042}</id>
+					<name>SourceState</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50043}</id>
+					<name>Depth</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50044}</id>
+					<name>DepthState</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50045}</id>
+					<name>TexCoord</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50046}</id>
+					<name>Center</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50047}</id>
+					<name>FocusDistance</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50048}</id>
+					<name>FocusRange</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50049}</id>
+					<name>NearBlur</name>
+				</item>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A5004A}</id>
+					<name>FarBlur</name>
+				</item>
+			</inputPins>
+			<outputPins>
+				<item>
+					<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50051}</id>
+					<name>Output</name>
+					<type>Vector</type>
+				</item>
+			</outputPins>
+			<script><![CDATA[
+
+// Depth of field.
+//
+// The projection above has already worked out where in the source image this
+// pixel comes from, and the sampler feeding $Center has fetched that one texel.
+// All this does is decide how *wide* that read should have been. A lens brings
+// exactly one distance to a point; everything nearer or further arrives spread
+// over a disc -- the circle of confusion -- so a pixel looking at something out
+// of focus is a disc's worth of the image around it rather than a texel of it.
+//
+// Gathered here in the projection's own pass instead of in the usual
+// downsample/bokeh/composite chain of its own. The scene is fogged out by 22 m
+// and lit by what the player is carrying, so the far field is a low-contrast
+// wash long before the disc grows wide enough for a half resolution pass to pay
+// for itself, and the near field wants a radius of a few pixels, which is
+// cheapest taken at full rate. Everything inside the sharp zone -- most of a
+// frame -- costs one comparison and skips the loop.
+
+const vec2 uv = $TexCoord.xy;
+const vec2 size = vec2(textureSize(sampler2D($Source, $SourceState), 0));
+
+// Radii below are pixels at 1080p and scale from there, so that resizing the
+// window changes how much of the world is in shot and not how defocused it is.
+const float pixelScale = size.y / 1080.0f;
+
+// The sharp zone, and the ramps leading out of either side of it. Held as plain
+// distances rather than as an aperture and a focal length: a real lens open wide
+// enough to be worth simulating has a depth of field centimetres deep, which is
+// the wrong answer for a game where whatever is being shot at may be anywhere
+// between the end of the barrel and the treeline.
+const float focus = $FocusDistance;
+const float range = $FocusRange;
+const float nearEdge = max(focus - range, 0.01f);
+const float farEdge = focus + range;
+
+// The far ramp reaches full width one sharp zone beyond the sharp zone, which
+// for the defaults is 26 m -- just past where this scene's fog begins, so that
+// the two take the distance away together instead of in turn.
+const float farRamp = max(farEdge, 0.01f);
+
+// The disc, in units of the circle of confusion radius. A golden angle spiral;
+// it spreads evenly over the disc at any tap count and leaves no axis for the
+// eye to catch on, which concentric rings do.
+vec2 c_taps[] =
+{
+	vec2(0.06406f, 0.16476f),
+	vec2(-0.27458f, -0.13548f),
+	vec2(0.37953f, -0.11048f),
+	vec2(-0.24282f, 0.39973f),
+	vec2(-0.10315f, -0.52020f),
+	vec2(0.47256f, 0.34704f),
+	vec2(-0.63365f, 0.06883f),
+	vec2(0.45195f, -0.51429f),
+	vec2(0.01506f, 0.72871f),
+	vec2(-0.53213f, -0.55730f),
+	vec2(0.80828f, 0.05413f),
+	vec2(-0.66201f, 0.52962f),
+	vec2(0.13594f, -0.87337f),
+	vec2(0.50893f, 0.76469f),
+	vec2(-0.92424f, -0.22809f),
+	vec2(0.86391f, -0.47160f)
+};
+
+// View depth in metres, straight out of the gbuffer's red channel, read at the
+// projected coordinate because that is the pixel this one is showing. Point
+// sampled throughout -- a filtered pair of depths across a silhouette gives a
+// distance at which nothing stands.
+const float z = textureLod(sampler2D($Depth, $DepthState), uv, 0.0f).x;
+const float coc = pixelScale * max(
+	$NearBlur * clamp((nearEdge - z) / nearEdge, 0.0f, 1.0f),
+	$FarBlur * smoothstep(0.0f, 1.0f, clamp((z - farEdge) / farRamp, 0.0f, 1.0f))
+);
+
+vec3 color = $Center.rgb;
+
+// Under a pixel of confusion a disc has nothing to add to the texel already
+// fetched.
+if (coc > 1.0f)
+{
+	// Turn the fixed kernel by a per pixel angle. Without it a bright point out
+	// of focus resolves into sixteen copies of itself; with it, into noise, which
+	// reads as grain rather than as a pattern.
+	const vec2 px = uv * size;
+	const float a = 6.2831853f * fract(52.9829189f * fract(0.06711056f * px.x + 0.00583715f * px.y));
+	const vec2 rot = vec2(cos(a), sin(a));
+
+	float weight = 1.0f;
+
+	for (int i = 0; i < 16; ++i)
+	{
+		const vec2 t = c_taps[i];
+		const vec2 o = vec2(t.x * rot.x - t.y * rot.y, t.x * rot.y + t.y * rot.x) * coc;
+		const vec2 tuv = uv + o / size;
+
+		const float tz = textureLod(sampler2D($Depth, $DepthState), tuv, 0.0f).x;
+		const float tcoc = pixelScale * max(
+			$NearBlur * clamp((nearEdge - tz) / nearEdge, 0.0f, 1.0f),
+			$FarBlur * smoothstep(0.0f, 1.0f, clamp((tz - farEdge) / farRamp, 0.0f, 1.0f))
+		);
+
+		// A tap only reaches this pixel if its own disc is wide enough to cover
+		// the distance between the two -- a gather standing in for the scatter
+		// that physically happens. Without the test a sharp figure against a soft
+		// background bleeds outwards into it, the background pixel happily
+		// collecting the figure's colour although the figure, being in focus,
+		// spreads nowhere. The converse case is the one this pass cannot answer:
+		// a defocused foreground should spread over the sharp background behind
+		// it, but a sharp pixel never enters the loop to collect it, so the near
+		// field keeps a harder edge than it should. That is why $NearBlur is set
+		// in single pixels while $FarBlur is not.
+		const float w = clamp(tcoc - length(o) + 1.0f, 0.0f, 1.0f);
+
+		color += textureLod(sampler2D($Source, $SourceState), tuv, 0.0f).rgb * w;
+		weight += w;
+	}
+
+	color /= weight;
+}
+
+$Output = vec4(color, 1.0f);
 
 ]]></script>
 		</item>
@@ -364,8 +666,8 @@ $Output = vec4($Color.rgb * v, 1.0f);
 				<id>{AF6C971B-D67A-42EE-A12B-97D36927C89F}</id>
 			</source>
 			<destination>
-				<node ref="/object/nodes/item[9]"/>
-				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50021}</id>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50046}</id>
 			</destination>
 		</item>
 		<item type="traktor.render.Edge" version="1">
@@ -396,6 +698,106 @@ $Output = vec4($Color.rgb * v, 1.0f);
 			<destination>
 				<node ref="/object/nodes/item[7]"/>
 				<id>{7174FE5A-D079-4452-AFEF-9FC2BCC2900F}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[5]"/>
+				<id>{D101AE9F-E124-4371-8603-15D187427DDA}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50041}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[12]"/>
+				<id>{82C966B2-7B19-48B2-8FE0-B85FF4E3C504}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50042}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[10]"/>
+				<id>{D101AE9F-E124-4371-8603-15D187427DDA}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50043}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[11]"/>
+				<id>{82C966B2-7B19-48B2-8FE0-B85FF4E3C504}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50044}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[4]"/>
+				<id>{ADB4FC1D-3726-4CC5-B4D5-1E2468274325}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50045}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[13]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50047}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[14]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50048}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[15]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50049}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[16]"/>
+				<id>{D33F8931-C90C-4EBA-8A04-A31D3E08FAB7}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A5004A}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[17]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50051}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[9]"/>
+				<id>{5B2C7E10-4A31-4D96-8F27-91C6E3A50021}</id>
 			</destination>
 		</item>
 	</edges>

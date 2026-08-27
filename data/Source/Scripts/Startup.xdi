@@ -5,6 +5,7 @@
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{9B4E27DA-6C81-4F35-A70E-1D5C83B2F604}
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
+#using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 
 import(traktor)
 
@@ -39,9 +40,12 @@ function Startup:new(params, environment)
 		{
 			"\{2C9F5B10-4E73-4A18-B6D2-9A0F31E4C8B7}",
 			"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
-			"\{5ABEAE05-EB26-934F-932F-7F3C7C582383}"
+			"\{6FC8E464-F249-674E-8FA9-1CD2547A0494}",
+			"\{B45977D0-3D89-4FA7-BE4C-FAA9ED63A942}"
 		}
 	)
+
+	setupUiKitStyles()
 
 	-- Full-screen frame (virtual 640x360) hosting a centered menu dialog.
 	local root = self.ui.root

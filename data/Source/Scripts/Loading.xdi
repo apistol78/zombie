@@ -3,6 +3,7 @@
 	<text><![CDATA[
 #using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 
 import(traktor)
 
@@ -34,9 +35,12 @@ function Loading:new(params, environment)
 		environment.resource.resourceManager,
 		{
 			"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
-			"\{5ABEAE05-EB26-934F-932F-7F3C7C582383}"
+			"\{6FC8E464-F249-674E-8FA9-1CD2547A0494}",
+			"\{B45977D0-3D89-4FA7-BE4C-FAA9ED63A942}"
 		}
 	)
+
+	setupUiKitStyles()
 
 	-- Same 640x360 virtual frame the Startup menu uses, so the panel lands in the
 	-- same place and at the same scale as the menu it replaces. One Frame per

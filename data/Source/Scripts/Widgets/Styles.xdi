@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+
+function setupUiKitStyles()
+	Dialog:setStyle("background", traktor.Color4f(82 / 255, 69 / 255, 42 / 255, 1.0))
+	PushButton:setStyle("background", traktor.Color4f(82 / 255, 69 / 255, 42 / 255, 0.5))
+	PushButton:setStyle("backgroundHover", traktor.Color4f(112 / 255, 95 / 255, 57 / 255, 0.5))
+end
+]]></text>
+</object>

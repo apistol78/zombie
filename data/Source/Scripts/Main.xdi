@@ -7,8 +7,10 @@
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 #using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
 #using \{5E1A4C77-2B90-4D36-9F41-7C8A2D0E6B15}
+#using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{6E9AD100-0000-4000-8000-000000000010}
+
 -- Scripts/Weapons/Loadout, which owns what the player has in their hands. Everything
 -- about the weapons themselves is behind it -- see Scripts/Weapons/Weapon for the
 -- interface, and "what a weapon is given" further down for the part of this stage a
@@ -162,7 +164,8 @@ function Main:new(params, environment)
 		environment.resource.resourceManager,
 		{
 			"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
-			"\{5ABEAE05-EB26-934F-932F-7F3C7C582383}"
+			"\{6FC8E464-F249-674E-8FA9-1CD2547A0494}",
+			"\{B45977D0-3D89-4FA7-BE4C-FAA9ED63A942}"
 		}
 	)
 
@@ -176,6 +179,8 @@ function Main:new(params, environment)
 		1280 / 2, 720 / 2,
 		TableLayout({ 100 }, { 100 }, 24, 20, 0, 0)
 	)
+
+	setupUiKitStyles()
 
 	-- Blank unless a cheat is on, and one label for all of them rather than one each: they
 	-- would otherwise want the same spot at the top of the screen. The text is composed by

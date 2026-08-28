@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.world.EntityData" version="2">
-	<id>{00000000-0000-0000-0000-000000000000}</id>
+	<id>{1EC56671-AADA-364B-B4F0-63EF99B2BC48}</id>
 	<name>Boulder Medium</name>
 	<state>
 		<visible>true</visible>
@@ -17,9 +17,9 @@
 		</item>
 		<item type="traktor.physics.RigidBodyComponentData" version="1">
 			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
-				<shape type="traktor.physics.SphereShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
 					<localTransform>
-						<translation>0, 1.1, 0, 0</translation>
+						<translation>0, 0, 0, 0</translation>
 						<rotation>0, 0, 0, 1</rotation>
 					</localTransform>
 					<collisionGroup>
@@ -29,7 +29,7 @@
 						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
 					</collisionMask>
 					<material>0</material>
-					<radius>1.2</radius>
+					<mesh>{2192021E-E77C-DC43-B053-ADBE44A9F30B}</mesh>
 				</shape>
 				<friction>0.75</friction>
 				<restitution>0</restitution>

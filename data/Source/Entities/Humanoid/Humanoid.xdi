@@ -172,10 +172,10 @@
 										<item type="traktor.world.LightComponentData" version="13">
 											<lightType>Point</lightType>
 											<color>1, 0.83, 0.55, 1</color>
-											<intensity>600</intensity>
-											<castShadow>false</castShadow>
+											<intensity>200</intensity>
+											<castShadow>true</castShadow>
 											<nearRange>0</nearRange>
-											<farRange>20</farRange>
+											<farRange>8</farRange>
 											<radius>1.570796</radius>
 											<flickerAmount>0</flickerAmount>
 											<flickerFilter>0</flickerFilter>
@@ -252,10 +252,10 @@
 										<item type="traktor.world.LightComponentData" version="13">
 											<lightType>Point</lightType>
 											<color>1, 0.83, 0.55, 1</color>
-											<intensity>400</intensity>
-											<castShadow>false</castShadow>
+											<intensity>100</intensity>
+											<castShadow>true</castShadow>
 											<nearRange>0</nearRange>
-											<farRange>16</farRange>
+											<farRange>8</farRange>
 											<radius>1.570796</radius>
 											<flickerAmount>0</flickerAmount>
 											<flickerFilter>0</flickerFilter>

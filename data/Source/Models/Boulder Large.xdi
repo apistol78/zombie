@@ -4,7 +4,16 @@
 	<importFilter/>
 	<meshType>MtInstance</meshType>
 	<materialShaders/>
-	<materialTextures/>
+	<materialTextures>
+		<item>
+			<first>diffuse</first>
+			<second>{A90BD186-02D0-DF40-BE72-3CD6D6E17162}</second>
+		</item>
+		<item>
+			<first>normal</first>
+			<second>{10F64C14-B82F-2B4D-9383-E1DA7E131087}</second>
+		</item>
+	</materialTextures>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
 	<renormalize>false</renormalize>
@@ -14,5 +23,5 @@
 	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
-	<previewAngle>2.450442</previewAngle>
+	<previewAngle>2.38761</previewAngle>
 </object>

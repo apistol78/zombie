@@ -60,9 +60,10 @@
 		<item type="traktor.ai.NavMeshComponentData">
 			<navMesh>{03ED7DDA-4F01-384B-9FF8-31DCDC775D3F}</navMesh>
 		</item>
-		<item type="traktor.world.FogComponentData" version="4">
+		<item type="traktor.world.FogComponentData" version="5">
 			<mediumColor>0.12549, 0.109804, 0.086275, 1</mediumColor>
-			<mediumDensity>0.18</mediumDensity>
+			<mediumDensity>0.4</mediumDensity>
+			<mediumShader>{19421CF6-B660-B94D-9802-497591548F8B}</mediumShader>
 			<distanceFogEnable>true</distanceFogEnable>
 			<fogDistance>22</fogDistance>
 			<fogElevation>45</fogElevation>
@@ -31056,7 +31057,7 @@
 		</item>
 		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
 			<layers>
-				<item>Boulders2</item>
+				<item>Boulders</item>
 			</layers>
 			<alignOrientation>true</alignOrientation>
 			<randomHeadingAngle>true</randomHeadingAngle>

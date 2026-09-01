@@ -554,7 +554,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, -0</rotation>
+								<rotation>0, 0.990216, -0.139543, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -624,17 +624,16 @@
 									<eventCollide/>
 									<transformFilter>0</transformFilter>
 								</item>
-								<item type="traktor.terrain.UndergrowthComponentData" version="1">
-									<shader>{F684D20E-996F-401B-9DDC-BC54C8833267}</shader>
-									<spreadDistance>40</spreadDistance>
-									<plants>
+								<item type="traktor.terrain.GrassComponentData">
+									<shader>{0FB49477-0D67-8245-9DD3-C7FC20F33D24}</shader>
+									<spreadDistance>20</spreadDistance>
+									<grass>
 										<item>
 											<attribute>1</attribute>
-											<density>200</density>
-											<plant>0</plant>
-											<scale>0.5</scale>
+											<density>900</density>
+											<scale>2</scale>
 										</item>
-									</plants>
+									</grass>
 								</item>
 							</components>
 						</item>
@@ -15622,7 +15621,7 @@
 							</state>
 							<transform>
 								<translation>-37.164291, 10.329262, -30.858931, 0</translation>
-								<rotation>0.000417, -0, 0.000692, 1</rotation>
+								<rotation>0.000417, 0, 0.000692, 1</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>

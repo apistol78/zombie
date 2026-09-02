@@ -54,17 +54,18 @@
 			<high>{7A1E9C40-0B5D-4E71-9C33-1D2F8A6B4E02}</high>
 			<ultra>{7A1E9C40-0B5D-4E71-9C33-1D2F8A6B4E02}</ultra>
 		</imageProcess>
-		<colorGrading>{00000000-0000-0000-0000-000000000000}</colorGrading>
+		<colorGrading>{692F86A1-8F88-944D-BA47-4750217C8499}</colorGrading>
 	</worldRenderSettings>
 	<worldComponents>
-		<item type="traktor.world.FogComponentData" version="4">
-			<mediumColor>0.17, 0.21, 0.28, 1</mediumColor>
-			<mediumDensity>0.075</mediumDensity>
-			<distanceFogEnable>true</distanceFogEnable>
+		<item type="traktor.world.FogComponentData" version="5">
+			<mediumColor>0.282353, 0.254902, 0.168627, 1</mediumColor>
+			<mediumDensity>0.32</mediumDensity>
+			<mediumShader>{B9E1127F-C81B-AF40-8989-368748993908}</mediumShader>
+			<distanceFogEnable>false</distanceFogEnable>
 			<fogDistance>22</fogDistance>
 			<fogElevation>45</fogElevation>
 			<volumetricFogEnable>true</volumetricFogEnable>
-			<maxDistance>34</maxDistance>
+			<maxDistance>20</maxDistance>
 			<phaseForward>0.8</phaseForward>
 			<phaseBackward>-0.4</phaseBackward>
 			<phaseBlend>0.5</phaseBlend>
@@ -192,26 +193,26 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>0.287925, -0.154398, 0, 0</translation>
-								<rotation>0, -0.880191, 0, 0.47462</rotation>
+								<translation>1.28299, -0.771957, 2.873493, 0</translation>
+								<rotation>0, -0.941234, 0, 0.337756</rotation>
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
-							<id>{2BD13FD1-2CA3-4627-A69F-F017A59AA97B}</id>
-							<name>Ward</name>
+							<id>{40889792-5B2C-6249-95B6-51EAD8C51458}</id>
+							<name>House</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-1.982265, -0.741626, 0.8978, 0</translation>
-								<rotation>0, -0.416871, 0, 0.908966</rotation>
+								<translation>-0.47651, -0.924021, 1.271743, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
-							<entityData>{7887A41A-FF56-4970-81D9-13269CCFDB2C}</entityData>
+							<entityData>{FCD81157-780C-4A7F-BBC4-A7B9DFA406A9}</entityData>
 						</item>
 					</entityData>
 				</item>

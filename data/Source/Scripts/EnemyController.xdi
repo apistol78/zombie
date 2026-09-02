@@ -71,6 +71,11 @@ local SPAWN_HUNT < const > = CFG.spawnHunt
 -- it exists).
 local CLOSE_QUARTERS < const > = CFG.closeQuarters
 
+-- Least a turning zombie still advances, as a fraction of its speed, so a turn is walked
+-- as an arc instead of pivoted on the spot. See the move block in update, and the longer
+-- note in Config.
+local TURN_CREEP < const > = CFG.turnCreep
+
 -- The floor under all of that: however hard it is being pushed and by however many, no
 -- zombie walks nearer the player than this (see the personal space block in update). It
 -- is not a fourth number to keep in step with the other three -- it is exactly where the
@@ -169,7 +174,8 @@ local DEBUG_C_HEARD < const > = Color4f(0.30, 0.82, 0.36, 1.0)   -- walking to w
 function EnemyController:new()
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
-	self._turnRate = CFG.turnRate      -- max turn speed (rad/s); reversals happen gradually
+	self._turnRate = CFG.turnRate      -- max turn speed while steering (rad/s)
+	self._faceTurnRate = CFG.faceTurnRate -- ...and the faster one used to track the player up close
 	self._avoidRadius = CFG.avoidRadius -- start avoiding other zombies within this distance (m)
 	self._separation = CFG.separation  -- how strongly avoidance overrides path following
 
@@ -1056,31 +1062,41 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- steering has to be what drives it, since that is what carries it around rocks and
 	-- boulders instead of straight into them.
 	local faceX, faceZ = targetX, targetZ
+	local facePlayer = false
 	if self._state == "attack" and pdist < CLOSE_QUARTERS then
 		local ax < const > = playerPos.x - enemyPos.x
 		local az < const > = playerPos.z - enemyPos.z
 		local al < const > = math.sqrt(ax * ax + az * az)
 		if al > 0.001 then
 			faceX, faceZ = ax / al, az / al
+			facePlayer = true
 		end
 	end
 	local fl < const > = math.sqrt(faceX * faceX + faceZ * faceZ)
 
 	-- Rotate facing toward the desired direction at a limited angular rate (shortest
 	-- way around), so turns - including reversals - happen gradually, never instantly.
+	--
+	-- Two rates, picked by which of the two facings above won. The steering one is held down
+	-- to what the walk cycle can sell: the Walks state plays its clip out of ground distance
+	-- travelled, so a body that turns faster than it advances is a frozen pose spinning on
+	-- its heels. Facing the player up close is not walking and has no cycle to outrun, so it
+	-- keeps the faster rate -- slow that one down and a strafing player walks around behind a
+	-- zombie that is already on top of them.
 	if fl > 0.001 then
 		local desired = (math.atan2 or math.atan)(faceX, faceZ)
 		local delta = desired - self._heading
 		while delta > math.pi do delta = delta - 2.0 * math.pi end
 		while delta < -math.pi do delta = delta + 2.0 * math.pi end
-		local maxStep = self._turnRate * deltaTime
+		local maxStep = (facePlayer and self._faceTurnRate or self._turnRate) * deltaTime
 		if delta > maxStep then delta = maxStep end
 		if delta < -maxStep then delta = -maxStep end
 		self._heading = self._heading + delta
 	end
 
-	-- Move forward along the current facing, scaled by how well it points at the
-	-- target, so the enemy pivots toward a target behind it before advancing.
+	-- Move forward along the current facing, scaled by how well it points at the target --
+	-- with a floor under that scale (see the move block below), so the enemy turns toward a
+	-- target behind it as it walks rather than stopping to pivot.
 	local fx = math.sin(self._heading)
 	local fz = math.cos(self._heading)
 	self._character.headAngle = self._heading
@@ -1128,6 +1144,22 @@ function EnemyController:update(context, totalTime, deltaTime)
 		moving = true
 	elseif tl > 0.001 then
 		local align = fx * targetX + fz * targetZ
+
+		-- Floor how far the alignment is allowed to throttle the step, so a turning zombie
+		-- always has some ground going by. Without it the cosine falls to nothing for anything
+		-- much off the nose, and the zombie stopped dead to rotate -- which, because the walk
+		-- clip is played out of distance travelled, froze the legs mid-stride and turned the
+		-- whole manoeuvre into a statue pivoting on its heels. With the floor the same turn is
+		-- walked as an arc, and the legs keep cycling through it.
+		--
+		-- Not applied when the facing is the player rather than the steering. Down there a low
+		-- alignment *is* the crowd (or the personal-space push) shouldering the zombie off the
+		-- man it is clawing at, and the gate falling to zero is exactly right: it holds still
+		-- and claws instead of retreating. A floor would march it back in.
+		if not facePlayer and align < TURN_CREEP then
+			align = TURN_CREEP
+		end
+
 		if align > 0.05 then
 			self._character:move(Vector4(fx * speed * align, 0.0, fz * speed * align, 0.0), false)
 			moving = true

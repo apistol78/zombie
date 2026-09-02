@@ -256,7 +256,27 @@ Config = {
 		spawnDelay = 2.5,
 
 		-- Steering.
-		turnRate = 2.0,         -- max turn speed (rad/s); reversals happen gradually
+		-- Turning, in two rates, because a turn taken on the move has to be one the walk
+		-- cycle can sell and a turn taken on the spot does not. The Walks state plays its clip
+		-- out of ground distance travelled (TimeFromLocomotion), so a zombie that rotates
+		-- faster than it advances is a frozen pose spinning on its heels -- which is what 2.0
+		-- everywhere looked like. At 1.2 a foot 0.15 m off the axis sweeps 0.18 m/s sideways
+		-- against the ~0.4 m/s of chase the creep below guarantees forward, and the slide
+		-- stays well under the stride.
+		turnRate = 1.2,         -- max turn speed while steering (rad/s)
+		-- Close quarters is the exception. A zombie clawing at the player is not walking, so
+		-- there is no cycle to outrun, and the tracking is gameplay rather than decoration:
+		-- below about this a strafing player simply walks around behind something already on
+		-- top of them. It is what the whole controller used to run at, and about what a player
+		-- circling at 1.5 m needs to be matched.
+		faceTurnRate = 2.0,     -- max turn speed while facing the player (rad/s)
+		-- Least a turning zombie still advances, as a fraction of its speed. The step is scaled
+		-- by how well the facing agrees with the steering, and that cosine falls to nothing for
+		-- anything much off the nose: a zombie asked to turn round stopped dead and rotated in
+		-- an idle pose for a second and a half. With a floor under it there is always ground
+		-- going by, the legs keep cycling, and the turn comes out walked as an arc. Deliberately
+		-- not applied to the close-quarters facing above -- see EnemyController's move block.
+		turnCreep = 0.35,
 		avoidRadius = 2.5,      -- start avoiding other zombies within this distance (m)
 		separation = 2.0,       -- how strongly avoidance overrides path following
 		-- How much room a zombie leaves the *player*. Not there to keep its distance -- there

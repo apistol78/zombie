@@ -4,8 +4,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="1">
 			<name>Idle</name>
 			<position>
-				<first>241</first>
-				<second>215</second>
+				<first>365</first>
+				<second>214</second>
 			</position>
 			<animation>{09BEF72E-6FCF-4AA3-B968-842CD9BC8C85}</animation>
 			<transformTime/>
@@ -56,6 +56,16 @@
 			</position>
 			<animation>{67A0798E-B64B-9749-B100-92BD91206681}</animation>
 			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="1">
+			<name>A - Kimodo Walk</name>
+			<position>
+				<first>371</first>
+				<second>-44</second>
+			</position>
+			<animation>{6243B61B-A7C8-7C4B-B9C4-264AB8CA6411}</animation>
+			<transformTime type="traktor.animation.TimeFromLocomotionData">
+			</transformTime>
 		</item>
 	</states>
 	<transitions>
@@ -177,6 +187,48 @@
 			<duration>0.1</duration>
 			<moment>Immediately</moment>
 			<condition>dead</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[3]"/>
+			<to ref="/object/states/item[6]"/>
+			<duration>0.5</duration>
+			<moment>End</moment>
+			<condition>moving</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[6]"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>hit</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[6]"/>
+			<to ref="/object/states/item[4]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>attack</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[6]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>!moving</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[6]"/>
+			<to ref="/object/states/item[2]"/>
+			<duration>0.1</duration>
+			<moment>Immediately</moment>
+			<condition>dead</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item"/>
+			<to ref="/object/states/item[6]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>moving</condition>
 		</item>
 	</transitions>
 	<rootState ref="/object/states/item[3]"/>

@@ -1,19 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Models/CemetaryPillar.blend</fileName>
+	<fileName>Models/CemetaryFence.blend</fileName>
 	<importFilter/>
-	<meshType>MtInstance</meshType>
+	<meshType>MtStatic</meshType>
 	<materialShaders/>
-	<materialTextures>
-		<item>
-			<first>stone_wall_diff_2k</first>
-			<second>{A90BD186-02D0-DF40-BE72-3CD6D6E17162}</second>
-		</item>
-		<item>
-			<first>stone_wall_nor_dx_2k</first>
-			<second>{10F64C14-B82F-2B4D-9383-E1DA7E131087}</second>
-		</item>
-	</materialTextures>
+	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
 	<renormalize>false</renormalize>
@@ -23,5 +14,5 @@
 	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
-	<previewAngle>0.188496</previewAngle>
+	<previewAngle>0</previewAngle>
 </object>

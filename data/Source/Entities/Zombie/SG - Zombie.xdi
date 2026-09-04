@@ -23,7 +23,7 @@
 				<item>{5C1C1059-16EC-40B1-A158-6C00C697EDC3}</item>
 				<item>{6243B61B-A7C8-7C4B-B9C4-264AB8CA6411}</item>
 			</animations>
-			<loopDuration>0.2</loopDuration>
+			<loopDuration>0.4</loopDuration>
 			<transformTime type="traktor.animation.TimeFromLocomotionData">
 			</transformTime>
 		</item>
@@ -33,8 +33,9 @@
 				<first>600</first>
 				<second>331</second>
 			</position>
-			<poseController type="traktor.animation.RagDollPoseControllerData" version="7">
+			<poseController type="traktor.animation.RagDollPoseControllerData" version="8">
 				<skeleton>{54495420-BEA7-4627-86AE-021D88C136F9}</skeleton>
+				<driveOwnerTransform>true</driveOwnerTransform>
 			</poseController>
 		</item>
 		<item type="traktor.animation.StateNodeAnimation" version="2">
@@ -44,6 +45,7 @@
 				<second>108</second>
 			</position>
 			<animations>
+				<item>{74BBCF4C-B235-0E4F-A4B5-AE72DBD29E37}</item>
 				<item>{6A679801-1A59-47C8-9ED5-8357A18E8C60}</item>
 			</animations>
 			<loopDuration>0</loopDuration>

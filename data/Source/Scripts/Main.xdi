@@ -360,6 +360,22 @@ function Main:new(params, environment)
 	self._wardRange = Config.relic.wardRange        -- ...and to a ward post to set one down on it (m)
 	self._carrySpeed = Config.player.carrySpeed       -- movement speed while carrying (normal walk is 3.0)
 
+	-- The cemetery key. One gate stands locked in the wall around the graveyard, and
+	-- two of the ward posts stand behind it, so what it locks away is ground the
+	-- night can be won on. The key rides the same off hand a relic does -- one thing
+	-- in that hand at a time, so a relic run and the key run cannot be combined --
+	-- but a key is light: it does not slow the walk and it does not bar the sprint.
+	--
+	-- The gate owns itself entirely -- the pair of leaves and their swing, the grind,
+	-- and the invisible "GateBlocker" box that does the actual barring, which its own
+	-- unlock() takes out of the world (see Scripts/Gate). This stage keeps only what
+	-- is *around* the gates: where they stand, which are still locked, and the key.
+	self._carriedKey = nil        -- the Key entity in the player's hands, or nil
+	self._keyReachRange = Config.key.reachRange   -- how close to a key you must be to take it (m)
+	self._gateRange = Config.key.gateRange        -- ...and to a locked gate to turn it in the lock
+	self._gates = nil             -- resolved off the world; index order is stable, see resolve
+	self._unlockedGateIndex = {}  -- gate index -> true; plain data, so it survives a hot reload
+
 	-- Wards. A relic is spent by carrying it to a ward post and setting it down there,
 	-- which lights that ward: the light kills whatever is standing on its ground at that
 	-- moment (_purgeWard) and the Spawner will not place anything inside it afterwards.
@@ -828,6 +844,47 @@ function Main:resolve()
 			end
 		end
 	end
+	-- Collect the gates, the same way and for the same reason as the wards above: the
+	-- order only has to be *stable*, because a gate's index in this list is the key
+	-- _unlockedGateIndex remembers it by across a hot reload. Everything a gate *is*
+	-- -- the leaves, the swing, the grind, the invisible blocker that does the actual
+	-- barring -- belongs to the gate entity itself (Scripts/Gate); this only tracks
+	-- where the gates stand and which are still locked.
+	if self._gates == nil then
+		local list = {}
+		local i = 0
+		while true do
+			local e = world:getEntity("Gate", i)
+			if e == nil then
+				break
+			end
+			i = i + 1
+			local p < const > = e.transform.translation
+			table.insert(list, { entity = e, unlocked = false, x = p.x, z = p.z })
+		end
+		table.sort(list, function (l, r)
+			if l.x ~= r.x then
+				return l.x < r.x
+			end
+			return l.z < r.z
+		end)
+		self._gates = list
+
+		-- Re-assert the unlocked ones, instantly, so a mid-game reload does not
+		-- replay the swing or the grind -- Gate:unlock is idempotent about the
+		-- blocker too, so re-asserting one whose bar is already gone is safe. A
+		-- fresh night has an empty index and leaves every gate locked.
+		for k, g in ipairs(self._gates) do
+			g.index = k
+			if self._unlockedGateIndex[k] then
+				g.unlocked = true
+				local sc < const > = g.entity:getComponent(traktor.world.ScriptComponent)
+				if sc ~= nil then
+					sc:unlock(true)
+				end
+			end
+		end
+	end
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
 	end
@@ -934,7 +991,7 @@ function Main:isRunning()
 end
 
 function Main:isCarrying()
-	return self._carried ~= nil
+	return self._carried ~= nil or self._carriedKey ~= nil
 end
 
 -- Has this one already been handed to the rag doll path? Anything that sweeps the horde has
@@ -1235,6 +1292,64 @@ function Main:_nearestRelic(maxDist)
 			local d = dx * dx + dy * dy + dz * dz
 			if d < bestD then
 				best, bestD = r, d
+			end
+		end
+	end
+	if best == nil then
+		return nil, 0.0
+	end
+	return best, math.sqrt(bestD)
+end
+
+-- The closest key still up for grabs, to the same contract as _nearestRelic. A spent
+-- key is read off the entity the same way a spent relic is -- it is hidden where the
+-- gate took it (Key:spend) -- so a hot reload cannot put it back up for grabs.
+function Main:_nearestKey(maxDist)
+	local world = self.world.world
+	if world == nil or self._humanoid == nil then
+		return nil, 0.0
+	end
+
+	local pp < const > = self._humanoid.transform.translation
+	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
+	local i = 0
+	while true do
+		local k = world:getEntity("Key", i)
+		if k == nil then
+			break
+		end
+		i = i + 1
+		if k.visible and k ~= self._carriedKey then
+			local q = k.transform.translation
+			local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
+			local d = dx * dx + dy * dy + dz * dz
+			if d < bestD then
+				best, bestD = k, d
+			end
+		end
+	end
+	if best == nil then
+		return nil, 0.0
+	end
+	return best, math.sqrt(bestD)
+end
+
+-- The closest still-locked gate record, and how far off it is. Measured flat like the
+-- ward scan -- a gate stands on the ground, the interesting distance is across it.
+-- Pass maxDist for the E prompt's reach; omit it for the objective compass.
+function Main:_nearestLockedGate(maxDist)
+	if self._gates == nil or self._humanoid == nil then
+		return nil, 0.0
+	end
+	local pp < const > = self._humanoid.transform.translation
+	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
+	for _, g in ipairs(self._gates) do
+		if not g.unlocked then
+			local dx < const > = g.x - pp.x
+			local dz < const > = g.z - pp.z
+			local d < const > = dx * dx + dz * dz
+			if d < bestD then
+				best, bestD = g, d
 			end
 		end
 	end
@@ -1856,6 +1971,11 @@ function Main:_updateMarker(dt)
 
 			self._markerWard = ward
 			target = ward ~= nil and ward.entity or nil
+		elseif self._carriedKey ~= nil then
+			-- A key in hand has exactly one place to go, so the needle points there.
+			self._markerWard = nil
+			local gate < const > = self:_nearestLockedGate()
+			target = gate ~= nil and gate.entity or nil
 		else
 			self._markerWard = nil
 			target = self:_nearestRelic()
@@ -1903,6 +2023,7 @@ function Main:_updateCrosshair(dt)
 		and self._cutscene == nil
 		and not self._running
 		and self._carried == nil
+		and self._carriedKey == nil
 		and loaded
 		and self._humanoid ~= nil
 
@@ -1938,13 +2059,45 @@ function Main:_showNotice(text)
 end
 
 -- E, edge triggered. With a relic in hand: spend it on a still-dark ward post if one
--- is at the player's feet, otherwise put it down. With empty hands: take the nearest
--- relic in reach.
+-- is at the player's feet, otherwise put it down. With the key in hand: turn it in
+-- the cemetery gate if one is in reach, otherwise put it down. With empty hands:
+-- take the nearest relic in reach, or failing that the nearest key.
 --
--- The relic positions itself for either move (Relic:drop / Relic:place on its
--- ScriptComponent); the Stage owns everything around it -- whether a relic is in
--- hand, which wards burn, and the dawn that breaks.
+-- The relic and the key position themselves for every move (Relic:drop / Relic:place
+-- / Key:drop / Key:spend on their ScriptComponents); the Stage owns everything
+-- around them -- what is in hand, which wards burn, which gates are open, and the
+-- dawn that breaks.
 function Main:_interact()
+	if self._carriedKey ~= nil then
+		local key < const > = self._carriedKey
+		local sc < const > = key:getComponent(traktor.world.ScriptComponent)
+		local gate < const > = self:_nearestLockedGate(self._gateRange)
+		if gate ~= nil then
+			-- Turn it in the lock. The key is spent for good, like a relic on a
+			-- ward: it is parked on the gate and hidden (Key:spend), and the gate
+			-- opens itself -- the swing, the grind, and the invisible box that did
+			-- the actual barring going out of the world are all Gate:unlock's.
+			self._carriedKey = nil
+			gate.unlocked = true
+			self._unlockedGateIndex[gate.index] = true
+			if sc ~= nil then
+				sc:spend(self, gate)
+			end
+			local gsc < const > = gate.entity:getComponent(traktor.world.ScriptComponent)
+			if gsc ~= nil then
+				gsc:unlock()
+			end
+			self:_showNotice("THE CEMETERY GATE GRINDS OPEN")
+		else
+			-- No locked gate in reach: just put it down.
+			self._carriedKey = nil
+			if sc ~= nil then
+				sc:drop(self)
+			end
+		end
+		return
+	end
+
 	if self._carried ~= nil then
 		local relic < const > = self._carried
 		local sc < const > = relic:getComponent(traktor.world.ScriptComponent)
@@ -1997,6 +2150,14 @@ function Main:_interact()
 	local relic < const > = self:_nearestRelic(self._reachRange)
 	if relic ~= nil then
 		self._carried = relic
+		return
+	end
+
+	-- The relic wins a tie on purpose: it is the night's objective, the key is a
+	-- detour, and standing where both are in reach the E prompt promised the relic.
+	local key < const > = self:_nearestKey(self._keyReachRange)
+	if key ~= nil then
+		self._carriedKey = key
 	end
 end
 
@@ -2011,8 +2172,20 @@ function Main:_updateHudText(dt)
 			else
 				prompt = "E   PUT DOWN THE RELIC"
 			end
+		elseif self._carriedKey ~= nil then
+			if self:_nearestLockedGate(self._gateRange) ~= nil then
+				prompt = "E   UNLOCK THE GATE"
+			else
+				prompt = "E   PUT DOWN THE KEY"
+			end
 		elseif self:_nearestRelic(self._reachRange) ~= nil then
 			prompt = "E   TAKE THE RELIC"
+		elseif self:_nearestKey(self._keyReachRange) ~= nil then
+			prompt = "E   TAKE THE KEY"
+		elseif self:_nearestLockedGate(self._gateRange) ~= nil then
+			-- Not an E: standing at the locked gate with nothing to open it with,
+			-- the line says what is missing rather than offering a press.
+			prompt = "THE GATE IS LOCKED"
 		end
 	end
 	self:_setLabel(self._prompt, prompt)
@@ -2437,6 +2610,14 @@ function Main:update(info)
 						end
 						self._carried = nil
 					end
+					-- ...and of the key, for the same reason.
+					if self._carriedKey ~= nil then
+						local sc < const > = self._carriedKey:getComponent(traktor.world.ScriptComponent)
+						if sc ~= nil then
+							sc:drop(self)
+						end
+						self._carriedKey = nil
+					end
 					-- Take the HUD off screen, as the pause menu does -- the dialogs
 					-- are panes now, and a health bar reading zero behind one is not
 					-- what the moment is about. One way only: dying ends this stage,
@@ -2613,6 +2794,17 @@ function Main:postUpdate(info)
 		local aim < const > = self:aim()
 		self._carried.transform = Transform(self:eye() + aim * Vector4(-0.38, -0.5, 0.62, 0.0), aim)
 	end
+
+	-- Carried key: the same left hand, a touch nearer and lower -- it is a small
+	-- thing. Turned a little across the view (the extra yaw, with a hair of pitch)
+	-- so the bow and the teeth read in profile rather than shaft-on, which from
+	-- behind is just a dot.
+	if self._carriedKey ~= nil and self._humanoid ~= nil then
+		local aim < const > = self:aim()
+		self._carriedKey.transform = Transform(
+			self:eye() + aim * Vector4(-0.30, -0.40, 0.55, 0.0),
+			aim * Quaternion.fromEulerAngles(-0.55, 0.1, 0.0))
+	end
 end
 
 function Main:reload()
@@ -2636,6 +2828,10 @@ function Main:reload()
 	-- left pointing at a stale entity the compass would then try to bear on.
 	self._wards = nil
 	self._markerWard = nil
+	-- Gate records likewise hold live entity handles, so they are re-resolved too.
+	-- resolve() restores which are open from _unlockedGateIndex, which survives, and
+	-- Gate:unlock is safe to re-assert on a gate whose bar is already gone.
+	self._gates = nil
 	-- Hive records likewise; resolve() restores which of them are open from
 	-- _awakeHiveIndex, which survives. A cutscene in flight holds one of those records,
 	-- so it goes too -- reloading mid-shot cuts back to the player rather than leaving

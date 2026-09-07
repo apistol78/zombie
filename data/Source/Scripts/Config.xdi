@@ -503,6 +503,24 @@ Config = {
 		markerSwitchMargin = 4.0
 	},
 
+	-- ---- The cemetery key and its gate ----
+	--
+	-- One gate stands locked in the cemetery wall, and two of the ward posts stand
+	-- behind it. The key is carried exactly as a relic is -- off hand, one at a time --
+	-- but it is light: it does not slow the walk and it does not bar the sprint.
+	key = {
+		reachRange = 2.2,       -- how close to the key you must be to take it (m)
+		gateRange = 3.5,        -- ...and to the gate to turn it in the lock
+		dropAhead = 0.7         -- how far in front of the player a put-down key lands
+	},
+	gate = {
+		-- How far each leaf swings open (rad; ~106 deg leaves them lying along the
+		-- inside of the wall) and how long the swing takes. The grind that plays over
+		-- it is authored on the gate entity's event set, not timed here.
+		swingAngle = 1.85,
+		swingTime = 2.4
+	},
+
 	-- ---- Pickups ----
 	pickup = {
 		takeRange = 1.2,        -- how close the player's origin must come to collect one

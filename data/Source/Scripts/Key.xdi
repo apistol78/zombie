@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using {6E9AD100-0000-4000-8000-000000000010}
+import(traktor)
+
+-- Key
+--
+-- The iron key to the cemetery gate. Carried exactly as a relic is -- one at a
+-- time, in the player's off hand, with Main:postUpdate driving the carry -- and
+-- spent, like a relic, on the one thing it exists for: Main calls spend() when it
+-- is turned in a lock. As with Scripts/Relic, this component owns only where the
+-- key ends up when it leaves the player's hands:
+--
+--   * Key:drop(context)         put it down on the ground in front of the player
+--   * Key:spend(context, gate)  give it to the gate it just opened
+--
+-- Both are called by Main via entity:getComponent(world.ScriptComponent). context
+-- is the Stage (the Main instance), so a dropped key reads the player straight off
+-- it and grounds itself with the Stage's own ground query; gate is one of the
+-- Stage's gate records (see Main:resolve). Everything around the move stays with
+-- the Stage: what is in hand, which gates are open, and the blocker that comes out
+-- of the world as one unlocks.
+
+Key = Key or class("Key", traktor.world.ScriptComponent)
+
+local DROP_AHEAD < const > = Config.key.dropAhead   -- how far in front of the player a put-down key lands (m)
+
+-- Put the key down in front of the player, standing on the ground and facing the
+-- way they are -- the same move, for the same reason, as Relic:drop. The mesh's
+-- pivot is at the teeth's tip, so grounding the origin stands it on end.
+function Key:drop(context)
+	local player < const > = context._humanoid
+	if player == nil then
+		return
+	end
+	local heading < const > = Quaternion.fromEulerAngles(context._heading, 0.0, 0.0)
+	local at < const > = player.transform.translation + heading * Vector4(0.0, 0.0, DROP_AHEAD, 0.0)
+	self.owner.transform = Transform(context:_groundAt(at), heading)
+end
+
+-- Spend the key on the gate it just opened: park it there and put it out of sight.
+-- Parked rather than left hanging where the player's hands were, for the same
+-- reason a spent relic parks on its ward -- the entity is still what anything
+-- positional would read the key off -- and hidden because a turned lock has no
+-- further use for it. Main reads a spent key off the entity exactly as it reads a
+-- spent relic (_nearestKey skips the invisible), so a hot reload cannot put it
+-- back up for grabs.
+function Key:spend(context, gate)
+	if gate == nil then
+		return
+	end
+	self.owner.transform = gate.entity.transform
+	self:_setVisible(false)
+end
+
+-- Show or hide the key and everything hanging off it. Entity visibility does not
+-- carry to GroupComponent children -- see Relic:_setVisible, which this repeats --
+-- so the key's little glow has to be switched by hand, or a spent key leaves its
+-- light burning in the gateway with nothing to come from.
+function Key:_setVisible(visible)
+	self.owner.visible = visible
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return
+	end
+	local children < const > = group.entities
+	for i = 0, children.size - 1 do
+		local child = children:get(i)
+		child.visible = visible
+	end
+end
+]]></text>
+</object>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using {6E9AD100-0000-4000-8000-000000000010}
+import(traktor)
+
+-- Gate
+--
+-- The cemetery gate: a pair of iron leaves hung in the entrance arch, locked until
+-- the player turns the key in it (Main:_interact calls unlock()). This component
+-- owns the whole of the gate: the two leaves and their swing, the grind raised off
+-- the entity's event set as they start to move, and the barring -- an invisible
+-- static box, a "GateBlocker" child in this same group, which unlock() takes out
+-- of the world. The leaves themselves are never colliders, so the swing never has
+-- to argue with the physics. The Stage keeps only what is around the gate: which
+-- gates are locked (across a hot reload), and the key that is spent on one.
+--
+-- Attach to an entity whose GroupComponent holds the blocker and two children
+-- named "LeafL" and "LeafR": each the leaf mesh with its hinge edge at its own
+-- origin and the panel extending +X, authored at (-HINGE_X) and (+HINGE_X, yaw pi)
+-- so the pair meets in the middle. The swing recomputes exactly those transforms
+-- with the opening angle added, so a still-locked gate stands precisely where it
+-- was authored.
+--
+-- unlock() is idempotent and takes instant=true -- the reload-restore path, the
+-- same contract as Ward:turnOn -- to snap straight to open without replaying the
+-- swing or the grind.
+
+Gate = Gate or class("Gate", traktor.world.ScriptComponent)
+
+local SWING_ANGLE < const > = Config.gate.swingAngle   -- how far each leaf swings open (rad)
+local SWING_TIME < const > = Config.gate.swingTime     -- ...and how long the swing takes (s)
+
+-- Where the hinges stand, either side of the gate's own origin (m). Authoring data
+-- as much as code: it must match the leaf children's translations in
+-- Entities/Cemetary/CemetaryGate, and the leaf mesh is built 2.14 m wide against
+-- it so the pair meets in the middle with a hand's width of daylight.
+local HINGE_X < const > = 2.175
+
+function Gate:unlock(instant)
+	if self._unlocked then
+		return
+	end
+	self._unlocked = true
+	self._openT = instant and 1.0 or 0.0
+	self._posed = false
+
+	-- Take the bar out of the world, for good. removeEntity clears the entity's
+	-- world pointer immediately (only membership is deferred), which is what lets
+	-- destroy() run here -- the same pair Scripts/Pickup uses, and the destroy is
+	-- what actually tears the collision down. On the restore path -- a hot reload
+	-- re-asserting an already-open gate -- the child found here is one destroyed in
+	-- an earlier life (a destroyed child stays in its group's list, component-less
+	-- and out of the world), and both calls are then safe no-ops.
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	local blocker < const > = group ~= nil and group:getEntity("GateBlocker", 0) or nil
+	if blocker ~= nil then
+		self.world:removeEntity(blocker)
+		group:removeEntity(blocker)
+		blocker:destroy()
+	end
+
+	-- The grind, skipped on the restore path: putting an already-open gate back the
+	-- way it was is not an event.
+	if not instant then
+		local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
+		if fx ~= nil then
+			fx:raise("open")
+		end
+	end
+end
+
+function Gate:isLocked()
+	return self._unlocked ~= true
+end
+
+-- Find (once) and cache the two leaves, the same way Ward finds its switch.
+function Gate:_leaves()
+	if self._leafL ~= nil then
+		return self._leafL, self._leafR
+	end
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return nil, nil
+	end
+	self._leafL = group:getEntity("LeafL", 0)
+	self._leafR = group:getEntity("LeafR", 0)
+	return self._leafL, self._leafR
+end
+
+function Gate:update(context, totalTime, deltaTime)
+	-- A locked gate's leaves stand exactly where they were authored: nothing to do.
+	-- _posed is what stops an open gate being re-written every frame forever -- the
+	-- final pose is written once, and on the instant path it is the only write.
+	if not self._unlocked or self._posed then
+		return
+	end
+	local l < const >, r < const > = self:_leaves()
+	if l == nil or r == nil then
+		return
+	end
+
+	local t = math.min(1.0, (self._openT or 0.0) + deltaTime / SWING_TIME)
+	self._openT = t
+	if t >= 1.0 then
+		self._posed = true
+	end
+
+	-- Smoothstep, so the leaves gather speed off the latch and settle against the
+	-- wall instead of stopping dead -- and the opening angle that buys.
+	local k < const > = t * t * (3.0 - 2.0 * t)
+	local a < const > = k * SWING_ANGLE
+
+	-- Rebuild each leaf's transform from the gate's own, exactly as authored plus
+	-- the swing: hinge offset along the gate's X, yaw about the hinge. The two turn
+	-- opposite ways (a and pi - a), which is what mirrors the pair through the
+	-- middle -- both free edges travel to the same side of the wall together.
+	local base < const > = self.owner.transform
+	local bt < const > = base.translation
+	local br < const > = base.rotation
+	l.transform = Transform(bt + br * Vector4(-HINGE_X, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(a, 0.0, 0.0))
+	r.transform = Transform(bt + br * Vector4(HINGE_X, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(math.pi - a, 0.0, 0.0))
+end
+]]></text>
+</object>

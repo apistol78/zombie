@@ -5464,6 +5464,36 @@
 							<components/>
 							<entityData>{22CA0161-4BF0-B54E-9625-3F3C063C5473}</entityData>
 						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6E9AD100-0000-4000-8000-000000000029}</id>
+							<name>Gate</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0.124473, 23.1262, 53.073883, 1</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{6E9AD100-0000-4000-8000-000000000027}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6E9AD100-0000-4000-8000-00000000002A}</id>
+							<name>Key</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-18.617533, 24.076387, 61.203968, 0</translation>
+								<rotation>0, 0.435, 0, 0.9004</rotation>
+							</transform>
+							<components/>
+							<entityData>{6E9AD100-0000-4000-8000-000000000026}</entityData>
+						</item>
 					</entityData>
 				</item>
 			</components>
@@ -9467,8 +9497,8 @@
 								<locked>true</locked>
 							</state>
 							<transform>
-								<translation>-25.007, 22.720116, 70.496101, 0</translation>
-								<rotation>0.004182, 0.864369, 0.037856, 0.501414</rotation>
+								<translation>-27.339483, 23.063278, 72.495865, 0</translation>
+								<rotation>-0.047023, 0.0553, -0.030826, -0.996885</rotation>
 							</transform>
 							<components/>
 							<entityData>{3915E510-E162-4428-8DA7-B9233A8C9A4D}</entityData>

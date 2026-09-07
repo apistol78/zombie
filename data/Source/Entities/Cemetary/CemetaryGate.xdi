@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{6E9AD100-0000-4000-8000-000000000027}</id>
+	<name>Gate</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.world.ScriptComponentData" version="2">
+			<class>{6E9AD100-0000-4000-8000-000000000025}</class>
+			<properties/>
+			<editorSupport>false</editorSupport>
+		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>open</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{6E9AD100-0000-4000-8000-000000000028}</sound>
+						<positional>true</positional>
+						<follow>false</follow>
+						<autoStopFar>true</autoStopFar>
+					</second>
+				</item>
+			</eventData>
+		</item>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{6E9AD100-0000-4000-8000-000000000031}</id>
+					<name>LeafL</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>-2.175, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{6E9AD100-0000-4000-8000-000000000041}</mesh>
+						</item>
+					</components>
+				</item>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{6E9AD100-0000-4000-8000-000000000032}</id>
+					<name>LeafR</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>2.175, 0, 0, 0</translation>
+						<rotation>0, 1, 0, 0</rotation>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{6E9AD100-0000-4000-8000-000000000041}</mesh>
+						</item>
+					</components>
+				</item>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{6E9AD100-0000-4000-8000-000000000033}</id>
+					<name>GateBlocker</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 1.55, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.physics.RigidBodyComponentData" version="1">
+							<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+								<shape type="traktor.physics.BoxShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+									<localTransform>
+										<translation>0, 0, 0, 0</translation>
+										<rotation>0, 0, 0, 1</rotation>
+									</localTransform>
+									<collisionGroup>
+										<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+									</collisionGroup>
+									<collisionMask>
+										<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+										<item>{54CA99BF-4F5F-4DD5-97E4-33BB23E1E784}</item>
+										<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+										<item>{FD7626B1-645F-4A36-A534-B4598A1E8A2E}</item>
+									</collisionMask>
+									<material>0</material>
+									<extent>2.3, 1.55, 0.2, 0</extent>
+									<margin>0</margin>
+								</shape>
+								<friction>0.75</friction>
+								<restitution>0</restitution>
+								<kinematic>false</kinematic>
+							</bodyDesc>
+							<eventCollide/>
+							<transformFilter>0</transformFilter>
+						</item>
+					</components>
+				</item>
+			</entityData>
+		</item>
+	</components>
+</object>

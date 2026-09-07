@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Models/Cem_CrossMonument.tmd</fileName>
+	<fileName>Models/Cem_CrossMonument.gltf</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
 	<materialShaders/>
-	<materialTextures/>
+	<materialTextures>
+		<item>
+			<first>diffuse</first>
+			<second>{E06BB89E-6754-48EC-91A7-0FAACAEFFC38}</second>
+		</item>
+		<item>
+			<first>normal</first>
+			<second>{8B4078D6-0CB2-4399-B215-55CE73B584DD}</second>
+		</item>
+	</materialTextures>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
 	<renormalize>false</renormalize>

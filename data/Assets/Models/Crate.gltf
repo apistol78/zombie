@@ -1,0 +1,115 @@
+{
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "type": "VEC3",
+   "count": 24,
+   "min": [
+    -0.5,
+    -0.5,
+    -0.5
+   ],
+   "max": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "type": "VEC3",
+   "count": 24
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "type": "VEC2",
+   "count": 24
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "type": "SCALAR",
+   "count": 36
+  }
+ ],
+ "asset": {
+  "generator": "Traktor",
+  "version": "2.0"
+ },
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 288
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 288
+  },
+  {
+   "buffer": 0,
+   "byteLength": 192,
+   "byteOffset": 576
+  },
+  {
+   "buffer": 0,
+   "byteLength": 144,
+   "byteOffset": 768
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "data:application/octet-stream;base64,AAAAPwAAAL8AAAA/AAAAPwAAAD8AAAA/AAAAvwAAAD8AAAA/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAL8AAAA/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAL8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAD8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAgD8AAAAAAwAAAAAAAAABAAAAAQAAAAIAAAADAAAABwAAAAQAAAAFAAAABQAAAAYAAAAHAAAACwAAAAgAAAAJAAAACQAAAAoAAAALAAAADwAAAAwAAAANAAAADQAAAA4AAAAPAAAAEwAAABAAAAARAAAAEQAAABIAAAATAAAAFwAAABQAAAAVAAAAFQAAABYAAAAXAAAA",
+   "byteLength": 912
+  }
+ ],
+ "meshes": [
+  {
+   "primitives": [
+    {
+     "indices": 3,
+     "material": 0,
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     }
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "Crate",
+   "pbrMetallicRoughness": {
+    "metallicFactor": 0,
+    "roughnessFactor": 0.800000012,
+    "baseColorTexture": {
+     "index": 0,
+     "texCoord": 0
+    }
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0
+  }
+ ],
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "name": "diffuse"
+  }
+ ]
+}

@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Models/Greeblies/Mushrooms.tmd</fileName>
+	<fileName>Models/Greeblies/Mushrooms.gltf</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
 	<materialShaders/>
-	<materialTextures/>
+	<materialTextures>
+		<item>
+			<first>diffuse</first>
+			<second>{0EDC9348-A11D-46CD-B03E-748A0553CADF}</second>
+		</item>
+	</materialTextures>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
 	<renormalize>false</renormalize>

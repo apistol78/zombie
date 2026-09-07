@@ -1,0 +1,122 @@
+{
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "type": "VEC3",
+   "count": 24,
+   "min": [
+    -4.61999989,
+    -1.25999999,
+    -7.55999994
+   ],
+   "max": [
+    4.61999989,
+    0.167999998,
+    7.55999994
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "type": "VEC3",
+   "count": 24
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "type": "VEC2",
+   "count": 24
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "type": "SCALAR",
+   "count": 36
+  }
+ ],
+ "asset": {
+  "generator": "Traktor",
+  "version": "2.0"
+ },
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 288
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 288
+  },
+  {
+   "buffer": 0,
+   "byteLength": 192,
+   "byteOffset": 576
+  },
+  {
+   "buffer": 0,
+   "byteLength": 144,
+   "byteOffset": 768
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "data:application/octet-stream;base64,CteTQDEILD6F6/FACteTwDEILD6F6/FACteTwK5Hob+F6/FACteTQK5Hob+F6/FACteTwDEILD6F6/HACteTQDEILD6F6/HACteTQK5Hob+F6/HACteTwK5Hob+F6/HACteTwK5Hob+F6/HACteTwK5Hob+F6/FACteTwDEILD6F6/FACteTwDEILD6F6/HACteTQDEILD6F6/HACteTQDEILD6F6/FACteTQK5Hob+F6/FACteTQK5Hob+F6/HACteTQDEILD6F6/HACteTwDEILD6F6/HACteTwDEILD6F6/FACteTQDEILD6F6/FACteTQK5Hob+F6/FACteTwK5Hob+F6/FACteTwK5Hob+F6/HACteTQK5Hob+F6/HAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAACteTwDEILD4K15NAMQgsPgrXk0CuR6G/CteTwK5Hob8K15NAMQgsPgrXk8AxCCw+CteTwK5Hob8K15NArkehv4Xr8cCuR6G/hevxQK5Hob+F6/FAMQgsPoXr8cAxCCw+hevxwDEILD6F6/FAMQgsPoXr8UCuR6G/hevxwK5Hob8K15PAhevxwArXk0CF6/HACteTQIXr8UAK15PAhevxQArXk8CF6/FACteTQIXr8UAK15NAhevxwArXk8CF6/HAAwAAAAAAAAABAAAAAgAAAAMAAAABAAAABwAAAAQAAAAFAAAABgAAAAcAAAAFAAAACwAAAAgAAAAJAAAACgAAAAsAAAAJAAAADwAAAAwAAAANAAAADgAAAA8AAAANAAAAEwAAABAAAAARAAAAEgAAABMAAAARAAAAFwAAABQAAAAVAAAAFgAAABcAAAAVAAAA",
+   "byteLength": 912
+  }
+ ],
+ "meshes": [
+  {
+   "primitives": [
+    {
+     "indices": 3,
+     "material": 0,
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     }
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "Chapel_FoundationMat",
+   "pbrMetallicRoughness": {
+    "metallicFactor": 0,
+    "roughnessFactor": 0.800000012,
+    "baseColorTexture": {
+     "index": 0,
+     "texCoord": 0
+    }
+   },
+   "normalTexture": {
+    "index": 1,
+    "texCoord": 0
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0
+  }
+ ],
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "name": "diffuse"
+  },
+  {
+   "name": "normal"
+  }
+ ]
+}

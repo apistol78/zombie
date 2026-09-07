@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Models/Key.tmd</fileName>
+	<fileName>Models/Key.blend</fileName>
 	<importFilter/>
 	<meshType>MtStatic</meshType>
-	<materialShaders>
-		<item>
-			<first>KeyMat</first>
-			<second>{B1CCEE00-0000-4000-8000-0000000000B1}</second>
-		</item>
-	</materialShaders>
+	<materialShaders/>
 	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
@@ -18,6 +13,6 @@
 	<decalResponse>true</decalResponse>
 	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
-	<raytracingReduce>1</raytracingReduce>
-	<previewAngle>0</previewAngle>
+	<raytracingReduce>0.1</raytracingReduce>
+	<previewAngle>2.576106</previewAngle>
 </object>

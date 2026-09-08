@@ -86,17 +86,17 @@ const float c_elevationFalloff = 2.0f;
 const float c_noiseScale = 0.5f;	// Inverse billow size, 1/m.
 const float c_noiseAmount = 1.0f;	// Fraction of density the noise can remove.
 
-const float height = $WorldPosition.y - $Elevation;
-float attenuation = 1.0f - smoothstep(0.0f, c_elevationFalloff, height);
+float extinction = 1.0f;
 
-// Noise modulates density only; scattering and extinction still fall off
-// together, so the albedo stays constant and the medium thins rather than
-// changing character.
-const vec3 wp = $WorldPosition.xyz + vec3(0.0f, -$Time, 0.0f);
-const float ns = PerlinFbm3(wp * c_noiseScale, 2) * 2.0f + 0.35f;
-attenuation *= clamp(ns, 0.0f, 1.0f);
-
-const float extinction = $MediumDensity * attenuation;
+if ($WorldPosition.y > 19.0f)
+{
+	const float height = $WorldPosition.y - $Elevation;
+	float attenuation = 1.0f - smoothstep(0.0f, c_elevationFalloff, height);
+	const vec3 wp = $WorldPosition.xyz + vec3(0.0f, -$Time, 0.0f);
+	const float ns = PerlinFbm3(wp * c_noiseScale, 2) * 2.0f + 0.35f;
+	attenuation *= clamp(ns, 0.0f, 1.0f);
+	extinction = $MediumDensity * attenuation;
+}
 
 $Output = vec4($MediumColor.rgb * extinction * ($InScatter.rgb + $Ambient.rgb), extinction);
 

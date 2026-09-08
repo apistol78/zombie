@@ -90,6 +90,14 @@ local GROUND_UP < const > = 1.0        -- begin the trace this far above the nav
 local GROUND_DOWN < const > = 3.0      -- ...and look this far below it (m)
 local GROUND_MIN_NORMAL_Y < const > = Config.spawner.groundMinNormalY   -- reject ground steeper than ~45 degrees
 
+-- Clearance from the nav mesh's own edges. The mesh is baked for path finding and is
+-- generous about it: its walkable surface runs right up against walls, boulders and
+-- the sides of buildings, since a zombie already moving can slide along them. A zombie
+-- *placed* on that edge is another matter -- it rises with half its capsule inside the
+-- rock and spends its stand-up animation being shoved back out. So a candidate has to
+-- sit at least a controller's width off the nearest edge; see Config.
+local WALL_MARGIN < const > = Config.spawner.wallMargin
+
 -- Static world only (terrain, boulders, logs, props). The player and the zombies are in
 -- the Interactable group, so this keeps them from being mistaken for ground - without it
 -- a zombie could spawn standing on another zombie's head.
@@ -169,6 +177,20 @@ local function groundNavPoint(navMesh, x, y, z)
 		return nil
 	end
 	return p
+end
+
+-- Is there room to stand a zombie at nav point p without it clipping a wall?
+--
+-- findDistanceToWall searches out to the given radius and reports the nearest edge
+-- inside it, or the radius itself when it found none, so asking with WALL_MARGIN and
+-- checking the answer comes back whole is the whole test. It returns nil when the point
+-- cannot be tied to a polygon at all, which for a point findRandomPoint just handed out
+-- means something is off -- treat that as no room rather than guess. The small slack
+-- is for the round trip through the squared radius inside Detour, which can land a
+-- hair under the value passed in when nothing was hit.
+local function clearOfWalls(navMesh, p)
+	local d < const > = navMesh:findDistanceToWall(p, WALL_MARGIN)
+	return d ~= nil and d >= WALL_MARGIN - 0.001
 end
 
 function Spawner:new()
@@ -376,7 +398,11 @@ function Spawner:update(context, totalTime, deltaTime)
 		if p.x ~= 0.0 or p.y ~= 0.0 or p.z ~= 0.0 then
 			local dx, dz = p.x - playerPos.x, p.z - playerPos.z
 			local flat2 < const > = dx * dx + dz * dz
-			if flat2 >= spawnMin * spawnMin and flat2 <= SPAWN_MAX * SPAWN_MAX then
+			-- Wall clearance is tested on the nav point, before any ray is spent on it:
+			-- it is the mesh's edge that is the problem, and the mesh is what knows
+			-- where that is.
+			if flat2 >= spawnMin * spawnMin and flat2 <= SPAWN_MAX * SPAWN_MAX
+				and clearOfWalls(self._navMesh, p) then
 				-- Settle onto the actual surface, and take the ground's own verdict on
 				-- whether this is a place to stand: a near-vertical hit means the nav
 				-- point landed on a cliff face or the side of a boulder, where a zombie

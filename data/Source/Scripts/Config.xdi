@@ -437,7 +437,13 @@ Config = {
 		velSmooth = 6.0,        -- how hard the player's travel direction is smoothed
 
 		-- Steepest ground a zombie may be stood on, as the surface normal's Y.
-		groundMinNormalY = 0.7
+		groundMinNormalY = 0.7,
+
+		-- Nearest a zombie may be placed to a nav-mesh edge (m). The mesh is generous
+		-- enough for path finding to hug walls and boulders, but a capsule placed on its
+		-- very edge rises half inside the rock. This is the width of the zombie
+		-- character controller: AiCharacterComponent radius 0.36 m on both rigs.
+		wallMargin = 0.72
 	},
 
 	-- ---- Hives ----

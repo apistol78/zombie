@@ -2,76 +2,123 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using {6E9AD100-0000-4000-8000-000000000010}
+#using {1F58C1CA-F879-41CF-A107-D2EA6A75F8EB}
 import(traktor)
 
 -- Relic
 --
 -- A consecrated cross the player carries, one at a time, to whichever ward post they
--- decide to light with it. This component owns only where the relic ends up when it
--- leaves the player's hands:
+-- decide to light with it. A Carryable (see Scripts/Carryable): the base owns the
+-- carrying, the dropping and the park-and-hide of spending, and what is written here
+-- is only what makes the relic the night's objective --
 --
---   * Relic:drop(context)         put it down on the ground in front of the player
---   * Relic:place(context, ward)  hand it over to that ward post, which shows its own
+--   * it is spent on a still-dark ward post in reach (findTarget), and spending it
+--     is what lights the ward, with everything that buys and costs (onSpend)
+--   * carrying it fills the off hand at a wary walk with the sprint barred
+--     (walkSpeed): every relic run is a route you commit to
+--   * the objective compass points it at a post, held so the needle does not flip
+--     on the midline between two of them (objective)
 --
--- Both are called by Main -- via entity:getComponent(world.ScriptComponent) -- in
--- place of the old Main:_dropRelic / Main:_placeRelic. context is the Stage (the
--- Main instance), so a dropped relic reads the player straight off it and grounds
--- itself with the Stage's own ground query; ward is one of the Stage's ward records
--- (see Main:resolve), which is what carries the entity to hand it over to.
---
--- Everything around the move stays with the Stage, which owns it: whether a relic
--- is in hand, which wards burn, and the dawn that breaks. Carrying is likewise
--- driven by Main:postUpdate; this only handles letting go.
+-- Everything around the item stays with the Stage, which owns it: what is in hand,
+-- which wards burn, and the dawn that breaks.
 
-Relic = Relic or class("Relic", traktor.world.ScriptComponent)
+Relic = Relic or class("Relic", Carryable)
 
-local DROP_AHEAD < const > = Config.relic.dropAhead     -- how far in front of the player a dropped relic lands (m)
+local WARD_RANGE < const > = Config.relic.wardRange   -- how close to a post to set one down on it (m)
+local DROP_AHEAD < const > = Config.relic.dropAhead   -- how far in front of the player a dropped one lands (m)
+local CARRY_SPEED < const > = Config.player.carrySpeed
 
--- Put the relic down in front of the player, standing on the ground and facing
--- the way they are. This is the move that buys the rifle back.
-function Relic:drop(context)
-	local player < const > = context._humanoid
-	if player == nil then
-		return
-	end
-	local heading < const > = Quaternion.fromEulerAngles(context._heading, 0.0, 0.0)
-	local at < const > = player.transform.translation + heading * Vector4(0.0, 0.0, DROP_AHEAD, 0.0)
-	self.owner.transform = Transform(context:_groundAt(at), heading)
+-- How much nearer a rival ward post has to be before the compass gives up the one
+-- it is already pointing at. Without it, carrying a relic along the midline between
+-- two dark posts flips the needle back and forth -- and each flip snaps and flashes
+-- it (ObjectiveMarker:retarget), so it reads as an instruction changing rather than
+-- as jitter. Comfortably wider than the tightest pair in Scene 2.
+local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
+
+function Relic:findTarget(context)
+	return (context:_nearestUnlitWard(WARD_RANGE))
 end
 
--- Spend the relic on a ward: hand it over to the post. The ward has a relic of its
--- own standing at the pillar, held dark behind its facade with the flame and brought
--- up the moment it is lit (see Scripts/Ward), so this one is put out of sight rather
--- than stood on the ground -- otherwise the player would be looking at two.
+-- Spend it here: the post takes light. Safe ground opens up around wherever the
+-- player chose to spend this one, whatever was standing on it dies, the forest
+-- beyond it speeds up -- and a hive opens somewhere out in that forest. All three
+-- read out on the one notice line rather than replacing each other, because they
+-- are one event: this is what the relic bought and what it cost.
 --
--- Parked on the post it bought before it goes: it is still the entity the Stage reads
--- a relic's position off (the minimap dot, the objective compass), so leaving it lying
--- wherever the player's hands happened to be would put that dot beside the post rather
--- than on it. Nothing else moves it afterwards -- carrying is what drives a relic's
--- transform, and this one is no longer carried.
-function Relic:place(context, ward)
-	if ward == nil then
-		return
+-- The post takes the relic over: it brings up one of its own as it lights (see
+-- Scripts/Ward), so which ground has been bought stays legible out in the dark --
+-- which is why the base has already put this one out of sight rather than standing
+-- it on the ground beside the post's, or the player would be looking at two.
+function Relic:onSpend(context, ward)
+	local lit < const >, purged < const >, hive < const > = context:_lightWard(ward)
+	if lit then
+		local notice = "A WARD IS LIT"
+		if purged > 0 then
+			notice = notice .. "   " .. tostring(purged) .. " TAKEN BY THE LIGHT"
+		end
+		if hive ~= nil then
+			notice = notice .. "   A HIVE STIRS"
+		end
+		context:_showNotice(notice)
 	end
-	self.owner.transform = ward.entity.transform
-	self:_setVisible(false)
+
+	-- Closing the circle ends the night. Checked after the ward, so its notice
+	-- replaces the ward one rather than being overwritten by it.
+	if context:_wardsDone() then
+		context:_breakDawn()
+	end
 end
 
--- Show or hide the relic and everything hanging off it. Entity visibility does not
--- carry to the children a GroupComponent holds -- each one is an entity of the world
--- in its own right -- so the relic's own little light has to be switched by hand, or
--- a hidden relic leaves its glow burning at the post with nothing to come from.
-function Relic:_setVisible(visible)
-	self.owner.visible = visible
-	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
-	if group == nil then
-		return
+-- The compass while carried: the nearest still-dark post. Only ever a suggestion --
+-- with no altar to return to, where a relic goes is the player's decision, and
+-- walking past the needle to a post that covers better ground is the whole point of
+-- the mechanic.
+--
+-- Held on the post it already points at until a rival is clearly nearer (the
+-- margin), and dropped the moment that post is lit. The hold is this component's
+-- own state and goes with the relic leaving the hands (onRelease), so a put-down
+-- relic picked back up starts fresh.
+function Relic:objective(context)
+	local ward, wd = context:_nearestUnlitWard()
+	local held < const > = self._heldWard
+	if held ~= nil and not held.lit and ward ~= nil and ward ~= held then
+		if context:_wardDistance(held) <= wd + MARKER_SWITCH_MARGIN then
+			ward = held
+		end
 	end
-	local children < const > = group.entities
-	for i = 0, children.size - 1 do
-		local child = children:get(i)
-		child.visible = visible
-	end
+	self._heldWard = ward
+	return ward ~= nil and ward.entity or nil
+end
+
+function Relic:onRelease(context)
+	self._heldWard = nil
+end
+
+-- Carrying one fills one hand rather than both, so the rifle stays up and you can
+-- still fire -- but sprinting is out and you move at a wary walk, and no amount of
+-- Shift helps.
+function Relic:walkSpeed(context)
+	return CARRY_SPEED
+end
+
+function Relic:takeEvent()
+	return "relicTaken"
+end
+
+function Relic:promptTake()
+	return "TAKE THE RELIC"
+end
+
+function Relic:promptSpend()
+	return "LIGHT THE WARD"
+end
+
+function Relic:promptDrop()
+	return "PUT DOWN THE RELIC"
+end
+
+function Relic:dropAhead()
+	return DROP_AHEAD
 end
 ]]></text>
 </object>

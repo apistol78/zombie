@@ -22,6 +22,12 @@
 -- and lulls, and publishes the verdict to the Spawner as _spawnDrive on this stage.
 #using \{9F2C606F-BD26-43E1-9A3F-B108C688FB02}
 
+-- Scripts/Carryable, the base of everything the off hand carries. Not named in this
+-- file -- the stage only ever talks to whichever component the carried entity holds
+-- -- but the relic and the key are built on it, and this stage's one hand and the
+-- HAND_KINDS roster below are the other half of its contract.
+#using \{1F58C1CA-F879-41CF-A107-D2EA6A75F8EB}
+
 import(traktor)
 
 -- Main
@@ -59,12 +65,18 @@ local atan2 < const > = math.atan2 or math.atan
 local EYE_OFFSET < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 
 
--- How much nearer a rival ward post has to be before the objective compass gives up
--- the one it is already pointing at. Without it, carrying a relic along the midline
--- between two dark posts flips the needle back and forth -- and each flip snaps and
--- flashes it (ObjectiveMarker:retarget), so it reads as an instruction changing
--- rather than as jitter. Comfortably wider than the tightest pair in Scene 2.
-local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
+-- What the off hand can carry, in priority order: standing where two kinds are in
+-- reach, E takes the earlier one -- the relic is the night's objective and the key a
+-- detour, so the relic wins. Each entry is only an entity name and how close the
+-- player must be to take one, because that is all the *scan* needs; everything else
+-- about an item -- what it is spent on, what spending does, how it rides in the
+-- hand, what the E line says -- is asked of its own Carryable component (see
+-- Scripts/Carryable). Adding an item to the night is a Carryable subclass and one
+-- line here.
+local HAND_KINDS < const > = {
+	{ entity = "Relic", reach = Config.relic.reachRange },
+	{ entity = "Key", reach = Config.key.reachRange }
+}
 
 -- Where the minimap sits: its own corner, clear of the prompt line in the middle and
 -- the HUD row along the bottom. The frame lays out at 1280x720 whatever
@@ -350,34 +362,29 @@ function Main:new(params, environment)
 	-- not updated and so cannot time its own return.
 	self._respawning = {}
 
-	-- Relics. The night's objective: consecrated crosses are scattered around the
-	-- map's landmarks and have to be carried, one at a time, back to the altar at
-	-- the chapel.
+	-- The off hand. One thing carried in it at a time -- a relic, the key, whatever
+	-- HAND_KINDS grows next -- and one field for whichever it is. Everything per-kind
+	-- (what it is spent on, what spending does, how it rides in the hand, what the E
+	-- line says, what the walk may do under it) is asked of the entity's own Carryable
+	-- component, so this stage holds no opinion about what it is holding; see
+	-- Scripts/Carryable for the split, and HAND_KINDS above for the roster.
 	--
-	-- Carrying one is the whole point of the mechanic. It fills one hand rather than
-	-- both, so the rifle stays up and you can still fire (it just rides a little
-	-- further right, out of the relic's way) -- but sprinting is out and you move at a
-	-- wary walk. Every relic run is therefore a route you commit to, and putting it
-	-- down is no longer the only way to fight back.
-	self._carried = nil          -- the Relic entity in the player's hands, or nil
-	self._placedRelics = {}      -- spent relics; skipped when scanning for one to take
-	self._reachRange = Config.relic.reachRange       -- how close to a relic you must be to take it (m)
-	self._wardRange = Config.relic.wardRange        -- ...and to a ward post to set one down on it (m)
-	self._carrySpeed = Config.player.carrySpeed       -- movement speed while carrying (normal walk is 3.0)
+	-- Carrying the relic is the whole point of that mechanic: it fills one hand rather
+	-- than both, so the rifle stays up and you can still fire -- but sprinting is out
+	-- and you move at a wary walk, so every relic run is a route you commit to. The
+	-- key rides the same hand -- one thing in it at a time, so a relic run and the key
+	-- run cannot be combined -- but a key is light and costs the walk nothing.
+	self._hand = nil             -- the carried entity, or nil
 
-	-- The cemetery key. One gate stands locked in the wall around the graveyard, and
-	-- two of the ward posts stand behind it, so what it locks away is ground the
-	-- night can be won on. The key rides the same off hand a relic does -- one thing
-	-- in that hand at a time, so a relic run and the key run cannot be combined --
-	-- but a key is light: it does not slow the walk and it does not bar the sprint.
-	--
-	-- The gate owns itself entirely -- the pair of leaves and their swing, the grind,
-	-- and the invisible "GateBlocker" box that does the actual barring, which its own
-	-- unlock() takes out of the world (see Scripts/Gate). This stage keeps only what
-	-- is *around* the gates: where they stand, which are still locked, and the key.
-	self._carriedKey = nil        -- the Key entity in the player's hands, or nil
-	self._keyReachRange = Config.key.reachRange   -- how close to a key you must be to take it (m)
-	self._gateRange = Config.key.gateRange        -- ...and to a locked gate to turn it in the lock
+	-- The cemetery gates. One stands locked in the wall around the graveyard, and two
+	-- of the ward posts stand behind it, so what it locks away is ground the night can
+	-- be won on. The gate owns itself entirely -- the pair of leaves and their swing,
+	-- the grind, and the invisible "GateBlocker" box that does the actual barring,
+	-- which its own unlock() takes out of the world (see Scripts/Gate) -- and the key
+	-- that opens it owns being a key (Scripts/Key). This stage keeps only what is
+	-- *around* the gates: where they stand, which are still locked, and how close the
+	-- player has to be for the "locked" prompt to bother saying so.
+	self._gateRange = Config.key.gateRange        -- how close to a locked gate the prompt reaches
 	self._gates = nil             -- resolved off the world; index order is stable, see resolve
 	self._unlockedGateIndex = {}  -- gate index -> true; plain data, so it survives a hot reload
 
@@ -400,7 +407,6 @@ function Main:new(params, environment)
 	self._wards = nil            -- resolved off the world; index order is stable, see resolve
 	self._wardsLit = 0
 	self._wardsNeeded = nil      -- how many have to burn to win; counted in resolve
-	self._markerWard = nil       -- the post the compass is currently pointing a carried relic at
 	self._litWardIndex = {}      -- ward index -> true; plain data, so it survives a hot reload
 	self._litWards = {}          -- published to the Spawner
 	self._enemyPace = 1.0        -- published to EnemyController
@@ -674,7 +680,7 @@ function Main:_census(when)
 	local all < const > = world:getEntitiesWithinRange(Vector4(0.0, 0.0, 0.0, 1.0), 1.0e6).size
 	print(string.format(
 		"census (%s): entities %d | enemies %d effects? %d | dead %d pendingImpulse %d " ..
-		"respawning %d placedRelics %d | lua heap %.1f KiB",
+		"respawning %d | lua heap %.1f KiB",
 		when,
 		all,
 		world:getEntities("Enemy").size,
@@ -685,7 +691,6 @@ function Main:_census(when)
 		-- on its own line is an unknown keyword and the whole script fails to build --
 		-- before it is ever compiled, so Lua's own syntax check says nothing.
 		n(self._pendingImpulse), #self._respawning,
-		n(self._placedRelics),
 		allocatedMemory() / 1024.0
 	))
 end
@@ -740,6 +745,54 @@ function Main:finalize()
 	self._frame = nil
 end
 
+-- Collect every entity named `name` into one record per instance -- { entity, x, z,
+-- index, [flag] } -- and restore the ones `restoredIndex` names by calling `restore`
+-- on their ScriptComponents. One function because the wards, the hives and the gates
+-- all keep their books the same way, and the way has two load-bearing rules:
+--
+--   * The order is not a sequence, but it must be *stable*: a record's index in the
+--     list is the key its plain-data index table remembers it by across a script hot
+--     reload (the records themselves hold live entity handles and do not survive
+--     one). Sorted on position rather than left in world order, so re-parenting or
+--     re-adding one in the scene editor cannot renumber the ones already turned.
+--
+--   * Restoring is re-asserting state that already happened, not replaying it, so
+--     the component's method is called with `true` -- instantly: a mid-game reload
+--     must not replay every flare, send up a second brood, or grind the gate open
+--     again. A fresh night has an empty index table and restores nothing.
+function Main:_collectRecords(world, name, flag, restoredIndex, restore)
+	local list = {}
+	local i = 0
+	while true do
+		local e = world:getEntity(name, i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		local p < const > = e.transform.translation
+		local rec = { entity = e, x = p.x, z = p.z }
+		rec[flag] = false
+		table.insert(list, rec)
+	end
+	table.sort(list, function (l, r)
+		if l.x ~= r.x then
+			return l.x < r.x
+		end
+		return l.z < r.z
+	end)
+	for k, rec in ipairs(list) do
+		rec.index = k
+		if restoredIndex[k] then
+			rec[flag] = true
+			local sc < const > = rec.entity:getComponent(traktor.world.ScriptComponent)
+			if sc ~= nil then
+				sc[restore](sc, true)
+			end
+		end
+	end
+	return list
+end
+
 -- Resolve (and cache) the humanoid entity, its character controller and the camera.
 function Main:resolve()
 	if self._heading == nil then
@@ -749,53 +802,25 @@ function Main:resolve()
 	if world == nil then
 		return
 	end
-	-- Collect the wards once. The player picks which one each relic lights, so the
-	-- order here is not a lighting sequence -- it only has to be *stable*, because a
-	-- ward's index in this list is the key _litWardIndex remembers it by across a
-	-- hot reload. Sorted on position rather than left in world order so that
-	-- re-parenting or re-adding a post in the scene editor cannot renumber the ones
-	-- already burning. Ends up an empty (non-nil) list in a scene with no wards,
-	-- which is what stops this re-running every frame in Scene 1.
+	-- Collect the night's fixtures once: the wards, the hives and the gates, all
+	-- through _collectRecords above -- the stable ordering and the replay-free restore
+	-- are its two rules, and the same two for all three. Each list ends up empty
+	-- (non-nil) in a scene with none of that kind, which is what stops these
+	-- re-running every frame in Scene 1.
 	--
-	-- Each ward's flame is owned by its own Ward ScriptComponent (Scripts/Ward); this
-	-- only tracks where the wards are and which are lit, and lights one by calling
-	-- turnOn() on that component. The record therefore holds the entity, not a live
-	-- light handle.
+	-- The records only know where each fixture stands and which have turned: each
+	-- ward's flame is owned by its own Ward ScriptComponent (Scripts/Ward), each
+	-- hive's opening and brood by Scripts/Hive, and everything a gate *is* -- the
+	-- leaves, the swing, the grind, the invisible blocker that does the actual
+	-- barring -- by Scripts/Gate. Gate:unlock is idempotent about the blocker, so
+	-- re-asserting one whose bar is already gone is safe.
 	if self._wards == nil then
-		local list = {}
-		local i = 0
-		while true do
-			local e = world:getEntity("Ward", i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			local p < const > = e.transform.translation
-			table.insert(list, { entity = e, lit = false, x = p.x, z = p.z })
-		end
-		table.sort(list, function (l, r)
-			if l.x ~= r.x then
-				return l.x < r.x
-			end
-			return l.z < r.z
-		end)
-		self._wards = list
+		self._wards = self:_collectRecords(world, "Ward", "lit", self._litWardIndex, "turnOn")
 
-		-- _litWardIndex is plain data and survives a script hot reload while these
-		-- records -- which hold live entity handles -- do not, so the wards it names
-		-- are re-lit here. Instantly, so a mid-game reload does not replay every
-		-- flare. A fresh night has an empty index and lights none; the Ward
-		-- components start their flames dark on their own.
 		local lit = 0
-		for k, w in ipairs(self._wards) do
-			w.index = k
-			if self._litWardIndex[k] then
-				w.lit = true
+		for _, w in ipairs(self._wards) do
+			if w.lit then
 				lit = lit + 1
-				local sc < const > = w.entity:getComponent(traktor.world.ScriptComponent)
-				if sc ~= nil then
-					sc:turnOn(true)
-				end
 			end
 		end
 		self._wardsLit = lit
@@ -811,92 +836,11 @@ function Main:resolve()
 
 		self:_publishWards()
 	end
-	-- Collect the hives, the same way and for the same reason as the wards above: the
-	-- player's own choices decide which of them ever opens, so the order here is not a
-	-- sequence -- it only has to be *stable*, because a hive's index in this list is
-	-- the key _awakeHiveIndex remembers it by across a hot reload. Sorted on position
-	-- so re-parenting one in the scene editor cannot renumber the ones already open,
-	-- and an empty (non-nil) list in a scene with no hives is what stops this
-	-- re-running every frame.
-	--
-	-- Each hive owns its own opening and its own brood (Scripts/Hive); this only knows
-	-- where they stand and which are awake.
 	if self._hives == nil then
-		local list = {}
-		local i = 0
-		while true do
-			local e = world:getEntity("Hive", i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			local p < const > = e.transform.translation
-			table.insert(list, { entity = e, awake = false, x = p.x, z = p.z })
-		end
-		table.sort(list, function (l, r)
-			if l.x ~= r.x then
-				return l.x < r.x
-			end
-			return l.z < r.z
-		end)
-		self._hives = list
-
-		-- As with the wards: _awakeHiveIndex is plain data and survives a script hot
-		-- reload while these records -- which hold live entity handles -- do not, so
-		-- the hives it names are re-marked here. Instantly, so a mid-game reload does
-		-- not replay every opening or send out a second brood on top of the one already
-		-- walking the forest.
-		for k, h in ipairs(self._hives) do
-			h.index = k
-			if self._awakeHiveIndex[k] then
-				h.awake = true
-				local sc < const > = h.entity:getComponent(traktor.world.ScriptComponent)
-				if sc ~= nil then
-					sc:activate(true)
-				end
-			end
-		end
+		self._hives = self:_collectRecords(world, "Hive", "awake", self._awakeHiveIndex, "activate")
 	end
-	-- Collect the gates, the same way and for the same reason as the wards above: the
-	-- order only has to be *stable*, because a gate's index in this list is the key
-	-- _unlockedGateIndex remembers it by across a hot reload. Everything a gate *is*
-	-- -- the leaves, the swing, the grind, the invisible blocker that does the actual
-	-- barring -- belongs to the gate entity itself (Scripts/Gate); this only tracks
-	-- where the gates stand and which are still locked.
 	if self._gates == nil then
-		local list = {}
-		local i = 0
-		while true do
-			local e = world:getEntity("Gate", i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			local p < const > = e.transform.translation
-			table.insert(list, { entity = e, unlocked = false, x = p.x, z = p.z })
-		end
-		table.sort(list, function (l, r)
-			if l.x ~= r.x then
-				return l.x < r.x
-			end
-			return l.z < r.z
-		end)
-		self._gates = list
-
-		-- Re-assert the unlocked ones, instantly, so a mid-game reload does not
-		-- replay the swing or the grind -- Gate:unlock is idempotent about the
-		-- blocker too, so re-asserting one whose bar is already gone is safe. A
-		-- fresh night has an empty index and leaves every gate locked.
-		for k, g in ipairs(self._gates) do
-			g.index = k
-			if self._unlockedGateIndex[k] then
-				g.unlocked = true
-				local sc < const > = g.entity:getComponent(traktor.world.ScriptComponent)
-				if sc ~= nil then
-					sc:unlock(true)
-				end
-			end
-		end
+		self._gates = self:_collectRecords(world, "Gate", "unlocked", self._unlockedGateIndex, "unlock")
 	end
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
@@ -1004,7 +948,7 @@ function Main:isRunning()
 end
 
 function Main:isCarrying()
-	return self._carried ~= nil or self._carriedKey ~= nil
+	return self._hand ~= nil
 end
 
 -- Has this one already been handed to the rag doll path? Anything that sweeps the horde has
@@ -1228,26 +1172,25 @@ function Main:_setLabel(rec, text)
 	rec.widget:place((p.width - ts.width) / 2, rec.y, ts.width, ts.height)
 end
 
--- The closest still-dark ward, and how far off it is. Pass maxDist to limit it (the
--- E prompt wants the foot of the post); omit it for the nearest anywhere on the map,
--- which is what the objective compass points a carried relic at.
---
--- Measured flat, ignoring height, unlike the relic scan below: a post stands on the
--- same ground the player is walking on and its origin is at its base, so all a third
--- axis would add here is the player's own height on a slope.
-function Main:_nearestUnlitWard(maxDist)
-	if self._wards == nil or self._humanoid == nil then
+-- The closest record in one of the fixture lists that is still eligible, and how far
+-- off it is. Measured flat, ignoring height: a ward post or a gate stands on the
+-- same ground the player is walking on with its origin at its base, so all a third
+-- axis would add is the player's own height on a slope. Pass maxDist to limit it
+-- (the E prompt wants arm's reach); omit it for the nearest anywhere on the map,
+-- which is what the objective compass asks for.
+function Main:_nearestRecord(list, eligible, maxDist)
+	if list == nil or self._humanoid == nil then
 		return nil, 0.0
 	end
 
 	local pp < const > = self._humanoid.transform.translation
 	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
-	for _, w in ipairs(self._wards) do
-		if not w.lit then
-			local dx, dz = w.x - pp.x, w.z - pp.z
+	for _, rec in ipairs(list) do
+		if eligible(rec) then
+			local dx, dz = rec.x - pp.x, rec.z - pp.z
 			local d = dx * dx + dz * dz
 			if d < bestD then
-				best, bestD = w, d
+				best, bestD = rec, d
 			end
 		end
 	end
@@ -1255,6 +1198,22 @@ function Main:_nearestUnlitWard(maxDist)
 		return nil, 0.0
 	end
 	return best, math.sqrt(bestD)
+end
+
+local function stillDark(w)
+	return not w.lit
+end
+
+local function stillLocked(g)
+	return not g.unlocked
+end
+
+function Main:_nearestUnlitWard(maxDist)
+	return self:_nearestRecord(self._wards, stillDark, maxDist)
+end
+
+function Main:_nearestLockedGate(maxDist)
+	return self:_nearestRecord(self._gates, stillLocked, maxDist)
 end
 
 -- Flat distance from the player to one ward record, measured the same way.
@@ -1268,108 +1227,74 @@ function Main:_wardDistance(w)
 	return math.sqrt(dx * dx + dz * dz)
 end
 
--- Has this relic been spent? Tracked in _placedRelics for the night, but read off the
--- entity as well: a spent relic is hidden where it was set (the post shows a relic of
--- its own -- see Relic:place), and _placedRelics starts empty again after a script hot
--- reload while the world does not, so without the visibility test a reload would put
--- every spent relic back up for grabs as a ghost with no mesh to walk up to.
-function Main:_relicSpent(r)
-	return self._placedRelics[r] ~= nil or not r.visible
-end
-
--- The closest relic still up for grabs, and how far off it is. Pass maxDist to
--- limit it (the E prompt wants arm's reach); omit it for the nearest anywhere on
--- the map, which is what the objective compass points at.
+-- The closest carryable still up for grabs, scanning the HAND_KINDS roster in
+-- priority order: the first kind with a candidate wins outright, so standing where a
+-- relic and the key are both in reach, E takes the relic -- the night's objective
+-- beats the detour. Returns the entity and its Carryable component.
 --
--- Spent relics are skipped: they stay in the world, parked on the ward they lit, so
--- without the guard the player could pick one straight back up again -- and the
--- compass would send them to a post that is already burning.
-function Main:_nearestRelic(maxDist)
+-- With inReach true each kind is limited to its own take range (the E prompt);
+-- without it, the nearest of the first kind with anything left anywhere on the map,
+-- which is what the objective compass points at with empty hands.
+--
+-- "Up for grabs" is visibility: a spent item is parked on its target and hidden
+-- (Carryable:spend), and reading that off the entity rather than out of a table on
+-- the Stage is what survives a script hot reload -- a table starts empty again while
+-- the world does not, so without the visibility test a reload would put every spent
+-- item back up for grabs as a ghost with no mesh to walk up to. Unlike the fixture
+-- scan above this measures all three axes: an item can lie on ground the player is
+-- not standing on.
+function Main:_nearestCarryable(inReach)
 	local world = self.world.world
 	if world == nil or self._humanoid == nil then
-		return nil, 0.0
+		return nil, nil
 	end
 
 	local pp < const > = self._humanoid.transform.translation
-	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
-	local i = 0
-	while true do
-		local r = world:getEntity("Relic", i)
-		if r == nil then
-			break
-		end
-		i = i + 1
-		if not self:_relicSpent(r) and r ~= self._carried then
-			local q = r.transform.translation
-			local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
-			local d = dx * dx + dy * dy + dz * dz
-			if d < bestD then
-				best, bestD = r, d
+	for _, kind in ipairs(HAND_KINDS) do
+		local best, bestD = nil, inReach and (kind.reach * kind.reach) or math.huge
+		local i = 0
+		while true do
+			local e = world:getEntity(kind.entity, i)
+			if e == nil then
+				break
+			end
+			i = i + 1
+			if e.visible and e ~= self._hand then
+				local q = e.transform.translation
+				local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
+				local d = dx * dx + dy * dy + dz * dz
+				if d < bestD then
+					best, bestD = e, d
+				end
 			end
 		end
+		if best ~= nil then
+			return best, best:getComponent(traktor.world.ScriptComponent)
+		end
 	end
-	if best == nil then
-		return nil, 0.0
-	end
-	return best, math.sqrt(bestD)
+	return nil, nil
 end
 
--- The closest key still up for grabs, to the same contract as _nearestRelic. A spent
--- key is read off the entity the same way a spent relic is -- it is hidden where the
--- gate took it (Key:spend) -- so a hot reload cannot put it back up for grabs.
-function Main:_nearestKey(maxDist)
-	local world = self.world.world
-	if world == nil or self._humanoid == nil then
-		return nil, 0.0
+-- The carried item's Carryable component, or nil with empty hands. Fetched fresh
+-- rather than cached beside the entity, so a script hot reload mid-carry can never
+-- leave the stage talking to a stale component object.
+function Main:_handItem()
+	if self._hand == nil then
+		return nil
 	end
-
-	local pp < const > = self._humanoid.transform.translation
-	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
-	local i = 0
-	while true do
-		local k = world:getEntity("Key", i)
-		if k == nil then
-			break
-		end
-		i = i + 1
-		if k.visible and k ~= self._carriedKey then
-			local q = k.transform.translation
-			local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
-			local d = dx * dx + dy * dy + dz * dz
-			if d < bestD then
-				best, bestD = k, d
-			end
-		end
-	end
-	if best == nil then
-		return nil, 0.0
-	end
-	return best, math.sqrt(bestD)
+	return self._hand:getComponent(traktor.world.ScriptComponent)
 end
 
--- The closest still-locked gate record, and how far off it is. Measured flat like the
--- ward scan -- a gate stands on the ground, the interesting distance is across it.
--- Pass maxDist for the E prompt's reach; omit it for the objective compass.
-function Main:_nearestLockedGate(maxDist)
-	if self._gates == nil or self._humanoid == nil then
-		return nil, 0.0
+-- What the off hand says the legs may do: the carried item's own walk speed -- which
+-- also bars the sprint -- or nil for no opinion, which is likewise the answer with
+-- nothing in hand. The relic slows the walk; the key does not. See
+-- Carryable:walkSpeed.
+function Main:_handWalkSpeed()
+	local item < const > = self:_handItem()
+	if item == nil then
+		return nil
 	end
-	local pp < const > = self._humanoid.transform.translation
-	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
-	for _, g in ipairs(self._gates) do
-		if not g.unlocked then
-			local dx < const > = g.x - pp.x
-			local dz < const > = g.z - pp.z
-			local d < const > = dx * dx + dz * dz
-			if d < bestD then
-				best, bestD = g, d
-			end
-		end
-	end
-	if best == nil then
-		return nil, 0.0
-	end
-	return best, math.sqrt(bestD)
+	return item:walkSpeed(self)
 end
 
 -- Stand something on whatever is underneath a point, so a relic put down on a
@@ -1945,8 +1870,10 @@ function Main:_updateMinimap()
 		for i = 1, self._minimapRelics do
 			local r = world:getEntity("Relic", i - 1)
 			if r ~= nil then
+				-- Spent is invisible: a placed relic is parked on its ward and hidden
+				-- (Carryable:spend), which is also what puts its dot on the post.
 				local p < const > = r.transform.translation
-				self._minimap:setRelic(i, p.x, p.z, self:_relicSpent(r))
+				self._minimap:setRelic(i, p.x, p.z, not r.visible)
 			end
 		end
 	end
@@ -1972,30 +1899,16 @@ end
 function Main:_updateMarker(dt)
 	local target = nil
 	if not self._gameOver and not self._nightOver and self._humanoid ~= nil then
-		if self._carried ~= nil then
-			-- Unbounded, unlike the reach tests the E prompt uses.
-			local ward, wd = self:_nearestUnlitWard()
-
-			-- Hold on to the post it is already pointing at until a rival is clearly
-			-- nearer (see MARKER_SWITCH_MARGIN). Dropped the moment that post is lit
-			-- or the relic leaves the player's hands.
-			local held < const > = self._markerWard
-			if held ~= nil and not held.lit and ward ~= nil and ward ~= held then
-				if self:_wardDistance(held) <= wd + MARKER_SWITCH_MARGIN then
-					ward = held
-				end
-			end
-
-			self._markerWard = ward
-			target = ward ~= nil and ward.entity or nil
-		elseif self._carriedKey ~= nil then
-			-- A key in hand has exactly one place to go, so the needle points there.
-			self._markerWard = nil
-			local gate < const > = self:_nearestLockedGate()
-			target = gate ~= nil and gate.entity or nil
+		local item < const > = self:_handItem()
+		if item ~= nil then
+			-- Carrying: the item knows where it wants to go -- the relic picks a
+			-- still-dark post (with its own hold, so the needle does not flip on a
+			-- midline), the key its gate. See Carryable:objective.
+			target = item:objective(self)
 		else
-			self._markerWard = nil
-			target = self:_nearestRelic()
+			-- Empty hands: the nearest thing worth picking up, kinds in priority
+			-- order -- the relic run is the objective, the key run the detour.
+			target = self:_nearestCarryable(false)
 		end
 	end
 
@@ -2039,8 +1952,7 @@ function Main:_updateCrosshair(dt)
 		and not self._paused
 		and self._cutscene == nil
 		and not self._running
-		and self._carried == nil
-		and self._carriedKey == nil
+		and self._hand == nil
 		and loaded
 		and self._humanoid ~= nil
 
@@ -2075,113 +1987,41 @@ function Main:_showNotice(text)
 	self._noticeTimer = 3.5
 end
 
--- E, edge triggered. With a relic in hand: spend it on a still-dark ward post if one
--- is at the player's feet, otherwise put it down. With the key in hand: turn it in
--- the cemetery gate if one is in reach, otherwise put it down. With empty hands:
--- take the nearest relic in reach, or failing that the nearest key.
+-- E, edge triggered. With something in hand: spend it on its target if one is in
+-- reach (a relic on a still-dark ward post, the key in the cemetery gate), otherwise
+-- put it down. With empty hands: take the nearest carryable in reach, kinds in
+-- HAND_KINDS priority order -- the relic before the key, as the roster says.
 --
--- The relic and the key position themselves for every move (Relic:drop / Relic:place
--- / Key:drop / Key:spend on their ScriptComponents); the Stage owns everything
--- around them -- what is in hand, which wards burn, which gates are open, and the
--- dawn that breaks.
+-- All of it through the item's own Carryable component: what its target is, what
+-- spending does, and where a dropped one lands are its answers (Scripts/Carryable,
+-- and Scripts/Relic / Scripts/Key for the answers themselves). The Stage owns only
+-- what is in the hand -- and, one remove out, everything the items write back
+-- through it: which wards burn, which gates are open, and the dawn that breaks.
 function Main:_interact()
-	if self._carriedKey ~= nil then
-		local key < const > = self._carriedKey
-		local sc < const > = key:getComponent(traktor.world.ScriptComponent)
-		local gate < const > = self:_nearestLockedGate(self._gateRange)
-		if gate ~= nil then
-			-- Turn it in the lock. The key is spent for good, like a relic on a
-			-- ward: it is parked on the gate and hidden (Key:spend), and the gate
-			-- opens itself -- the swing, the grind, and the invisible box that did
-			-- the actual barring going out of the world are all Gate:unlock's.
-			self._carriedKey = nil
-			gate.unlocked = true
-			self._unlockedGateIndex[gate.index] = true
-			if sc ~= nil then
-				sc:spend(self, gate)
-			end
-			local gsc < const > = gate.entity:getComponent(traktor.world.ScriptComponent)
-			if gsc ~= nil then
-				gsc:unlock()
-			end
-			self:_showNotice("THE CEMETERY GATE GRINDS OPEN")
-			-- Ground the night was keeping opens up, and the night notices.
-			self._orchestrator:notify("gateOpened")
+	if self._hand ~= nil then
+		local item < const > = self:_handItem()
+		self._hand = nil
+		if item == nil then
+			return
+		end
+		local target < const > = item:findTarget(self)
+		if target ~= nil then
+			item:spend(self, target)
 		else
-			-- No locked gate in reach: just put it down.
-			self._carriedKey = nil
-			if sc ~= nil then
-				sc:drop(self)
-			end
+			-- Nothing to spend it on underfoot: just put it down, which buys the
+			-- rifle back.
+			item:drop(self)
 		end
 		return
 	end
 
-	if self._carried ~= nil then
-		local relic < const > = self._carried
-		local sc < const > = relic:getComponent(traktor.world.ScriptComponent)
-		local ward < const > = self:_nearestUnlitWard(self._wardRange)
-		if ward ~= nil then
-			-- Spend it here. The post takes the relic over: it brings up one of its
-			-- own as it lights (Scripts/Ward), so which ground has been bought stays
-			-- legible out in the dark, while the one the player carried goes out of
-			-- sight rather than standing on the ground beside it.
-			self._carried = nil
-			self._placedRelics[relic] = true
-			if sc ~= nil then
-				sc:place(self, ward)
-			end
-
-			-- The post takes light: safe ground opens up around wherever the player
-			-- chose to spend this one, whatever was standing on it dies, the forest
-			-- beyond it speeds up -- and a hive opens somewhere out in that forest.
-			--
-			-- All three read out on the one notice line rather than replacing each
-			-- other, because they are one event: this is what the relic bought and
-			-- what it cost.
-			local lit < const >, purged < const >, hive < const > = self:_lightWard(ward)
-			if lit then
-				local notice = "A WARD IS LIT"
-				if purged > 0 then
-					notice = notice .. "   " .. tostring(purged) .. " TAKEN BY THE LIGHT"
-				end
-				if hive ~= nil then
-					notice = notice .. "   A HIVE STIRS"
-				end
-				self:_showNotice(notice)
-			end
-
-			-- Closing the circle ends the night. Checked after the ward, so its notice
-			-- replaces the ward one rather than being overwritten by it.
-			if self:_wardsDone() then
-				self:_breakDawn()
-			end
-		else
-			-- No dark post underfoot: just put it down, which buys the rifle back.
-			self._carried = nil
-			if sc ~= nil then
-				sc:drop(self)
-			end
-		end
-		return
-	end
-
-	local relic < const > = self:_nearestRelic(self._reachRange)
-	if relic ~= nil then
-		self._carried = relic
-		-- Committing to a run -- a slow walk with a full off hand -- is exactly when
-		-- the night should lean in.
-		self._orchestrator:notify("relicTaken")
-		return
-	end
-
-	-- The relic wins a tie on purpose: it is the night's objective, the key is a
-	-- detour, and standing where both are in reach the E prompt promised the relic.
-	local key < const > = self:_nearestKey(self._keyReachRange)
-	if key ~= nil then
-		self._carriedKey = key
-		-- The key run is a commitment too, if a lighter one -- see the event table.
-		self._orchestrator:notify("keyTaken")
+	local e < const >, item < const > = self:_nearestCarryable(true)
+	if e ~= nil and item ~= nil then
+		self._hand = e
+		-- Committing to a run is exactly when the night should lean in. What kind
+		-- of run this is, the item says (Carryable:takeEvent), and the orchestrator
+		-- ignores an event it has no tuning for.
+		self._orchestrator:notify(item:takeEvent())
 	end
 end
 
@@ -2190,26 +2030,25 @@ end
 function Main:_updateHudText(dt)
 	local prompt = ""
 	if not self._gameOver and not self._nightOver then
-		if self._carried ~= nil then
-			if self:_nearestUnlitWard(self._wardRange) ~= nil then
-				prompt = "E   LIGHT THE WARD"
+		-- The three verbs are the carried (or takeable) item's own words; what E
+		-- would actually do is the same question _interact answers, asked of the
+		-- same component, so the promise and the press cannot disagree.
+		local held < const > = self:_handItem()
+		if held ~= nil then
+			if held:findTarget(self) ~= nil then
+				prompt = "E   " .. held:promptSpend()
 			else
-				prompt = "E   PUT DOWN THE RELIC"
+				prompt = "E   " .. held:promptDrop()
 			end
-		elseif self._carriedKey ~= nil then
-			if self:_nearestLockedGate(self._gateRange) ~= nil then
-				prompt = "E   UNLOCK THE GATE"
-			else
-				prompt = "E   PUT DOWN THE KEY"
+		else
+			local _ < const >, item < const > = self:_nearestCarryable(true)
+			if item ~= nil then
+				prompt = "E   " .. item:promptTake()
+			elseif self:_nearestLockedGate(self._gateRange) ~= nil then
+				-- Not an E: standing at the locked gate with nothing to open it
+				-- with, the line says what is missing rather than offering a press.
+				prompt = "THE GATE IS LOCKED"
 			end
-		elseif self:_nearestRelic(self._reachRange) ~= nil then
-			prompt = "E   TAKE THE RELIC"
-		elseif self:_nearestKey(self._keyReachRange) ~= nil then
-			prompt = "E   TAKE THE KEY"
-		elseif self:_nearestLockedGate(self._gateRange) ~= nil then
-			-- Not an E: standing at the locked gate with nothing to open it with,
-			-- the line says what is missing rather than offering a press.
-			prompt = "THE GATE IS LOCKED"
 		end
 	end
 	self:_setLabel(self._prompt, prompt)
@@ -2480,12 +2319,14 @@ function Main:update(info)
 			local look = mapping:getStateValue("STATE_LOOK_X")
 			local lookY = -mapping:getStateValue("STATE_LOOK_Y")
 			-- Hold Shift to sprint. maxVelocity tracks the target speed so the character
-			-- controller's clamp doesn't cap the sprint. Carrying a relic overrides
-			-- both: you shuffle, and no amount of Shift helps.
+			-- controller's clamp doesn't cap the sprint. A carried item that cares
+			-- overrides both -- the relic makes it a shuffle, and no amount of Shift
+			-- helps; the key stays out of it. See Carryable:walkSpeed.
 			local speed = self._walkSpeed
 			local sprinting = false
-			if self._carried ~= nil then
-				speed = self._carrySpeed
+			local carryWalk < const > = self:_handWalkSpeed()
+			if carryWalk ~= nil then
+				speed = carryWalk
 			elseif mapping:isStateDown("STATE_SPRINT") then
 				speed = self._sprintSpeed
 				sprinting = true
@@ -2629,24 +2470,15 @@ function Main:update(info)
 					-- possible, since those frames are played rather than frozen, and a
 					-- hive must not open into a Game Over menu.
 					self:_endCutscene()
-					-- Let go of the relic, or it hangs in the air where the player's
-					-- hands were: postUpdate stops running once _gameOver is set. The
-					-- relic drops itself (Relic:drop); the stage just lets go of it.
-					if self._carried ~= nil then
-						local sc < const > = self._carried:getComponent(traktor.world.ScriptComponent)
-						if sc ~= nil then
-							sc:drop(self)
-						end
-						self._carried = nil
+					-- Let go of whatever is carried, or it hangs in the air where the
+					-- player's hands were: postUpdate stops running once _gameOver is
+					-- set. The item drops itself (Carryable:drop); the stage just
+					-- lets go of it.
+					local held < const > = self:_handItem()
+					if held ~= nil then
+						held:drop(self)
 					end
-					-- ...and of the key, for the same reason.
-					if self._carriedKey ~= nil then
-						local sc < const > = self._carriedKey:getComponent(traktor.world.ScriptComponent)
-						if sc ~= nil then
-							sc:drop(self)
-						end
-						self._carriedKey = nil
-					end
+					self._hand = nil
 					-- Take the HUD off screen, as the pause menu does -- the dialogs
 					-- are panes now, and a health bar reading zero behind one is not
 					-- what the moment is about. One way only: dying ends this stage,
@@ -2815,24 +2647,16 @@ function Main:postUpdate(info)
 	-- See Weapon:place, Weapon:stow and Loadout:place.
 	self._loadout:place()
 
-	-- Carried relic: held up in the player's left hand, off to the left so it clears
-	-- both the rifle on the right and the aim straight down the middle. Rotated by the
-	-- full aim pitch, exactly like the weapon, so it rises and drops with the view
-	-- instead of lagging behind it.
-	if self._carried ~= nil and self._humanoid ~= nil then
-		local aim < const > = self:aim()
-		self._carried.transform = Transform(self:eye() + aim * Vector4(-0.38, -0.5, 0.62, 0.0), aim)
-	end
-
-	-- Carried key: the same left hand, a touch nearer and lower -- it is a small
-	-- thing. Turned a little across the view (the extra yaw, with a hair of pitch)
-	-- so the bow and the teeth read in profile rather than shaft-on, which from
-	-- behind is just a dot.
-	if self._carriedKey ~= nil and self._humanoid ~= nil then
-		local aim < const > = self:aim()
-		self._carriedKey.transform = Transform(
-			self:eye() + aim * Vector4(-0.30, -0.40, 0.55, 0.0),
-			aim * Quaternion.fromEulerAngles(-0.55, 0.1, 0.0))
+	-- The carried item: held up in the player's off hand, riding the full aim exactly
+	-- like the weapon, so it rises and drops with the view instead of lagging behind
+	-- it. Where in the hand it sits is the item's own answer -- the relic clear of
+	-- the rifle and the aim, the key nearer and turned into profile. See
+	-- Carryable:carryTransform.
+	if self._hand ~= nil and self._humanoid ~= nil then
+		local item < const > = self:_handItem()
+		if item ~= nil then
+			self._hand.transform = item:carryTransform(self)
+		end
 	end
 end
 
@@ -2853,10 +2677,10 @@ function Main:reload()
 	self._bloodEvents = nil
 	-- Ward records hold live entity handles, so they have to be re-resolved.
 	-- resolve() restores which of them burn from _litWardIndex, which survives.
-	-- _markerWard is one of those records, so it goes with them rather than being
-	-- left pointing at a stale entity the compass would then try to bear on.
+	-- (The compass hold on one of those records lives on the carried relic's own
+	-- component now -- Relic:objective -- whose guards cope with a stale record, so
+	-- there is nothing to clear for it here.)
 	self._wards = nil
-	self._markerWard = nil
 	-- Gate records likewise hold live entity handles, so they are re-resolved too.
 	-- resolve() restores which are open from _unlockedGateIndex, which survives, and
 	-- Gate:unlock is safe to re-assert on a gate whose bar is already gone.

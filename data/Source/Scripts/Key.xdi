@@ -2,73 +2,86 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using {6E9AD100-0000-4000-8000-000000000010}
+#using {1F58C1CA-F879-41CF-A107-D2EA6A75F8EB}
 import(traktor)
 
 -- Key
 --
--- The iron key to the cemetery gate. Carried exactly as a relic is -- one at a
--- time, in the player's off hand, with Main:postUpdate driving the carry -- and
--- spent, like a relic, on the one thing it exists for: Main calls spend() when it
--- is turned in a lock. As with Scripts/Relic, this component owns only where the
--- key ends up when it leaves the player's hands:
+-- The iron key to the cemetery gate. A Carryable like the relic (see
+-- Scripts/Carryable), and lighter in both senses: it does not slow the walk or bar
+-- the sprint -- walkSpeed stays the base's nil -- and it has exactly one place to
+-- go. What is written here is only what makes the key a key --
 --
---   * Key:drop(context)         put it down on the ground in front of the player
---   * Key:spend(context, gate)  give it to the gate it just opened
+--   * it is spent on a still-locked gate in reach (findTarget), and spending it is
+--     what opens the gate (onSpend); the swing, the grind, and the invisible box
+--     that did the actual barring going out of the world are all Gate:unlock's
+--   * the compass simply points at that gate (objective)
 --
--- Both are called by Main via entity:getComponent(world.ScriptComponent). context
--- is the Stage (the Main instance), so a dropped key reads the player straight off
--- it and grounds itself with the Stage's own ground query; gate is one of the
--- Stage's gate records (see Main:resolve). Everything around the move stays with
--- the Stage: what is in hand, which gates are open, and the blocker that comes out
--- of the world as one unlocks.
+-- Everything around it stays with the Stage: what is in hand, which gates are open,
+-- and the two ward posts behind this one that make the gate worth opening.
 
-Key = Key or class("Key", traktor.world.ScriptComponent)
+Key = Key or class("Key", Carryable)
 
+local GATE_RANGE < const > = Config.key.gateRange   -- how close to a gate to turn it in the lock (m)
 local DROP_AHEAD < const > = Config.key.dropAhead   -- how far in front of the player a put-down key lands (m)
 
--- Put the key down in front of the player, standing on the ground and facing the
--- way they are -- the same move, for the same reason, as Relic:drop. The mesh's
--- pivot is at the teeth's tip, so grounding the origin stands it on end.
-function Key:drop(context)
-	local player < const > = context._humanoid
-	if player == nil then
-		return
-	end
-	local heading < const > = Quaternion.fromEulerAngles(context._heading, 0.0, 0.0)
-	local at < const > = player.transform.translation + heading * Vector4(0.0, 0.0, DROP_AHEAD, 0.0)
-	self.owner.transform = Transform(context:_groundAt(at), heading)
+function Key:findTarget(context)
+	return (context:_nearestLockedGate(GATE_RANGE))
 end
 
--- Spend the key on the gate it just opened: park it there and put it out of sight.
--- Parked rather than left hanging where the player's hands were, for the same
--- reason a spent relic parks on its ward -- the entity is still what anything
--- positional would read the key off -- and hidden because a turned lock has no
--- further use for it. Main reads a spent key off the entity exactly as it reads a
--- spent relic (_nearestKey skips the invisible), so a hot reload cannot put it
--- back up for grabs.
-function Key:spend(context, gate)
-	if gate == nil then
-		return
+-- Turn it in the lock. The key is spent for good -- the base has already parked it
+-- on the gate and hidden it -- and the gate opens itself; what is written here is
+-- the Stage's bookkeeping of which gates still stand locked, kept as plain data so
+-- it survives a hot reload (Main:resolve re-asserts it).
+function Key:onSpend(context, gate)
+	gate.unlocked = true
+	context._unlockedGateIndex[gate.index] = true
+	local gsc < const > = gate.entity:getComponent(traktor.world.ScriptComponent)
+	if gsc ~= nil then
+		gsc:unlock()
 	end
-	self.owner.transform = gate.entity.transform
-	self:_setVisible(false)
+	context:_showNotice("THE CEMETERY GATE GRINDS OPEN")
+	-- Ground the night was keeping opens up, and the night notices.
+	context._orchestrator:notify("gateOpened")
 end
 
--- Show or hide the key and everything hanging off it. Entity visibility does not
--- carry to GroupComponent children -- see Relic:_setVisible, which this repeats --
--- so the key's little glow has to be switched by hand, or a spent key leaves its
--- light burning in the gateway with nothing to come from.
-function Key:_setVisible(visible)
-	self.owner.visible = visible
-	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
-	if group == nil then
-		return
-	end
-	local children < const > = group.entities
-	for i = 0, children.size - 1 do
-		local child = children:get(i)
-		child.visible = visible
-	end
+-- A key in hand has exactly one place to go, so the needle points there.
+function Key:objective(context)
+	local gate < const > = context:_nearestLockedGate()
+	return gate ~= nil and gate.entity or nil
+end
+
+function Key:takeEvent()
+	return "keyTaken"
+end
+
+function Key:promptTake()
+	return "TAKE THE KEY"
+end
+
+function Key:promptSpend()
+	return "UNLOCK THE GATE"
+end
+
+function Key:promptDrop()
+	return "PUT DOWN THE KEY"
+end
+
+function Key:dropAhead()
+	return DROP_AHEAD
+end
+
+-- Where it rides: the same left hand as the relic, a touch nearer and lower -- it
+-- is a small thing -- and turned a little across the view (the extra yaw, with a
+-- hair of pitch) so the bow and the teeth read in profile rather than shaft-on,
+-- which from behind is just a dot. The mesh's pivot is at the teeth's tip, which is
+-- also why the base's drop(), grounding the origin, stands it on end.
+function Key:carryOffset()
+	return Vector4(-0.30, -0.40, 0.55, 0.0)
+end
+
+function Key:carryRotation()
+	return Quaternion.fromEulerAngles(-0.55, 0.1, 0.0)
 end
 ]]></text>
 </object>

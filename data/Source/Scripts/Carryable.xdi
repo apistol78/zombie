@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using {6E9AD100-0000-4000-8000-000000000010}
+import(traktor)
+
+-- Carryable
+--
+-- Base ScriptComponent for anything the player carries in the off hand: the relic,
+-- the key, and whatever the night grows next. The same split as Scripts/Pickup, and
+-- for the same reason -- the base owns the behaviour every carried thing shares, and
+-- defers what makes each thing itself to the subclass:
+--
+--   * Carryable:drop(context)           put it down on the ground in front of the player
+--   * Carryable:spend(context, target)  park it on the target it was spent on, hide
+--                                       it, then let the subclass apply the consequence
+--
+-- ...and what a subclass answers (all with safe defaults, so a new item only says
+-- what it cares about):
+--
+--   * findTarget(context) -> record     what in reach it could be spent on right now,
+--                                       or nil (a still-dark ward, a locked gate)
+--   * onSpend(context, target)          the consequence -- called by spend, once,
+--                                       after the park-and-hide; writes straight to
+--                                       the stage, exactly as a Pickup:take does
+--   * onRelease(context)                the hands opening; called by drop AND spend,
+--                                       for state that only means anything while held
+--   * objective(context) -> entity|nil  what the compass points at while carried
+--   * carryOffset() / carryRotation()   where it rides in the hand, in aim space
+--   * walkSpeed(context) -> m/s or nil  non-nil slows the walk to it and bars the
+--                                       sprint (the relic); nil leaves movement alone
+--   * takeEvent() -> string|nil         what picking it up is called to the
+--                                       SpawnOrchestrator, or nil for no surge
+--   * promptTake/promptSpend/promptDrop the E line's three verbs
+--   * dropAhead() -> metres             how far in front of the player drop() lands it
+--
+-- context is the Stage (the Main instance) throughout, as everywhere else, so a
+-- subclass reads the player and the night straight off it. The Stage keeps exactly
+-- one hand (Main._hand) and no opinions: which kinds exist is its HAND_KINDS list,
+-- and everything else it asks the carried component. Adding an item to the night is
+-- a subclass of this plus one line in that list -- nothing else in Main changes.
+--
+-- Attach a *subclass* (never this base) to the item's entity, and name the entity
+-- what HAND_KINDS scans for. Being *invisible* is what marks an item spent: the base
+-- hides it in spend, visibility lives on the entity rather than in a table on the
+-- Stage, and so -- unlike a table -- it survives a script hot reload, which is what
+-- stops a reload putting every spent item back up for grabs as a ghost.
+
+Carryable = Carryable or class("Carryable", traktor.world.ScriptComponent)
+
+-- What a subclass may leave alone.
+
+function Carryable:findTarget(context)
+	return nil
+end
+
+function Carryable:onSpend(context, target)
+end
+
+function Carryable:onRelease(context)
+end
+
+function Carryable:objective(context)
+	return nil
+end
+
+function Carryable:walkSpeed(context)
+	return nil
+end
+
+function Carryable:takeEvent()
+	return nil
+end
+
+function Carryable:promptTake()
+	return "TAKE IT"
+end
+
+function Carryable:promptSpend()
+	return "USE IT"
+end
+
+function Carryable:promptDrop()
+	return "PUT IT DOWN"
+end
+
+function Carryable:dropAhead()
+	return 0.7
+end
+
+-- Where it rides in the player's hand, in aim space: the off hand is the left one,
+-- so the default sits clear of both the rifle on the right and the aim straight
+-- down the middle.
+function Carryable:carryOffset()
+	return Vector4(-0.38, -0.5, 0.62, 0.0)
+end
+
+function Carryable:carryRotation()
+	return Quaternion.identity
+end
+
+-- The carried pose, composed from the two above. Main:postUpdate assigns this to
+-- the entity every frame while it is in hand; it takes the full aim, so the item
+-- rises and drops with the view instead of lagging behind it. A subclass that wants
+-- something stranger than an offset and a turn overrides this instead.
+function Carryable:carryTransform(context)
+	local aim < const > = context:aim()
+	return Transform(context:eye() + aim * self:carryOffset(), aim * self:carryRotation())
+end
+
+-- Put it down in front of the player, standing on the ground and facing the way
+-- they are. This is the move that buys the rifle back.
+function Carryable:drop(context)
+	self:onRelease(context)
+	local player < const > = context._humanoid
+	if player == nil then
+		return
+	end
+	local heading < const > = Quaternion.fromEulerAngles(context._heading, 0.0, 0.0)
+	local at < const > = player.transform.translation + heading * Vector4(0.0, 0.0, self:dropAhead(), 0.0)
+	self.owner.transform = Transform(context:_groundAt(at), heading)
+end
+
+-- Spend it on the target it was carried to: park it there, put it out of sight, and
+-- hand the subclass the consequence.
+--
+-- Parked on the target it bought before it goes, because it is still the entity
+-- anything positional reads the item off (the minimap dot, the objective compass) --
+-- leaving it lying wherever the player's hands happened to be would put that dot
+-- beside the post rather than on it. Nothing moves it afterwards: carrying is what
+-- drives a carried item's transform, and this one is no longer carried. Hidden
+-- because a spent item has no further use -- and because invisible is what marks it
+-- spent, as the note at the top says.
+function Carryable:spend(context, target)
+	self:onRelease(context)
+	self.owner.transform = target.entity.transform
+	self:_setVisible(false)
+	self:onSpend(context, target)
+end
+
+-- Show or hide the item and everything hanging off it. Entity visibility does not
+-- carry to the children a GroupComponent holds -- each one is an entity of the
+-- world in its own right -- so an item's own little light has to be switched by
+-- hand, or a hidden item leaves its glow burning at the post with nothing to come
+-- from.
+function Carryable:_setVisible(visible)
+	self.owner.visible = visible
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return
+	end
+	local children < const > = group.entities
+	for i = 0, children.size - 1 do
+		local child = children:get(i)
+		child.visible = visible
+	end
+end]]></text>
+</object>

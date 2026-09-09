@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- SpawnOrchestrator
+--
+-- When the horde comes, and in what numbers. Scripts/Spawner owns *where* a zombie
+-- rises and everything about placing one well; this owns the night's tempo: it turns
+-- gameplay events into bursts, holds a lull between them, and publishes the verdict
+-- for the spawner to obey.
+--
+-- The shape it is after is a rhythm rather than weather. Every event the player
+-- causes -- taking a relic, lighting a ward, opening the cemetery gate -- is the
+-- night noticing, and the forest surges for a while; between surges the allowance
+-- collapses to a trickle small enough that the player can very nearly clear the
+-- ground around them. That near-quiet is the point: it is what makes picking a
+-- relic up *feel* like pulling a trigger, and it hands the player the pacing --
+-- nothing surges until they act.
+--
+-- Owned by Main the way the Loadout is: constructed in Main:new, poked by the event
+-- sites (notify), ticked from Main:update below the freeze returns -- so a burst
+-- does not burn down behind the pause menu or a hive's cutscene. It talks to the
+-- spawner through one table, context._spawnDrive { cap, interval }, published once
+-- and mutated in place rather than replaced: plain data, so the whole arrangement
+-- survives a hot reload -- mid-burst state included -- with nothing to restore.
+--
+-- The hive broods are deliberately outside it. A lit ward is a burst *and* a brood:
+-- the brood is the theatrical half of the answer (five rising out of one hole, on
+-- camera), the burst is the forest around it quietly worsening, and the two read as
+-- one event.
+
+-- Tuning. See the orchestrator block in Config for what the numbers mean. The caps
+-- are clamped against the spawner's ceiling, which is a performance figure this
+-- script has no authority over.
+local EVENTS < const > = Config.orchestrator.events
+local LULL_CAP < const > = Config.orchestrator.lullCap
+local LULL_INTERVAL < const > = Config.orchestrator.lullInterval
+local BURST_INTERVAL < const > = Config.orchestrator.burstInterval
+local CAP_PER_WARD < const > = Config.orchestrator.capPerWard
+local MAX_ENEMIES < const > = Config.spawner.maxEnemies
+
+SpawnOrchestrator = SpawnOrchestrator or class("SpawnOrchestrator")
+
+function SpawnOrchestrator:new(stage)
+	self._stage = stage
+
+	-- The drive the spawner reads. One table for the whole night, published on the
+	-- stage here and mutated in place ever after, exactly as _gunshot is: the spawner
+	-- reads it off the context every update, so there is nothing to hand over and
+	-- nothing to go stale.
+	self._drive = { cap = LULL_CAP, interval = LULL_INTERVAL }
+	stage._spawnDrive = self._drive
+
+	self._burst = 0.0      -- seconds of surge left; at or below zero the night is lulling
+	self._burstCap = 0     -- ...and how many it may hold alive while it lasts
+
+	-- The night opening is itself an event: without this the forest starts empty and
+	-- stays empty until the player first touches something, which reads as the game
+	-- not having started rather than as a lull.
+	self:notify("nightfall")
+end
+
+-- A gameplay event: the night notices. Unknown kinds are ignored rather than
+-- guessed at, so an event site can be added before its tuning is.
+--
+-- Overlapping events run to whichever ends later and hold the bigger crowd, rather
+-- than adding up: lighting a ward seconds after opening the gate is one bad night,
+-- not two stacked ones -- the ceiling stays legible, and a fast player cannot chain
+-- events into a wall no single cap ever authorised.
+function SpawnOrchestrator:notify(kind)
+	local ev < const > = EVENTS[kind]
+	if ev == nil then
+		return
+	end
+	-- Escalation: the same event is a bigger burst later in the night, so the last
+	-- relic run is the bad one -- the role the flat per-ward pressure used to play.
+	local cap < const > = math.min(ev.cap + CAP_PER_WARD * (self._stage._wardsLit or 0), MAX_ENEMIES)
+	self._burst = math.max(self._burst, ev.duration)
+	self._burstCap = math.max(self._burstCap, cap)
+end
+
+-- One step of the night, ticked with the simulation delta from below Main:update's
+-- freeze returns, so a pause or a cutscene holds the surge where it stood.
+--
+-- The cliff at the end of a burst is deliberate. Dropping the cap removes not one
+-- zombie -- it only stops new ones rising -- so what the player faces the moment a
+-- surge ends is exactly the crowd it built, and killing that crowd down to the
+-- trickle *is* the lull. Ramping the cap down instead would only smear the burst
+-- out and rob the quiet of its edge.
+function SpawnOrchestrator:update(dt)
+	if self._burst > 0.0 then
+		self._burst = self._burst - dt
+		if self._burst <= 0.0 then
+			self._burstCap = 0
+		end
+	end
+	if self._burst > 0.0 then
+		self._drive.cap = self._burstCap
+		self._drive.interval = BURST_INTERVAL
+	else
+		self._drive.cap = LULL_CAP
+		self._drive.interval = LULL_INTERVAL
+	end
+end]]></text>
+</object>

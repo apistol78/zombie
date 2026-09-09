@@ -17,6 +17,11 @@
 -- weapon is allowed to use.
 #using \{7EA9C000-0000-4000-8000-000000000005}
 
+-- Scripts/SpawnOrchestrator, which owns the night's tempo: it turns the gameplay
+-- events this stage detects (a relic taken, a ward lit, the gate opened) into bursts
+-- and lulls, and publishes the verdict to the Spawner as _spawnDrive on this stage.
+#using \{9F2C606F-BD26-43E1-9A3F-B108C688FB02}
+
 import(traktor)
 
 -- Main
@@ -420,6 +425,14 @@ function Main:new(params, environment)
 	-- more hives than wards it is also a choice about which of them stays shut.
 	self._hives = nil            -- resolved off the world; index order is stable, see resolve
 	self._awakeHiveIndex = {}    -- hive index -> true; plain data, so it survives a hot reload
+
+	-- The night's tempo, owned here the way the loadout is: the event sites in
+	-- _interact and _lightWard poke it (notify), update ticks it below the freeze
+	-- returns, and the Spawner reads its verdict off this stage as _spawnDrive --
+	-- which its constructor publishes. Constructing it also fires the night's first
+	-- event, nightfall: a small opening surge, so the forest is not standing empty
+	-- until the player first touches something.
+	self._orchestrator = SpawnOrchestrator(self)
 
 	-- The hive cutscene: the night holds its breath while one opens. See
 	-- _beginCutscene for what freezes and what does not, and CUTSCENE_* for the shot.
@@ -1665,6 +1678,10 @@ function Main:_lightWard(ward)
 	-- the one that reads as *the night changing* rather than as a nearby object.
 	self:_playCue("ward")
 	self:_publishWards()
+	-- The forest answers. This is the quiet half of what the hive below is the
+	-- theatrical half of: the burst around the player worsens while the brood rises
+	-- somewhere else, and the two read as one event.
+	self._orchestrator:notify("wardLit")
 	local purged < const > = self:_purgeWard(ward)
 	return true, purged, self:_wakeHive(ward, purged)
 end
@@ -2088,6 +2105,8 @@ function Main:_interact()
 				gsc:unlock()
 			end
 			self:_showNotice("THE CEMETERY GATE GRINDS OPEN")
+			-- Ground the night was keeping opens up, and the night notices.
+			self._orchestrator:notify("gateOpened")
 		else
 			-- No locked gate in reach: just put it down.
 			self._carriedKey = nil
@@ -2150,6 +2169,9 @@ function Main:_interact()
 	local relic < const > = self:_nearestRelic(self._reachRange)
 	if relic ~= nil then
 		self._carried = relic
+		-- Committing to a run -- a slow walk with a full off hand -- is exactly when
+		-- the night should lean in.
+		self._orchestrator:notify("relicTaken")
 		return
 	end
 
@@ -2158,6 +2180,8 @@ function Main:_interact()
 	local key < const > = self:_nearestKey(self._keyReachRange)
 	if key ~= nil then
 		self._carriedKey = key
+		-- The key run is a commitment too, if a lighter one -- see the event table.
+		self._orchestrator:notify("keyTaken")
 	end
 end
 
@@ -2358,6 +2382,11 @@ function Main:update(info)
 	if self:_updateCutscene(dt) then
 		return
 	end
+
+	-- The night's tempo: burn down whatever burst is running and write the verdict
+	-- into _spawnDrive. Below every freeze return above on purpose, so a pause or a
+	-- cutscene holds a surge where it stood rather than quietly spending it.
+	self._orchestrator:update(dt)
 
 	-- Cheat shortcuts: G toggles god mode, H toggles infinite ammunition, K kills every zombie
 	-- in the world, and L breaks the dawn on the spot -- the whole payoff, without having to

@@ -88,7 +88,7 @@ const float c_noiseAmount = 1.0f;	// Fraction of density the noise can remove.
 
 float extinction = 1.0f;
 
-if ($WorldPosition.y > 19.0f)
+if ($WorldPosition.y > 18.5f)
 {
 	const float height = $WorldPosition.y - $Elevation;
 	float attenuation = 1.0f - smoothstep(0.0f, c_elevationFalloff, height);

@@ -404,21 +404,19 @@ Config = {
 
 	-- ---- Where the horde comes from ----
 	spawner = {
-		-- How many zombies may be alive at once, and how that grows through the night.
+		-- How many zombies may be alive at once -- the ceiling, and nothing else: each
+		-- zombie carries thirteen physics bodies, so `maxEnemies` is what the frame can
+		-- hold, not a difficulty setting. How the night actually climbs is the
+		-- orchestrator's business now (see the block below); every cap it publishes is
+		-- clamped to this.
 		--
-		-- The ceiling is a performance figure and nothing else: each zombie carries
-		-- thirteen physics bodies, so `maxEnemies` is what the frame can hold, not a
-		-- difficulty setting. What *is* a difficulty setting is how quickly the night
-		-- climbs to it -- the forest starts a third full and fills as the player lights
-		-- the circle, so the horde grows with what the player has taken from it.
-		--
-		-- The numbers are picked to land exactly: Scene 2 needs 7 wards (12 posts, 7
-		-- relics, and the objective is the smaller of the two), so 9 + 3 per ward is 30
-		-- at the very moment the last one catches. Scenes with more wards than that are
-		-- held at the ceiling by the min, which is why it is still called the maximum.
+		-- maxEnemiesStart / maxEnemiesPerWard are the *fallback* pressure, used only by
+		-- a stage that publishes no _spawnDrive (nothing does any more, but the spawner
+		-- has no business dying over it): the old flat formula, 9 + 3 per lit ward,
+		-- reaching the ceiling as Scene 2's seventh ward catches.
 		maxEnemies = 30,
-		maxEnemiesStart = 9,    -- ...with nothing lit yet
-		maxEnemiesPerWard = 3,  -- ...and what each lit ward adds
+		maxEnemiesStart = 9,    -- fallback: with nothing lit yet
+		maxEnemiesPerWard = 3,  -- fallback: what each lit ward adds
 		spawnMin = 8.0,         -- nearest a zombie may be placed to the player (m)
 		spawnMax = 20.0,        -- ...and furthest
 		despawnDist = 60.0,     -- past this from the player a zombie is taken away again
@@ -444,6 +442,45 @@ Config = {
 		-- very edge rises half inside the rock. This is the width of the zombie
 		-- character controller: AiCharacterComponent radius 0.36 m on both rigs.
 		wallMargin = 0.72
+	},
+
+	-- ---- The night's tempo ----
+	--
+	-- Read by Scripts/SpawnOrchestrator, which owns *when* zombies come and in what
+	-- numbers; the spawner above keeps owning *where*. The night is a rhythm of bursts
+	-- and lulls: every gameplay event -- taking a relic, lighting a ward, opening the
+	-- cemetery gate -- surges the forest for a while, and between surges the allowance
+	-- collapses to a trickle the player can very nearly clear. The near-quiet is the
+	-- design, not an accident of it: fighting a burst down to the last shuffler is what
+	-- makes the next event feel like pulling a trigger rather than more of the same
+	-- weather -- and it hands the pacing to the player, since nothing surges until
+	-- they act.
+	orchestrator = {
+		-- The lull. Not zero on purpose: a forest gone fully silent reads as a bug, so
+		-- a straggler or two keeps shuffling while the player catches their breath --
+		-- that is the "almost" in almost-clearable.
+		lullCap = 3,            -- most the spawner may keep alive between bursts
+		lullInterval = 8.0,     -- seconds between placement attempts in the lull
+
+		-- ...and how fast a burst pours in while it runs (the old flat rate).
+		burstInterval = 0.5,
+
+		-- What each event is worth: how long the surge lasts (s) and how many it may
+		-- hold alive while it does. Every cap is clamped to spawner.maxEnemies, which
+		-- is a performance ceiling and not a knob. Overlapping events take the longer
+		-- duration and the bigger cap rather than adding up (see notify).
+		events = {
+			nightfall  = { duration = 20.0, cap = 8 },   -- the night starting
+			relicTaken = { duration = 30.0, cap = 12 },  -- committing to a relic run
+			wardLit    = { duration = 35.0, cap = 14 },  -- ...and cashing it in (on top of the hive's brood)
+			gateOpened = { duration = 25.0, cap = 12 },  -- the cemetery opening up
+			keyTaken   = { duration = 20.0, cap = 10 }   -- committing to the key run
+		},
+
+		-- Escalation: each lit ward makes every *later* burst this much bigger, so the
+		-- night still climbs as the circle closes and the last relic run is the bad one
+		-- -- the role spawner.maxEnemiesPerWard played when the pressure was flat.
+		capPerWard = 2
 	},
 
 	-- ---- Hives ----

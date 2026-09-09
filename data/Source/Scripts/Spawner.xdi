@@ -39,9 +39,10 @@ function Spawner.pickZombie()
 end
 
 -- Tuning.
--- How many may be alive at once: the ceiling, what it starts at, and what each lit
--- ward adds on the way there. See the note in Config, and the ward pressure block
--- below, which is where the three become one number.
+-- How many may be alive at once. The ceiling is the law -- every cap the
+-- orchestrator publishes is clamped to it here -- and the start/per-ward pair is
+-- only the fallback pressure for a stage that publishes no drive. See the note in
+-- Config, and the drive block below.
 local MAX_ENEMIES < const > = Config.spawner.maxEnemies
 local MAX_ENEMIES_START < const > = Config.spawner.maxEnemiesStart
 local MAX_ENEMIES_PER_WARD < const > = Config.spawner.maxEnemiesPerWard
@@ -340,26 +341,35 @@ function Spawner:update(context, totalTime, deltaTime)
 		end
 	end
 
-	-- Ward pressure. Every ward the player lights buys a patch of safe ground and
-	-- pays for it by making everywhere else worse: spawns come faster, closer, and now
-	-- in greater number.
+	-- The tempo is the orchestrator's. Scripts/SpawnOrchestrator turns gameplay events
+	-- (a relic taken, a ward lit, the gate opened) into bursts and lulls and publishes
+	-- the verdict as context._spawnDrive -- one { cap, interval } table, mutated in
+	-- place, read here fresh every update. This spawner keeps owning *where* a zombie
+	-- rises; proximity still escalates with the wards below, so late bursts arrive
+	-- nearer as well as bigger.
 	--
-	-- Headcount used to be flat at the ceiling, on the grounds that MAX_ENEMIES is a
-	-- performance figure rather than a difficulty knob. It still is -- the *cap* is
-	-- what the frame can hold, and nothing here ever exceeds it -- but starting the
-	-- night well under it and climbing as the circle closes is free performance early
-	-- and a forest that visibly fills up as the player takes it apart. The escalation
-	-- is therefore all three: speed, proximity and now population.
+	-- Note the cap is a cap and not a target. It says how many the spawner may keep
+	-- alive, not how many there will be: the despawn rules above still take away
+	-- whatever the player has walked out on, so a raised cap is an allowance the night
+	-- spends only where the player actually is -- and when a burst ends and the cap
+	-- collapses to the lull's, nothing is taken away either: the crowd the burst built
+	-- stands until the player kills it, which is what a lull is *for*.
 	--
-	-- Note this is a cap and not a target. It says how many the spawner may keep alive,
-	-- not how many there will be: the despawn rules above still take away whatever the
-	-- player has walked out on, so a raised cap is an allowance the night spends only
-	-- where the player actually is.
+	-- The else-branch is the old flat ward pressure, kept as the fallback for a stage
+	-- that publishes no drive: nothing does any more, but the spawner has no business
+	-- dying over a missing table.
 	local lit < const > = context._wardsLit or 0
 	local wards < const > = context._litWards
 	local spawnMin < const > = math.max(SPAWN_MIN - 0.8 * lit, 4.0)
-	local interval < const > = SPAWN_INTERVAL * math.max(1.0 - 0.1 * lit, 0.5)
-	local cap < const > = math.min(MAX_ENEMIES_START + MAX_ENEMIES_PER_WARD * lit, MAX_ENEMIES)
+	local drive < const > = context._spawnDrive
+	local interval, cap
+	if drive ~= nil then
+		interval = drive.interval
+		cap = math.min(drive.cap, MAX_ENEMIES)
+	else
+		interval = SPAWN_INTERVAL * math.max(1.0 - 0.1 * lit, 0.5)
+		cap = math.min(MAX_ENEMIES_START + MAX_ENEMIES_PER_WARD * lit, MAX_ENEMIES)
+	end
 
 	-- 3) Only spawn while under the cap, and throttle attempts.
 	self._timer = self._timer - deltaTime

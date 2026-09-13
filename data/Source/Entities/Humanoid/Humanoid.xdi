@@ -12,12 +12,6 @@
 		<rotation>0, 0, 0, 1</rotation>
 	</transform>
 	<components>
-		<item type="traktor.animation.SkeletonComponentData">
-			<skeleton>{1E9C2788-505E-6C43-BB3D-527228721118}</skeleton>
-			<poseController type="traktor.animation.AnimationGraphPoseControllerData" version="1">
-				<stateGraph>{8541E05B-5C71-8248-A56A-1593784C2CFF}</stateGraph>
-			</poseController>
-		</item>
 		<item type="traktor.physics.CharacterComponentData" version="5">
 			<collisionGroup>
 				<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
@@ -184,6 +178,12 @@
 									</components>
 								</item>
 							</entityData>
+						</item>
+						<item type="traktor.world.DisplacementEntityComponentData">
+							<radius>1</radius>
+							<strength>1</strength>
+							<falloff>2</falloff>
+							<press>0.6</press>
 						</item>
 					</components>
 				</item>

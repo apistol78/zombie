@@ -161,10 +161,14 @@ local RESPAWN_CLEARANCE < const > = Config.pickup.respawnClearance
 -- working in Scene 1 -- and is why the Altar can stay on the list: it lost its
 -- gameplay role when relics moved to the ward posts, but it is still the biggest
 -- monument in the cemetery and so still the thing to navigate by.
+--
+-- glyph names the drawing the map gives it -- a pictogram with the name lettered
+-- underneath, one child sprite of MC_MapLandmark each (tools/gen_hud_svg.py). A
+-- landmark without one of its own is drawn as a plain mark with no name.
 local LANDMARKS < const > = {
-	{ entity = "Chapel", label = "CHAPEL" },
-	{ entity = "Tower", label = "TOWER" },
-	{ entity = "Altar", label = "ALTAR" },
+	{ entity = "Chapel", glyph = "chapel" },
+	{ entity = "Tower", glyph = "tower" },
+	{ entity = "Altar", glyph = "altar" },
 }
 
 Main = Main or class("Main", Stage)
@@ -1818,7 +1822,7 @@ function Main:_buildMinimap(world)
 		local e = world:getEntity(l.entity)
 		if e ~= nil then
 			local p < const > = e.transform.translation
-			table.insert(marks, { x = p.x, z = p.z, label = l.label })
+			table.insert(marks, { x = p.x, z = p.z, glyph = l.glyph })
 			fit(p)
 		end
 	end

@@ -83,7 +83,7 @@ const float c_elevationFalloff = 2.0f;
 // billows, anchored in the world so the detail stays put as the camera moves.
 // Two octaves - the base octave shapes billows a few metres across, the second
 // roughens their edges; the froxel grid is too coarse to resolve more.
-const float c_noiseScale = 0.5f;	// Inverse billow size, 1/m.
+const float c_noiseScale = 0.3f;	// Inverse billow size, 1/m.
 const float c_noiseAmount = 1.0f;	// Fraction of density the noise can remove.
 
 float extinction = 1.0f;

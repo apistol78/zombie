@@ -63,7 +63,7 @@ import(traktor)
 -- category guid. Splitting them is a job in the sound library first -- categories
 -- authored, then assigned across all two dozen assets -- and a row here afterwards.
 --
--- ---- Why "Off" is missing from some rows ----
+-- ---- Why some rows do not offer the whole scale ----
 --
 -- Quality 0 is a real setting for most of these and simply turns the feature off,
 -- but for the terrain it means a detail distance of 0 metres and a surface cache of
@@ -71,6 +71,16 @@ import(traktor)
 -- WorldServer.cpp), which is not "low" -- it is a ground that stops being drawn
 -- properly. So a row can name the lowest level it is willing to offer, and the
 -- terrain's is Low.
+--
+-- Motion blur is the same argument at the other end. The engine takes a quality for
+-- it and then does not spend it: PostProcessPass::create binds one image graph for
+-- every level above 0 -- there is no getMotionBlurId beside its getAntiAliasId, and
+-- the Low/Medium/High shaders sitting next to it in the engine's own data are
+-- referenced by nothing, the single graph there is having been wired to the Ultra
+-- one. Four captions that render the same frame is not a choice worth offering, so
+-- that row names a highest level as well -- 1 -- and carries captions of its own,
+-- and is the switch it actually is. Should the engine ever spend the other three,
+-- dropping `max` and `captions` from its row is the whole of what it takes here.
 
 OptionsView = OptionsView or class("OptionsView", Container)
 
@@ -82,22 +92,51 @@ local QUALITY_MAX < const > = 4
 -- shows the same thing the renderer is actually using rather than a guess.
 local QUALITY_DEFAULT < const > = 2
 
+-- Captions for a row whose setting the engine does not actually read as a scale.
+-- See the note above about motion blur, which is the only one of those so far.
+local ON_OFF < const > = { [0] = "Off", [1] = "On" }
+
 -- One row each, in rough order of what costs the most on this game's forest.
+--
+-- `min` and `max` are the levels a row is willing to offer and default to the
+-- engine's whole 0..4 scale; `captions` names them and defaults to QUALITY. Only the
+-- two rows the note above is about want any of the three.
 local SETTINGS < const > = {
 	{ key = "World.ShadowQuality", label = "Shadows" },
+	{ key = "World.IrradianceQuality", label = "Irradiance" },
 	{ key = "World.AmbientOcclusionQuality", label = "Ambient occlusion" },
+	{ key = "World.VolumetricFogQuality", label = "Volumetric fog" },
 	{ key = "World.AntiAliasQuality", label = "Anti-aliasing" },
 	{ key = "World.ImageProcessQuality", label = "Post processing" },
+	-- See the note above: every level above 0 is the same blur, so this is a switch.
+	{ key = "World.MotionBlurQuality", label = "Motion blur", max = 1, captions = ON_OFF },
 	{ key = "World.ReflectionsQuality", label = "Reflections" },
 	{ key = "World.ParticleQuality", label = "Particles" },
 	-- See the note above: 0 is a broken terrain rather than a cheap one.
 	{ key = "World.TerrainQuality", label = "Terrain", min = 1 }
 }
 
--- The preset row sets every setting at once, each clamped to whatever that row is
--- willing to go down to. Anything that does not match one of these exactly reads as
--- "Custom" -- which is the honest answer, and also what the game ships as: its
--- Application.config carries a hand-picked mixture rather than any one level.
+-- Bring a quality into what a row offers. Both ends default to the engine's own
+-- scale, so a row that names neither takes the lot -- and everything that has to
+-- agree on what a row will accept (reading one, stepping one, setting them all from
+-- a preset, and recognising a preset afterwards) asks here rather than repeating it.
+local function clampToRow(setting, v)
+	local low < const > = setting.min or 0
+	local high < const > = setting.max or QUALITY_MAX
+	if v < low then
+		return low
+	end
+	if v > high then
+		return high
+	end
+	return v
+end
+
+-- The preset row sets every setting at once, each clamped into what that row is
+-- willing to offer. Anything that does not match one of these exactly reads as
+-- "Custom" -- the honest answer for a mixture, and what turning any single row off
+-- the preset it came from produces. The game's own Application.config is Ultra
+-- throughout, so "Ultra" is what a fresh install opens on.
 local PRESETS < const > = {
 	{ label = "Low", value = 1 },
 	{ label = "Medium", value = 2 },
@@ -128,6 +167,13 @@ local VOLUME_APPLY_DELAY < const > = 0.25
 local VALUE_W < const > = 150   -- the value buttons, wide enough that a caption
 local ARROW_W < const > = 44    -- change never moves the column it is in
 local BACK_W < const > = 220
+local COLUMN_GAP < const > = 36 -- between the two columns of graphics rows
+
+-- How many graphics rows go in the left column, the rest going in the right. The
+-- preset row heads the left one in the same grid, so splitting the settings down the
+-- middle leaves the left a row longer than the right -- level enough to read as two
+-- columns, and it keeps holding if a row is added later.
+local COLUMN_SPLIT < const > = math.ceil(#SETTINGS / 2)
 
 local C_TITLE < const > = Color4f(1.0, 0.9, 0.68, 1.0)
 local C_LABEL < const > = Color4f(0.82, 0.85, 0.9, 1.0)
@@ -151,15 +197,37 @@ function OptionsView:new(parent, environment)
 
 	self:_heading("GRAPHICS")
 
-	-- One grid for the section, so the labels and the values line up in columns of
-	-- their own: label, down, value, up. TableLayout fills a row at a time, so the
-	-- children are simply added in reading order.
-	local grid < const > = Container(self, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 10, 8))
+	-- Two grids side by side rather than one tall one: the rows in a single column
+	-- stood taller than the window the dialog has to fit inside. A grid each, so the
+	-- labels and the values line up in columns of their own -- label, down, value, up
+	-- -- and TableLayout fills a row at a time, so the children of one are simply added
+	-- in reading order.
+	--
+	-- Each column sizes itself to what is in it, which is why the two are not the same
+	-- width: the left holds the longer labels. Making them match would mean splitting
+	-- the pair proportionally instead, and a grid of auto-sized columns does not shrink
+	-- into a cell narrower than its contents -- the left one would draw over the right
+	-- rather than squeeze (see TableLayout:_calculate, which leaves an auto column at
+	-- its preferred width however little room it is handed).
+	local columns < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, COLUMN_GAP, 0))
+	local grids < const > = {}
+	for c = 1, 2 do
+		grids[c] = Container(columns, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 10, 8))
+		-- Top, rather than filling the row it is placed in: the columns are different
+		-- heights and the shorter one should start level with the taller, not be handed
+		-- the taller one's height and sit in dead space.
+		grids[c]:setVerticalAlign(Widget.ALIGN_TOP)
+	end
 
-	self._presetButton = self:_row(grid, "Quality preset", function(step) self:_cyclePreset(step) end)
+	-- The preset heads the left column rather than sitting above both. It writes every
+	-- row in either of them, but it is a row like the others and belongs in a grid with
+	-- some of them: in one of its own it would keep its own column widths, and its
+	-- arrows and value would line up with nothing.
+	self._presetButton = self:_row(grids[1], "Quality preset", function(step) self:_cyclePreset(step) end)
 
 	self._buttons = {}
 	for i, setting in ipairs(SETTINGS) do
+		local grid < const > = (i <= COLUMN_SPLIT) and grids[1] or grids[2]
 		self._buttons[i] = self:_row(grid, setting.label, function(step) self:_cycle(i, step) end)
 	end
 
@@ -218,7 +286,8 @@ end
 -- place to assume otherwise.
 function OptionsView:refresh()
 	for i = 1, #SETTINGS do
-		self._buttons[i]:setCaption(QUALITY[self:_get(i)])
+		local setting < const > = SETTINGS[i]
+		self._buttons[i]:setCaption((setting.captions or QUALITY)[self:_get(i)])
 	end
 	local p < const > = self:_matchingPreset()
 	self._presetButton:setCaption(p ~= nil and PRESETS[p].label or CUSTOM)
@@ -284,15 +353,7 @@ function OptionsView:_get(index)
 	if type(v) ~= "number" then
 		v = QUALITY_DEFAULT
 	end
-	v = math.floor(v)
-	local low < const > = setting.min or 0
-	if v < low then
-		v = low
-	end
-	if v > QUALITY_MAX then
-		v = QUALITY_MAX
-	end
-	return v
+	return clampToRow(setting, math.floor(v))
 end
 
 -- ...and set it. Writing the property is only half of it: the servers hold their own
@@ -303,11 +364,12 @@ function OptionsView:_set(index, v)
 	self._environment:reconfigure()
 end
 
--- Step one setting, wrapping at both ends so a wheel of four or five values can be
--- reached from either arrow without ever dead-ending.
+-- Step one setting, wrapping at both ends so a wheel of however many values the row
+-- offers can be reached from either arrow without ever dead-ending.
 function OptionsView:_cycle(index, step)
-	local low < const > = SETTINGS[index].min or 0
-	local n < const > = QUALITY_MAX - low + 1
+	local setting < const > = SETTINGS[index]
+	local low < const > = setting.min or 0
+	local n < const > = (setting.max or QUALITY_MAX) - low + 1
 	local v < const > = low + ((self:_get(index) - low + step) % n)
 	self:_set(index, v)
 	self:refresh()
@@ -326,19 +388,19 @@ function OptionsView:_cyclePreset(step)
 
 	local value < const > = PRESETS[next].value
 	for i, setting in ipairs(SETTINGS) do
-		self:_set(i, math.max(value, setting.min or 0))
+		self:_set(i, clampToRow(setting, value))
 	end
 	self:refresh()
 end
 
 -- Which preset the current values are, if they are one. Compared against the same
 -- clamp _cyclePreset applies, or "Low" could never match while the terrain refuses
--- to go below Low.
+-- to go below Low, nor "Ultra" while motion blur refuses to go above On.
 function OptionsView:_matchingPreset()
 	for p, preset in ipairs(PRESETS) do
 		local match = true
 		for i, setting in ipairs(SETTINGS) do
-			if self:_get(i) ~= math.max(preset.value, setting.min or 0) then
+			if self:_get(i) ~= clampToRow(setting, preset.value) then
 				match = false
 				break
 			end

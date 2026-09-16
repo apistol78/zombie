@@ -3,7 +3,12 @@
 	<fileName>Models/Tower.blend</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
-	<materialShaders/>
+	<materialShaders>
+		<item>
+			<first>TowerMat</first>
+			<second>{4A8AB0F0-DB63-41FF-8E08-F94FDABC4F0E}</second>
+		</item>
+	</materialShaders>
 	<materialTextures>
 		<item>
 			<first>stone_wall_diff_2k</first>

@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Models/Chapel_Tower.gltf</fileName>
+	<fileName>Models/ChapelTower.blend</fileName>
 	<importFilter/>
 	<meshType>MtStatic</meshType>
-	<materialShaders/>
+	<materialShaders>
+		<item>
+			<first>Chapel_TowerMat</first>
+			<second>{4A8AB0F0-DB63-41FF-8E08-F94FDABC4F0E}</second>
+		</item>
+	</materialShaders>
 	<materialTextures>
 		<item>
 			<first>diffuse</first>
@@ -23,5 +28,5 @@
 	<enableRaytracing>false</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
-	<previewAngle>0.251327</previewAngle>
+	<previewAngle>0.188496</previewAngle>
 </object>

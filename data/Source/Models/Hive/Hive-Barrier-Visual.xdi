@@ -3,7 +3,12 @@
 	<fileName>Models/Hive/Hive-Barrier.blend</fileName>
 	<importFilter/>
 	<meshType>MtStatic</meshType>
-	<materialShaders/>
+	<materialShaders>
+		<item>
+			<first>MAT_Rock</first>
+			<second>{4A8AB0F0-DB63-41FF-8E08-F94FDABC4F0E}</second>
+		</item>
+	</materialShaders>
 	<materialTextures>
 		<item>
 			<first>stone_wall_diff_2k</first>
@@ -23,5 +28,5 @@
 	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
-	<previewAngle>0.314159</previewAngle>
+	<previewAngle>0.251327</previewAngle>
 </object>

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.render.TextureAsset" version="21">
+<object type="traktor.render.TextureAsset" version="22">
 	<fileName>Textures/PolyHaven/Rock 05/rock_05_disp_1k.png</fileName>
 	<textureFormat>TfR8</textureFormat>
 	<normalMap>false</normalMap>
 	<scaleDepth>0</scaleDepth>
 	<generateMips>true</generateMips>
+	<maxReduceMips>false</maxReduceMips>
 	<keepZeroAlpha>false</keepZeroAlpha>
 	<textureType>Tt2D</textureType>
 	<hasAlpha>false</hasAlpha>
@@ -23,7 +24,7 @@
 	<inverseNormalMapX>false</inverseNormalMapX>
 	<inverseNormalMapY>false</inverseNormalMapY>
 	<scaleNormalMap>0</scaleNormalMap>
-	<assumeLinearGamma>false</assumeLinearGamma>
+	<assumeLinearGamma>true</assumeLinearGamma>
 	<generateSphereMap>false</generateSphereMap>
 	<preserveAlphaCoverage>false</preserveAlphaCoverage>
 	<alphaCoverageReference>0.5</alphaCoverageReference>

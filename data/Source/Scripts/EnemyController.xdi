@@ -97,6 +97,7 @@ local FRONT_DOT < const > = CFG.frontDot
 local FRONT_RELEASE_DOT < const > = CFG.frontReleaseDot
 local FRONT_COMMIT < const > = CFG.frontCommit
 local FRONT_RANGE < const > = CFG.frontRange
+local CHASE_EXACT_RANGE < const > = CFG.chaseExactRange
 local FRONT_RADIUS < const > = CFG.frontRadius
 local FRONT_STEP < const > = CFG.frontStep
 -- ...and the same front arc as an angle, since the step below works in radians. Taken
@@ -170,6 +171,23 @@ local DEBUG_C_SIGHTED < const > = Color4f(1.0, 0.12, 0.06, 1.0) -- chasing, can 
 local DEBUG_C_MEMORY < const > = Color4f(1.0, 0.62, 0.05, 1.0)  -- chasing on memory, or sent by :hunt
 local DEBUG_C_UNAWARE < const > = Color4f(0.18, 0.34, 0.62, 1.0) -- patrolling, has not noticed anything
 local DEBUG_C_HEARD < const > = Color4f(0.30, 0.82, 0.36, 1.0)   -- walking to where a shot was heard
+
+-- Nav path (see the debug block after path following in update): the route still ahead of
+-- the zombie, drawn in its dot's colour so a line is always attributable to a dot. Width is
+-- the same screen-space unit as DEBUG_DOT_SIZE; under 2 the renderer falls back to a hairline.
+-- Lifted off the ground only so it does not z-fight the terrain in a depth-tested capture --
+-- the layer itself draws through everything.
+local DEBUG_PATH_LIFT < const > = 0.15
+local DEBUG_PATH_WIDTH < const > = 2.0
+local DEBUG_PATH_NODE_SIZE < const > = 3.0
+
+-- Which of the colours above a zombie in this state is drawn in.
+local function debugColour(self)
+	return (self._state == "investigate" and DEBUG_C_HEARD)
+		or (self._state ~= "attack" and DEBUG_C_UNAWARE)
+		or (self._spotted and DEBUG_C_SIGHTED)
+		or DEBUG_C_MEMORY
+end
 
 function EnemyController:new()
 	self._repathTimer = 0.0
@@ -725,20 +743,27 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if shot ~= nil and shot.seq ~= self._heardShot then
 			self._heardShot = shot.seq
 			-- Patrol and investigate both listen -- a second shot is a better fix than the
-			-- one already being walked to, and re-aiming at it is free. Attack does not:
-			-- it is following the player themselves, which beats any guess, and a hunting
-			-- zombie (:hunt) must never be diverted at all.
-			if self._state ~= "attack" then
-				local hx < const > = shot.x - enemyPos.x
-				local hz < const > = shot.z - enemyPos.z
-				local hd < const > = math.sqrt(hx * hx + hz * hz)
-				if hd < HEAR_RANGE then
-					local spread < const > = HEAR_SPREAD + hd * HEAR_SPREAD_PER_M
-					self:investigate(
-						shot.x + (math.random() * 2.0 - 1.0) * spread,
-						shot.z + (math.random() * 2.0 - 1.0) * spread
-					)
+			-- one already being walked to, and re-aiming at it is free. A zombie chasing on
+			-- memory listens too, but differently: it is already walking at the player
+			-- themselves, which beats any guess, so a shot is not somewhere to go and look
+			-- but proof the player is still about -- the memory is refreshed as if it had
+			-- just seen them, and it re-paths to where they stand now rather than on the next
+			-- half-second beat. A zombie that can see the player (spotted, just refreshed
+			-- above) or is hunting (:hunt, never forgets) has nothing to gain from it.
+			local hx < const > = shot.x - enemyPos.x
+			local hz < const > = shot.z - enemyPos.z
+			local hd < const > = math.sqrt(hx * hx + hz * hz)
+			if self._state == "attack" then
+				if hd < HEAR_RANGE and not spotted and not self._relentless then
+					self._lostTimer = self._attackMemory
+					self._repathTimer = 0.0
 				end
+			elseif hd < HEAR_RANGE then
+				local spread < const > = HEAR_SPREAD + hd * HEAR_SPREAD_PER_M
+				self:investigate(
+					shot.x + (math.random() * 2.0 - 1.0) * spread,
+					shot.z + (math.random() * 2.0 - 1.0) * spread
+				)
 			end
 		end
 	end
@@ -774,11 +799,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- the normal shipped case, and simply means no dots.
 	local dbg < const > = context.debug
 	if dbg ~= nil then
-		local colour < const > = (self._state == "investigate" and DEBUG_C_HEARD)
-			or (self._state ~= "attack" and DEBUG_C_UNAWARE)
-			or (self._spotted and DEBUG_C_SIGHTED)
-			or DEBUG_C_MEMORY
-		dbg:point(enemyPos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, colour)
+		dbg:point(enemyPos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, debugColour(self))
 	end
 
 	-- ---- Shoved: everything below is suspended for the reel (see :hit) ----
@@ -847,8 +868,12 @@ function EnemyController:update(context, totalTime, deltaTime)
 			--
 			-- Jittered so the horde does not stack every one of its paths on one point.
 			-- Applied to either answer: two zombies coming round the same side are on the
-			-- same ring and would otherwise aim at very nearly the same metre of it.
-			local jitter = 1.5
+			-- same ring and would otherwise aim at very nearly the same metre of it. Not
+			-- from further off than CHASE_EXACT_RANGE, though, where a fresh scatter each
+			-- re-path flips a long route between two different ways round an obstacle --
+			-- out there it aims at the player exactly, and only starts spreading out once
+			-- it is close enough for the spreading to matter.
+			local jitter = pdist > CHASE_EXACT_RANGE and 0.0 or 1.5
 			local chaseX, chaseZ = self:_chaseAim(enemyPos, playerPos, pdist)
 			local aimX = chaseX + (math.random() * 2.0 - 1.0) * jitter
 			local aimZ = chaseZ + (math.random() * 2.0 - 1.0) * jitter
@@ -931,6 +956,27 @@ function EnemyController:update(context, totalTime, deltaTime)
 				targetX = dx / len
 				targetZ = dz / len
 			end
+		end
+	end
+
+	-- ---- Debug: where is this one going? ----
+	--
+	-- The part of the route not yet walked: from the zombie's feet to the corner it is
+	-- steering for, then corner to corner to the end, with a small dot on each corner. Drawn
+	-- after :update above so a corner passed this step is already dropped. Only the route
+	-- being *followed* -- a query still in flight is not drawn until it is adopted, which is
+	-- the moment it starts to matter. A shoved or still-rising zombie has returned before
+	-- this, so its route briefly vanishes; the dot above still says what it is thinking.
+	if dbg ~= nil and self._pathQuery ~= nil then
+		local colour < const > = debugColour(self)
+		local lift < const > = Vector4(0.0, DEBUG_PATH_LIFT, 0.0, 0.0)
+		local count < const > = self._pathQuery:getSteerPathCount()
+		local from = enemyPos + lift
+		for i = self._pathQuery:getSteerIndex(), count - 1 do
+			local to < const > = self._pathQuery:getSteerPathPosition(i) + lift
+			dbg:line(from, to, DEBUG_PATH_WIDTH, colour)
+			dbg:point(to, DEBUG_PATH_NODE_SIZE, colour)
+			from = to
 		end
 	end
 

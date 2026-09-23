@@ -355,6 +355,13 @@ Config = {
 		-- is stale long before it is walked, and closing is the only thing worth doing.
 		-- Sized inside sightRange, so coming round starts once it is properly on them.
 		frontRange = 12.0,
+		-- Outside this distance (m) a chase aims at the player's exact position, with none of
+		-- the scatter that keeps the horde from stacking up on one point. That scatter is
+		-- drawn afresh on every re-path, and from a long way off a metre or so either side is
+		-- enough to tip the route finder between two completely different ways round a rock
+		-- or a building -- so a distant zombie would swing from one to the other twice a
+		-- second. Stacking only matters once they arrive, which is inside this range.
+		chaseExactRange = 12.0,
 		-- The ring it comes round on (m), and how far round that ring one re-path aims
 		-- (rad, ~60 deg). The radius is a cap rather than a distance to hold -- a zombie
 		-- already closer circles at its own -- so the approach spirals in instead of

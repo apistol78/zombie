@@ -64,6 +64,17 @@ local atan2 < const > = math.atan2 or math.atan
 -- out.
 local EYE_OFFSET < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 
+-- How the eye's *height* follows the body. The character controller snaps up a stair or a
+-- kerb in a single frame, and a camera welded to it jolts with every step; so the eye
+-- chases the body's height instead (exponentially, EYE_HEIGHT_RATE per second -- about
+-- 80 ms to close two thirds of a step) while staying rigid in the horizontal, where the
+-- controller is already smooth. EYE_HEIGHT_MAX_LAG caps how far behind it may fall, so a
+-- drop off a ledge or a long flight still reads as moving rather than the view sinking
+-- into the floor, and anything past EYE_HEIGHT_SNAP is a teleport and is not eased at all.
+local EYE_HEIGHT_RATE < const > = 14.0
+local EYE_HEIGHT_MAX_LAG < const > = 0.3
+local EYE_HEIGHT_SNAP < const > = 2.0
+
 
 -- What the off hand can carry, in priority order: standing where two kinds are in
 -- reach, E takes the earlier one -- the relic is the night's objective and the key a
@@ -475,6 +486,10 @@ function Main:new(params, environment)
 	self._dawnPlaying = false    -- true while the act is running, and so owns the camera
 	self._dawnEnd = nil          -- _dawn when it let go; the two timings above run from there
 	self._dawnCamera = nil       -- the entity the act flies; the layer renders through it
+
+	-- The eye's eased height above the world (see EYE_HEIGHT_RATE and Main:_followEyeHeight).
+	-- nil until the first frame with a player, which then takes the body's height outright.
+	self._eyeY = nil
 
 	-- Aiming: mouse Y pitches the view/weapon up and down (mouse X yaws, in update).
 	-- Sign is worth reading twice: pitch turns about +X, so the forward vector it builds is
@@ -927,7 +942,26 @@ function Main:eye()
 		-- because EYE_OFFSET is an offset (w = 0) and this is a position.
 		return EYE_OFFSET.xyz1
 	end
-	return self._humanoid.transform.translation + EYE_OFFSET
+	local eye < const > = self._humanoid.transform.translation + EYE_OFFSET
+	if self._eyeY == nil then
+		return eye
+	end
+	return Vector4(eye.x, self._eyeY, eye.z, 1.0)
+end
+
+-- Ease the eye's height towards the body's, once a simulation step from postUpdate -- before the
+-- camera, the view models and the carried item are placed from Main:eye(), so all of them
+-- ride the same eased height and a rifle never bobs against a view that does not.
+function Main:_followEyeHeight(dt)
+	local target < const > = self._humanoid.transform.translation.y + EYE_OFFSET.y
+	local y = self._eyeY
+	if y == nil or math.abs(target - y) > EYE_HEIGHT_SNAP then
+		y = target
+	else
+		y = y + (target - y) * (1.0 - math.exp(-EYE_HEIGHT_RATE * dt))
+		y = math.max(target - EYE_HEIGHT_MAX_LAG, math.min(target + EYE_HEIGHT_MAX_LAG, y))
+	end
+	self._eyeY = y
 end
 
 function Main:aim(pitchBias)
@@ -2635,8 +2669,12 @@ function Main:postUpdate(info)
 	end
 
 	-- First-person: the camera sits at the eye and looks along the aim (heading+pitch).
-	-- It rides the player rigidly (position is already smooth via the character controller)
-	-- so there is no boom, no follow smoothing and no view-blocking ray to worry about.
+	-- It rides the player rigidly in the horizontal (already smooth via the character
+	-- controller) and eases only its height, so steps and stairs do not jolt the view; see
+	-- EYE_HEIGHT_RATE. There is no boom and no view-blocking ray to worry about.
+	if self._humanoid ~= nil then
+		self:_followEyeHeight(info.simulationDeltaTime)
+	end
 	if self._camera ~= nil and self._humanoid ~= nil then
 		local eye < const > = self:eye()
 		local fwd < const > = self:aimDirection()
@@ -2666,6 +2704,7 @@ end
 
 function Main:reload()
 	self._humanoid = nil
+	self._eyeY = nil
 	self._camera = nil
 	-- The dawn shot's camera goes with it. resolve() finds it again and, if the shot was
 	-- running, re-binds it as the layer's camera -- so reloading mid-payoff does not drop

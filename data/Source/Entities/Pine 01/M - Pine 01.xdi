@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="28">
+	<fileName>Entities/Pine 01/Pine 01.blend</fileName>
+	<importFilter/>
+	<meshType>MtInstance</meshType>
+	<materialShaders>
+		<item>
+			<first>branches</first>
+			<second>{A170F361-6D47-F849-811E-6DA5601B1A69}</second>
+		</item>
+		<item>
+			<first>leaves</first>
+			<second>{6CB27174-5951-BC41-8D9C-8BF809AB763B}</second>
+		</item>
+	</materialShaders>
+	<materialTextures/>
+	<scaleFactor>0.4, 0.4, 0.4, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
+	<reduce>0.6</reduce>
+	<raytracingReduce>0.4</raytracingReduce>
+	<previewAngle>0</previewAngle>
+</object>

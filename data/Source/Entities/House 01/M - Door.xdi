@@ -3,7 +3,12 @@
 	<fileName>Entities/House 01/House.blend</fileName>
 	<importFilter>Door</importFilter>
 	<meshType>MtInstance</meshType>
-	<materialShaders/>
+	<materialShaders>
+		<item>
+			<first>MAT_WoodPlank</first>
+			<second>{E919C69B-5B60-154D-AC61-30661D2E43B2}</second>
+		</item>
+	</materialShaders>
 	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
@@ -14,5 +19,5 @@
 	<enableRaytracing>true</enableRaytracing>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
-	<previewAngle>3.330088</previewAngle>
+	<previewAngle>3.267257</previewAngle>
 </object>

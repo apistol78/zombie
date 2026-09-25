@@ -1,4 +1,5 @@
-# No rest before dawn
+![image info](data/Assets/UI/Title.png)
+---
 "First person zombie shooting game" using the [Traktor](https://github.com/apistol78/traktor) engine.
 
 ![image info](screenshot.webp)

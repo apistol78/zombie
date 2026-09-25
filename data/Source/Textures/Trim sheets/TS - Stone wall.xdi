@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.render.TrimSheetSetupAsset" version="1">
+	<width>4096</width>
+	<height>4096</height>
+	<normalConvention>OpenGL</normalConvention>
+	<backgroundAlbedo>0, 0, 0, 1</backgroundAlbedo>
+	<backgroundSpecular>0.501961, 0.501961, 0.501961, 1</backgroundSpecular>
+	<backgroundRoughness>1, 1, 1, 1</backgroundRoughness>
+	<backgroundNormal>0.5, 0.5, 1, 1</backgroundNormal>
+	<backgroundHeight>0.501961, 0.501961, 0.501961, 1</backgroundHeight>
+	<slabs>
+		<item type="traktor.render.TrimSheetSlab">
+			<orientation>Horizontal</orientation>
+			<size>2048</size>
+			<regions>
+				<item type="traktor.render.TrimSheetRegion" version="4">
+					<name/>
+					<size>0</size>
+					<margin>2</margin>
+					<albedo>
+						<fileName>Textures/PolyHaven/Stone Wall/stone_wall_diff_2k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</albedo>
+					<specular>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</specular>
+					<roughness>
+						<fileName>Textures/PolyHaven/Stone Wall/stone_wall_arm_2k.jpg</fileName>
+						<swizzle>gggg</swizzle>
+					</roughness>
+					<normal>
+						<fileName>Textures/PolyHaven/Stone Wall/stone_wall_nor_dx_2k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</normal>
+					<height>
+						<fileName>Textures/PolyHaven/Stone Wall/stone_wall_arm_2k.jpg</fileName>
+						<swizzle>rrrr</swizzle>
+					</height>
+					<rotation>Deg0</rotation>
+					<offsetX>0</offsetX>
+					<offsetY>0</offsetY>
+					<scale>1</scale>
+					<tiling>Horizontal</tiling>
+				</item>
+			</regions>
+		</item>
+		<item type="traktor.render.TrimSheetSlab">
+			<orientation>Horizontal</orientation>
+			<size>1024</size>
+			<regions>
+				<item type="traktor.render.TrimSheetRegion" version="4">
+					<name/>
+					<size>0</size>
+					<margin>2</margin>
+					<albedo>
+						<fileName>Textures/PolyHaven/Plaster Grey 04/plaster_grey_04_diff_2k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</albedo>
+					<specular>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</specular>
+					<roughness>
+						<fileName>Textures/PolyHaven/Plaster Grey 04/plaster_grey_04_rough_2k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</roughness>
+					<normal>
+						<fileName>Textures/PolyHaven/Plaster Grey 04/plaster_grey_04_nor_dx_2k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</normal>
+					<height>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</height>
+					<rotation>Deg0</rotation>
+					<offsetX>0</offsetX>
+					<offsetY>0</offsetY>
+					<scale>0.5</scale>
+					<tiling>Horizontal</tiling>
+				</item>
+			</regions>
+		</item>
+	</slabs>
+</object>

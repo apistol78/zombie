@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.render.TrimSheetSetupAsset" version="2">
+	<width>4096</width>
+	<height>4096</height>
+	<normalConvention>OpenGL</normalConvention>
+	<backgroundAlbedo>0, 0, 0, 1</backgroundAlbedo>
+	<backgroundSpecular>0.501961, 0.501961, 0.501961, 1</backgroundSpecular>
+	<backgroundRoughness>1, 1, 1, 1</backgroundRoughness>
+	<backgroundMetallic>0, 0, 0, 1</backgroundMetallic>
+	<backgroundNormal>0.5, 0.5, 1, 1</backgroundNormal>
+	<backgroundHeight>0.501961, 0.501961, 0.501961, 1</backgroundHeight>
+	<slabs>
+		<item type="traktor.render.TrimSheetSlab">
+			<orientation>Horizontal</orientation>
+			<size>2048</size>
+			<regions>
+				<item type="traktor.render.TrimSheetRegion" version="5">
+					<name/>
+					<size>0</size>
+					<margin>2</margin>
+					<albedo>
+						<fileName>Textures/PolyHaven/Brown Planks 08/brown_planks_08_diff_4k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</albedo>
+					<specular>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</specular>
+					<roughness>
+						<fileName>Textures/PolyHaven/Brown Planks 08/brown_planks_08_rough_4k.jpg</fileName>
+						<swizzle>gggg</swizzle>
+					</roughness>
+					<metallic>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</metallic>
+					<normal>
+						<fileName>Textures/PolyHaven/Brown Planks 08/brown_planks_08_nor_dx_4k.jpg</fileName>
+						<swizzle>rgba</swizzle>
+					</normal>
+					<height>
+						<fileName>Textures/PolyHaven/Brown Planks 08/brown_planks_08_disp_4k.jpg</fileName>
+						<swizzle>rrrr</swizzle>
+					</height>
+					<rotation>Deg0</rotation>
+					<offsetX>0</offsetX>
+					<offsetY>0</offsetY>
+					<scale>0.5</scale>
+					<tiling>Horizontal</tiling>
+				</item>
+			</regions>
+		</item>
+		<item type="traktor.render.TrimSheetSlab">
+			<orientation>Horizontal</orientation>
+			<size>100</size>
+			<regions>
+				<item type="traktor.render.TrimSheetRegion" version="5">
+					<name/>
+					<size>600</size>
+					<margin>2</margin>
+					<albedo>
+						<fileName>Textures/Plank/EndGrain01.png</fileName>
+						<swizzle>rgba</swizzle>
+					</albedo>
+					<specular>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</specular>
+					<roughness>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</roughness>
+					<metallic>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</metallic>
+					<normal>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</normal>
+					<height>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</height>
+					<rotation>Deg0</rotation>
+					<offsetX>0</offsetX>
+					<offsetY>0</offsetY>
+					<scale>1</scale>
+					<tiling>None</tiling>
+				</item>
+				<item type="traktor.render.TrimSheetRegion" version="5">
+					<name/>
+					<size>0</size>
+					<margin>2</margin>
+					<albedo>
+						<fileName>Textures/Plank/EndGrain02.png</fileName>
+						<swizzle>rgba</swizzle>
+					</albedo>
+					<specular>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</specular>
+					<roughness>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</roughness>
+					<metallic>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</metallic>
+					<normal>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</normal>
+					<height>
+						<fileName></fileName>
+						<swizzle>rgba</swizzle>
+					</height>
+					<rotation>Deg0</rotation>
+					<offsetX>0</offsetX>
+					<offsetY>0</offsetY>
+					<scale>1</scale>
+					<tiling>None</tiling>
+				</item>
+			</regions>
+		</item>
+	</slabs>
+</object>

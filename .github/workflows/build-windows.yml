@@ -1,0 +1,55 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install NSIS
+      uses: repolevedavaj/install-nsis@v1.0.1
+      with:
+        nsis-version: '3.10'
+
+    - name: Print NSIS version
+      run: makensis -VERSION
+
+    - name: Install Blender
+      uses: moguri/setup-blender@v1
+      with:
+        blender-version: '5.2'
+
+    - name: Download artifact from Traktor
+      uses: benday-inc/download-latest-artifact@main
+      with:
+         token: ${{ secrets.GITHUB_TOKEN }}
+         repository_owner: apistol78
+         repository_name: traktor
+         workflow_name: 'Build Windows'
+         branch_name: 'master'
+         artifact_name: 'traktor'
+         download_path: '${{ github.workspace }}/temp'
+         download_filename: 'traktor.zip'
+
+    - name: Extract Traktor
+      run: powershell Expand-Archive ${{ github.workspace }}/temp/traktor.zip -DestinationPath ${{ github.workspace }}/traktor 
+
+    - name: Build
+      run: ./scripts/autobuild-win64.bat
+
+    - name: Installer
+      uses: joncloud/makensis-action@v4.1
+      with:
+        script-file: ./scripts/installer.nsi
+
+    - name: Archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: Installer
+        path: 'Zombie Setup.exe'

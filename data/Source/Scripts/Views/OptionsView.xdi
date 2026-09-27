@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
 
 import(traktor)
 
@@ -264,7 +265,7 @@ function OptionsView:new(parent, environment)
 	hint:setTextColor(C_HINT)
 	hint:setHorizontalAlign(Widget.ALIGN_CENTER)
 
-	local back < const > = PushButton(self, "Back")
+	local back < const > = MenuButton(self, "Back")
 	back:setMinimumWidth(BACK_W)
 	back:setHorizontalAlign(Widget.ALIGN_CENTER)
 	back:setOnClick(function() self:_close() end)
@@ -323,19 +324,19 @@ function OptionsView:_row(grid, label, stepFn)
 	caption:setHorizontalAlign(Widget.ALIGN_LEFT)
 	caption:setVerticalAlign(Widget.ALIGN_CENTER)
 
-	local down < const > = PushButton(grid, "<")
+	local down < const > = MenuButton(grid, "<")
 	down:setMinimumWidth(ARROW_W)
 	down:setHorizontalAlign(Widget.ALIGN_CENTER)
 	down:setOnClick(function() stepFn(-1) end)
 
-	local value < const > = PushButton(grid, QUALITY[QUALITY_DEFAULT])
+	local value < const > = MenuButton(grid, QUALITY[QUALITY_DEFAULT])
 	value:setMinimumWidth(VALUE_W)
 	value:setHorizontalAlign(Widget.ALIGN_CENTER)
 	-- Clicking the value itself steps up, so the common case -- turning one thing
 	-- up until it looks right -- never needs the arrows at all.
 	value:setOnClick(function() stepFn(1) end)
 
-	local up < const > = PushButton(grid, ">")
+	local up < const > = MenuButton(grid, ">")
 	up:setMinimumWidth(ARROW_W)
 	up:setHorizontalAlign(Widget.ALIGN_CENTER)
 	up:setOnClick(function() stepFn(1) end)

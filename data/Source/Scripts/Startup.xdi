@@ -6,6 +6,7 @@
 #using \{9B4E27DA-6C81-4F35-A70E-1D5C83B2F604}
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
 
 import(traktor)
 
@@ -21,6 +22,44 @@ import(traktor)
 -- is Scripts/Views/OptionsView, the same view the pause menu puts up mid-game.
 
 Startup = Startup or class("Startup", Stage)
+
+-- Motion. The menu comes in as a block, rising into place, and its buttons follow
+-- one after another; swapping to the options and back fades the outgoing page up
+-- and away before the incoming one rises in. Every button is a MenuButton, which
+-- does its own hover and press.
+local INTRO_TIME < const > = 0.55
+local INTRO_RISE < const > = 18
+local STAGGER_START < const > = 0.20   -- first button's delay behind the dialog
+local STAGGER_STEP < const > = 0.07    -- ...and each one after it
+local PAGE_OUT_TIME < const > = 0.14
+local PAGE_OUT_RISE < const > = -10    -- negative: drifts up as it goes
+local PAGE_IN_TIME < const > = 0.30
+local PAGE_IN_RISE < const > = 14
+local LEAVE_TIME < const > = 0.20
+
+-- Fade a dialog's clip between two alphas while it drifts vertically, `rise` px
+-- below its place when transparent. A dialog is only ever driven by one of these:
+-- starting another stops the first, so a page closed half way in does not have two
+-- tweens fighting over it. The drift is re-read from the placement each step, so a
+-- resize mid-fade still lands where the layout puts it.
+local function fadeDialog(dialog, from, to, rise, duration, easeFn, doneFn)
+	if dialog._fadeTween ~= nil then
+		dialog._fadeTween:stop()
+	end
+	local mc < const > = dialog._mc
+	dialog._fadeTween = Tween(0, 1, duration, function(k, done)
+		local a < const > = from + (to - from) * (done and 1 or easeFn(k))
+		mc.alpha = a
+		mc.Y = dialog:getPlacement().y + rise * (1 - a)
+		if done then
+			dialog._fadeTween = nil
+			-- Chains the next fade from inside this callback, which relies on the
+			-- engine's Tween.update fix: before it, a tween created here was lost
+			-- and the next page sat invisible at alpha 0.
+			if doneFn ~= nil then doneFn() end
+		end
+	end)
+end
 
 function Startup:new(params, environment)
 	Stage.new(self, params, environment)
@@ -68,22 +107,24 @@ function Startup:new(params, environment)
 	-- falls through Widget:place to "take the whole cell", and PushButton:place then
 	-- stretches its background to match -- so against a 520 px logo they would each
 	-- have become 520 px wide instead of the 220 asked for here.
-	local buttonTerrain = PushButton(self._dialog, "New Game")
+	local buttonTerrain = MenuButton(self._dialog, "New Game")
 	buttonTerrain:setMinimumWidth(220)
 	buttonTerrain:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonTerrain:setOnClick(function() self:_select("TERRAIN") end)
 
 	-- Options: graphics quality, which is the whole of it for now.
-	local buttonOptions = PushButton(self._dialog, "Options")
+	local buttonOptions = MenuButton(self._dialog, "Options")
 	buttonOptions:setMinimumWidth(220)
 	buttonOptions:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonOptions:setOnClick(function() self:_showOptions() end)
 
 	-- Exit: quit the application.
-	local buttonExit = PushButton(self._dialog, "Exit")
+	local buttonExit = MenuButton(self._dialog, "Exit")
 	buttonExit:setMinimumWidth(220)
 	buttonExit:setHorizontalAlign(Widget.ALIGN_CENTER)
-	buttonExit:setOnClick(function() self:terminate() end)
+	buttonExit:setOnClick(function() self:_leave(function() self:terminate() end) end)
+
+	self._buttons = { buttonTerrain, buttonOptions, buttonExit }
 
 	-- The options dialog, built here and kept hidden: the view brings the rows, this
 	-- stage brings the box they sit in. Parented to the same Frame as the menu, which
@@ -96,6 +137,12 @@ function Startup:new(params, environment)
 	self._frame:update()
 	self._dialog:show()
 
+	-- Bring the menu in. Placed by show() above, so the drift has a place to settle to.
+	fadeDialog(self._dialog, 0, 1, INTRO_RISE, INTRO_TIME, Ease.outCubic)
+	for i, button in ipairs(self._buttons) do
+		button:reveal(STAGGER_START + STAGGER_STEP * (i - 1))
+	end
+
 	-- Release the mouse cursor so the menu buttons are clickable.
 	environment.input.inputSystem:setExclusive(false)
 end
@@ -105,29 +152,68 @@ end
 -- panel while it does. This stage's only transition is LOADING; the Loading stage
 -- itself is cheap, so this load returns almost immediately.
 --
--- Guard so a second click while a load is already in flight is ignored.
+-- Guard so a second click while a load is already in flight is ignored. The load
+-- starts at once, alongside the menu fading out; update() holds the switch until
+-- both are done, so the fade never costs any loading time.
 function Startup:_select(target)
-	if self._loader ~= nil then
+	if self._loader ~= nil or self._leaving or self._paging then
 		return
 	end
 	self._loader = self:loadStageAsync("LOADING", { target = target })
+	self:_leave(nil)
+end
+
+-- Fade the menu out, then call doneFn. Sets _leaving for the duration, which both
+-- blocks the other buttons and is what update() waits on before switching stage.
+function Startup:_leave(doneFn)
+	if self._leaving or self._paging then
+		return
+	end
+	self._leaving = true
+	fadeDialog(self._dialog, 1, 0, PAGE_OUT_RISE, LEAVE_TIME, Ease.inQuad, function()
+		self._left = true
+		if doneFn ~= nil then doneFn() end
+	end)
+end
+
+-- Fade one page of the menu out and the other in. _paging blocks further clicks
+-- until the outgoing page has gone -- it is still modal and clickable while it
+-- fades. Hide first and show second, for the modal (see below).
+function Startup:_page(from, to, beforeShow)
+	if self._paging or self._leaving then
+		return
+	end
+	self._paging = true
+	fadeDialog(from, 1, 0, PAGE_OUT_RISE, PAGE_OUT_TIME, Ease.inQuad, function()
+		from:hide()
+		if beforeShow ~= nil then beforeShow() end
+		to:show()
+		fadeDialog(to, 0, 1, PAGE_IN_RISE, PAGE_IN_TIME, Ease.outCubic)
+		self._paging = false
+	end)
 end
 
 -- Swap the menu for the options. Hidden first and shown second, in both directions:
 -- Dialog:show takes the modal, Dialog:hide releases it, and doing it the other way
 -- round would leave the one being put away holding it.
 function Startup:_showOptions()
-	self._dialog:hide()
-	self._options:refresh()
-	self._optionsDialog:show()
+	self:_page(self._dialog, self._optionsDialog, function() self._options:refresh() end)
 end
 
 function Startup:_hideOptions()
-	self._optionsDialog:hide()
-	self._dialog:show()
+	self:_page(self._optionsDialog, self._dialog, nil)
 end
 
 function Startup:finalize()
+	-- A fade still running would carry on into the next stage (tweens outlive stages)
+	-- against dialogs removed just below.
+	for _, dialog in ipairs({ self._dialog, self._optionsDialog }) do
+		if dialog ~= nil and dialog._fadeTween ~= nil then
+			dialog._fadeTween:stop()
+			dialog._fadeTween = nil
+		end
+	end
+
 	if self._optionsDialog ~= nil then
 		self._optionsDialog:remove()
 		self._optionsDialog = nil
@@ -163,7 +249,7 @@ function Startup:update(info)
 
 	-- Poll the async loader; once the loading stage is ready, switch to it.
 	if self._loader ~= nil then
-		if self._loader.ready then
+		if self._loader.ready and self._left then
 			if self._loader.succeeded then
 				self:gotoStage(self._loader:get())
 			end

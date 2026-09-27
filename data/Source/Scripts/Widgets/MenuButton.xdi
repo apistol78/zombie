@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- MenuButton
+--
+-- A UiKit PushButton that moves. Same art, same styles, same API -- it is a drop-in
+-- for PushButton anywhere -- but instead of snapping between its up, hover and down
+-- colours it eases between them:
+--
+--   hover    the plate warms to the hover colour and swells a few pixels about its
+--            centre, the caption warms towards candle light;
+--   press    the plate squashes in quickly;
+--   release  ...and springs back past its size before settling, so a click reads
+--            as a click even when the stage it starts is on screen a frame later.
+--
+-- Plus `reveal(delay)`, a fade-and-rise used for staggering a menu in.
+--
+-- Everything is two numbers, `_hover` and `_press` (0..1, the press overshooting
+-- below 0 on its spring back), each driven by a UiKit Tween and turned into
+-- visuals by `_apply`. Tweens only advance because the stage calls Tween.update --
+-- Startup and Main both do; a stage that does not gets a button that still works
+-- and simply never leaves its resting look.
+--
+-- Only the plate and caption move, never the button's own clip: UiKit hit-tests
+-- through the clip's transform, so scaling that would move the edge the mouse is
+-- tested against and a press near it could lose its release.
+
+MenuButton = MenuButton or class("MenuButton", PushButton)
+
+local HOVER_TIME < const > = 0.16
+local PRESS_TIME < const > = 0.06
+local RELEASE_TIME < const > = 0.38
+local REVEAL_TIME < const > = 0.40
+
+-- px the plate gains in total when hovered, and loses when pressed. Horizontally
+-- capped at a fraction of the width, or the 44 px arrow buttons in the options
+-- would balloon by a quarter while the 220 px menu buttons barely moved.
+local GROW_X < const > = 10
+local GROW_Y < const > = 4
+local SQUASH_X < const > = 10
+local SQUASH_Y < const > = 4
+local MAX_FRACTION_X < const > = 0.08
+local REVEAL_RISE < const > = 12  -- px below its place a revealing button starts
+
+-- The caption's hover colour: the ward-flame amber, a little paler so it still
+-- reads as text rather than as a light.
+local TEXT_HOVER < const > = traktor.Color4f(1.0, 0.86, 0.60, 1.0)
+
+local function outCubic(k)
+	local f < const > = k - 1
+	return f * f * f + 1
+end
+
+-- UiKit's Ease.outBack is an empty stub, hence a local one. The constant is the
+-- overshoot; 2.6 carries the plate about 20% past rest on the way back.
+local function outBack(k)
+	local c1 < const > = 2.6
+	local f < const > = k - 1
+	return 1 + (c1 + 1) * f * f * f + c1 * f * f
+end
+
+local function mix(a, b, k)
+	return traktor.Color4f(
+		a.red + (b.red - a.red) * k,
+		a.green + (b.green - a.green) * k,
+		a.blue + (b.blue - a.blue) * k,
+		a.alpha + (b.alpha - a.alpha) * k
+	)
+end
+
+-- Stop animating before going. Tweens outlive stages -- UiKit keeps its list across
+-- a stage change -- so a hover or release spring still running when the menu is torn
+-- down would otherwise tick on in the next stage against a button whose clip
+-- Widget:remove has already cleared.
+function MenuButton:remove()
+	self:_stop("_hover")
+	self:_stop("_press")
+	self:_stop("_reveal")
+	self._removed = true
+	PushButton.remove(self)
+end
+
+function MenuButton:place(x, y, width, height)
+	PushButton.place(self, x, y, width, height)
+	self:_apply()
+end
+
+function MenuButton:setTextColor(color)
+	self._textColor = color
+	PushButton.setTextColor(self, color)
+	self:_apply()
+	return self
+end
+
+-- Fade in from transparent while rising the last few pixels into place, after
+-- `delay` seconds. Call after the button has been laid out and shown.
+function MenuButton:reveal(delay)
+	self:_stop("_reveal")
+	self._reveal = 0.0
+	self._revealTarget = 0.0
+	self:_apply()
+
+	local start < const > = function()
+		-- The delay can outlast the button.
+		if self._removed then
+			return
+		end
+		self:_animate("_reveal", 1.0, REVEAL_TIME, outCubic)
+	end
+	if delay ~= nil and delay > 0 then
+		Interval(delay, start)
+	else
+		start()
+	end
+	return self
+end
+
+-- Private
+
+function MenuButton:_initialize(parent, mc, caption, mode)
+	-- Set before PushButton's, which calls _updateState from inside itself.
+	self._hover = 0.0
+	self._hoverTarget = 0.0
+	self._press = 0.0
+	self._pressTarget = 0.0
+	self._reveal = 1.0
+	self._revealTarget = 1.0
+	PushButton._initialize(self, parent, mc, caption, mode)
+end
+
+function MenuButton:_updateState()
+	local down < const > = self._toggled or (self._pressed and self._inside)
+
+	-- Kept for art that has per-state frames, which UiKit's does.
+	if down then
+		self._background_mc:gotoAndStop("down")
+	elseif self._inside then
+		self._background_mc:gotoAndStop("hover")
+	else
+		self._background_mc:gotoAndStop("up")
+	end
+
+	self:_animate("_hover", self._inside and 1.0 or 0.0, HOVER_TIME, outCubic)
+	if down then
+		self:_animate("_press", 1.0, PRESS_TIME, outCubic)
+	else
+		self:_animate("_press", 0.0, RELEASE_TIME, outBack)
+	end
+
+	self:_apply()
+end
+
+-- Tween the field `key` from wherever it is now towards `target`, replacing any
+-- tween already driving it. Called for every state refresh, so it does nothing when
+-- the target has not changed -- restarting would stall a tween that setColor or
+-- setEnable happened to poke half way through.
+function MenuButton:_animate(key, target, duration, easeFn)
+	if self[key .. "Target"] == target then
+		return
+	end
+	self[key .. "Target"] = target
+	self:_stop(key)
+
+	local from < const > = self[key]
+	self[key .. "Tween"] = Tween(0, 1, duration, function(k, done)
+		if done then
+			self[key] = target
+			self[key .. "Tween"] = nil
+		else
+			self[key] = from + (target - from) * easeFn(k)
+		end
+		self:_apply()
+	end)
+end
+
+function MenuButton:_stop(key)
+	local t < const > = self[key .. "Tween"]
+	if t ~= nil then
+		t:stop()
+		self[key .. "Tween"] = nil
+	end
+end
+
+function MenuButton:_apply()
+	local bg < const > = self._background_mc
+	local up < const > = self._defaultColor
+	local hover < const > = self._hoverColor
+	local down < const > = self._downColor
+	-- _loadStyle sets the three colours one at a time, each refreshing the state.
+	if self._mc == nil or bg == nil or up == nil or hover == nil or down == nil then
+		return
+	end
+
+	local h < const > = self._hover
+	local p < const > = self._press
+	local pc < const > = math.max(0.0, math.min(1.0, p))
+
+	bg.colorTransform = traktor.spark.ColorTransform(
+		mix(mix(up, hover, h), down, pc),
+		traktor.Color4f(0, 0, 0, 0)
+	)
+
+	if self._textColor ~= nil then
+		self._caption_tb.textColor = mix(self._textColor, TEXT_HOVER, h)
+	end
+
+	-- Grow or shrink the plate about its centre. The plate is authored with its top
+	-- left on the button's origin, so resizing alone would pin that corner.
+	local pl < const > = self:getPlacement()
+	if pl.width > 0 and pl.height > 0 then
+		local fx < const > = math.min(1.0, pl.width * MAX_FRACTION_X / GROW_X)
+		local dx < const > = (GROW_X * h - SQUASH_X * p) * fx
+		local dy < const > = GROW_Y * h - SQUASH_Y * p
+		bg.width = pl.width + dx
+		bg.height = pl.height + dy
+		bg.X = -dx / 2
+		bg.Y = -dy / 2
+
+		self._mc.Y = pl.y + REVEAL_RISE * (1.0 - self._reveal)
+	end
+
+	self._mc.alpha = (self:isEnabled() and 1.0 or 0.5) * self._reveal
+end
+]]></text>
+</object>

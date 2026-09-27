@@ -6,6 +6,7 @@ function setupUiKitStyles()
 	Dialog:setStyle("background", traktor.Color4f(82 / 255, 69 / 255, 42 / 255, 1.0))
 	PushButton:setStyle("background", traktor.Color4f(82 / 255, 69 / 255, 42 / 255, 0.5))
 	PushButton:setStyle("backgroundHover", traktor.Color4f(112 / 255, 95 / 255, 57 / 255, 0.5))
+	PushButton:setStyle("backgroundDown", traktor.Color4f(58 / 255, 48 / 255, 28 / 255, 0.65))
 end
 ]]></text>
 </object>

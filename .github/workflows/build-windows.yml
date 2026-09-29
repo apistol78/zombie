@@ -12,18 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install NSIS
-      uses: repolevedavaj/install-nsis@v1
-      with:
-        nsis-version: '3.12'
-
-    - name: Print NSIS version
-      run: makensis -VERSION
-
     - name: Install Blender
       uses: moguri/setup-blender@v1
       with:
-        blender-version: '5.2'
+        blender-version: '5.0'
 
     - name: Download Traktor
       env:
@@ -40,6 +32,14 @@ jobs:
 
     - name: Build
       run: ./scripts/autobuild-win64.bat
+
+    - name: Install NSIS
+      uses: repolevedavaj/install-nsis@v1
+      with:
+        nsis-version: '3.12'
+
+    - name: Print NSIS version
+      run: makensis -VERSION
 
     - name: Installer
       uses: joncloud/makensis-action@v4.1

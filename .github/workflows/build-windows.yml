@@ -25,20 +25,18 @@ jobs:
       with:
         blender-version: '5.2'
 
-    - name: Download artifact from Traktor
-      uses: benday-inc/download-latest-artifact@main
-      with:
-         token: ${{ secrets.GITHUB_TOKEN }}
-         repository_owner: apistol78
-         repository_name: traktor
-         workflow_name: 'Build Windows'
-         branch_name: 'master'
-         artifact_name: 'traktor'
-         download_path: '${{ github.workspace }}/temp'
-         download_filename: 'traktor.zip'
-
-    - name: Extract Traktor
-      run: powershell Expand-Archive ${{ github.workspace }}/temp/traktor.zip -DestinationPath ${{ github.workspace }}/traktor 
+    - name: Download Traktor
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Runs are listed unfiltered and filtered here, since GitHub's branch/status filters
+        # return stale runs for the Traktor repository (a build weeks old as the newest one).
+        $headers = @{ Authorization = "Bearer $env:GH_TOKEN" }
+        $runs = (Invoke-RestMethod -Headers $headers "https://api.github.com/repos/apistol78/traktor/actions/workflows/build-windows.yml/runs?per_page=100").workflow_runs
+        $run = $runs | Where-Object { $_.head_branch -eq 'master' -and $_.event -eq 'push' -and $_.conclusion -eq 'success' } | Select-Object -First 1
+        if (-not $run) { throw 'No successful Traktor master build found.' }
+        Write-Host "Using Traktor build $($run.html_url) (commit $($run.head_sha), $($run.created_at))"
+        gh run download $run.id --repo apistol78/traktor --name traktor --dir traktor
 
     - name: Build
       run: ./scripts/autobuild-win64.bat

@@ -1,3 +1,5 @@
+Unicode True
+
 !include "MUI2.nsh"
 
 
@@ -6,6 +8,24 @@
 !define NAME "Zombie"
 !define VERSION "1.0.0"
 !define SLUG "${NAME} v${VERSION}"
+!define PUBLISHER "Anders Pistol"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NAME}"
+
+;--------------------------------
+; General
+Name "${NAME}"
+RequestExecutionLevel admin
+ManifestDPIAware true
+
+;--------------------------------
+; Version information
+VIProductVersion "${VERSION}.0"
+VIAddVersionKey "ProductName" "${NAME}"
+VIAddVersionKey "ProductVersion" "${VERSION}"
+VIAddVersionKey "FileVersion" "${VERSION}"
+VIAddVersionKey "FileDescription" "${NAME} Setup"
+VIAddVersionKey "CompanyName" "${PUBLISHER}"
+VIAddVersionKey "LegalCopyright" "Copyright (C) 2026 ${PUBLISHER}"
 
 ;--------------------------------
 ; UI
@@ -53,6 +73,16 @@ CreateShortCut "$DESKTOP\Zombie.lnk" "$INSTDIR\bin64\Traktor.Runtime.App.exe"
 
 WriteUninstaller $INSTDIR\Uninstaller.exe
 
+; Register in Add/Remove Programs
+WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayName" "${NAME}"
+WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "${VERSION}"
+WriteRegStr HKLM "${UNINSTALL_KEY}" "Publisher" "${PUBLISHER}"
+WriteRegStr HKLM "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
+WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\bin64\Traktor.Runtime.App.exe"
+WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstaller.exe"'
+WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify" 1
+WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair" 1
+
 SectionEnd
 
  
@@ -67,5 +97,7 @@ RMDir $INSTDIR\bin64
 RMDir $INSTDIR
 
 Delete "$DESKTOP\Zombie.lnk"
+
+DeleteRegKey HKLM "${UNINSTALL_KEY}"
 
 SectionEnd

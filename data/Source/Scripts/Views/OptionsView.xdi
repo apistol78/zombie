@@ -108,7 +108,6 @@ local SETTINGS < const > = {
 	{ key = "World.AmbientOcclusionQuality", label = "Ambient occlusion" },
 	{ key = "World.VolumetricFogQuality", label = "Volumetric fog" },
 	{ key = "World.AntiAliasQuality", label = "Anti-aliasing" },
-	{ key = "World.ImageProcessQuality", label = "Post processing" },
 	-- See the note above: every level above 0 is the same blur, so this is a switch.
 	{ key = "World.MotionBlurQuality", label = "Motion blur", max = 1, captions = ON_OFF },
 	{ key = "World.ReflectionsQuality", label = "Reflections" },

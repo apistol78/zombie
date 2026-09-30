@@ -1,0 +1,225 @@
+name: Nightly Release
+
+# Builds the Windows installer of Zombie every night and publishes it through a
+# single, permanent pre-release tagged "nightly".
+#
+# That release is created once and only ever edited afterwards; the rolling
+# "nightly" tag is moved onto the new commit and the asset is replaced in
+# place. Deleting and recreating it would republish it instead, and GitHub
+# raises a release event on every publish - watchers subscribed to releases
+# would be notified each night and the release would reappear in the dashboard
+# feed of everyone who starred the repository. Editing raises no such event.
+#
+# Zombie is built against the newest successful Traktor master build, so a
+# night is skipped only when neither main nor that Traktor build has moved
+# since the published nightly. A failed build replaces nothing, so the previous
+# nightly stays available for download.
+
+on:
+  schedule:
+    # 04:00 UTC every day, after Traktor's own 02:00 nightly has had time to
+    # finish, so tonight's engine changes are usually picked up the same night.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two nightlies edit the release at the same time.
+concurrency:
+  group: nightly-release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check for new commits
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      traktor_run: ${{ steps.traktor.outputs.run }}
+      traktor_sha: ${{ steps.traktor.outputs.sha }}
+    steps:
+    - name: Find the newest Traktor build
+      id: traktor
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+
+        # Runs are listed unfiltered and filtered here, since GitHub's branch/status
+        # filters return stale runs for the Traktor repository (a build weeks old as
+        # the newest one). See build-windows.yml.
+        run="$(gh api 'repos/apistol78/traktor/actions/workflows/build-windows.yml/runs?per_page=100' \
+          --jq '[.workflow_runs[] | select(.head_branch == "master" and .event == "push" and .conclusion == "success")][0] | "\(.id) \(.head_sha) \(.html_url)"')"
+        if [ -z "$run" ] || [ "$run" = "null" ]; then
+          echo "No successful Traktor master build found." >&2
+          exit 1
+        fi
+        read -r id sha url <<< "$run"
+        echo "Using Traktor build $url (commit $sha)"
+        echo "run=$id" >> "$GITHUB_OUTPUT"
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+    - name: Compare against the published nightly
+      id: check
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+        TRAKTOR_SHA: ${{ steps.traktor.outputs.sha }}
+      run: |
+        set -euo pipefail
+
+        if [ "$MANUAL" = "true" ]; then
+          echo "Manual run, building regardless of history."
+          echo "build=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # The rolling tag points at the Zombie commit the current nightly was built
+        # from, and the release notes record the Traktor commit it was built against.
+        if ! previous="$(gh api "repos/$GH_REPO/git/ref/tags/nightly" --jq '.object.sha' 2>/dev/null)"; then
+          echo "No nightly tag yet, building the first nightly."
+          echo "build=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        previous_traktor="$(gh release view nightly --json body --jq '.body' 2>/dev/null \
+          | sed -n 's/.*<!-- traktor: \([0-9a-f]*\) -->.*/\1/p' | head -n1 || true)"
+
+        if [ "$previous" = "$GITHUB_SHA" ] && [ "$previous_traktor" = "$TRAKTOR_SHA" ]; then
+          echo "main is still at $previous and Traktor at $TRAKTOR_SHA, skipping tonight's build."
+          echo "build=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        echo "main: ${previous} -> ${GITHUB_SHA}"
+        echo "Traktor: ${previous_traktor:-unknown} -> ${TRAKTOR_SHA}"
+        echo "build=true" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows installer
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Blender
+      uses: moguri/setup-blender@v1
+      with:
+        blender-version: '5.0'
+
+    - name: Download Traktor
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TRAKTOR_RUN: ${{ needs.check.outputs.traktor_run }}
+      # The exact run chosen by the check job, so the Traktor commit recorded in
+      # the release notes is the one actually built against.
+      run: gh run download $env:TRAKTOR_RUN --repo apistol78/traktor --name traktor --dir traktor
+
+    - name: Build
+      run: ./scripts/autobuild-win64.bat
+
+    - name: Install NSIS
+      uses: repolevedavaj/install-nsis@v1
+      with:
+        nsis-version: '3.12'
+
+    - name: Installer
+      uses: joncloud/makensis-action@v4.1
+      with:
+        script-file: ./scripts/installer.nsi
+
+    - name: Name installer
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        if (-not (Test-Path -LiteralPath 'Zombie Setup.exe')) {
+          throw 'Installer was not produced, missing "Zombie Setup.exe"'
+        }
+        Copy-Item -LiteralPath 'Zombie Setup.exe' -Destination Zombie-nightly-win64.exe
+        Write-Host ('Installer is {0:N1} MB' -f ((Get-Item -LiteralPath Zombie-nightly-win64.exe).Length / 1MB))
+
+    - name: Upload nightly assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-win64
+        if-no-files-found: error
+        retention-days: 7
+        compression-level: 0
+        path: Zombie-nightly-win64.exe
+
+  release:
+    name: Publish nightly release
+    # The build must succeed before anything is published, so a broken night
+    # leaves the previous nightly release untouched.
+    needs: [ check, windows ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Download nightly assets
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
+        merge-multiple: true
+
+    - name: Publish nightly release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        TRAKTOR_SHA: ${{ needs.check.outputs.traktor_sha }}
+      run: |
+        set -euo pipefail
+
+        TAG="nightly"
+        SHORT_SHA="$(echo "$GITHUB_SHA" | cut -c1-8)"
+        TRAKTOR_SHORT_SHA="$(echo "$TRAKTOR_SHA" | cut -c1-8)"
+
+        echo "Assets to publish:"
+        ls -lh dist
+
+        # The traktor marker comment is read back by the check job; keep its format.
+        cat > notes.md <<NOTES
+        Automated nightly build of \`main\` at commit $SHORT_SHA, built against
+        Traktor [$TRAKTOR_SHORT_SHA](https://github.com/apistol78/traktor/commit/$TRAKTOR_SHA).
+
+        | Asset | Contents |
+        | ----- | -------- |
+        | Zombie-nightly-win64.exe | Windows installer. |
+
+        These are untested automated builds, and this release is replaced in
+        place every night.
+
+        Built from $GITHUB_SHA by [run #$GITHUB_RUN_NUMBER]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID).
+
+        <!-- traktor: $TRAKTOR_SHA -->
+        NOTES
+
+        # Move the rolling tag onto tonight's commit, creating it the first time.
+        if ! gh api -X PATCH "repos/$GH_REPO/git/refs/tags/$TAG" \
+               -f sha="$GITHUB_SHA" -F force=true >/dev/null 2>&1; then
+          gh api -X POST "repos/$GH_REPO/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" >/dev/null
+        fi
+
+        # Edit in place, never delete and recreate, so that only the very first
+        # publish of this release is ever announced. The asset name is fixed, so
+        # --clobber leaves nothing stale behind.
+        if gh release view "$TAG" >/dev/null 2>&1; then
+          echo "Updating the existing $TAG release"
+          gh release upload "$TAG" dist/* --clobber
+          gh release edit "$TAG" \
+            --title "Zombie nightly $(date -u +'%Y-%m-%d')" \
+            --notes-file notes.md \
+            --prerelease
+        else
+          echo "Creating the $TAG release"
+          # A pre-release, so an untested build never becomes the repository's
+          # "Latest release".
+          gh release create "$TAG" \
+            --prerelease \
+            --title "Zombie nightly $(date -u +'%Y-%m-%d')" \
+            --notes-file notes.md \
+            dist/*
+        fi

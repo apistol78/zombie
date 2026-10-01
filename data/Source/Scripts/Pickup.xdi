@@ -60,6 +60,16 @@ function Pickup:entityData()
 	return nil
 end
 
+-- Mark this one as loot, built into an opened chest by Scripts/Chest rather than placed
+-- in the scene. Loot is a one-off: taking it books no return, whatever respawnDelay says,
+-- or every opened chest would be a crate that refills itself. And it cannot be collected
+-- for the first `hold` seconds, so it is seen lying in the box as the lid comes up rather
+-- than vanishing into the player's pockets on the frame it appears.
+function Pickup:asLoot(hold)
+	self._loot = true
+	self._hold = hold or 0.0
+end
+
 function Pickup:update(context, totalTime, deltaTime)
 	if context == nil then
 		return
@@ -68,6 +78,11 @@ function Pickup:update(context, totalTime, deltaTime)
 	-- Freeze with the rest of the game: nothing is collected through the pause
 	-- menu, after death, or once the night is already won.
 	if context._gameOver or context._paused or context._nightOver then
+		return
+	end
+
+	if self._hold ~= nil and self._hold > 0.0 then
+		self._hold = self._hold - deltaTime
 		return
 	end
 
@@ -107,7 +122,9 @@ function Pickup:update(context, totalTime, deltaTime)
 	-- instead (Entity::setState is not scripted, so leaving the world is the only way to
 	-- disappear). See Main:_respawnLater, which also gates the return on the player not
 	-- standing over the spot.
-	context:_respawnLater(self:entityData(), self.owner.transform, self:respawnDelay())
+	if not self._loot then
+		context:_respawnLater(self:entityData(), self.owner.transform, self:respawnDelay())
+	end
 
 	-- Then go, and go properly. removeEntity while the world is updating is deferred, so
 	-- taking itself out mid-update is safe -- and it clears the entity's world pointer

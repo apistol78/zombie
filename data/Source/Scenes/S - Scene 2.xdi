@@ -4878,21 +4878,6 @@
 							<entityData>{6E9AD100-0000-4000-8000-000000000027}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
-							<id>{6E9AD100-0000-4000-8000-00000000002A}</id>
-							<name>Key</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>true</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-18.617533, 24.076387, 61.203968, 0</translation>
-								<rotation>0, 0.435012, 0, 0.900425</rotation>
-							</transform>
-							<components/>
-							<entityData>{6E9AD100-0000-4000-8000-000000000026}</entityData>
-						</item>
-						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{D9763982-328F-924F-904A-2E7E1DE9D3C7}</id>
 							<name>Rock 01</name>
 							<state>
@@ -20272,6 +20257,169 @@
 				</item>
 			</components>
 		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{C4E57000-0000-4000-8000-000000000020}</id>
+			<name>Chests</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C4E57000-0000-4000-8000-000000000021}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-9.458015, 23.00416, 60.299366, 0</translation>
+								<rotation>0, 0.710914, 0, 0.703279</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>ammo</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value/>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C4E57000-0000-4000-8000-000000000022}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>4.411897, 23.139919, 27.447357, 0</translation>
+								<rotation>0, 0.930654, 0, -0.365902</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>grenade</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C4E57000-0000-4000-8000-000000000023}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-18.318565, 23.229195, 23.557545, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>health</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value/>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7DD48EBE-89DE-4E1D-96AB-B841A4C9F057}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-18.077507, 23.049629, 52.231152, 0</translation>
+								<rotation>0, -0.74411, 0, 0.668057</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>key</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>CEMETARY KEY</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
 	</layers>
 	<operationData>
 		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
@@ -20360,6 +20508,17 @@
 			<randomHeadingAngle>true</randomHeadingAngle>
 			<upness>0.65</upness>
 			<offset>0.55</offset>
+			<groundFit>Lowest</groundFit>
+			<contactRatio>0.1</contactRatio>
+		</item>
+		<item type="traktor.terrain.AlignToTerrainOperationData" version="2">
+			<layers>
+				<item>Chests</item>
+			</layers>
+			<alignOrientation>false</alignOrientation>
+			<randomHeadingAngle>false</randomHeadingAngle>
+			<upness>1</upness>
+			<offset>0</offset>
 			<groundFit>Lowest</groundFit>
 			<contactRatio>0.1</contactRatio>
 		</item>

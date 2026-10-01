@@ -403,6 +403,14 @@ function Main:new(params, environment)
 	self._gates = nil             -- resolved off the world; index order is stable, see resolve
 	self._unlockedGateIndex = {}  -- gate index -> true; plain data, so it survives a hot reload
 
+	-- Chests. Each one owns its lid, its creak and putting what it holds into the box
+	-- (Scripts/Chest) -- and what it holds is the level's, a property on each placed
+	-- chest -- so this stage keeps only the same three things it keeps for the gates:
+	-- where they stand, which are already open, and how close E reaches.
+	self._chestRange = Config.chest.reachRange
+	self._chests = nil            -- resolved off the world; index order is stable, see resolve
+	self._openedChestIndex = {}   -- chest index -> true; plain data, so it survives a hot reload
+
 	-- Wards. A relic is spent by carrying it to a ward post and setting it down there,
 	-- which lights that ward: the light kills whatever is standing on its ground at that
 	-- moment (_purgeWard) and the Spawner will not place anything inside it afterwards.
@@ -861,6 +869,9 @@ function Main:resolve()
 	if self._gates == nil then
 		self._gates = self:_collectRecords(world, "Gate", "unlocked", self._unlockedGateIndex, "unlock")
 	end
+	if self._chests == nil then
+		self._chests = self:_collectRecords(world, "Chest", "opened", self._openedChestIndex, "open")
+	end
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
 	end
@@ -1252,6 +1263,27 @@ end
 
 function Main:_nearestLockedGate(maxDist)
 	return self:_nearestRecord(self._gates, stillLocked, maxDist)
+end
+
+local function stillClosed(c)
+	return not c.opened
+end
+
+function Main:_nearestClosedChest(maxDist)
+	return self:_nearestRecord(self._chests, stillClosed, maxDist)
+end
+
+-- Open a chest: the lid, the creak and the loot are Chest:open's; what is kept here is
+-- which chests stand open, as plain data for the hot reload, and the line saying what
+-- was inside -- which the chest words, since only it knows what it held.
+function Main:_openChest(chest)
+	chest.opened = true
+	self._openedChestIndex[chest.index] = true
+	local sc < const > = chest.entity:getComponent(traktor.world.ScriptComponent)
+	if sc ~= nil then
+		sc:open()
+		self:_showNotice(sc:notice())
+	end
 end
 
 -- Flat distance from the player to one ward record, measured the same way.
@@ -2060,6 +2092,15 @@ function Main:_interact()
 		-- of run this is, the item says (Carryable:takeEvent), and the orchestrator
 		-- ignores an event it has no tuning for.
 		self._orchestrator:notify(item:takeEvent())
+		return
+	end
+
+	-- Nothing to take: open a chest, if one stands closed in reach. After the
+	-- carryables on purpose, so a key lying in a chest already opened -- or beside a
+	-- closed one -- is taken first. Empty hands only: a full hand puts its load down.
+	local chest < const > = self:_nearestClosedChest(self._chestRange)
+	if chest ~= nil then
+		self:_openChest(chest)
 	end
 end
 
@@ -2082,6 +2123,8 @@ function Main:_updateHudText(dt)
 			local _ < const >, item < const > = self:_nearestCarryable(true)
 			if item ~= nil then
 				prompt = "E   " .. item:promptTake()
+			elseif self:_nearestClosedChest(self._chestRange) ~= nil then
+				prompt = "E   OPEN THE CHEST"
 			elseif self:_nearestLockedGate(self._gateRange) ~= nil then
 				-- Not an E: standing at the locked gate with nothing to open it
 				-- with, the line says what is missing rather than offering a press.
@@ -2728,6 +2771,9 @@ function Main:reload()
 	-- resolve() restores which are open from _unlockedGateIndex, which survives, and
 	-- Gate:unlock is safe to re-assert on a gate whose bar is already gone.
 	self._gates = nil
+	-- Chest records too; resolve() restores which stand open from _openedChestIndex, and
+	-- Chest:open(true) snaps the lid back up without putting a second item in the box.
+	self._chests = nil
 	-- Hive records likewise; resolve() restores which of them are open from
 	-- _awakeHiveIndex, which survives. A cutscene in flight holds one of those records,
 	-- so it goes too -- reloading mid-shot cuts back to the player rather than leaving

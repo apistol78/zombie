@@ -571,6 +571,18 @@ Config = {
 		swingTime = 2.4
 	},
 
+	-- ---- Chests ----
+	--
+	-- What each chest holds is not here: it is a property on each placed chest, so the
+	-- level decides it (see Scripts/Chest).
+	chest = {
+		reachRange = 1.8,       -- how close to a closed chest you must be to open it (m)
+		-- How far the lid swings back (rad; ~105 deg leaves it resting past upright) and
+		-- how long that takes. Loot waits out the swing before it can be collected.
+		swingAngle = 1.85,
+		swingTime = 0.9
+	},
+
 	-- ---- Pickups ----
 	pickup = {
 		takeRange = 1.2,        -- how close the player's origin must come to collect one

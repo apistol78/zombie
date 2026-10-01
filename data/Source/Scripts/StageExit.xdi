@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- StageExit
+--
+-- A way out of the stage. When the player walks into this entity's VolumeComponent the
+-- stage is asked to leave for the destination named by the "target" property, through
+-- the loading screen (Main:leaveStage). "target" is one of the Loading stage's own
+-- transitions -- TERRAIN, CAVE or STARTUP -- and anything else lands on STARTUP, since
+-- Loading falls back to it.
+--
+-- Placed per scene as an ExternalEntityData of Entities/Cave/Stage Exit, whose wrapper
+-- carries its own VolumeComponentData (the size of the trigger) and ScriptComponentData
+-- (this class with "target" and an optional "notice" line shown on the way out):
+-- ResolveExternal swaps both in for the referenced entity's, so one asset serves every
+-- exit. The cave's sits on the ledge outside Cave_Entrance (tools/gen_cave_layout.py).
+
+StageExit = StageExit or class("StageExit", traktor.world.ScriptComponent)
+
+-- A string property off this component's ScriptComponentData, or nil.
+function StageExit:_property(name)
+	local props < const > = self.properties
+	if props == nil then
+		return nil
+	end
+	local v < const > = props:getProperty(name)
+	if type(v) ~= "string" or v == "" then
+		return nil
+	end
+	return v
+end
+
+function StageExit:update(context, totalTime, deltaTime)
+	if context == nil or self._left then
+		return
+	end
+	-- Not while the game is frozen or already over: a body sliding into the trigger
+	-- behind a Game Over screen must not whisk the stage away from under its menu.
+	if context._gameOver or context._paused or context._cutscene ~= nil then
+		return
+	end
+	if self._volume == nil then
+		self._volume = self.owner:getComponent(traktor.world.VolumeComponent)
+	end
+	if self._player == nil then
+		self._player = self.world:getEntity("Humanoid")
+	end
+	if self._volume == nil or self._player == nil then
+		return
+	end
+	if not self._volume:inside(self._player.transform.translation) then
+		return
+	end
+	-- Asked once. leaveStage refuses while another load is in flight (a restart, the
+	-- pause menu's exit), in which case this simply asks again next frame.
+	if context.leaveStage ~= nil and context:leaveStage(self:_property("target") or "TERRAIN", self:_property("notice")) then
+		self._left = true
+	end
+end
+]]></text>
+</object>

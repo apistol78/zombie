@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.runtime.StageData" version="11">
+	<name>Main</name>
+	<inherit>{00000000-0000-0000-0000-000000000000}</inherit>
+	<layers>
+		<item type="traktor.runtime.WorldLayerData">
+			<name>world</name>
+			<permitTransition>true</permitTransition>
+			<scene>{D85F5CD7-2EA4-461B-A95C-4D7C9421F752}</scene>
+		</item>
+		<item type="traktor.spark.SparkLayerData" version="1">
+			<name>ui</name>
+			<permitTransition>true</permitTransition>
+			<movie>{E7EB59C5-57F9-BE42-93A3-FE38268D507D}</movie>
+			<externalMovies/>
+			<clearBackground>false</clearBackground>
+			<enableSound>true</enableSound>
+		</item>
+		<item type="traktor.runtime.AudioLayerData">
+			<name>audio</name>
+			<permitTransition>true</permitTransition>
+			<sound>{D01C18F2-EFB3-D54B-824F-80FC9054A511}</sound>
+			<autoPlay>true</autoPlay>
+			<repeat>true</repeat>
+		</item>
+	</layers>
+	<class>{8227E4BB-9B52-E647-BEF1-6E3F32ED4810}</class>
+	<shaderFade>{DC104971-11AE-5743-9AB1-53B830F74391}</shaderFade>
+	<fadeOutUpdate>false</fadeOutUpdate>
+	<fadeRate>1</fadeRate>
+	<transitions>
+		<item>
+			<first>LOADING</first>
+			<second>{4F4DE642-5FE2-45B0-A982-1D73273B3BA1}</second>
+		</item>
+		<item>
+			<first>RESTART</first>
+			<second>{C9EB7A54-A216-43C9-80D1-737F76E4F479}</second>
+		</item>
+	</transitions>
+	<resourceBundle>{00000000-0000-0000-0000-000000000000}</resourceBundle>
+	<properties/>
+</object>

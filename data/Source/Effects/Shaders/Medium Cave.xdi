@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.render.ShaderGraph" version="traktor.render.Graph:1">
+	<nodes>
+		<item type="traktor.render.Script" version="8,traktor.render.Node:1">
+			<id>{5DE2591E-5330-40D4-AD3E-4EC81B9BB0A6}</id>
+			<comment/>
+			<position>
+				<first>264</first>
+				<second>-766</second>
+			</position>
+			<name>Medium</name>
+			<technique/>
+			<domain>Undefined</domain>
+			<localSize>
+				<X>1</X>
+				<Y>1</Y>
+				<Z>1</Z>
+			</localSize>
+			<useRayTracing>false</useRayTracing>
+			<include>
+				<item>{6DA52951-4296-9248-8DF0-965931DB913A}</item>
+			</include>
+			<inputPins>
+				<item>
+					<id>{6192DB33-6937-4704-807C-D96231D47B72}</id>
+					<name>MediumColor</name>
+				</item>
+				<item>
+					<id>{A729CE37-A211-4BD4-A7F9-CEF50ECEC08F}</id>
+					<name>MediumDensity</name>
+				</item>
+				<item>
+					<id>{71716AB0-1418-4DD8-AE26-DDA8371BA427}</id>
+					<name>InScatter</name>
+				</item>
+				<item>
+					<id>{E76BB877-FB76-4A13-9E66-0F7CE4D04DD9}</id>
+					<name>Ambient</name>
+				</item>
+				<item>
+					<id>{2B5F91C4-8E07-4A63-9D18-70C4E2A5B3F9}</id>
+					<name>WorldPosition</name>
+				</item>
+				<item>
+					<id>{D0417E8B-63A9-4C25-BE71-58F3A906C142}</id>
+					<name>Elevation</name>
+				</item>
+				<item>
+					<id>{584B887A-B2DB-9742-AB90-0110DA08AF73}</id>
+					<name>Time</name>
+				</item>
+			</inputPins>
+			<outputPins>
+				<item>
+					<id>{0C3E7A11-9D5B-4E3C-8F6A-2B47D1905E84}</id>
+					<name>Output</name>
+					<type>Vector</type>
+				</item>
+			</outputPins>
+			<script><![CDATA[// Medium properties for this froxel, as intensive quantities so the integration
+// pass can weight them by each froxel's real world space thickness, and so that
+// temporal reprojection stays valid.
+//
+// rgb is the in-scattered source term per unit length; it carries the scattering
+// coefficient, which is proportional to density - denser fog scatters more -
+// otherwise the integral saturates at source/extinction and raising the density
+// would make the fog dimmer.
+//
+// a is the extinction coefficient per unit length. Deliberately not divided by
+// the slice count: what a froxel absorbs depends on how thick it is in metres,
+// which only the integration pass knows.
+
+// Height attenuation. The fog has a top: the distance fog only accumulates below
+// FogElevation, so the volume has to agree with it or fog would fill the frustum
+// above the plane while the distance fog correctly leaves it clear.
+//
+// Smoothstepped over a short band rather than cut hard, because a hard plane
+// quantises to the froxel grid - far slices are metres thick under the quadratic
+// depth distribution - and would stair-step visibly where the plane crosses.
+const float c_elevationFalloff = 2.0f;
+
+// Heterogeneous density: world space Perlin fbm breaks the medium up into
+// billows, anchored in the world so the detail stays put as the camera moves.
+// Two octaves - the base octave shapes billows a few metres across, the second
+// roughens their edges; the froxel grid is too coarse to resolve more.
+const float c_noiseScale = 0.3f;	// Inverse billow size, 1/m.
+const float c_noiseAmount = 1.0f;	// Fraction of density the noise can remove.
+
+const float height = $WorldPosition.y - $Elevation;
+float attenuation = 1.0f - smoothstep(0.0f, c_elevationFalloff, height);
+const vec3 wp = $WorldPosition.xyz + vec3(0.0f, -$Time, 0.0f);
+const float ns = PerlinFbm3(wp * c_noiseScale, 2) * 2.0f + 0.35f;
+attenuation *= clamp(ns, 0.0f, 1.0f);
+float extinction = $MediumDensity * attenuation;
+
+$Output = vec4($MediumColor.rgb * extinction * ($InScatter.rgb + $Ambient.rgb), extinction);
+
+]]></script>
+		</item>
+		<item type="traktor.render.InputPort" version="3,traktor.render.Node:1">
+			<id>{63D26F93-C5EF-4DD6-9036-B1028886479A}</id>
+			<comment/>
+			<position>
+				<first>-69</first>
+				<second>-820</second>
+			</position>
+			<name>MediumColor</name>
+			<optional>false</optional>
+		</item>
+		<item type="traktor.render.InputPort" version="3,traktor.render.Node:1">
+			<id>{81D4CBF7-1F77-455C-BF2E-978F1F49D02D}</id>
+			<comment/>
+			<position>
+				<first>-85</first>
+				<second>-773</second>
+			</position>
+			<name>MediumDensity</name>
+			<optional>false</optional>
+		</item>
+		<item type="traktor.render.InputPort" version="3,traktor.render.Node:1">
+			<id>{6DF427AF-E926-4FB7-A32E-6C1208E94A0C}</id>
+			<comment/>
+			<position>
+				<first>-37</first>
+				<second>-726</second>
+			</position>
+			<name>InScatter</name>
+			<optional>false</optional>
+		</item>
+		<item type="traktor.render.InputPort" version="3,traktor.render.Node:1">
+			<id>{BDCA4138-6CB8-44B8-A7A3-E032035218AD}</id>
+			<comment/>
+			<position>
+				<first>-37</first>
+				<second>-679</second>
+			</position>
+			<name>Ambient</name>
+			<optional>false</optional>
+		</item>
+		<item type="traktor.render.InputPort" version="3,traktor.render.Node:1">
+			<id>{A6A67EE0-3202-452E-B4FE-CBB5B83729A9}</id>
+			<comment/>
+			<position>
+				<first>-69</first>
+				<second>-632</second>
+			</position>
+			<name>WorldPosition</name>
+			<optional>false</optional>
+		</item>
+		<item type="traktor.render.InputPort" version="3,traktor.render.Node:1">
+			<id>{6A44BFE0-A9EE-411B-BE72-89D94E1CC75E}</id>
+			<comment/>
+			<position>
+				<first>-37</first>
+				<second>-585</second>
+			</position>
+			<name>Elevation</name>
+			<optional>false</optional>
+		</item>
+		<item type="traktor.render.OutputPort" version="traktor.render.Node:1">
+			<id>{2CFA67D0-E31E-4B31-A123-B398BB2FEBAF}</id>
+			<comment/>
+			<position>
+				<first>661</first>
+				<second>-718</second>
+			</position>
+			<name>Output</name>
+		</item>
+		<item type="traktor.render.Vector" version="traktor.render.Node:1">
+			<id>{C7FFC56F-9FDF-4560-9258-C711644C6795}</id>
+			<comment/>
+			<position>
+				<first>444</first>
+				<second>-925</second>
+			</position>
+			<value>4, 1, 1, 1</value>
+		</item>
+		<item type="traktor.render.Parameter" version="traktor.render.Node:1">
+			<id>{3942CBD5-B89A-4D40-B386-913F8FA642EA}</id>
+			<comment/>
+			<position>
+				<first>1</first>
+				<second>-538</second>
+			</position>
+			<parameterDeclaration>{C5FE5E84-7112-A047-8C1C-10A884ABCF5F}</parameterDeclaration>
+		</item>
+	</nodes>
+	<edges>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[6]"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{D0417E8B-63A9-4C25-BE71-58F3A906C142}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[5]"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{2B5F91C4-8E07-4A63-9D18-70C4E2A5B3F9}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[4]"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{E76BB877-FB76-4A13-9E66-0F7CE4D04DD9}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[3]"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{71716AB0-1418-4DD8-AE26-DDA8371BA427}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[2]"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{A729CE37-A211-4BD4-A7F9-CEF50ECEC08F}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[1]"/>
+				<id>{9AE16BB1-EB68-45A0-A878-8D01C210082B}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{6192DB33-6937-4704-807C-D96231D47B72}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item"/>
+				<id>{0C3E7A11-9D5B-4E3C-8F6A-2B47D1905E84}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item[7]"/>
+				<id>{731844D4-AFDC-4EAA-8B41-C4BA2455898F}</id>
+			</destination>
+		</item>
+		<item type="traktor.render.Edge" version="1">
+			<source>
+				<node ref="/object/nodes/item[9]"/>
+				<id>{D101AE9F-E124-4371-8603-15D187427DDA}</id>
+			</source>
+			<destination>
+				<node ref="/object/nodes/item"/>
+				<id>{584B887A-B2DB-9742-AB90-0110DA08AF73}</id>
+			</destination>
+		</item>
+	</edges>
+	<groups/>
+</object>

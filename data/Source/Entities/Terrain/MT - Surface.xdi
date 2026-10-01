@@ -944,6 +944,16 @@
 					<name>Surface2</name>
 					<optional>false</optional>
 				</item>
+				<item>
+					<id>{6AB93DCC-2E67-403E-B7C6-2FD8608AE0C1}</id>
+					<name>TexCoord1</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{0351960B-C353-4139-817C-1FD6EED1D825}</id>
+					<name>TexCoord2</name>
+					<optional>true</optional>
+				</item>
 			</inputPins>
 			<outputPins>
 				<item>
@@ -984,6 +994,16 @@
 					<id>{FDD8428E-220B-455B-BCDE-902A146CDCB9}</id>
 					<name>Surface2</name>
 					<optional>false</optional>
+				</item>
+				<item>
+					<id>{6AB93DCC-2E67-403E-B7C6-2FD8608AE0C1}</id>
+					<name>TexCoord1</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{0351960B-C353-4139-817C-1FD6EED1D825}</id>
+					<name>TexCoord2</name>
+					<optional>true</optional>
 				</item>
 			</inputPins>
 			<outputPins>
@@ -1095,6 +1115,11 @@
 					<id>{5DB7A309-9C25-42AA-A4A3-AFCED50C7D0B}</id>
 					<name>SurfaceAttributes</name>
 					<optional>false</optional>
+				</item>
+				<item>
+					<id>{7A0CD57F-1E98-4E13-B135-5211E9BDD4AF}</id>
+					<name>TexCoord</name>
+					<optional>true</optional>
 				</item>
 			</inputPins>
 			<outputPins>

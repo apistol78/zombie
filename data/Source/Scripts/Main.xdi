@@ -742,6 +742,24 @@ function Main:_restart()
 	self._loader = self:loadStageAsync("RESTART", nil)
 end
 
+-- Leave for another stage through the loading screen. "target" names one of the Loading
+-- stage's transitions (TERRAIN, CAVE, STARTUP; Loading falls back to STARTUP on anything
+-- else), "notice" is an optional line flashed on the way out. Scripts/StageExit calls this
+-- when the player walks into its volume -- the cave mouth's -- and it is the one hook for
+-- anything else that should take the player somewhere. Returns whether the trip started:
+-- false while another load (restart, the menus' exit) is already in flight.
+function Main:leaveStage(target, notice)
+	if self._loader ~= nil or target == nil then
+		return false
+	end
+	if notice ~= nil then
+		self:_showNotice(notice)
+	end
+	self:_census("leave")
+	self._loader = self:loadStageAsync("LOADING", { target = target })
+	return self._loader ~= nil
+end
+
 -- Called by Stage::destroy on the way out, *before* the layers -- and so before the
 -- world -- are torn down. Which makes it the only place some of this can be done.
 function Main:finalize()

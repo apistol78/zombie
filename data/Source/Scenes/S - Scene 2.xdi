@@ -294,9 +294,6 @@
 		<item type="traktor.world.PostProcessComponentData">
 			<imageGraph>{7A1E9C40-0B5D-4E71-9C33-1D2F8A6B4E02}</imageGraph>
 		</item>
-		<item type="traktor.world.ColorCorrectionComponentData">
-			<colorGrading>{692F86A1-8F88-944D-BA47-4750217C8499}</colorGrading>
-		</item>
 	</worldComponents>
 	<layers>
 		<item type="traktor.world.EntityData" version="2">
@@ -422,7 +419,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, 0</rotation>
+								<rotation>0, 0.990216, -0.139543, -0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -20318,7 +20315,7 @@
 							</state>
 							<transform>
 								<translation>4.411897, 23.139919, 27.447357, 0</translation>
-								<rotation>0, 0.930654, 0, -0.365902</rotation>
+								<rotation>0, -0.930654, 0, 0.365902</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">

@@ -25,7 +25,7 @@
 			<medium>
 				<farZ>50</farZ>
 				<resolution>512</resolution>
-				<bias>0.001</bias>
+				<bias>0.002</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -64,9 +64,6 @@
 		</item>
 		<item type="traktor.world.PostProcessComponentData">
 			<imageGraph>{7A1E9C40-0B5D-4E71-9C33-1D2F8A6B4E02}</imageGraph>
-		</item>
-		<item type="traktor.world.ColorCorrectionComponentData">
-			<colorGrading>{692F86A1-8F88-944D-BA47-4750217C8499}</colorGrading>
 		</item>
 	</worldComponents>
 	<layers>

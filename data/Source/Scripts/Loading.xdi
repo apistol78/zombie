@@ -18,7 +18,7 @@ import(traktor)
 --
 --   self:loadStageAsync("LOADING", { target = "MAIN" })
 --
--- "target" must name one of *this* stage's transitions (MAIN / TERRAIN / STARTUP,
+-- "target" must name one of *this* stage's transitions (TERRAIN / CAVE / STARTUP,
 -- declared in Stages/Loading), since this is the stage that performs the load.
 
 Loading = Loading or class("Loading", Stage)

@@ -99,7 +99,7 @@ function Startup:new(params, environment)
 	-- from overlapping by hand at every window size; as a row it is laid out with
 	-- the buttons and the whole menu centres as one block. It replaces the old
 	-- "SELECT STAGE" heading, which the logo now says better.
-	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0, 0 }, 24, 24, 0, 16))
 
 	self._title = Title(self._dialog)
 
@@ -111,6 +111,13 @@ function Startup:new(params, environment)
 	buttonTerrain:setMinimumWidth(220)
 	buttonTerrain:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonTerrain:setOnClick(function() self:_select("TERRAIN") end)
+
+	-- Caves: the experimental underground map built from the modular cave kit
+	-- (Entities/Cave, tools/gen_cave_kit.py), played by the same Main stage script.
+	local buttonCave = MenuButton(self._dialog, "Caves")
+	buttonCave:setMinimumWidth(220)
+	buttonCave:setHorizontalAlign(Widget.ALIGN_CENTER)
+	buttonCave:setOnClick(function() self:_select("CAVE") end)
 
 	-- Options: graphics quality, which is the whole of it for now.
 	local buttonOptions = MenuButton(self._dialog, "Options")
@@ -124,7 +131,7 @@ function Startup:new(params, environment)
 	buttonExit:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonExit:setOnClick(function() self:_leave(function() self:terminate() end) end)
 
-	self._buttons = { buttonTerrain, buttonOptions, buttonExit }
+	self._buttons = { buttonTerrain, buttonCave, buttonOptions, buttonExit }
 
 	-- The options dialog, built here and kept hidden: the view brings the rows, this
 	-- stage brings the box they sit in. Parented to the same Frame as the menu, which

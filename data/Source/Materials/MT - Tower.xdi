@@ -422,8 +422,8 @@
 			<id>{B1A3D2F3-145B-914E-9004-D84C107C7A98}</id>
 			<comment/>
 			<position>
-				<first>1436</first>
-				<second>-403</second>
+				<first>1438</first>
+				<second>-408</second>
 			</position>
 			<fragmentGuid>{26F180FB-AA05-4507-A541-F2593FA554E6}</fragmentGuid>
 			<inputPins>
@@ -441,6 +441,16 @@
 					<id>{FDD8428E-220B-455B-BCDE-902A146CDCB9}</id>
 					<name>Surface2</name>
 					<optional>false</optional>
+				</item>
+				<item>
+					<id>{6AB93DCC-2E67-403E-B7C6-2FD8608AE0C1}</id>
+					<name>TexCoord1</name>
+					<optional>true</optional>
+				</item>
+				<item>
+					<id>{0351960B-C353-4139-817C-1FD6EED1D825}</id>
+					<name>TexCoord2</name>
+					<optional>true</optional>
 				</item>
 			</inputPins>
 			<outputPins>

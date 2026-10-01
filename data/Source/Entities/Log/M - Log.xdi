@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Entities/Log/Log.gltf</fileName>
+<object type="traktor.mesh.MeshAsset" version="29">
+	<fileName>Entities/Log/Log.blend</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
-	<materialShaders/>
-	<materialTextures>
+	<materialShaders>
 		<item>
-			<first>diffuse</first>
-			<second>{7A6F0D2C-1A2B-4C3D-9E5F-A1B2C3D4E5F6}</second>
+			<first>MAT_Log</first>
+			<second>{B988E2C7-65BF-244E-A100-53B517C8AAFD}</second>
 		</item>
-	</materialTextures>
+	</materialShaders>
+	<materialTextures/>
 	<scaleFactor>1, 1, 1, 1</scaleFactor>
 	<offset>0, 0, 0, 0</offset>
 	<renormalize>false</renormalize>
@@ -17,6 +17,7 @@
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
 	<enableRaytracing>true</enableRaytracing>
+	<enableDeform>true</enableDeform>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
 	<previewAngle>1.947788</previewAngle>

@@ -7,6 +7,7 @@
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+#using \{3E8A5D21-6C47-4B9F-8E12-A47D0C93F5B6}
 
 import(traktor)
 
@@ -141,6 +142,9 @@ function Startup:new(params, environment)
 	self._options = OptionsView(self._optionsDialog, environment)
 	self._options:setOnClose(function() self:_hideOptions() end)
 
+	-- Frame rate, top right. Last on the Frame so neither dialog covers it.
+	self._fps = FpsCounter(self._frame, environment)
+
 	self._frame:update()
 	self._dialog:show()
 
@@ -245,6 +249,8 @@ function Startup:update(info)
 	-- on an Interval.
 	Tween.update(info.simulationDeltaTime)
 	Interval.update(info.simulationDeltaTime)
+
+	self._fps:update(info.simulationDeltaTime)
 
 	-- Keep the logo's flame alive. Above the loader poll, so it carries on burning
 	-- through the moment between clicking a stage and the loading screen appearing.

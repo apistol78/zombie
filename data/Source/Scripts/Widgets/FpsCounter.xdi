@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- FpsCounter
+--
+-- The frame rate, top right. Every stage builds one on its Frame -- Startup, Loading
+-- and Main -- and ticks it from its own update, so it is on screen through the menus,
+-- the loading panel and the game alike, paused or not.
+--
+-- A plain Static floated (ILayout.FLOAT) into the corner and placed by hand, like the
+-- prompt line in Main: Static clamps its text to the width it was placed at, so it is
+-- re-placed whenever the text or the frame's width changes. The stage has to build it
+-- last on its Frame, after every dialog, or the dialogs would draw over it.
+--
+-- The number is environment.render.frameRate, the engine's own smoothed rate. Read a
+-- few times a second rather than every frame: a label rewritten each frame flickers
+-- too fast to read, and every rewrite re-lays out the text.
+
+FpsCounter = FpsCounter or class("FpsCounter")
+
+local MARGIN_X < const > = 8      -- px in from the right edge, in the frame's space
+local MARGIN_Y < const > = 6      -- ...and down from the top
+local REFRESH < const > = 0.25    -- seconds between reads
+
+function FpsCounter:new(frame, environment)
+	self._frame = frame
+	self._environment = environment
+	self._timer = 0.0
+	self._text = nil
+	self._placedWidth = nil
+
+	self._label = Static(frame, "")
+	self._label.__layout = ILayout.FLOAT
+	self._label:setTextSize(14)
+	self._label:setTextColor(Color4f(0.9, 0.9, 0.9, 0.85))
+
+	self:_refresh()
+end
+
+function FpsCounter:update(dt)
+	self._timer = self._timer + dt
+	if self._timer >= REFRESH then
+		self._timer = 0.0
+		self:_refresh()
+	end
+	self:_place()
+end
+
+-- Private
+
+function FpsCounter:_refresh()
+	local fps < const > = self._environment.render.frameRate or 0.0
+	self._text = string.format("%d FPS", math.floor(fps + 0.5))
+	self._placedWidth = nil   -- new text, new width
+	self._label:setText(self._text)
+end
+
+-- Kept against the right edge, which moves with the window's aspect.
+function FpsCounter:_place()
+	local p < const > = self._frame:getPlacement()
+	if self._placedWidth == p.width then
+		return
+	end
+	self._placedWidth = p.width
+	local ts < const > = self._label:getPreferredSize()
+	self._label:place(p.width - ts.width - MARGIN_X, MARGIN_Y, ts.width, ts.height)
+end
+]]></text>
+</object>

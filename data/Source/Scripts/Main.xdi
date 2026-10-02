@@ -10,6 +10,7 @@
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{3E8A5D21-6C47-4B9F-8E12-A47D0C93F5B6}
 
 -- Scripts/Weapons/Loadout, which owns what the player has in their hands. Everything
 -- about the weapons themselves is behind it -- see Scripts/Weapons/Weapon for the
@@ -577,6 +578,10 @@ function Main:new(params, environment)
 	self._victoryExit = PushButton(self._victoryDialog, "Exit")
 	self._victoryExit:setMinimumWidth(220)
 	self._victoryExit:setOnClick(function() self:_exitToStartup() end)
+
+	-- Frame rate, top right. The very last thing on the Frame, so it draws over every
+	-- dialog and the dawn wash: it is meant to be on screen whatever else is.
+	self._fps = FpsCounter(self._frame, environment)
 
 	environment.input.inputSystem:setExclusive(true)
 	environment.render.renderView:hideCursor()
@@ -2214,6 +2219,9 @@ function Main:update(info)
 	-- up when this stage is frozen.
 	Tween.update(dt)
 	Interval.update(dt)
+
+	-- Frame rate. Above the early returns too, so it keeps counting through a pause.
+	self._fps:update(dt)
 
 	-- Tick the HUD widgets' animations (health drain, hit flash, heartbeat), the weapons'
 	-- own tiles among them -- whichever weapons those happen to be.

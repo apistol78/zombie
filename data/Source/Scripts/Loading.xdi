@@ -4,6 +4,7 @@
 #using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
+#using \{3E8A5D21-6C47-4B9F-8E12-A47D0C93F5B6}
 
 import(traktor)
 
@@ -68,6 +69,9 @@ function Loading:new(params, environment)
 	self._pulse = 0.0
 	self._pulseRate = 0.7   -- fill-or-drain sweeps per second
 
+	-- Frame rate, top right. After the dialog so it is not covered.
+	self._fps = FpsCounter(self._frame, environment)
+
 	self._frame:update()
 	self._dialog:show()
 
@@ -100,6 +104,8 @@ function Loading:finalize()
 end
 
 function Loading:update(info)
+	self._fps:update(info.simulationDeltaTime)
+
 	-- Pulse the bar: 0 -> 1 -> 0, looping. Kept above the loader checks so it keeps
 	-- animating for every frame the load is still in flight.
 	-- simulationDeltaTime, not frameDeltaTime: update() runs once per fixed

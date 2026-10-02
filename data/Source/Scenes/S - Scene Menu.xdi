@@ -17,7 +17,7 @@
 			<low>
 				<farZ>50</farZ>
 				<resolution>256</resolution>
-				<bias>0.001</bias>
+				<bias>0</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>false</quantizeProjection>
@@ -25,7 +25,7 @@
 			<medium>
 				<farZ>50</farZ>
 				<resolution>512</resolution>
-				<bias>0.002</bias>
+				<bias>0</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -33,7 +33,7 @@
 			<high>
 				<farZ>50</farZ>
 				<resolution>1024</resolution>
-				<bias>0.001</bias>
+				<bias>0</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -41,7 +41,7 @@
 			<ultra>
 				<farZ>60</farZ>
 				<resolution>2048</resolution>
-				<bias>0.001</bias>
+				<bias>0</bias>
 				<cascadingSlices>4</cascadingSlices>
 				<cascadingLambda>2</cascadingLambda>
 				<quantizeProjection>true</quantizeProjection>
@@ -204,8 +204,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-2.097421, -0.513451, 2.9752, 0</translation>
-								<rotation>0, 0.129634, 0, 0.991562</rotation>
+								<translation>-2.096908, 0.208062, 3.005685, 0</translation>
+								<rotation>0, 0.169182, 0, 0.985585</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>

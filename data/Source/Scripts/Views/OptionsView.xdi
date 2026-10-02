@@ -82,6 +82,34 @@ import(traktor)
 -- that row names a highest level as well -- 1 -- and carries captions of its own,
 -- and is the switch it actually is. Should the engine ever spend the other three,
 -- dropping `max` and `captions` from its row is the whole of what it takes here.
+--
+-- ---- Ray tracing ----
+--
+-- `World.RayTracing` is not a quality at all but a boolean, read by WorldServer with
+-- getProperty< bool > and defaulting to on. Its row is a switch like motion blur's,
+-- marked `bool` so that _get and _set translate between the row's 0/1 and the
+-- true/false the engine wants -- written as a Lua boolean, which
+-- PropertyGroup:setProperty stores as the PropertyBoolean that getProperty< bool >
+-- reads. A 1 would be a PropertyInteger, and the switch would do nothing.
+--
+-- It is left out of the presets. Whether to trace rays is a question of what the
+-- hardware can do rather than how much detail to buy, and a "Low" preset that
+-- quietly switched it on -- the clamp would put it at On for every preset -- or off
+-- would be making that choice for the player. So stepping the preset leaves it
+-- alone, and it has no say in whether the others read as a preset.
+--
+-- ---- V-sync ----
+--
+-- `Render.WaitVBlanks` belongs to the RenderServer rather than the world, and is an
+-- integer read with getProperty< int32_t > defaulting to 1 -- so a plain number, and
+-- no translation needed. It is offered as a switch because that is all the renderer
+-- makes of it: RenderViewVk::create picks FIFO for anything above 0 and mailbox or
+-- immediate for 0, and never waits more than the one blank whatever the count. A
+-- change resets the render view (RenderServerDefault::reconfigure), on the same
+-- reconfigure as everything else here.
+--
+-- Out of the presets for the same reason as ray tracing: tearing against latency is
+-- the player's call, not a detail level.
 
 OptionsView = OptionsView or class("OptionsView", Container)
 
@@ -94,15 +122,19 @@ local QUALITY_MAX < const > = 4
 local QUALITY_DEFAULT < const > = 2
 
 -- Captions for a row whose setting the engine does not actually read as a scale.
--- See the note above about motion blur, which is the only one of those so far.
+-- See the notes above about motion blur, ray tracing and v-sync.
 local ON_OFF < const > = { [0] = "Off", [1] = "On" }
 
 -- One row each, in rough order of what costs the most on this game's forest.
 --
 -- `min` and `max` are the levels a row is willing to offer and default to the
 -- engine's whole 0..4 scale; `captions` names them and defaults to QUALITY. Only the
--- two rows the note above is about want any of the three.
+-- rows the notes above are about want any of the three. `default` is what the engine
+-- falls back to for a row whose fallback is not QUALITY_DEFAULT; `bool` marks a
+-- setting the engine stores as a boolean; and `preset = false` keeps a row out of the
+-- presets (see the notes above about ray tracing and v-sync).
 local SETTINGS < const > = {
+	{ key = "World.RayTracing", label = "Ray tracing", bool = true, preset = false, max = 1, captions = ON_OFF },
 	{ key = "World.ShadowQuality", label = "Shadows" },
 	{ key = "World.IrradianceQuality", label = "Irradiance" },
 	{ key = "World.AmbientOcclusionQuality", label = "Ambient occlusion" },
@@ -113,7 +145,9 @@ local SETTINGS < const > = {
 	{ key = "World.ReflectionsQuality", label = "Reflections" },
 	{ key = "World.ParticleQuality", label = "Particles" },
 	-- See the note above: 0 is a broken terrain rather than a cheap one.
-	{ key = "World.TerrainQuality", label = "Terrain", min = 1 }
+	{ key = "World.TerrainQuality", label = "Terrain", min = 1 },
+	-- See the note above: any count above 0 is the same wait, so this is a switch.
+	{ key = "Render.WaitVBlanks", label = "V-sync", preset = false, default = 1, max = 1, captions = ON_OFF }
 }
 
 -- Bring a quality into what a row offers. Both ends default to the engine's own
@@ -170,10 +204,11 @@ local BACK_W < const > = 220
 local COLUMN_GAP < const > = 36 -- between the two columns of graphics rows
 
 -- How many graphics rows go in the left column, the rest going in the right. The
--- preset row heads the left one in the same grid, so splitting the settings down the
--- middle leaves the left a row longer than the right -- level enough to read as two
--- columns, and it keeps holding if a row is added later.
-local COLUMN_SPLIT < const > = math.ceil(#SETTINGS / 2)
+-- preset row heads the left one in the same grid, so it is the settings rounded
+-- *down* that go left: with the preset counted, that leaves the columns level, or the
+-- right a row longer -- never the left one two -- and it keeps holding as rows are
+-- added.
+local COLUMN_SPLIT < const > = math.floor(#SETTINGS / 2)
 
 local C_TITLE < const > = Color4f(1.0, 0.9, 0.68, 1.0)
 local C_LABEL < const > = Color4f(0.82, 0.85, 0.9, 1.0)
@@ -350,8 +385,12 @@ end
 function OptionsView:_get(index)
 	local setting < const > = SETTINGS[index]
 	local v = self._settings:getProperty(setting.key)
+	if setting.bool then
+		-- On unless the group says otherwise, as the engine has it.
+		return (v == false) and 0 or 1
+	end
 	if type(v) ~= "number" then
-		v = QUALITY_DEFAULT
+		v = setting.default or QUALITY_DEFAULT
 	end
 	return clampToRow(setting, math.floor(v))
 end
@@ -360,7 +399,11 @@ end
 -- copies taken at startup, so without the reconfigure nothing would look at this
 -- again until the game was restarted.
 function OptionsView:_set(index, v)
-	self._settings:setProperty(SETTINGS[index].key, v)
+	local setting < const > = SETTINGS[index]
+	if setting.bool then
+		v = (v ~= 0)
+	end
+	self._settings:setProperty(setting.key, v)
 	self._environment:reconfigure()
 end
 
@@ -388,7 +431,9 @@ function OptionsView:_cyclePreset(step)
 
 	local value < const > = PRESETS[next].value
 	for i, setting in ipairs(SETTINGS) do
-		self:_set(i, clampToRow(setting, value))
+		if setting.preset ~= false then
+			self:_set(i, clampToRow(setting, value))
+		end
 	end
 	self:refresh()
 end
@@ -400,7 +445,7 @@ function OptionsView:_matchingPreset()
 	for p, preset in ipairs(PRESETS) do
 		local match = true
 		for i, setting in ipairs(SETTINGS) do
-			if self:_get(i) ~= clampToRow(setting, preset.value) then
+			if setting.preset ~= false and self:_get(i) ~= clampToRow(setting, preset.value) then
 				match = false
 				break
 			end

@@ -939,8 +939,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>101, 0.280516, -1, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>101, 0.167616, -1, 0</translation>
+								<rotation>0, 0, -0.069943, 0.997551</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
@@ -954,8 +954,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>107.5, 0.351505, -1, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>107.5, 0.224063, -1, 0</translation>
+								<rotation>0, 0, 0.049979, 0.99875</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
@@ -969,8 +969,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>113.5, 0.025188, -7, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>113.5, -0.083136, -7, 0</translation>
+								<rotation>0.019999, 0, 0, 0.9998</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
@@ -999,8 +999,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>121.099785, 0.801199, -9.202468, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>121.099785, 0.078974, -9.202468, 0</translation>
+								<rotation>0, 0, 0.089879, 0.995953</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
@@ -1633,6 +1633,325 @@
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
+			<id>{2F9DA35E-0791-4FBD-834C-295CB0BE80DC}</id>
+			<name>Vines</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0F669CD6-AD24-4C30-BB3F-3DC5CEDDFF55}</id>
+							<name>Cave_Vines_Short</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>88.5, 3.995086, -31.5, 0</translation>
+								<rotation>0, 0.353199, 0, -0.935548</rotation>
+							</transform>
+							<components/>
+							<entityData>{27096D74-EBA7-1A4F-8188-4E997E8666B3}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{76AE7E13-CA75-4673-A0C8-A53DBCF5093C}</id>
+							<name>Cave_Vines_Long</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.5, 4.423467, 15.5, 0</translation>
+								<rotation>0, 0.908571, 0, 0.41773</rotation>
+							</transform>
+							<components/>
+							<entityData>{91E7B0FD-4384-BE46-99E1-43A4E170D586}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{FB01FE0B-03F6-40D6-AB45-64B8871119E4}</id>
+							<name>Cave_Vines_Short</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.5, 2.668927, -18.5, 0</translation>
+								<rotation>0, 0.064578, 0, 0.997913</rotation>
+							</transform>
+							<components/>
+							<entityData>{27096D74-EBA7-1A4F-8188-4E997E8666B3}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DBE2F86C-FBE4-4D40-8A97-B64C5DF1A3FE}</id>
+							<name>Cave_Root_Tendrils</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>104.5, 4.038114, 2.5, 0</translation>
+								<rotation>0, 0.973062, 0, 0.230542</rotation>
+							</transform>
+							<components/>
+							<entityData>{179C6ABB-1D96-8946-BAD2-C151CD8F2E19}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1AD0D268-4D26-44D3-AC6A-90FF60408323}</id>
+							<name>Cave_Vine_Curtain</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>35.5, 8.040549, 7.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{8BD207AF-2277-514B-A378-D531495E8067}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{25192946-33AD-4363-8E81-C1C2432704E1}</id>
+							<name>Cave_Roots_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>50.5, 0.065023, -39.5, 0</translation>
+								<rotation>0, 0.952914, 0, -0.303239</rotation>
+							</transform>
+							<components/>
+							<entityData>{33A10770-F6D1-5A41-8FF7-401585BFFDAC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8F96B7AC-A49F-455A-B26A-91E923217731}</id>
+							<name>Cave_Root_Thick</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>40.5, 8.551866, -5.5, 0</translation>
+								<rotation>0, 0.861187, 0, -0.508288</rotation>
+							</transform>
+							<components/>
+							<entityData>{66B2A602-74EE-F046-8DEB-64B795A2593A}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CA77FE7B-0740-4101-BA27-1B2560C701B5}</id>
+							<name>Cave_Vine_Curtain</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>43.5, 0.110006, -39.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{8BD207AF-2277-514B-A378-D531495E8067}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7542F933-BFA5-47E4-B601-E8C309EEC003}</id>
+							<name>Cave_Root_Tendrils</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>71.5, 0.053256, -29.5, 0</translation>
+								<rotation>0, 0.189293, 0, -0.981921</rotation>
+							</transform>
+							<components/>
+							<entityData>{179C6ABB-1D96-8946-BAD2-C151CD8F2E19}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{96BDC15A-595C-4195-92D2-48DCE30EBB32}</id>
+							<name>Cave_Roots_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>16.5, 4.135919, 9.5, 0</translation>
+								<rotation>0, 0.475549, 0, -0.879689</rotation>
+							</transform>
+							<components/>
+							<entityData>{33A10770-F6D1-5A41-8FF7-401585BFFDAC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{BFE9BBF0-F4AB-410F-B14A-A2519D012D36}</id>
+							<name>Cave_Vine_Curtain</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0.5, 4.164152, -0.5, 0</translation>
+								<rotation>0, -1, 0, 0</rotation>
+							</transform>
+							<components/>
+							<entityData>{8BD207AF-2277-514B-A378-D531495E8067}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1841EB8B-4201-4DA1-9825-51B011F9C2F7}</id>
+							<name>Cave_Vines_Short</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>56.5, 3.995087, 8.5, 0</translation>
+								<rotation>0, 0.299536, 0, -0.954085</rotation>
+							</transform>
+							<components/>
+							<entityData>{27096D74-EBA7-1A4F-8188-4E997E8666B3}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0549F214-9D56-4E97-9F16-4E6C917866DB}</id>
+							<name>Cave_Root_Thick</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>85.5, 10.299793, -2.5, 0</translation>
+								<rotation>0, 0.782847, 0, 0.622215</rotation>
+							</transform>
+							<components/>
+							<entityData>{66B2A602-74EE-F046-8DEB-64B795A2593A}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{45136AB9-88D7-4C75-85E4-63EE75CF2343}</id>
+							<name>Cave_Root_Massive</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>42.5, 9.18281, -1.5, 0</translation>
+								<rotation>0, 0.475417, 0, -0.879761</rotation>
+							</transform>
+							<components/>
+							<entityData>{7238F031-B40B-8943-9E0F-4CD12D395BC8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C2AD4519-2303-42FA-9E82-2796F741A463}</id>
+							<name>Cave_Root_Arch</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>33.5, 7.079833, -3.5, 0</translation>
+								<rotation>0, 0.455909, 0, 0.890027</rotation>
+							</transform>
+							<components/>
+							<entityData>{5214AEF4-D4BC-314C-BE8C-267CC1DD95ED}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{BB5258AC-5F98-426D-8CFD-34B8F0C46907}</id>
+							<name>Cave_Root_Massive</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>108.5, 9.288033, -6.5, 0</translation>
+								<rotation>0, 0.800315, 0, 0.59958</rotation>
+							</transform>
+							<components/>
+							<entityData>{7238F031-B40B-8943-9E0F-4CD12D395BC8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{43F47CFD-1FB9-43E8-BE15-E5E674859AF0}</id>
+							<name>Cave_Roots_Curtain_Large</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>81.5, 9.195568, -18.5, 0</translation>
+								<rotation>0, 0.92388, 0, 0.382683</rotation>
+							</transform>
+							<components/>
+							<entityData>{E096EB63-F110-814E-B122-23A44F137CAC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C60CEB3D-787A-4921-9C21-A50D71935120}</id>
+							<name>Cave_Root_Arch</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>81.5, 10.772225, -2.5, 0</translation>
+								<rotation>0, 0.998037, 0, 0.062624</rotation>
+							</transform>
+							<components/>
+							<entityData>{5214AEF4-D4BC-314C-BE8C-267CC1DD95ED}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4C768C18-D9D3-44C3-8147-5440AB87EA61}</id>
+							<name>Cave_Roots_Tangle</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>55.5, 6.051059, 15.5, 0</translation>
+								<rotation>0, 0.990109, 0, -0.140302</rotation>
+							</transform>
+							<components/>
+							<entityData>{548AA081-254C-F846-8185-42B336D643BF}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E9DFF972-5933-463D-8D1E-BD039D17554C}</id>
+							<name>Cave_Roots_Tangle</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-4.5, 5.681154, -0.5, 0</translation>
+								<rotation>0, 0.990034, 0, 0.14083</rotation>
+							</transform>
+							<components/>
+							<entityData>{548AA081-254C-F846-8185-42B336D643BF}</entityData>
 						</item>
 					</entityData>
 				</item>

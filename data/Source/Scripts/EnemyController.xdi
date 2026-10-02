@@ -76,6 +76,11 @@ local CLOSE_QUARTERS < const > = CFG.closeQuarters
 -- note in Config.
 local TURN_CREEP < const > = CFG.turnCreep
 
+-- How far ahead of a zombie its step is tested against the nav mesh (m), see :_onMesh.
+-- Comfortably more than one frame of walking, so the edge is felt before it is reached,
+-- and short enough that the probe does not round a corner the zombie has not got to yet.
+local NAV_PROBE < const > = 0.6
+
 -- The floor under all of that: however hard it is being pushed and by however many, no
 -- zombie walks nearer the player than this (see the personal space block in update). It
 -- is not a fourth number to keep in step with the other three -- it is exactly where the
@@ -388,8 +393,12 @@ function EnemyController:_stagger(deltaTime)
 	-- Physics owns the rest. The shove is a velocity, not a teleport, so a zombie put through
 	-- a tree stops at the tree with its metres unspent -- which is the right answer, and one
 	-- no amount of arithmetic here could have got to.
+	--
+	-- ...and the mesh owns the edge of it (see :_onMesh): a zombie shoved towards a cliff
+	-- or up against a rock face is carried along it rather than up it.
 	self._character.maxVelocity = speed
-	self._character:move(Vector4(self._hitX * speed, 0.0, self._hitZ * speed, 0.0), false)
+	local vx < const >, vz < const > = self:_onMesh(self.owner.transform.translation, self._hitX * speed, self._hitZ * speed)
+	self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
 end
 
 -- Go and have a look. Called from the hearing block in update with an already-scattered
@@ -542,6 +551,42 @@ function EnemyController:_wanderPoint(enemyPos, playerPos)
 		return point
 	end
 	return nil
+end
+
+-- Keep a step on the nav mesh. Takes the velocity about to be handed to the character and
+-- returns the one that stays on the mesh: the same, out in the open; slid along the edge
+-- where it would have crossed it; and bent back on where the zombie has already strayed.
+--
+-- Nothing else in this controller knows where the mesh ends. The path does, but what is
+-- walked is the path *blended* -- with the push away from every zombie nearby, with a
+-- heading that turns at a limited rate and so swings wide of every corner the path cuts
+-- tight -- and the character controller under it has no idea of a slope at all: it steps
+-- up whatever is in front of it, a stair at a time. So a zombie shouldered off the path or
+-- arcing round a corner walked straight off the mesh and up the rock wall beside it, or
+-- into the back of a boulder the path had been taking it round.
+--
+-- Asked of the mesh rather than of physics because the mesh is the one place the answer is
+-- already worked out: it was built eroded by the agent radius, and with the slope and climb
+-- limits a zombie is meant to have, so "on the mesh" is exactly "somewhere it may stand".
+--
+-- Probed NAV_PROBE ahead along the step and scaled back to the step's own size, so a step
+-- into an edge comes back as the part of it along the edge -- shorter the more squarely it
+-- was walked into, which is how a body brushing a wall should move. Needs a route to ask
+-- through (the query carries the Detour query object); with none yet, or a zombie too far
+-- off for the mesh to find, the step goes through untouched.
+function EnemyController:_onMesh(enemyPos, vx, vz)
+	local query < const > = self._pathQuery
+	local v < const > = math.sqrt(vx * vx + vz * vz)
+	if query == nil or v < 0.001 then
+		return vx, vz
+	end
+	local k < const > = NAV_PROBE / v
+	local p < const > = query:constrain(enemyPos, Vector4(enemyPos.x + vx * k, enemyPos.y, enemyPos.z + vz * k, 1.0))
+	if p == nil then
+		return vx, vz
+	end
+	local s < const > = v / NAV_PROBE
+	return (p.x - enemyPos.x) * s, (p.z - enemyPos.z) * s
 end
 
 -- Drive the enemy's animation graph into its "dead" rag doll state by setting the
@@ -1186,7 +1231,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 		if back > speed then
 			self._character.maxVelocity = back
 		end
-		self._character:move(Vector4(outX * back, 0.0, outZ * back, 0.0), false)
+		local vx < const >, vz < const > = self:_onMesh(enemyPos, outX * back, outZ * back)
+		self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
 		moving = true
 	elseif tl > 0.001 then
 		local align = fx * targetX + fz * targetZ
@@ -1206,9 +1252,15 @@ function EnemyController:update(context, totalTime, deltaTime)
 			align = TURN_CREEP
 		end
 
+		-- Taken along the facing, then kept on the mesh (see :_onMesh) -- the one point where
+		-- what is walked can leave the facing, by sliding along an edge it was about to cross.
+		-- A step that comes back as next to nothing is a zombie pressed square into the edge,
+		-- and that is standing still, not walking: "moving" follows what is left of it.
 		if align > 0.05 then
-			self._character:move(Vector4(fx * speed * align, 0.0, fz * speed * align, 0.0), false)
-			moving = true
+			local step < const > = speed * align
+			local vx < const >, vz < const > = self:_onMesh(enemyPos, fx * step, fz * step)
+			self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
+			moving = vx * vx + vz * vz > (step * 0.2) * (step * 0.2)
 		end
 	end
 

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{0483208E-5181-56D8-BC39-60DF7A9CBD5F}</id>
+	<name>Tunnel_Stairs</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{A0761778-340F-4021-9834-B5483C9A34AB}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{08A5D3AB-F4E3-43B0-9915-66C78FFB2697}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+	</components>
+</object>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{67F1C2C0-C130-566E-804B-AA723D1C39FE}</id>
+	<name>Hall_Ravine</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{244D0018-B8C7-41D8-B07F-79E001EA0E90}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{25197C0C-5547-4EC4-8B95-0344868A3C58}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+	</components>
+</object>

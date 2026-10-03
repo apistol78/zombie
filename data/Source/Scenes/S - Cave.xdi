@@ -464,18 +464,18 @@
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{E6A3EAD0-E599-76C2-D288-2B0A0C2F685A}</id>
-							<name>Tunnel_DeadEnd</name>
+							<name>Hall_Ravine</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>120, 0, -8, 0</translation>
+								<translation>136, 0, 0, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
-							<entityData>{297DFA08-7003-4338-8992-14B49D11CC90}</entityData>
+							<entityData>{55263E53-EB07-4C01-AFFE-7AFA43E7241B}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{4693CD0F-EE6E-2247-F354-D9720FFF3821}</id>
@@ -685,6 +685,171 @@
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{55FE1D19-065E-4C3C-7BAF-78F3DCA6FA59}</id>
+							<name>Tunnel_Stairs</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>160, 0, -8, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{086A8CBA-51C0-42B1-AF22-36AF93D5C478}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{28C2D40C-85FC-C8FA-CD18-0A97334FFC2B}</id>
+							<name>Hall_Terraces</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>168, 0, -16, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7A420771-99DC-44C3-9B10-B713E49D8946}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2E497072-BFE6-F1B2-1583-B6D6D53AD374}</id>
+							<name>Tunnel_Collapse</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>168, 0, -24, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components/>
+							<entityData>{F05D5741-6FB9-47CD-B152-06C89404B824}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{FFCEC18D-AB1D-CE68-DEBF-8C4523CFB09A}</id>
+							<name>Tunnel_DeadEnd</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>184, 0, -16, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{297DFA08-7003-4338-8992-14B49D11CC90}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4770150D-BFE7-8816-3304-1494CF06EB60}</id>
+							<name>Shaft_Spiral</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>192, 0, 0, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components/>
+							<entityData>{33A13FD8-8129-46C4-BCA4-AAE181285B10}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{443427F8-A19A-B573-2C78-E57CB7CE36F2}</id>
+							<name>Tunnel_DeadEnd</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>200, 0, 0, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{297DFA08-7003-4338-8992-14B49D11CC90}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{88C10619-4D34-8B67-5F2B-880308BC6C37}</id>
+							<name>Tunnel_Straight</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>136, -16, -16, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components/>
+							<entityData>{BA14BE63-9DF9-4F79-B5DC-CECAA3A62C47}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1AD7BCBA-21A2-D6DD-0523-ACA0BDCBAF45}</id>
+							<name>Tunnel_Collapse</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>136, -16, -24, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components/>
+							<entityData>{F05D5741-6FB9-47CD-B152-06C89404B824}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{681D38C4-7CC6-7BFA-CE68-71BF0C1D66FE}</id>
+							<name>Tunnel_Stairs</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>120, 0, 16, 0</translation>
+								<rotation>0, 0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components/>
+							<entityData>{086A8CBA-51C0-42B1-AF22-36AF93D5C478}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CC487764-A829-D74B-AE29-1BC9A0669A3D}</id>
+							<name>Tunnel_DeadEnd</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>120, 0, 24, 0</translation>
+								<rotation>0, 0.707107, 0, -0.707107</rotation>
+							</transform>
+							<components/>
+							<entityData>{297DFA08-7003-4338-8992-14B49D11CC90}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5970B2FA-1620-F700-CCD3-CC0AF6D52BCB}</id>
+							<name>Bridge_Rope</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>136, 0, -6.855352, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{3B634822-251C-4D98-8633-3EE5EBAE0566}</entityData>
 						</item>
 					</entityData>
 				</item>
@@ -991,21 +1156,6 @@
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
-							<id>{7303F721-2BC4-09E4-5DCC-636585C60805}</id>
-							<name>Lamp</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>121.099785, 0.078974, -9.202468, 0</translation>
-								<rotation>0, 0, 0.089879, 0.995953</rotation>
-							</transform>
-							<components/>
-							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
-						</item>
-						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{565E4DF1-821F-ED72-4B4A-69CFAB524F63}</id>
 							<name>Lamp</name>
 							<state>
@@ -1110,6 +1260,306 @@
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
 						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{10919073-9C21-7BF3-6359-6227A8081B80}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>123, 0.351597, -7.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{61A0CB1F-FEA8-0FDC-CCEF-EA826FB80345}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>149, 0.374092, -2.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{40078A8C-F091-6D5E-7D05-E49266EFFADF}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>133, -15.6437, 0.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CB4267AC-F63D-241A-FBD4-DCA2B0FEB16C}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>141.5, -15.5861, 2.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DBC38CBD-5C94-8860-AB49-DD30FB81D1B0}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>118.599998, 4.38032, 9.8, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6F912198-55A6-1DBE-99D0-12DE2572111E}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>118.599998, 2.37099, 2.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DF395F1B-0E6E-8435-CE85-B39D0BECDB1E}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>161.399994, 3.60285, -9.7, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8A279914-80DA-CEDF-5ABF-DF5D921B9D3A}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>173.5, 0.399176, -17, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8C741187-4140-255D-FFB0-27182C2C5507}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>165.699997, 2.4491, -14, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{60012A44-1075-4F0D-5127-67636A5252FB}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>169.5, 4.39848, -8.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8FF58F49-6ED6-5B7F-CDA9-023A51CFF3C7}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>178.5, 8.38624, -10, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{60AE0B3A-B5EE-A7E8-4281-BB982AF116AD}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>169.399994, 4.24395, -22.799999, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A5C5C2DD-81B4-77F9-40C5-1EDA3B95282C}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>185.300003, 4.19498, -17.200001, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8B321029-6FF4-8CD9-829F-51349FE495C5}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>186.5, 1.53323, -1.5, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8A904800-D64F-7979-849A-B81439911913}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>184.399994, 8.10894, -5.9, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5F8EB6FC-643E-6451-E4EA-7DFA54495F3C}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>190.600006, 4.59584, -5.6, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3F338628-5E1B-AAD1-1933-880836062379}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>201.300003, 4.19498, -1.2, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1273529C-8573-4E2A-6EC9-8464C0E176E6}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>137.399994, -11.7561, -22.799999, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C22C8A42-7872-5323-9F2C-F124D161DA82}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>118.300003, 3.60285, 14.6, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0701F5B7-99E2-AFDC-8CE0-7B5023E6F7E6}</id>
+							<name>Lamp</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>121.199997, 4.19498, 25.299999, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+						</item>
 						<item type="traktor.world.EntityData" version="2">
 							<id>{11C40692-2C4C-2B96-BB54-E2FD959E9BBC}</id>
 							<name>Irradiance</name>
@@ -1119,12 +1569,12 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>55.589401, 5.77063, -12.0242, 0</translation>
+								<translation>95.589401, 1.60592, -8.01311, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.VolumeComponentData">
-									<size>136.231003, 21.5228, 63.414398, 0</size>
+									<size>216.231003, 38.0993, 71.436501, 0</size>
 								</item>
 							</components>
 						</item>

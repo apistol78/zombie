@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="29">
+	<fileName>Models/Cave/Bridge_Rope.blend</fileName>
+	<importFilter>!Collision</importFilter>
+	<meshType>MtStatic</meshType>
+	<materialShaders>
+		<item>
+			<first>BridgeWood</first>
+			<second>{2359FC3F-3DED-49B7-A84B-750C8720B74C}</second>
+		</item>
+		<item>
+			<first>BridgePost</first>
+			<second>{2359FC3F-3DED-49B7-A84B-750C8720B74C}</second>
+		</item>
+		<item>
+			<first>BridgeRope</first>
+			<second>{550175A0-D05D-4DA4-A426-DE75B8C7BA68}</second>
+		</item>
+	</materialShaders>
+	<materialTextures/>
+	<scaleFactor>1, 1, 1, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
+	<enableDeform>false</enableDeform>
+	<reduce>1</reduce>
+	<raytracingReduce>0.6</raytracingReduce>
+	<previewAngle>0</previewAngle>
+</object>

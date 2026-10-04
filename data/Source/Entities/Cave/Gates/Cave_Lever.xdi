@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{4C1E2B70-6D31-4A8B-9F05-2E7A1C3D5B04}</id>
+	<name>Lever</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{E3D4A50B-93D0-43CB-BF4C-456F9FD71A31}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{46DAFB1E-AF1B-429B-A6F2-BF8A52EB10D6}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+		<item type="traktor.world.ScriptComponentData" version="2">
+			<class>{A19B36EA-B5F7-40F0-B7D1-25264A60888A}</class>
+			<properties type="traktor.PropertyGroup">
+				<value>
+				<item>
+					<first>gate</first>
+					<second type="traktor.PropertyString">
+						<value></value>
+					</second>
+				</item>
+				<item>
+					<first>notice</first>
+					<second type="traktor.PropertyString">
+						<value></value>
+					</second>
+				</item>
+				</value>
+			</properties>
+			<editorSupport>false</editorSupport>
+		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>pull</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{C4E57000-0000-4000-8000-000000000006}</sound>
+						<positional>true</positional>
+						<follow>false</follow>
+						<autoStopFar>true</autoStopFar>
+					</second>
+				</item>
+			</eventData>
+		</item>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{4C1E2B70-6D31-4A8B-9F05-2E7A1C3D5B31}</id>
+					<name>Handle</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 0.9, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{D02C5AE6-B197-4EA7-8A07-5DDE5C496C18}</mesh>
+						</item>
+					</components>
+				</item>
+			</entityData>
+		</item>
+	</components>
+</object>

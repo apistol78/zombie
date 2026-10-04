@@ -25,6 +25,17 @@ import(traktor)
 -- unlock() is idempotent and takes instant=true -- the reload-restore path, the
 -- same contract as Ward:turnOn -- to snap straight to open without replaying the
 -- swing or the grind.
+--
+-- The cave's gates (Entities/Cave/Gates) are the same component with a few string
+-- properties on their ScriptComponentData, all optional, so the cemetery gate -- which
+-- has none -- behaves exactly as before:
+--
+--   mode    "swing" (the default: two leaves) or "lift" (a portcullis: one child named
+--           "Grate", raised `lift` metres straight up)
+--   hinge   where the hinges stand either side of the origin (m, default HINGE_X)
+--   lift    how far a grate rises (m)
+--   id      a name a Scripts/Lever can open this gate by
+--   notice  the line shown when it opens (Main falls back to the cemetery's)
 
 Gate = Gate or class("Gate", traktor.world.ScriptComponent)
 
@@ -36,6 +47,31 @@ local SWING_TIME < const > = Config.gate.swingTime     -- ...and how long the sw
 -- Entities/Cemetary/CemetaryGate, and the leaf mesh is built 2.14 m wide against
 -- it so the pair meets in the middle with a hand's width of daylight.
 local HINGE_X < const > = 2.175
+
+-- A string property off this component's ScriptComponentData, or nil.
+function Gate:_property(name)
+	local props < const > = self.properties
+	if props == nil then
+		return nil
+	end
+	local v < const > = props:getProperty(name)
+	if type(v) ~= "string" or v == "" then
+		return nil
+	end
+	return v
+end
+
+function Gate:_number(name, default)
+	return tonumber(self:_property(name) or "") or default
+end
+
+function Gate:gateId()
+	return self:_property("id")
+end
+
+function Gate:notice()
+	return self:_property("notice")
+end
 
 function Gate:unlock(instant)
 	if self._unlocked then
@@ -95,10 +131,15 @@ function Gate:update(context, totalTime, deltaTime)
 	if not self._unlocked or self._posed then
 		return
 	end
+	if self:_property("mode") == "lift" then
+		self:_lift(deltaTime)
+		return
+	end
 	local l < const >, r < const > = self:_leaves()
 	if l == nil or r == nil then
 		return
 	end
+	local hinge < const > = self:_number("hinge", HINGE_X)
 
 	local t = math.min(1.0, (self._openT or 0.0) + deltaTime / SWING_TIME)
 	self._openT = t
@@ -118,8 +159,28 @@ function Gate:update(context, totalTime, deltaTime)
 	local base < const > = self.owner.transform
 	local bt < const > = base.translation
 	local br < const > = base.rotation
-	l.transform = Transform(bt + br * Vector4(-HINGE_X, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(a, 0.0, 0.0))
-	r.transform = Transform(bt + br * Vector4(HINGE_X, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(math.pi - a, 0.0, 0.0))
+	l.transform = Transform(bt + br * Vector4(-hinge, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(a, 0.0, 0.0))
+	r.transform = Transform(bt + br * Vector4(hinge, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(math.pi - a, 0.0, 0.0))
+end
+
+-- "lift" mode: the portcullis rises straight up out of the doorway, eased in and out
+-- like the swing, into the bulkhead and the rock above it.
+function Gate:_lift(deltaTime)
+	if self._grate == nil then
+		local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+		self._grate = group ~= nil and group:getEntity("Grate", 0) or nil
+		if self._grate == nil then
+			return
+		end
+	end
+	local t = math.min(1.0, (self._openT or 0.0) + deltaTime / SWING_TIME)
+	self._openT = t
+	if t >= 1.0 then
+		self._posed = true
+	end
+	local k < const > = t * t * (3.0 - 2.0 * t)
+	local base < const > = self.owner.transform
+	self._grate.transform = Transform(base.translation + base.rotation * Vector4(0.0, k * self:_number("lift", 3.0), 0.0, 0.0), base.rotation)
 end
 ]]></text>
 </object>

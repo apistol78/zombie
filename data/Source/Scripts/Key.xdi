@@ -40,7 +40,9 @@ function Key:onSpend(context, gate)
 	if gsc ~= nil then
 		gsc:unlock()
 	end
-	context:_showNotice("THE CEMETERY GATE GRINDS OPEN")
+	-- Each gate may say its own line (the cave's do, as a property); the cemetery's
+	-- is the default.
+	context:_showNotice((gsc ~= nil and gsc.notice ~= nil and gsc:notice()) or "THE CEMETERY GATE GRINDS OPEN")
 	-- Ground the night was keeping opens up, and the night notices.
 	context._orchestrator:notify("gateOpened")
 end

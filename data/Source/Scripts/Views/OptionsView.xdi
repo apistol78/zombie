@@ -35,10 +35,11 @@ import(traktor)
 -- calling it several times in one frame costs nothing.
 --
 -- It takes effect immediately and everywhere, including in the world being rendered
--- behind the pause menu: WorldLayer::preReconfigured destroys the world renderer and
--- postReconfigured builds a fresh one, which is what picks the new quality up. That
--- is the whole reason it is worth having these in the pause menu at all -- the
--- forest is right there to judge them against.
+-- behind the pause menu: a server that reports a change has the stage's layers
+-- rebuilt, and WorldLayer then destroys its world renderer and builds a fresh one,
+-- which is what picks the new quality up. That is the whole reason it is worth
+-- having these in the pause menu at all -- the forest is right there to judge them
+-- against.
 --
 -- ...and it persists without anything here writing a file. The standalone runtime
 -- saves that same PropertyGroup to Application.<user>.config as it shuts down
@@ -48,15 +49,15 @@ import(traktor)
 --
 -- `Audio.MasterVolume` is a float in the same settings group, applied by traktor's
 -- AudioServer on the same reconfigure as everything above (AudioServer::create and
--- ::reconfigure, which hand it straight to AudioSystem::setVolume). So the volume
--- row is the graphics rows with a different scale, and nothing else about it is
--- special.
+-- ::reconfigure, which hand it straight to AudioSystem::setVolume). Unlike the
+-- graphics rows it is applied in place: the AudioServer reports no change for it,
+-- so the stage's layers -- and the world renderer behind the menu -- are left alone.
 --
 -- **It must be written as a float.** PropertyGroup:setProperty picks the property
 -- type from the Lua value, and the engine reads this one with
 -- getProperty< float >, which will not read a PropertyInteger -- so writing a bare
 -- 1 rather than 1.0 would leave the volume silently pinned to its default for good.
--- See _setVolume, which adds 0.0 for exactly that reason.
+-- See _onVolume, which divides by 100 to get one.
 --
 -- One volume and not the usual music/effects pair, because there is nothing yet to
 -- split: per-category volume is `Audio.Volumes/<Category>`, keyed on a SoundCategory
@@ -98,6 +99,15 @@ import(traktor)
 -- would be making that choice for the player. So stepping the preset leaves it
 -- alone, and it has no say in whether the others read as a preset.
 --
+-- Nor is it offered at all on hardware that cannot trace rays. The render system's
+-- `supportRayTracing` is false there -- and also when `Render.RayTracing` asked the
+-- renderer not to create the RT device features, which is decided once at startup --
+-- and every RT pass checks it before `World.RayTracing` (IrradiancePass,
+-- ReflectionsPass), so the switch would do nothing. The row is then greyed out,
+-- reads "Off" because that is what is being rendered, and is left disabled. The
+-- setting itself is not written: a config carried to a machine that can trace rays
+-- keeps whatever the player chose.
+--
 -- ---- V-sync ----
 --
 -- `Render.WaitVBlanks` belongs to the RenderServer rather than the world, and is an
@@ -131,10 +141,11 @@ local ON_OFF < const > = { [0] = "Off", [1] = "On" }
 -- engine's whole 0..4 scale; `captions` names them and defaults to QUALITY. Only the
 -- rows the notes above are about want any of the three. `default` is what the engine
 -- falls back to for a row whose fallback is not QUALITY_DEFAULT; `bool` marks a
--- setting the engine stores as a boolean; and `preset = false` keeps a row out of the
--- presets (see the notes above about ray tracing and v-sync).
+-- setting the engine stores as a boolean; `preset = false` keeps a row out of the
+-- presets; and `rayTracing` marks a row that is only offered when the renderer can
+-- trace rays (see the notes above about ray tracing and v-sync).
 local SETTINGS < const > = {
-	{ key = "World.RayTracing", label = "Ray tracing", bool = true, preset = false, max = 1, captions = ON_OFF },
+	{ key = "World.RayTracing", label = "Ray tracing", bool = true, preset = false, rayTracing = true, max = 1, captions = ON_OFF },
 	{ key = "World.ShadowQuality", label = "Shadows" },
 	{ key = "World.IrradianceQuality", label = "Irradiance" },
 	{ key = "World.AmbientOcclusionQuality", label = "Ambient occlusion" },
@@ -187,12 +198,11 @@ local VOLUME_KEY < const > = "Audio.MasterVolume"
 --
 -- It is not applied per scroll on purpose. The only way a script can put a volume
 -- into the mixer is to write the property and ask the environment to reconfigure,
--- and a reconfigure is not a cheap thing aimed at one server: Application::update
--- runs it across all of them with the render thread locked, and WorldLayer answers
--- by destroying its world renderer and building a fresh one. Doing that on every
--- mouse-move frame of a drag -- sixty world renderers a second, behind a pause menu
--- that is showing the world -- is not on. So the property is written as the knob
--- moves and the reconfigure waits for the drag to settle: one, not sixty.
+-- and a reconfigure is not aimed at one server: Application::update runs it across
+-- all of them with the render thread locked. A volume change leaves the world
+-- renderer alone, but stalling the render thread on every mouse-move frame of a drag
+-- is still a hitch for nothing. So the property is written as the knob moves and
+-- the reconfigure waits for the drag to settle: one, not sixty.
 --
 -- Quarter of a second is long enough to swallow a drag and short enough that letting
 -- go and listening feels immediate.
@@ -224,6 +234,7 @@ function OptionsView:new(parent, environment)
 
 	self._environment = environment
 	self._settings = environment.settings
+	self._rayTracing = environment.render.renderSystem.supportRayTracing
 
 	local title < const > = Static(self, "OPTIONS")
 	title:setTextSize(34)
@@ -263,7 +274,7 @@ function OptionsView:new(parent, environment)
 	self._buttons = {}
 	for i, setting in ipairs(SETTINGS) do
 		local grid < const > = (i <= COLUMN_SPLIT) and grids[1] or grids[2]
-		self._buttons[i] = self:_row(grid, setting.label, function(step) self:_cycle(i, step) end)
+		self._buttons[i] = self:_row(grid, setting.label, function(step) self:_cycle(i, step) end, self:_available(i))
 	end
 
 	-- A grid of its own rather than another row of the one above, and columns to suit
@@ -351,7 +362,10 @@ end
 -- PushButton with a minimum width rather than a label that changes size, because
 -- the grid's columns are sized from what is in them -- a bare caption would move
 -- the whole row every time the value changed under it.
-function OptionsView:_row(grid, label, stepFn)
+--
+-- A row that is not `enabled` is greyed out: the buttons disable themselves at half
+-- alpha, and the label is dimmed to the hint colour to match.
+function OptionsView:_row(grid, label, stepFn, enabled)
 	local caption < const > = Static(grid, label)
 	caption:setTextSize(20)
 	caption:setTextColor(C_LABEL)
@@ -375,6 +389,13 @@ function OptionsView:_row(grid, label, stepFn)
 	up:setHorizontalAlign(Widget.ALIGN_CENTER)
 	up:setOnClick(function() stepFn(1) end)
 
+	if enabled == false then
+		caption:setTextColor(C_HINT)
+		down:setEnable(false)
+		value:setEnable(false)
+		up:setEnable(false)
+	end
+
 	return value
 end
 
@@ -384,6 +405,10 @@ end
 -- edited by hand cannot put the view into a state it has no caption for.
 function OptionsView:_get(index)
 	local setting < const > = SETTINGS[index]
+	if not self:_available(index) then
+		-- Off is what is being rendered, whatever the group says.
+		return 0
+	end
 	local v = self._settings:getProperty(setting.key)
 	if setting.bool then
 		-- On unless the group says otherwise, as the engine has it.
@@ -410,12 +435,21 @@ end
 -- Step one setting, wrapping at both ends so a wheel of however many values the row
 -- offers can be reached from either arrow without ever dead-ending.
 function OptionsView:_cycle(index, step)
+	if not self:_available(index) then
+		return
+	end
 	local setting < const > = SETTINGS[index]
 	local low < const > = setting.min or 0
 	local n < const > = (setting.max or QUALITY_MAX) - low + 1
 	local v < const > = low + ((self:_get(index) - low + step) % n)
 	self:_set(index, v)
 	self:refresh()
+end
+
+-- Whether this machine can use the setting at all; see the note above about ray
+-- tracing, the only row so far that it can not.
+function OptionsView:_available(index)
+	return not SETTINGS[index].rayTracing or self._rayTracing
 end
 
 -- Step the preset, which writes every row. Coming off "Custom" starts at the first
@@ -494,10 +528,9 @@ function OptionsView:_onVolume(position)
 		pct = 100
 	end
 
-	-- As a *float* whatever the arithmetic did: the engine reads this with
-	-- getProperty< float >, which does not read the PropertyInteger that a whole
-	-- number would otherwise be stored as (see the note at the top). Adding 0.0 is
-	-- what keeps 0 and 1 from becoming integers.
+	-- As a *float*: the engine reads this with getProperty< float >, which does not
+	-- read a PropertyInteger (see the note at the top). Lua's `/` always yields a
+	-- float, so 0 and 1 stay floats as well; the + 0.0 only makes that explicit.
 	self._settings:setProperty(VOLUME_KEY, (pct / 100) + 0.0)
 	self._volumeValue:setText(self:_volumeText(pct))
 

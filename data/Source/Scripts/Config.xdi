@@ -563,6 +563,10 @@ Config = {
 		gateRange = 3.5,        -- ...and to the gate to turn it in the lock
 		dropAhead = 0.7         -- how far in front of the player a put-down key lands
 	},
+	-- Levers (the cave): how close to one you must be to pull it.
+	lever = {
+		reachRange = 1.8
+	},
 	gate = {
 		-- How far each leaf swings open (rad; ~106 deg leaves them lying along the
 		-- inside of the wall) and how long the swing takes. The grind that plays over

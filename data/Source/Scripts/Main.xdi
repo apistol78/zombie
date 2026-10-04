@@ -412,6 +412,16 @@ function Main:new(params, environment)
 	self._chests = nil            -- resolved off the world; index order is stable, see resolve
 	self._openedChestIndex = {}   -- chest index -> true; plain data, so it survives a hot reload
 
+	-- Levers, and the gates only a lever opens (the cave's portcullises). A lever owns
+	-- its throw and finds its own gate by id (Scripts/Lever); a lever gate is a Gate
+	-- component on an entity named "LeverGate", so no key ever fits it. The books here
+	-- are the chests' again: which levers are pulled, as plain data -- a pulled lever
+	-- reopens its gate on the restore path, so the gates need no index of their own.
+	self._leverRange = Config.lever.reachRange
+	self._levers = nil
+	self._leverGates = nil
+	self._pulledLeverIndex = {}
+
 	-- Wards. A relic is spent by carrying it to a ward post and setting it down there,
 	-- which lights that ward: the light kills whatever is standing on its ground at that
 	-- moment (_purgeWard) and the Spawner will not place anything inside it afterwards.
@@ -895,6 +905,12 @@ function Main:resolve()
 	if self._chests == nil then
 		self._chests = self:_collectRecords(world, "Chest", "opened", self._openedChestIndex, "open")
 	end
+	if self._leverGates == nil then
+		self._leverGates = self:_collectRecords(world, "LeverGate", "unlocked", {}, "unlock")
+	end
+	if self._levers == nil then
+		self._levers = self:_collectRecords(world, "Lever", "pulled", self._pulledLeverIndex, "pull")
+	end
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
 	end
@@ -1299,6 +1315,47 @@ end
 -- Open a chest: the lid, the creak and the loot are Chest:open's; what is kept here is
 -- which chests stand open, as plain data for the hot reload, and the line saying what
 -- was inside -- which the chest words, since only it knows what it held.
+local function notPulled(l)
+	return not l.pulled
+end
+
+function Main:_nearestUnpulledLever(maxDist)
+	return self:_nearestRecord(self._levers, notPulled, maxDist)
+end
+
+-- A lever gate still barring the way: asked of the gate itself, since a lever anywhere
+-- may have opened it.
+local function leverGateShut(g)
+	local sc < const > = g.entity:getComponent(traktor.world.ScriptComponent)
+	return sc ~= nil and sc.isLocked ~= nil and sc:isLocked()
+end
+
+function Main:_nearestShutLeverGate(maxDist)
+	return self:_nearestRecord(self._leverGates, leverGateShut, maxDist)
+end
+
+-- Pull a lever: the throw and the gate opening are Lever:pull's; kept here is which
+-- levers are pulled (for the hot reload) and the line saying what happened -- the
+-- lever's own, else the gate's, else a generic one, since the gate may be far away.
+function Main:_pullLever(lever)
+	lever.pulled = true
+	self._pulledLeverIndex[lever.index] = true
+	local sc < const > = lever.entity:getComponent(traktor.world.ScriptComponent)
+	if sc == nil then
+		return
+	end
+	local gate < const > = sc:pull(false)
+	local notice = sc:notice()
+	if notice == nil and gate ~= nil then
+		local gsc < const > = gate:getComponent(traktor.world.ScriptComponent)
+		notice = gsc ~= nil and gsc:notice() or nil
+	end
+	self:_showNotice(notice or (gate ~= nil and "SOMEWHERE, A GATE GRINDS OPEN" or "THE LEVER CLUNKS OVER"))
+	if gate ~= nil then
+		self._orchestrator:notify("gateOpened")
+	end
+end
+
 function Main:_openChest(chest)
 	chest.opened = true
 	self._openedChestIndex[chest.index] = true
@@ -2124,6 +2181,13 @@ function Main:_interact()
 	local chest < const > = self:_nearestClosedChest(self._chestRange)
 	if chest ~= nil then
 		self:_openChest(chest)
+		return
+	end
+
+	-- Or pull a lever. Empty hands too: a hand holding something puts it down first.
+	local lever < const > = self:_nearestUnpulledLever(self._leverRange)
+	if lever ~= nil then
+		self:_pullLever(lever)
 	end
 end
 
@@ -2148,6 +2212,11 @@ function Main:_updateHudText(dt)
 				prompt = "E   " .. item:promptTake()
 			elseif self:_nearestClosedChest(self._chestRange) ~= nil then
 				prompt = "E   OPEN THE CHEST"
+			elseif self:_nearestUnpulledLever(self._leverRange) ~= nil then
+				prompt = "E   PULL THE LEVER"
+			elseif self:_nearestShutLeverGate(self._gateRange) ~= nil then
+				-- No key opens it; the line hints that something else does.
+				prompt = "THE GATE WON'T BUDGE"
 			elseif self:_nearestLockedGate(self._gateRange) ~= nil then
 				-- Not an E: standing at the locked gate with nothing to open it
 				-- with, the line says what is missing rather than offering a press.
@@ -2800,6 +2869,8 @@ function Main:reload()
 	-- Chest records too; resolve() restores which stand open from _openedChestIndex, and
 	-- Chest:open(true) snaps the lid back up without putting a second item in the box.
 	self._chests = nil
+	self._levers = nil
+	self._leverGates = nil
 	-- Hive records likewise; resolve() restores which of them are open from
 	-- _awakeHiveIndex, which survives. A cutscene in flight holds one of those records,
 	-- so it goes too -- reloading mid-shot cuts back to the player rather than leaving

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Lever
+--
+-- A lever on a post that opens a gate somewhere else: the player pulls it with E
+-- (Main:_interact calls pull()), the handle swings over from leaning forward to leaning
+-- back, and the gate it names opens itself (Scripts/Gate in any mode -- the cave's
+-- lever gates are portcullises that lift).
+--
+-- Which gate is a property on this entity's ScriptComponentData, so each placed lever
+-- names its own:
+--
+--   gate    the `id` property of the gate to open; the gate entity is named
+--           "LeverGate" (not "Gate", so a key never fits it)
+--   notice  optional line shown when pulled (else the gate's own, else a generic one)
+--
+-- Attach to an entity whose GroupComponent holds a child named "Handle": the handle
+-- mesh with its pivot on its own origin, extending +Y, authored PIVOT_Y above the
+-- lever's origin. The post's front, where the player stands, is +Z.
+--
+-- pull() is idempotent and takes instant=true -- the reload-restore path, the same
+-- contract as Gate:unlock -- to snap straight to pulled, opening the gate instantly
+-- and silently. It returns the gate entity it opened, or nil.
+
+Lever = Lever or class("Lever", traktor.world.ScriptComponent)
+
+local SWING < const > = 0.75      -- handle pitch either side of upright (rad)
+local PULL_TIME < const > = 0.55  -- how long the throw takes (s)
+local PIVOT_Y < const > = 0.9     -- the pivot's height above the lever's origin (m)
+
+function Lever:_property(name)
+	local props < const > = self.properties
+	if props == nil then
+		return nil
+	end
+	local v < const > = props:getProperty(name)
+	if type(v) ~= "string" or v == "" then
+		return nil
+	end
+	return v
+end
+
+function Lever:isPulled()
+	return self._pulled == true
+end
+
+function Lever:notice()
+	return self:_property("notice")
+end
+
+-- The gate this lever opens: the LeverGate whose Gate component has the matching id.
+function Lever:target()
+	local id < const > = self:_property("gate")
+	if id == nil then
+		return nil, nil
+	end
+	local i = 0
+	while true do
+		local e < const > = self.world:getEntity("LeverGate", i)
+		if e == nil then
+			return nil, nil
+		end
+		i = i + 1
+		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and sc:gateId() == id then
+			return e, sc
+		end
+	end
+end
+
+function Lever:pull(instant)
+	if self._pulled then
+		return nil
+	end
+	self._pulled = true
+	self._t = instant and 1.0 or 0.0
+	self._posed = false
+	if not instant then
+		local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
+		if fx ~= nil then
+			fx:raise("pull")
+		end
+	end
+	local gate < const >, gsc < const > = self:target()
+	if gsc ~= nil then
+		gsc:unlock(instant)
+	end
+	return gate
+end
+
+function Lever:update(context, totalTime, deltaTime)
+	if self._posed then
+		return
+	end
+	if self._handle == nil then
+		local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+		self._handle = group ~= nil and group:getEntity("Handle", 0) or nil
+		if self._handle == nil then
+			return
+		end
+	end
+	-- At rest the handle leans forward, towards the player; pulled, it leans back. A
+	-- positive pitch carries +Y over towards +Z, so the throw runs +SWING -> -SWING,
+	-- eased so it snaps over rather than sliding.
+	local k = 0.0
+	if self._pulled then
+		local t = math.min(1.0, (self._t or 0.0) + deltaTime / PULL_TIME)
+		self._t = t
+		k = t * t * (3.0 - 2.0 * t)
+		self._posed = t >= 1.0
+	else
+		self._posed = true   -- the rest pose is written once
+	end
+	local base < const > = self.owner.transform
+	self._handle.transform = Transform(
+		base.translation + base.rotation * Vector4(0.0, PIVOT_Y, 0.0, 0.0),
+		base.rotation * Quaternion.fromEulerAngles(0.0, SWING - 2.0 * SWING * k, 0.0)
+	)
+end
+]]></text>
+</object>

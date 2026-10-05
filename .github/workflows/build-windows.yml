@@ -13,9 +13,9 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install Blender
-      uses: moguri/setup-blender@v1
+      uses: bradyajohnston/setup-blender@v5
       with:
-        blender-version: '5.2'
+        version: '5.2'
 
     - name: Download Traktor
       env:

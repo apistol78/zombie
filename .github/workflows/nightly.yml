@@ -107,7 +107,7 @@ jobs:
     - name: Install Blender
       uses: moguri/setup-blender@v1
       with:
-        blender-version: '5.0'
+        blender-version: '5.2'
 
     - name: Download Traktor
       env:

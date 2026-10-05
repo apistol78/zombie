@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{F7AD081B-BE81-417A-ABB1-29D327FF6C57}
+#using \{17E40000-0000-4000-8000-000000000005}
+
+import(traktor)
+
+-- ChestViewScaffolding
+--
+-- Test page for Scripts/Views/ChestView, hosted the way Main hosts it (Main:_setChestOpen): a
+-- Dialog of its own on the one Frame, shown and then pointed at a chest, ticked every frame it
+-- is up. Main itself is stood in for by StageStub, which keeps the chest and a real pack.
+--
+-- The chest is full -- one stack in every cell the window has -- and the scene alternates each
+-- time the window opens: first with a roomy pack, so TAKE and TAKE ALL empty the chest, then
+-- with a pack two slots from full, so a take runs out of room partway and the window has to
+-- say so. CLOSE hides the window; a moment later it opens again on the other scene, the chest
+-- and the pack both back as they started.
+
+ChestViewScaffolding = ChestViewScaffolding or class("ChestViewScaffolding", GameScaffolding)
+
+local REOPEN < const > = 1.0   -- how long the window stays closed (s)
+local CHEST < const > = 1      -- the chest index the stub keeps it under
+
+local CONTENTS < const > = {
+	{ kind = "rounds", count = 24 },
+	{ kind = "flask", count = 2 },
+	{ kind = "grenade", count = 2 },
+	{ kind = "helmet", count = 1 },
+	{ kind = "key", count = 1 },
+	{ kind = "bread", count = 3 },
+	{ kind = "coin", count = 12 },
+	{ kind = "machinegun", count = 1 }
+}
+
+local SCENES < const > = {
+	{ notice = "THE SEXTON'S KEY", free = nil },
+	{ notice = "THE PACK HAS ROOM FOR TWO MORE STACKS", free = 2 }
+}
+
+function ChestViewScaffolding:build(parent, frame)
+	self:note(parent, "CHEST VIEW   Click a cell to select it, double click to take it. CLOSE resets the chest and the pack, alternating a roomy pack with a crowded one.")
+
+	self._stage = StageStub()
+	self._scene = 0
+
+	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._view = ChestView(self._dialog, self._stage)
+	self._view:setOnClose(function()
+		self._dialog:hide()
+		self:after(REOPEN, function() self:show() end)
+	end)
+	self:tick(self._view)
+end
+
+function ChestViewScaffolding:show()
+	self._scene = self._scene % #SCENES + 1
+	local scene < const > = SCENES[self._scene]
+
+	self._stage:emptyPack()
+	if scene.free ~= nil then
+		self._stage:crowdPack("coin", scene.free)
+	end
+	self._stage:setChest(CHEST, CONTENTS)
+
+	self._dialog:show()
+	self._view:showChest(CHEST, scene.notice)
+end
+]]></text>
+</object>

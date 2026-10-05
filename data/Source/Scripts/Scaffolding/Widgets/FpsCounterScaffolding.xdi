@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{3E8A5D21-6C47-4B9F-8E12-A47D0C93F5B6}
+
+import(traktor)
+
+-- FpsCounterScaffolding
+--
+-- Test page for Scripts/Widgets/FpsCounter, built as the stages build it: last on the Frame,
+-- floated into the top right corner. The frame rate it reads comes from
+-- GameScaffolding.environment's stand-in and wanders between a crawl and three digits, so the
+-- label changes width and has to keep to the right edge. Resize the preview to see it follow
+-- the edge.
+
+FpsCounterScaffolding = FpsCounterScaffolding or class("FpsCounterScaffolding", GameScaffolding)
+
+function FpsCounterScaffolding:build(parent, frame)
+	self:note(parent, "FPS COUNTER   Top right. The rate wanders between 8 and 150 so the label changes width.")
+
+	self._environment = GameScaffolding.environment()
+	self:tick(FpsCounter(frame, self._environment))
+end
+
+function FpsCounterScaffolding:step(dt)
+	local t < const > = self:time()
+	local k < const > = 0.5 + 0.5 * math.sin(t * 0.7) * math.sin(t * 0.23 + 1.0)
+	self._environment.render.frameRate = 8.0 + 142.0 * k
+end
+]]></text>
+</object>

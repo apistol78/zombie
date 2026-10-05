@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{3C7F91A6-5D24-4E8B-9A03-7B61E2D4C085}
+
+import(traktor)
+
+-- WeaponCarouselScaffolding
+--
+-- Test page for Scripts/Widgets/WeaponCarousel, carrying the seats the loadout gives it in
+-- game (Scripts/Weapons/Loadout:createHud): the rifle, the machine gun and the grenades, in
+-- wheel order, with each weapon's own slot name as the seat.
+--
+--   live      the rifle is emptied a round at a time, sat on empty long enough to see the dry
+--             rim, and reloaded; every few seconds the ring turns to the next weapon -- so the
+--             shot kick, the case ejected, the reload sweep, the flash as the magazine comes
+--             back, the ring turning and the socket lighting are all exercised
+--   the pack  seats leave the ring and come back, as weapons are found and the last grenade
+--             is thrown (setPresent), and every so often the hands are emptied
+--             (setSelected(nil))
+--
+-- The rows below are held still, at a spread of counts with a different weapon in hand on each.
+
+WeaponCarouselScaffolding = WeaponCarouselScaffolding or class("WeaponCarouselScaffolding", GameScaffolding)
+
+local SAMPLES < const > = { 1.0, 0.62, 0.34, 0.17, 0.0 }
+local MAG_SIZE < const > = 6
+local RESERVE < const > = 24
+local BELT < const > = 45
+local GRENADES < const > = 4
+local RELOAD_TIME < const > = 1.9
+local CYCLE_TIME < const > = 3.0
+
+-- The pack row's loop: which seats are on the ring and which is in hand, one step every
+-- PACK_STEP seconds. Present is by seat: rifle, machine gun, grenades.
+local PACK_STEP < const > = 2.5
+local PACK < const > = {
+	{ present = { true, true, true }, selected = 1 },
+	{ present = { true, false, true }, selected = 1 },
+	{ present = { true, false, false }, selected = 1 },
+	{ present = { true, false, false }, selected = nil },
+	{ present = { true, true, false }, selected = 2 },
+	{ present = { true, true, true }, selected = 3 }
+}
+
+function WeaponCarouselScaffolding:build(parent)
+	self:note(parent, "WEAPON CAROUSEL   Live: firing, reloading, cycling. Pack: seats leaving and rejoining the ring.")
+
+	self._live = self:_carousel(self:row(parent, "live"))
+	self._mag = MAG_SIZE
+	self._reserve = RESERVE
+	self._fireTimer = 0.8
+	self._reloadTimer = nil
+	self._cycleTimer = CYCLE_TIME
+	self._weapon = 1
+
+	self._pack = self:_carousel(self:row(parent, "the pack"))
+	self._packStep = 0
+	self._packTimer = 0.0
+
+	for _, v in ipairs(SAMPLES) do
+		local label < const > = string.format("%d%%", math.floor(v * 100 + 0.5))
+		local c < const > = self:_carousel(self:row(parent, label))
+		c:setAmmo(1, math.floor(v * MAG_SIZE), math.floor(v * RESERVE))
+		c:setAmmo(2, math.floor(v * BELT), math.floor(v * BELT * 3))
+		c:setAmmo(3, math.floor(v * GRENADES), nil)
+		c:setSelected(1 + (math.floor(v * 4) % 3))
+	end
+end
+
+function WeaponCarouselScaffolding:step(dt)
+	self:_stepLive(dt)
+	self:_stepPack(dt)
+end
+
+-- Private
+
+function WeaponCarouselScaffolding:_carousel(parent)
+	local c < const > = self:tick(WeaponCarousel(parent))
+	c:addSlot("rifle", "RIFLE")
+	c:addSlot("machinegun", "MG")
+	c:addSlot("grenades", "GRENADES")
+	c:setAmmo(1, MAG_SIZE, RESERVE)
+	c:setAmmo(2, BELT, BELT * 3)
+	c:setAmmo(3, GRENADES, nil)
+	c:setSelected(1)
+	return c
+end
+
+-- Empty the magazine a round at a time, sit on empty, reload, go again; the reserve refills
+-- itself so the loop never ends. Every CYCLE_TIME the ring turns, and comes back round to the
+-- rifle, which is the seat the firing is aimed at.
+function WeaponCarouselScaffolding:_stepLive(dt)
+	local c < const > = self._live
+	if self._reloadTimer ~= nil then
+		self._reloadTimer = self._reloadTimer - dt
+		if self._reloadTimer <= 0.0 then
+			local take < const > = math.min(MAG_SIZE - self._mag, self._reserve)
+			self._mag = self._mag + take
+			self._reserve = self._reserve - take
+			if self._reserve <= 0 then
+				self._reserve = RESERVE
+			end
+			self._reloadTimer = nil
+			c:setReload(1, nil)
+			c:setAmmo(1, self._mag, self._reserve)
+		else
+			c:setReload(1, 1.0 - self._reloadTimer / RELOAD_TIME)
+		end
+	else
+		self._fireTimer = self._fireTimer - dt
+		if self._fireTimer <= 0.0 then
+			if self._mag > 0 then
+				self._mag = self._mag - 1
+				self._fireTimer = (self._mag > 0) and 0.45 or 1.6
+				c:setAmmo(1, self._mag, self._reserve)
+				c:spend(1)
+			else
+				self._reloadTimer = RELOAD_TIME
+				c:setReload(1, 0.0)
+			end
+		end
+	end
+
+	self._cycleTimer = self._cycleTimer - dt
+	if self._cycleTimer <= 0.0 then
+		self._cycleTimer = CYCLE_TIME
+		self._weapon = self._weapon % 3 + 1
+		c:setSelected(self._weapon)
+	end
+end
+
+function WeaponCarouselScaffolding:_stepPack(dt)
+	self._packTimer = self._packTimer - dt
+	if self._packTimer > 0.0 then
+		return
+	end
+	self._packTimer = PACK_STEP
+	self._packStep = self._packStep % #PACK + 1
+	local s < const > = PACK[self._packStep]
+	for i, present in ipairs(s.present) do
+		self._pack:setPresent(i, present)
+	end
+	self._pack:setSelected(s.selected)
+end
+]]></text>
+</object>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
+
+import(traktor)
+
+-- HealthBarScaffolding
+--
+-- Test page for Scripts/Widgets/HealthBar. The top bar plays a loop: bitten down to nothing a
+-- step at a time, left on empty long enough to see the critical rim pulse, then healed back in
+-- two sips and a top-up -- so the damage lag, the hit flash, the heartbeat, the critical rim
+-- and a heal pulling the lag bar straight up are all on show. The bars below it are held at
+-- fixed values, for the colour ramp and the critical state at rest.
+
+HealthBarScaffolding = HealthBarScaffolding or class("HealthBarScaffolding", GameScaffolding)
+
+local SAMPLES < const > = { 1.0, 0.62, 0.34, 0.17, 0.0 }
+
+local BITE < const > = 0.13
+
+-- The live bar's loop, as { wait (s), then set to } pairs.
+local function loop()
+	local keys = {}
+	local v = 1.0
+	while v > 0.02 do
+		v = math.max(0.0, v - BITE)
+		table.insert(keys, { 1.2, v })
+	end
+	table.insert(keys, { 2.5, 0.35 })
+	table.insert(keys, { 1.0, 0.70 })
+	table.insert(keys, { 1.0, 1.0 })
+	return keys
+end
+
+local LOOP < const > = loop()
+
+function HealthBarScaffolding:build(parent)
+	self:note(parent, "HEALTH BAR   Top: bitten to nothing, then healed. Below: held at fixed values.")
+
+	self._live = self:tick(HealthBar(self:row(parent, "live")))
+	self._key = 1
+	self._wait = LOOP[1][1]
+
+	for _, v in ipairs(SAMPLES) do
+		local label < const > = string.format("%d%%", math.floor(v * 100 + 0.5))
+		self:tick(HealthBar(self:row(parent, label))):setValue(v)
+	end
+end
+
+function HealthBarScaffolding:step(dt)
+	self._wait = self._wait - dt
+	if self._wait <= 0.0 then
+		self._live:setValue(LOOP[self._key][2])
+		self._key = self._key % #LOOP + 1
+		self._wait = LOOP[self._key][1]
+	end
+end
+]]></text>
+</object>

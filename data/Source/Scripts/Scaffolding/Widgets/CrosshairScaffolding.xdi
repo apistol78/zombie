@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
+
+import(traktor)
+
+-- CrosshairScaffolding
+--
+-- Test page for Scripts/Widgets/Crosshair: the recoil bloom at the three paces it is seen at in
+-- game -- the rifle's single shots, the machine gun's bursts holding it open, and at rest.
+
+CrosshairScaffolding = CrosshairScaffolding or class("CrosshairScaffolding", GameScaffolding)
+
+-- { caption, seconds between kicks, kicks per burst, pause after a burst (s) }
+local PACES < const > = {
+	{ "single shots", 0.6, 1, 0.0 },
+	{ "bursts", 0.09, 12, 1.2 },
+	{ "at rest", nil, 0, 0.0 }
+}
+
+function CrosshairScaffolding:build(parent)
+	self:note(parent, "CROSSHAIR   Kicked at the rifle's pace, in machine gun bursts, and left at rest.")
+
+	self._rows = {}
+	for _, p in ipairs(PACES) do
+		table.insert(self._rows, {
+			crosshair = self:tick(Crosshair(self:row(parent, p[1]))),
+			every = p[2],
+			burst = p[3],
+			pause = p[4],
+			timer = 0.0,
+			fired = 0
+		})
+	end
+end
+
+function CrosshairScaffolding:step(dt)
+	for _, r in ipairs(self._rows) do
+		if r.every ~= nil then
+			r.timer = r.timer - dt
+			if r.timer <= 0.0 then
+				r.crosshair:kick()
+				r.fired = r.fired + 1
+				if r.fired >= r.burst then
+					r.fired = 0
+					r.timer = r.every + r.pause
+				else
+					r.timer = r.every
+				end
+			end
+		end
+	end
+end
+]]></text>
+</object>

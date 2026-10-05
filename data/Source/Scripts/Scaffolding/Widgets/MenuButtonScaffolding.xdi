@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+
+import(traktor)
+
+-- MenuButtonScaffolding
+--
+-- Test page for Scripts/Widgets/MenuButton, in the two places the game uses it, in a Dialog as
+-- both are:
+--
+--   * the Startup menu's column -- four 220 px buttons, explicitly centred, staggered in with
+--     reveal() as Startup does (the same delays). Click any of them to run the stagger again.
+--   * an options row -- the 44 px arrows either side of a value button that steps on click,
+--     as Scripts/Views/OptionsView builds them; the hover swell is capped against the width,
+--     so the arrows should grow no more than the wide buttons do.
+--
+-- Plus a toggle-mode button and a disabled one. Hover, press and release are the button's own;
+-- the tweens behind them run because Scaffolding.update ticks UiKit's Tween list, as the
+-- game's stages do.
+
+MenuButtonScaffolding = MenuButtonScaffolding or class("MenuButtonScaffolding", GameScaffolding)
+
+local MENU < const > = { "New Game", "Caves", "Options", "Exit" }
+local MENU_W < const > = 220
+local ARROW_W < const > = 44
+local VALUE_W < const > = 150
+local STAGGER_START < const > = 0.20   -- as Scripts/Startup
+local STAGGER_STEP < const > = 0.07
+
+local VALUES < const > = { "Disabled", "Low", "Medium", "High", "Ultra" }
+
+function MenuButtonScaffolding:build(parent, frame)
+	self:note(parent, "MENU BUTTON   Click a menu button to stagger the column in again; the value button steps.")
+
+	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 16))
+
+	self._menu = {}
+	for _, caption in ipairs(MENU) do
+		local b < const > = MenuButton(self._dialog, caption)
+		b:setMinimumWidth(MENU_W)
+		b:setHorizontalAlign(Widget.ALIGN_CENTER)
+		b:setOnClick(function()
+			print("MenuButtonScaffolding: " .. caption)
+			self:_reveal()
+		end)
+		table.insert(self._menu, b)
+	end
+
+	local row < const > = Container(self._dialog, TableLayout({ 0, 0, 0 }, { 0 }, 0, 0, 8, 0))
+	row:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._value = 3
+	local down < const > = MenuButton(row, "<")
+	down:setMinimumWidth(ARROW_W)
+	down:setOnClick(function() self:_step(-1) end)
+	self._valueButton = MenuButton(row, VALUES[self._value])
+	self._valueButton:setMinimumWidth(VALUE_W)
+	self._valueButton:setOnClick(function() self:_step(1) end)
+	local up < const > = MenuButton(row, ">")
+	up:setMinimumWidth(ARROW_W)
+	up:setOnClick(function() self:_step(1) end)
+
+	local extras < const > = Container(self._dialog, TableLayout({ 0, 0 }, { 0 }, 0, 0, 8, 0))
+	extras:setHorizontalAlign(Widget.ALIGN_CENTER)
+	MenuButton(extras, "Toggle", PushButton.Toggle):setMinimumWidth(VALUE_W)
+		:setOnClick(function() print("MenuButtonScaffolding: toggled") end)
+	MenuButton(extras, "Disabled"):setMinimumWidth(VALUE_W):setEnable(false)
+end
+
+function MenuButtonScaffolding:show()
+	self._dialog:show()
+	self:_reveal()
+end
+
+-- Private
+
+function MenuButtonScaffolding:_reveal()
+	for i, b in ipairs(self._menu) do
+		b:reveal(STAGGER_START + STAGGER_STEP * (i - 1))
+	end
+end
+
+function MenuButtonScaffolding:_step(d)
+	self._value = (self._value - 1 + d) % #VALUES + 1
+	self._valueButton:setCaption(VALUES[self._value])
+end
+]]></text>
+</object>

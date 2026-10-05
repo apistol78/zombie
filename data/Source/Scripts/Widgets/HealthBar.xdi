@@ -11,7 +11,7 @@ import(traktor)
 -- imported as a Spark movie (UI/Hud); this widget instantiates that movie's
 -- "MC_HealthBar" export and animates the named sprites inside it. The movie
 -- has to be listed in the Widget.initialize resource kits of whoever uses the
--- widget (see Scripts/Main and Scripts/Widgets/HudScaffolding).
+-- widget (see Scripts/Main and Scripts/Scaffolding/GameScaffolding).
 --
 -- Layers in the SVG, back to front, and how each is driven:
 --

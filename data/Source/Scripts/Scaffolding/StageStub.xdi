@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
+#using \{17E40000-0000-4000-8000-000000000002}
+
+import(traktor)
+
+-- StageStub
+--
+-- Scripts/Main as far as Scripts/Views/InventoryView and Scripts/Views/ChestView can see it:
+-- the `context` both are built with, for their test pages. The pack is a real
+-- Scripts/Items/Inventory, filled with the night's starting kit the way Main fills it, so the
+-- views are tested against the data they read in game. Only the stage's side of each call is
+-- stood in for -- health is a number, a chest is a list kept here, and what Main would put on
+-- its feed line is printed to the log.
+--
+-- Mirrors Main's inventory, armor, equipItem, unequipItem, useItem, dropSlot, giveItem,
+-- chestContents, takeFromChest and takeAllFromChest; keep them in step if those change what
+-- they answer. Dropping puts nothing in a world -- there is none -- it only takes the stack
+-- out of the pack.
+
+StageStub = StageStub or class("StageStub")
+
+function StageStub:new()
+	self._maxHealth = Config.player.maxHealth
+	self._health = self._maxHealth
+	self._chests = {}
+	self:emptyPack()
+end
+
+-- Start again from the night's starting kit. A new Inventory rather than a cleared one, so a
+-- view that reads context:inventory() afresh each time (ChestView) sees a pack with no history,
+-- while one that kept the old pack (InventoryView keeps its own) is not disturbed.
+function StageStub:emptyPack()
+	self._inventory = Inventory(Config.inventory.slots)
+	for _, entry in ipairs(Config.inventory.start) do
+		self._inventory:add(entry[1], entry[2])
+	end
+	return self._inventory
+end
+
+-- Fill every free slot but `free` with full stacks of `kind`, to test what happens when the
+-- pack runs out of room.
+function StageStub:crowdPack(kind, free)
+	local inv < const > = self._inventory
+	local slots < const > = inv:capacity() - inv:used() - (free or 0)
+	if slots > 0 then
+		inv:add(kind, Items[kind].stack * slots)
+	end
+	return inv
+end
+
+function StageStub:setHealth(fraction)
+	self._health = self._maxHealth * fraction
+	return self
+end
+
+-- Put `contents` -- { { kind = , count = }, ... } -- in chest `index`. Copied, since taking
+-- from a chest spends the list.
+function StageStub:setChest(index, contents)
+	local list = {}
+	for _, entry in ipairs(contents) do
+		table.insert(list, { kind = entry.kind, count = entry.count })
+	end
+	self._chests[index] = list
+	return self
+end
+
+-- ---- What the views call ----
+
+function StageStub:inventory()
+	return self._inventory
+end
+
+function StageStub:armor()
+	local kind < const > = self._inventory:equipped("body")
+	local def < const > = (kind ~= nil) and Items[kind] or nil
+	return (def ~= nil and def.armor ~= nil) and def.armor or 0.0
+end
+
+function StageStub:equipItem(kind)
+	if not self._inventory:equip(kind) then
+		return false
+	end
+	local def < const > = Items[kind]
+	if def ~= nil and def.equip == "hand" then
+		self:_feed(def.name .. " IN HAND")
+	end
+	return true
+end
+
+function StageStub:unequipItem(kind)
+	local def < const > = Items[kind]
+	if def == nil or def.equip == nil or self._inventory:equipped(def.equip) ~= kind then
+		return false
+	end
+	return self._inventory:unequip(def.equip)
+end
+
+function StageStub:useItem(kind)
+	local def < const > = Items[kind]
+	if def == nil or def.heal == nil or self._inventory:count(kind) <= 0 then
+		return false
+	end
+	if self._health >= self._maxHealth then
+		self:_feed("NOT HURT")
+		return false
+	end
+	self._inventory:remove(kind, 1)
+	local before < const > = self._health
+	self._health = math.min(self._maxHealth, self._health + def.heal)
+	self:_feed("+ " .. tostring(math.floor(self._health - before + 0.5)) .. " HEALTH")
+	return true
+end
+
+function StageStub:dropSlot(index)
+	local s < const > = self._inventory:slot(index)
+	if s == nil then
+		return false
+	end
+	local def < const > = Items[s.kind]
+	if def == nil or (not def.keep and def.entity == nil) then
+		self:_feed("THAT CANNOT BE PUT DOWN")
+		return false
+	end
+	local stack < const > = self._inventory:removeSlot(index)
+	self:_feed("PUT DOWN " .. Items.describe(stack.kind, stack.count))
+	return true
+end
+
+function StageStub:giveItem(kind, count, entity)
+	local added < const > = self._inventory:add(kind, count, entity)
+	if added <= 0 then
+		return 0
+	end
+	local text = "+ " .. Items.describe(kind, added)
+	if added < count then
+		text = text .. "   THE PACK IS FULL"
+	end
+	self:_feed(text)
+	return added
+end
+
+function StageStub:chestContents(index)
+	return self._chests[index] or {}
+end
+
+function StageStub:takeFromChest(index, slot)
+	local left < const > = self._chests[index]
+	local entry < const > = (left ~= nil) and left[slot] or nil
+	if entry == nil then
+		return 0, nil
+	end
+	local added < const > = self:giveItem(entry.kind, entry.count)
+	entry.count = entry.count - added
+	if entry.count <= 0 then
+		table.remove(left, slot)
+	end
+	return added, entry.kind
+end
+
+function StageStub:takeAllFromChest(index)
+	local left < const > = self._chests[index]
+	if left == nil then
+		return false, false
+	end
+	local any = false
+	local slot = 1
+	while slot <= #left do
+		local before < const > = #left
+		local added < const > = self:takeFromChest(index, slot)
+		if added > 0 then
+			any = true
+		end
+		if #left == before then
+			slot = slot + 1
+		end
+	end
+	return any, #left > 0
+end
+
+-- Private
+
+function StageStub:_feed(text)
+	print("Stage: " .. text)
+end
+]]></text>
+</object>

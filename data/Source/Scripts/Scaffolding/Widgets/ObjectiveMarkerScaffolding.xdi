@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
+
+import(traktor)
+
+-- ObjectiveMarkerScaffolding
+--
+-- Test page for Scripts/Widgets/ObjectiveMarker. The top dial swings right round while the
+-- range walks down from 90 m to "HERE", so the needle easing, the short-way-round wrap and the
+-- range readout are all exercised; every RETARGET seconds it is retargeted, as Main does when
+-- a relic is taken and the dial turns to the altar, which flashes the plate and snaps the
+-- needle. The dials below are held still: a spread of bearings and ranges, and one with
+-- nothing left to point at.
+
+ObjectiveMarkerScaffolding = ObjectiveMarkerScaffolding or class("ObjectiveMarkerScaffolding", GameScaffolding)
+
+local SWEEP_RATE < const > = 0.9   -- rad/s
+local RETARGET < const > = 7.0     -- s
+
+-- { caption, bearing (deg, relative; nil for no target), range (m) }
+local SAMPLES < const > = {
+	{ "ahead", 0.0, 140.0 },
+	{ "right", 90.0, 42.0 },
+	{ "behind", 180.0, 12.0 },
+	{ "left", -60.0, 4.0 },
+	{ "arrived", 30.0, 1.0 },
+	{ "no target", nil, nil }
+}
+
+function ObjectiveMarkerScaffolding:build(parent)
+	self:note(parent, "OBJECTIVE MARKER   Live: swinging round and closing in, retargeted now and then. Below: held still.")
+
+	self._live = self:tick(ObjectiveMarker(self:row(parent, "live")))
+	self._bearing = 0.0
+	self._retarget = RETARGET
+
+	for _, s in ipairs(SAMPLES) do
+		local m < const > = self:tick(ObjectiveMarker(self:row(parent, s[1])))
+		if s[2] ~= nil then
+			m:setTarget(math.rad(s[2]), s[3])
+		else
+			m:setTarget(nil, nil)
+		end
+	end
+end
+
+function ObjectiveMarkerScaffolding:step(dt)
+	local full < const > = 2.0 * math.pi
+	self._bearing = (self._bearing + dt * SWEEP_RATE) % full
+
+	self._retarget = self._retarget - dt
+	if self._retarget <= 0.0 then
+		self._retarget = RETARGET
+		self._live:retarget()
+	end
+
+	-- Unwrapped, as Main hands it over (atan2 less the heading): the widget owns the wrap.
+	self._live:setTarget(self._bearing, 2.0 + (1.0 - self._bearing / full) * 88.0)
+end
+]]></text>
+</object>

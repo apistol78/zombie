@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{F7AD081B-BE81-417A-ABB1-29D327FF6C57}
+#using \{17E40000-0000-4000-8000-000000000004}
+
+import(traktor)
+
+-- InventoryViewScaffolding
+--
+-- Test page for Scripts/Views/InventoryView, hosted the way Main hosts it: in a Dialog of its
+-- own on the one Frame, refreshed and then shown, ticked every frame it is up. Main itself is
+-- stood in for by StageStub, so every click goes through the real pack.
+--
+-- The pack holds one of every kind there is -- every icon, every detail line and every button
+-- state is a click away -- with the rifle drawn and the helmet worn, and the player is hurt, so
+-- food can be eaten. CLOSE hides the window, and it comes back a moment later.
+
+InventoryViewScaffolding = InventoryViewScaffolding or class("InventoryViewScaffolding", GameScaffolding)
+
+local REOPEN < const > = 1.0   -- how long the window stays closed (s)
+
+function InventoryViewScaffolding:build(parent, frame)
+	self:note(parent, "INVENTORY VIEW   Click a cell to select it, double click to equip or use. CLOSE hides it for a moment. The stage's answers are printed to the log.")
+
+	self._stage = StageStub():setHealth(0.45)
+	local inv < const > = self._stage:inventory()
+	inv:add("machinegun", 1)
+	inv:add("rounds", 90)
+	inv:add("flask", 2)
+	inv:add("bread", 3)
+	inv:add("coin", 37)
+	inv:add("helmet", 1)
+	inv:add("key", 1)
+	inv:add("relic", 2)
+	inv:equip("rifle")
+	inv:equip("helmet")
+
+	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._view = InventoryView(self._dialog, self._stage)
+	self._view:setOnClose(function()
+		self._dialog:hide()
+		self:after(REOPEN, function() self:show() end)
+	end)
+	self:tick(self._view)
+end
+
+function InventoryViewScaffolding:show()
+	self._dialog:show()
+	self._view:refresh()
+end
+]]></text>
+</object>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{17E40000-0000-4000-8000-000000000003}
+
+import(traktor)
+
+-- ItemSlotScaffolding
+--
+-- Test page for Scripts/Widgets/ItemSlot, the cell both the pack and the chest window are
+-- built from:
+--
+--   icons    every picture the art carries, with a count wherever the kind stacks, and one
+--            kind with no picture of its own -- which draws none, like an empty cell
+--   states   empty, plain, selected, equipped, and both at once
+--   click    a row that behaves like the pack's grid: hover lights a cell, a click selects it,
+--            a second click on the selected cell marks it equipped (or not); printed to the log
+
+ItemSlotScaffolding = ItemSlotScaffolding or class("ItemSlotScaffolding", GameScaffolding)
+
+-- Every kind ItemSlot has a picture for, and a count to show it with; then one it has not.
+local ICONS < const > = {
+	{ "rifle", 1 },
+	{ "machinegun", 1 },
+	{ "grenade", 3 },
+	{ "rounds", 24 },
+	{ "flask", 2 },
+	{ "bread", 5 },
+	{ "coin", 99 },
+	{ "helmet", 1 },
+	{ "key", 2 },
+	{ "relic", 3 },
+	{ "lantern", 1 }
+}
+
+-- { caption, kind, selected, equipped }
+local STATES < const > = {
+	{ "empty", nil, false, false },
+	{ "plain", "flask", false, false },
+	{ "selected", "flask", true, false },
+	{ "equipped", "rifle", false, true },
+	{ "both", "rifle", true, true }
+}
+
+local CLICK < const > = { "rifle", "machinegun", "helmet", "relic", "flask" }
+
+function ItemSlotScaffolding:build(parent)
+	self:note(parent, "ITEM SLOT   Bottom row: hover, click to select, click the selected cell again to equip.")
+
+	local icons < const > = Container(parent, TableLayout({ 0 }, { 0 }, 0, 0, 0, 6))
+	self:caption(icons, "icons")
+	local iconRow < const > = Container(icons, TableLayout(self:_columns(#ICONS), { 0 }, 0, 0, 8, 0))
+	for _, i in ipairs(ICONS) do
+		ItemSlot(iconRow):setItem(i[1], i[2])
+	end
+
+	local states < const > = Container(parent, TableLayout(self:_columns(#STATES), { 0 }, 0, 0, 8, 6))
+	for _, s in ipairs(STATES) do
+		self:caption(states, s[1])
+	end
+	for _, s in ipairs(STATES) do
+		ItemSlot(states):setItem(s[2], 1):setSelected(s[3]):setEquipped(s[4])
+	end
+
+	local click < const > = Container(parent, TableLayout({ 0 }, { 0 }, 0, 0, 0, 6))
+	self:caption(click, "click")
+	local clickRow < const > = Container(click, TableLayout(self:_columns(#CLICK), { 0 }, 0, 0, 8, 0))
+	self._cells = {}
+	self._equipped = {}
+	for i, kind in ipairs(CLICK) do
+		local cell < const > = ItemSlot(clickRow):setItem(kind, 1)
+		cell:setOnClick(function() self:_onCell(i) end)
+		self._cells[i] = cell
+	end
+end
+
+-- Private
+
+function ItemSlotScaffolding:_columns(n)
+	local cdef = {}
+	for _ = 1, n do
+		table.insert(cdef, 0)
+	end
+	return cdef
+end
+
+function ItemSlotScaffolding:_onCell(i)
+	if self._selected == i then
+		self._equipped[i] = not self._equipped[i]
+		self._cells[i]:setEquipped(self._equipped[i])
+		print("ItemSlotScaffolding: " .. CLICK[i] .. (self._equipped[i] and " equipped" or " put away"))
+		return
+	end
+	self._selected = i
+	for k, cell in ipairs(self._cells) do
+		cell:setSelected(k == i)
+	end
+	print("ItemSlotScaffolding: " .. CLICK[i] .. " selected")
+end
+]]></text>
+</object>

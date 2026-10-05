@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{218D113A-66DC-9049-8424-701FF60F2BC4}
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
+
+import(traktor)
+
+-- GameScaffolding
+--
+-- The base of every test page under Scripts/Scaffolding. Each page is a pair, in the shape
+-- UiKit's own examples use (System/Examples/UiKit): a traktor.uikit.Scaffolding instance
+-- ("<Name>Test") whose scaffoldingClass is a script deriving from this ("<Name>Scaffolding").
+-- Open the Test in the editor and the page runs live, rebuilt whenever the page, the widget or
+-- view under test, or the art is saved.
+--
+-- What this adds to UiKit's Scaffolding is the game's own setup, so a widget previews exactly
+-- as it looks in game rather than as a bare UiKit widget:
+--
+--   * The resource kits are the ones Scripts/Main initialises UiKit with, in the same order:
+--     UI/Hud first -- the HUD art, and the MC_Dialog that replaces UiKit's grey panel --
+--     then the UiKit2 font override, then UiKit itself.
+--   * setupUiKitStyles (Scripts/Widgets/Styles) tints the dialogs and buttons before
+--     anything that reads those styles is built.
+--   * Everything sits on a dark backdrop, roughly the night the HUD and the dialogs are seen
+--     against in game. The editor's grey flatters a 25% pane.
+--
+-- A page derives from this and overrides any of:
+--
+--   build(parent, frame)  build the page; `parent` is the backdrop, one auto sized column,
+--                         `frame` is the Frame itself, for dialogs and floated widgets
+--   show()                runs once, on the first update, after the frame has been laid out --
+--                         which is where the game's stages show a dialog and refresh a view
+--   step(dt)              runs every frame; drive the widget under test from here
+--
+-- ...and hands tick() any widget that wants an update(dt) each frame, as the stage that owns
+-- it in game would. Every frame is GameScaffolding.DT long, the same fixed 1/60 s that
+-- Scaffolding.update hands UiKit's tweens and intervals, so a widget's own animation and the
+-- UiKit ones it rides on keep one clock.
+
+GameScaffolding = GameScaffolding or class("GameScaffolding", Scaffolding)
+
+GameScaffolding.DT = 1 / 60
+
+local BACKDROP < const > = Color4f(0.13, 0.16, 0.12, 1.0)
+local C_CAPTION < const > = Color4f(0.85, 0.87, 0.8, 1.0)
+local C_NOTE < const > = Color4f(0.55, 0.58, 0.64, 1.0)
+
+function GameScaffolding:getResourceKits()
+	return {
+		"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
+		"\{6FC8E464-F249-674E-8FA9-1CD2547A0494}",
+		"\{B45977D0-3D89-4FA7-BE4C-FAA9ED63A942}"
+	}
+end
+
+function GameScaffolding:setup(frame)
+	self._ticked = {}
+	self._shown = false
+	self._removed = false
+	self._time = 0.0
+
+	setupUiKitStyles()
+
+	self._backdrop = Panel(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 14))
+	self._backdrop:setColor(BACKDROP)
+	self:build(self._backdrop, frame)
+end
+
+function GameScaffolding:update()
+	Scaffolding.update(self)
+
+	local dt < const > = GameScaffolding.DT
+	self._time = self._time + dt
+	if not self._shown then
+		self._shown = true
+		self:show()
+	end
+	self:step(dt)
+	for _, w in ipairs(self._ticked) do
+		w:update(dt)
+	end
+end
+
+-- UiKit keeps its tweens and intervals in lists of its own, which outlive a page the editor
+-- has torn down to rebuild; after() checks this before calling back into one.
+function GameScaffolding:remove()
+	self._removed = true
+	Scaffolding.remove(self)
+end
+
+function GameScaffolding:build(parent, frame)
+end
+
+function GameScaffolding:show()
+end
+
+function GameScaffolding:step(dt)
+end
+
+-- Have `widget:update(dt)` called every frame. Returns the widget.
+function GameScaffolding:tick(widget)
+	table.insert(self._ticked, widget)
+	return widget
+end
+
+-- How long the page has been running (s).
+function GameScaffolding:time()
+	return self._time
+end
+
+-- Call `fn` in `delay` seconds, unless the page has been torn down by then.
+function GameScaffolding:after(delay, fn)
+	return Interval(delay, function()
+		if not self._removed then
+			fn()
+		end
+	end)
+end
+
+-- A line of text in the caption colour. A Static is black unless told otherwise, which on
+-- this backdrop -- as on every pane in the game -- is invisible.
+function GameScaffolding:caption(parent, text)
+	return Static(parent, text):setTextColor(C_CAPTION)
+end
+
+-- A smaller, dimmer line: what the page shows, and what to click.
+function GameScaffolding:note(parent, text)
+	return Static(parent, text):setTextSize(14):setTextColor(C_NOTE)
+end
+
+-- A row on the backdrop: a caption, then `cells` more cells, each sized to what is put in it.
+-- Returns the row; whatever the page adds to it fills the cells after the caption, in order.
+function GameScaffolding:row(parent, caption, cells)
+	local cdef = { 0 }
+	for _ = 1, cells or 1 do
+		table.insert(cdef, 0)
+	end
+	local row < const > = Container(parent, TableLayout(cdef, { 0 }, 0, 0, 16, 0))
+	self:caption(row, caption):setVerticalAlign(Widget.ALIGN_CENTER)
+	return row
+end
+
+-- A stand-in for the runtime environment, for the two things in the game that take one
+-- (Scripts/Views/OptionsView, Scripts/Widgets/FpsCounter): `settings`, `render.frameRate`,
+-- `render.renderSystem.supportRayTracing` and `reconfigure()`.
+--
+-- The settings are a plain table behind PropertyGroup's getProperty/setProperty, so what a
+-- page writes reads back and nothing reaches the editor's own settings. Every write is
+-- printed to the log with its Lua type -- an integer where the engine reads a float is
+-- exactly the mistake OptionsView's notes warn about -- and so is every reconfigure.
+function GameScaffolding.environment(rayTracing)
+	local values = {}
+	local settings = {}
+	function settings:getProperty(key)
+		return values[key]
+	end
+	function settings:setProperty(key, value)
+		values[key] = value
+		local kind < const > = (type(value) == "number") and math.type(value) or type(value)
+		print("Scaffolding: setProperty " .. tostring(key) .. " = " .. tostring(value) .. " (" .. kind .. ")")
+	end
+
+	local environment = {
+		settings = settings,
+		render = {
+			frameRate = 60.0,
+			renderSystem = { supportRayTracing = (rayTracing ~= false) }
+		}
+	}
+	function environment:reconfigure()
+		print("Scaffolding: reconfigure")
+	end
+	return environment
+end
+]]></text>
+</object>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
+
+import(traktor)
+
+-- OptionsViewScaffolding
+--
+-- Test page for Scripts/Views/OptionsView, hosted the way Main and Startup host it: a Dialog of
+-- its own on the one Frame, refreshed and then shown.
+--
+-- The runtime environment is GameScaffolding.environment's stand-in, so nothing reaches the
+-- editor's settings: every property written and every reconfigure asked for is printed to the
+-- log instead, with the Lua type of the value -- the volume must go out as a float, ray
+-- tracing as a boolean. RAY_TRACING false builds the page as on hardware that cannot trace
+-- rays, with that row greyed out. BACK hides the window, and it comes back a moment later,
+-- refreshed from what was written.
+
+OptionsViewScaffolding = OptionsViewScaffolding or class("OptionsViewScaffolding", GameScaffolding)
+
+local REOPEN < const > = 1.0       -- how long the window stays closed (s)
+local RAY_TRACING < const > = true
+
+function OptionsViewScaffolding:build(parent, frame)
+	self:note(parent, "OPTIONS VIEW   Every setting written and every reconfigure is printed to the log. BACK hides it for a moment.")
+
+	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._view = OptionsView(self._dialog, GameScaffolding.environment(RAY_TRACING))
+	self._view:setOnClose(function()
+		self._dialog:hide()
+		self:after(REOPEN, function() self:show() end)
+	end)
+end
+
+function OptionsViewScaffolding:show()
+	self._view:refresh()
+	self._dialog:show()
+end
+]]></text>
+</object>

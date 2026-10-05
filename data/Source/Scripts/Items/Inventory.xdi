@@ -107,13 +107,17 @@ end
 -- Put up to `count` of `kind` in, and return how many went. Whatever did not fit is the
 -- caller's to leave where it was -- a pickup stays on the ground with the rest of its pile.
 --
--- `entity` is a keepsake's own entity, which makes it exactly one.
+-- `entity` is a keepsake's own entity, which makes it exactly one -- and one already in the pack
+-- is refused: a keepsake *is* its entity, so the same one twice would be one relic counted as two.
 function Inventory:add(kind, count, entity)
 	local def < const > = Items[kind]
 	if def == nil or count == nil or count <= 0 then
 		return 0
 	end
 	if entity ~= nil then
+		if self:holds(entity) then
+			return 0
+		end
 		count = 1
 	end
 

@@ -1713,10 +1713,8 @@ end
 -- both in reach, E takes the relic -- the night's objective beats the detour. Returns the entity
 -- and its Pickup component. How close is close enough is each item's own (Pickup:reach).
 --
--- "Lying here" is visibility: a relic in the pack or spent on a post is hidden (Pickup:show),
--- and reading that off the entity rather than out of a table on the Stage is what keeps a spent
--- one from being offered as a ghost with no mesh to walk up to. Measured in all three axes,
--- unlike the fixture scans above: an item can lie on ground the player is not standing on.
+-- "Lying here" is _isLying: visible and not in the pack. Measured in all three axes, unlike the
+-- fixture scans above: an item can lie on ground the player is not standing on.
 function Main:_nearestTakeable()
 	local world = self.world.world
 	if world == nil or self._humanoid == nil then
@@ -1733,7 +1731,7 @@ function Main:_nearestTakeable()
 				break
 			end
 			i = i + 1
-			if e.visible then
+			if self:_isLying(e) then
 				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
 				if sc ~= nil and sc.pressToTake ~= nil and sc:pressToTake() then
 					local q < const > = e.transform.translation
@@ -1753,6 +1751,15 @@ function Main:_nearestTakeable()
 	return nil, nil
 end
 
+-- Is this item lying out in the world, there to be taken? A relic spent on a post is hidden
+-- (Pickup:show), so visibility rules that one out -- and keeps it from being offered as a ghost
+-- with no mesh to walk up to. But a relic in the pack is not always hidden: the one equipped is
+-- shown in the off hand, a visible relic within arm's reach of the player, and offering it would
+-- put the same relic into the pack a second time. So the pack's own are ruled out by name.
+function Main:_isLying(e)
+	return e.visible and not self._inventory:holds(e)
+end
+
 -- The nearest entity called `name` still lying in the world, anywhere on the map -- what the
 -- objective compass points at when there is nothing in the pack to take anywhere.
 function Main:_nearestLying(name)
@@ -1769,7 +1776,7 @@ function Main:_nearestLying(name)
 			break
 		end
 		i = i + 1
-		if e.visible then
+		if self:_isLying(e) then
 			local q < const > = e.transform.translation
 			local dx, dz = q.x - pp.x, q.z - pp.z
 			local d < const > = dx * dx + dz * dz

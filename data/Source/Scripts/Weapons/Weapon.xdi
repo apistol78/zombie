@@ -12,8 +12,10 @@ import(traktor)
 -- a trigger pull actually *does* lives in the subclass -- Scripts/Weapons/Rifle,
 -- Scripts/Weapons/Grenades, Scripts/Weapons/Melee.
 --
--- Adding a weapon is therefore a subclass and one line in the Loadout, with nothing to
--- change in Main. What is below is the whole of what the stage promises to call, and every
+-- Adding a weapon is therefore a subclass, one line in the Loadout and an entry for its item
+-- in Scripts/Items/Items, with nothing to change in Main. Which weapons the player actually
+-- has is the pack's business, not this file's: a weapon exists from the start of the night,
+-- and owning it is having its item in the inventory. What is below is the whole of what the stage promises to call, and every
 -- method has a default here, so a subclass writes only the ones it has an opinion about.
 --
 -- `context` is the Stage -- the Main instance -- exactly as in Scripts/Pickup, and it is
@@ -25,7 +27,9 @@ import(traktor)
 --   context:aimDirection()         the same thing as a direction
 --   context:player()               the Humanoid entity, or nil before it is resolved
 --   context:isRunning()            sprinting, so a view model can drop to a low ready
---   context:isCarrying()           a relic fills the off hand, so a view model moves over
+--   context:isCarrying()           a relic is held in the off hand, so a view model moves over
+--   context:inventory()            the pack (Scripts/Items/Inventory): owning a weapon is having
+--                                  its item in it, and the spare rounds are the "rounds" in it
 --   context:killEnemy(e, p, i, w)  the one way anything in this game dies
 --   context:isEnemyDead(e)         ...and whether it already has
 --   context:shoveCorpse(...)       ...and what hitting one that already has does
@@ -51,23 +55,53 @@ function Weapon:new(context)
 	self._interval = 0.0   -- minimum seconds between uses; the subclass sets it
 	self._cooldown = 0.0   -- ...and counts down to the next one being allowed
 	self._infiniteAmmo = false   -- the H cheat; see :setInfiniteAmmo
+	self._drawn = false    -- whether the trigger is on this one; see :selectionChanged
 end
 
--- What this weapon is called. The loadout looks weapons up by it (Loadout:find), and it
--- is the name a save file would remember a drawn weapon by, so keep it stable.
+-- What this weapon is called on the HUD: the carousel seat it sits in is "seat_" .. this
+-- (Scripts/Widgets/WeaponCarousel), so keep it stable.
 function Weapon:slot()
 	return "weapon"
 end
 
--- What a pickup has to be carrying for this weapon to want it -- "rounds", "grenades" --
--- or nil for a weapon that takes no ammunition at all.
---
--- This is what keeps the crates as ignorant of the arsenal as the stage is:
--- Scripts/AmmoPickup and Scripts/GrenadePickup name a kind, and the loadout hands it to
--- whichever weapon answers to that kind (Loadout:supply). A new weapon with a new kind of
--- ammunition needs a new crate and nothing else.
-function Weapon:supplyKind()
+-- Which item in the pack *is* this weapon (Scripts/Items/Items). Having one in the pack is
+-- owning the weapon, and equipping it is drawing it -- the loadout asks nothing else. The
+-- same name as the seat unless a subclass says otherwise.
+function Weapon:item()
+	return self:slot()
+end
+
+-- The item this weapon loads from the pack -- "rounds" for both firearms -- or nil for one that
+-- carries nothing spare. Only read by :reserve and :_takeFromPack below.
+function Weapon:ammoItem()
 	return nil
+end
+
+-- How many spare rounds are in the pack for this weapon: what the HUD writes after the slash,
+-- and the most a reload can load.
+function Weapon:reserve()
+	local kind < const > = self:ammoItem()
+	if kind == nil then
+		return 0
+	end
+	return self._context:inventory():count(kind)
+end
+
+-- Take up to `n` of this weapon's ammunition out of the pack; returns how many came out.
+function Weapon:_takeFromPack(n)
+	local kind < const > = self:ammoItem()
+	if kind == nil or n <= 0 then
+		return 0
+	end
+	local taken < const > = self._context:inventory():remove(kind, n)
+	return taken
+end
+
+-- This weapon's item has left the pack -- dropped, or the last grenade thrown. Anything it had
+-- in flight that would take from the pack later (a reload, with its rounds still to load) is
+-- put down here, so a weapon nobody owns never touches the pack again. What it has *loaded*
+-- stays with it, so a rifle dropped with four in the magazine is picked back up with four.
+function Weapon:lost()
 end
 
 -- Live handles off the world: a view model entity, its event set, its trail. Called every
@@ -117,10 +151,12 @@ end
 function Weapon:_pushHud()
 end
 
--- The drawn weapon changed. The carousel is told separately, by the loadout, so this is now
--- only for a weapon that wants to know for its own sake -- winding something down as it is
--- put away, say.
+-- The drawn weapon changed. The carousel is told separately, by the loadout; this is for the
+-- weapon's own sake. The base keeps the answer in _drawn, which is what the firearms' empty
+-- magazine rule reads -- only the weapon in hand reloads itself unasked, since a stowed one doing
+-- it would quietly spend the pack's rounds on a gun nobody is holding.
 function Weapon:selectionChanged(selected)
+	self._drawn = selected
 end
 
 -- One simulation step of the weapon itself -- below Main's freeze returns, so a reload in
@@ -192,21 +228,11 @@ function Weapon:altAttack()
 	return false
 end
 
--- The reload action (R). Offered to *every* weapon in the loadout rather than only the
--- drawn one, because topping up a half-empty rifle with a grenade in hand is exactly the
--- lull the key exists for. Returns true when a reload began.
+-- The reload action (R). Offered to every weapon the player owns, the drawn one first,
+-- because topping up a half-empty rifle with a grenade in hand is exactly the lull the key
+-- exists for -- and first, because the two firearms share the pack's rounds and the one in
+-- hand is the one that should get them. Returns true when a reload began.
 function Weapon:beginReload()
-	return false
-end
-
--- Ammunition, asked and answered in the weapon's own units. full() is what gates a pickup
--- being taken at all, so a crate is left standing on the ground until it is worth
--- something; supply() adds and returns whether any of it was taken.
-function Weapon:full()
-	return true
-end
-
-function Weapon:supply(amount)
 	return false
 end
 

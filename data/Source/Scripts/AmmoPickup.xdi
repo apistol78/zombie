@@ -8,17 +8,14 @@ import(traktor)
 
 -- AmmoPickup
 --
--- A crate of rifle rounds. Only taken while there is room for it, so a full player
--- leaves it on the ground for the trip back; grabbed with an empty rifle, it also
--- kicks off a reload so the player does not have to ask. The collect-and-remove
--- machinery lives in Pickup; this only decides when it may be taken and what taking
--- it does.
+-- A crate of rounds, for the pack. Walked over like it always was, and taken only while the pack
+-- has room for it; a nearly full pack takes what fits and leaves the rest in the crate. The
+-- collect-and-remove machinery lives in Pickup; this only says what is in the crate and how long
+-- a looted one takes to come back.
 --
--- What it does is name a supply *kind* -- "rounds" -- and let the Stage's loadout hand
--- it to whichever weapon answers to that kind (Main:supply, Weapon:supplyKind). So this
--- knows nothing about the rifle: not its reserve, not its magazine, not that a dry one
--- starts loading itself. Swap the rifle for something else that eats rounds and the
--- crate keeps working.
+-- It knows nothing about the weapons. "rounds" is an item like any other (Scripts/Items/Items),
+-- and both firearms load from whatever rounds the pack holds -- so a crate feeds the rifle and
+-- the machine gun alike without naming either.
 
 AmmoPickup = AmmoPickup or class("AmmoPickup", Pickup)
 
@@ -26,38 +23,28 @@ local AMMO_PER_PICKUP < const > = Config.pickup.ammoRounds   -- rounds in one cr
 
 -- How long a looted crate takes to be worth walking back to.
 --
--- The night is long enough that a fixed 144 rounds across twelve crates would run the
--- map dry well before the last relic, and starving the rifle does not make the night
--- tense -- it makes it unplayable, since nothing else kills a zombie. Coming back turns
--- the map into a renewable supply that has to be *travelled* to instead: the crates are
--- where they were, so running dry means committing to a route you already know, through
--- a forest that has got worse since you last walked it.
+-- The night is long enough that a fixed supply across the map would run dry well before the
+-- last relic, and starving the rifle does not make the night tense -- it makes it unplayable,
+-- since nothing else kills a zombie reliably. Coming back turns the map into a renewable supply
+-- that has to be *travelled* to instead: the crates are where they were, so running dry means
+-- committing to a route you already know, through a forest that has got worse since you last
+-- walked it.
 --
--- Camping a crate is prevented by where the refill happens rather than by when: the
--- Stage holds a pickup back until the player is RESPAWN_CLEARANCE (12 m) away from the
--- spot, so this can be short without a crate becoming a chair to sit on.
-
--- This pickup's own entity data: what Main builds when the crate comes back (see
--- Pickup:entityData). The escaped form is what makes it a tracked dependency as well
--- as a guid, exactly as Scripts/Spawner references the zombie.
-local ENTITY < const > = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
-
+-- Camping a crate is prevented by where the refill happens rather than by when: the Stage holds
+-- a pickup back until the player is RESPAWN_CLEARANCE away from the spot, so this can be short
+-- without a crate becoming a chair to sit on.
 local RESPAWN_DELAY < const > = Config.pickup.ammoRespawn
 
-function AmmoPickup:canTake(context)
-	return not context:supplyFull("rounds")
+function AmmoPickup:itemKind()
+	return "rounds"
+end
+
+function AmmoPickup:itemCount()
+	return self._count or AMMO_PER_PICKUP
 end
 
 function AmmoPickup:respawnDelay()
 	return RESPAWN_DELAY
-end
-
-function AmmoPickup:entityData()
-	return ENTITY
-end
-
-function AmmoPickup:take(context)
-	context:supply("rounds", AMMO_PER_PICKUP)
 end
 ]]></text>
 </object>

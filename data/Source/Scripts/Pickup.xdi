@@ -2,81 +2,257 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using {6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
 import(traktor)
 
 -- Pickup
 --
--- Base ScriptComponent for anything the player walks over to collect. The base
--- owns the one behaviour every pickup shares -- notice the player is standing on
--- it, and once it is actually taken pop its sparkle, take it out of the world and
--- book its return -- and defers the decisions that differ per kind to the subclass:
+-- Base ScriptComponent for anything lying in the world that goes into the player's pack: a
+-- crate of rounds, a flask, a grenade, a pile of coins, a weapon, a helmet, a key, a relic.
+-- What each one *is* comes from Scripts/Items/Items; this owns only how it gets from the ground
+-- into the pack (Scripts/Items/Inventory), and back out again.
 --
---   * Pickup:canTake(context) -> bool   whether it may be taken right now
---                                       (default true; override to gate on a
---                                       resource already being full, so a crate
---                                       left on the ground is still there when it
---                                       is finally worth something)
---   * Pickup:take(context)              apply the effect; called only once, and
---                                       only when canTake returned true
---   * Pickup:respawnDelay() -> seconds  how long until it comes back; 0 for a
---                                       pickup that is gone for good
+-- Two ways of being taken:
 --
--- context is the Stage -- the Main instance -- exactly as in every other
--- update() here, so a subclass reads and writes the player's health or ammo
--- straight off it.
+--   * Walked over (the default) -- the small things: rounds, food, grenades, coins. Noticed
+--     here, every frame, and taken the moment the player stands on one -- but only while the
+--     pack has room for it. A full pack leaves it lying there for the trip back, and a nearly
+--     full one takes what fits and leaves the rest of the pile.
+--   * Taken with E (pressToTake) -- the things worth a decision: a weapon, armour, a key, a
+--     relic. These are found by Main's scan of the entity names in its TAKE_NAMES and taken
+--     through :collect, exactly as a walk-over one is, so there is one way into the pack.
 --
--- Attach a *subclass* (never this base) to an entity that has a mesh. A
--- "sparkle" EventSetComponent is optional: the base raises it only if present,
--- so a pickup with no sparkle simply vanishes.
+-- What a subclass answers -- or, for an item placed in a scene or authored on an entity with no
+-- script of its own, what the ScriptComponentData's string properties say:
+--
+--   itemKind()      "item"     which kind of item it is
+--   itemCount()     "count"    how many of it (default 1)
+--   pressToTake()   "take"     "press" for E; anything else, or absent, is walked over
+--   respawnDelay()  "respawn"  seconds until a taken one comes back; 0 for gone for good
+--   entityData()               what a returning one is rebuilt from -- the item's own entity
+--                              (Items: `entity`) unless a subclass says otherwise
+--   takeEvent()                what taking it is called to the SpawnOrchestrator, or nil
+--   promptTake()               the E line, for an E item
+--   reach()                    how close the player must be
+--
+-- A keepsake (Items: `keep` -- the relic) is never destroyed. Taken, it is hidden and goes into
+-- the pack as itself; dropped, the same entity is stood back on the ground (:putDown); spent, it
+-- is parked on whatever it was spent on, still hidden (:spend). Invisible is what marks one out
+-- of play, and Inventory:holds is what tells the pack's from the spent ones.
+--
+-- context is the Stage -- the Main instance -- exactly as in every other update() here.
+--
+-- A "sparkle" EventSetComponent is optional: raised as one is taken, if it is there.
 
 Pickup = Pickup or class("Pickup", traktor.world.ScriptComponent)
 
--- How close the player's origin must come to the pickup's to count as walked
--- over. This is the radius the Stage used back when the scan lived there.
+-- How close the player's origin must come to a walk-over one to count as standing on it.
 local TAKE_RANGE < const > = Config.pickup.takeRange
 
-function Pickup:canTake(context)
-	return true
+-- ...and to an E one to be offered it.
+local REACH < const > = Config.pickup.reachRange
+
+-- A string property off this component's ScriptComponentData, or nil.
+function Pickup:_property(name)
+	local props < const > = self.properties
+	if props == nil then
+		return nil
+	end
+	local v < const > = props:getProperty(name)
+	if type(v) ~= "string" or v == "" then
+		return nil
+	end
+	return v
 end
 
-function Pickup:take(context)
+-- ---- What it is ----
+
+function Pickup:itemKind()
+	return self:_property("item")
 end
 
--- Seconds before a collected pickup is put back where it stood. Zero -- the default
--- -- means it is not: a pickup only returns if its kind says so, which keeps the
--- one-shot ones one-shot without them having to say anything.
+-- A count set on this one in particular -- what is left of a pile, or a dropped stack -- beats
+-- what its kind would hand out.
+function Pickup:itemCount()
+	if self._count ~= nil then
+		return self._count
+	end
+	return tonumber(self:_property("count") or "") or 1
+end
+
+function Pickup:setCount(count)
+	self._count = count
+end
+
+function Pickup:pressToTake()
+	return self:_property("take") == "press"
+end
+
+function Pickup:reach()
+	return self:pressToTake() and REACH or TAKE_RANGE
+end
+
 function Pickup:respawnDelay()
-	return 0.0
+	return tonumber(self:_property("respawn") or "") or 0.0
 end
 
--- Which entity data a returning pickup is rebuilt from. Its own, in other words -- the
--- guid the scene instances it by. nil (the default) is the other way of saying that this
--- kind does not come back.
---
--- A collected pickup is destroyed rather than kept aside and re-added, so its return is
--- built from scratch like anything else this game spawns; see Main:_respawnLater for the
--- lifetime trap that makes this the safer of the two.
 function Pickup:entityData()
+	local def < const > = Items[self:itemKind()]
+	return def ~= nil and def.entity or nil
+end
+
+function Pickup:takeEvent()
 	return nil
 end
 
--- Mark this one as loot, built into an opened chest by Scripts/Chest rather than placed
--- in the scene. Loot is a one-off: taking it books no return, whatever respawnDelay says,
--- or every opened chest would be a crate that refills itself. And it cannot be collected
--- for the first `hold` seconds, so it is seen lying in the box as the lid comes up rather
--- than vanishing into the player's pockets on the frame it appears.
+function Pickup:promptTake()
+	local count < const > = self:itemCount()
+	if count == 1 then
+		return "TAKE THE " .. Items.describe(self:itemKind(), 1)
+	end
+	return "TAKE " .. Items.describe(self:itemKind(), count)
+end
+
+-- Can it be taken yet? Not while loot is still being lifted into view with a chest's lid.
+function Pickup:isReady()
+	return self._hold == nil or self._hold <= 0.0
+end
+
+function Pickup:isKeepsake()
+	local def < const > = Items[self:itemKind()]
+	return def ~= nil and def.keep == true
+end
+
+-- ---- Where it came from ----
+
+-- Loot, built into an opened chest by Scripts/Chest rather than placed in the scene. Loot is a
+-- one-off: taking it books no return, whatever respawnDelay says, or every opened chest would
+-- be a crate that refills itself. And it cannot be collected for the first `hold` seconds, so it
+-- is seen lying in the box as the lid comes up rather than vanishing into the player's pockets on
+-- the frame it appears.
 function Pickup:asLoot(hold)
 	self._loot = true
 	self._hold = hold or 0.0
 end
+
+-- Dropped out of the pack: `count` of it, never coming back once taken (it was the player's to
+-- begin with), and not to be walked straight back into the pack -- the player is standing next
+-- to where it lands, so it waits until they have stepped clear of it once before it can be
+-- collected again.
+function Pickup:asDropped(count)
+	self._loot = true
+	self._count = count
+	self._waitClear = true
+end
+
+-- ---- Into the pack ----
+
+-- Put as much of this as fits into the pack. True when anything went; whatever did not fit
+-- stays here, as a smaller pile. Used by both ways of taking one -- the walk-over below, and
+-- Main's E for the rest -- so there is one way into the pack.
+function Pickup:collect(context)
+	local kind < const > = self:itemKind()
+	if kind == nil or Items[kind] == nil then
+		return false
+	end
+	local count < const > = self:itemCount()
+	local added < const > = context:giveItem(kind, count, self:isKeepsake() and self.owner or nil)
+	if added <= 0 then
+		return false
+	end
+	if added < count then
+		self._count = count - added
+		return true
+	end
+	self:_taken(context)
+	return true
+end
+
+-- All of it is in the pack. Pop the sparkle where it stood -- follow=false on the event, so the
+-- burst lingers after the entity is gone -- and then go.
+function Pickup:_taken(context)
+	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
+	if fx ~= nil then
+		fx:raise("sparkle")
+	end
+
+	-- Committing to a run is exactly when the night should lean in. What kind of run this is,
+	-- the item says, and the orchestrator ignores an event it has no tuning for.
+	local event < const > = self:takeEvent()
+	if event ~= nil and context._orchestrator ~= nil then
+		context._orchestrator:notify(event)
+	end
+
+	-- A keepsake goes into the pack as itself: hidden, and left in the world. See the note at
+	-- the top.
+	if self:isKeepsake() then
+		self:show(false)
+		return
+	end
+
+	-- Book the return *before* going, since it needs this one's transform: the Stage is the only
+	-- thing that can put a pickup back, because an entity outside the world is not updated and
+	-- so cannot time its own way back, and nothing can hide one in place instead
+	-- (Entity::setState is not scripted, so leaving the world is the only way to disappear). See
+	-- Main:_respawnLater, which also gates the return on the player not standing over the spot.
+	if not self._loot then
+		context:_respawnLater(self:entityData(), self.owner.transform, self:respawnDelay())
+	end
+
+	-- Then go, and go properly. removeEntity while the world is updating is deferred, so taking
+	-- itself out mid-update is safe -- and it clears the entity's world pointer immediately,
+	-- which is what lets destroy() run here (Entity::destroy refuses to run on an entity still in
+	-- a world). Same pair the Spawner uses to despawn a zombie: without the destroy the
+	-- components are never torn down.
+	self.world:removeEntity(self.owner)
+	self.owner:destroy()
+end
+
+-- ---- Out of the pack: keepsakes only ----
+
+-- Stand a keepsake back on the ground, at `transform`. Everything else that is dropped is built
+-- fresh from its entity data (Main:dropSlot), since only a keepsake is still in the world while
+-- it is carried.
+function Pickup:putDown(transform)
+	self.owner.transform = transform
+	self:show(true)
+end
+
+-- Spend a keepsake on `target` (an entity): park it there, out of sight. Parked rather than left
+-- wherever the player's pack happened to be, because it is still the entity anything positional
+-- reads the item off -- the minimap dot belongs on the post it bought. Nothing moves it after
+-- this: it is no longer in the pack, and only the pack's are carried along.
+function Pickup:spend(context, target)
+	self.owner.transform = target.transform
+	self:show(false)
+end
+
+-- Show or hide the item and everything hanging off it. Entity visibility does not carry to the
+-- children a GroupComponent holds -- each one is an entity of the world in its own right -- so an
+-- item's own little light has to be switched by hand, or a hidden relic leaves its glow burning
+-- with nothing to come from.
+function Pickup:show(visible)
+	self.owner.visible = visible
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	if group == nil then
+		return
+	end
+	local children < const > = group.entities
+	for i = 0, children.size - 1 do
+		local child = children:get(i)
+		child.visible = visible
+	end
+end
+
+-- ---- Walking over one ----
 
 function Pickup:update(context, totalTime, deltaTime)
 	if context == nil then
 		return
 	end
 
-	-- Freeze with the rest of the game: nothing is collected through the pause
-	-- menu, after death, or once the night is already won.
+	-- Freeze with the rest of the game: nothing is collected through the pause menu or the
+	-- inventory screen, after death, or once the night is already won.
 	if context._gameOver or context._paused or context._nightOver then
 		return
 	end
@@ -86,54 +262,41 @@ function Pickup:update(context, totalTime, deltaTime)
 		return
 	end
 
+	-- E items wait for the press, and a hidden keepsake is in the pack or spent -- either way,
+	-- not something lying here to be walked over.
+	if self:pressToTake() or not self.owner.visible then
+		return
+	end
+
 	local player < const > = context._humanoid
 	if player == nil then
 		return
 	end
 
-	-- Within reach? Origin to origin, all three axes, same measure the Stage used.
+	-- Within reach? Origin to origin, all three axes.
 	local pp < const > = player.transform.translation
 	local q < const > = self.owner.transform.translation
 	local dx < const > = q.x - pp.x
 	local dy < const > = q.y - pp.y
 	local dz < const > = q.z - pp.z
 	if dx * dx + dy * dy + dz * dz >= TAKE_RANGE * TAKE_RANGE then
+		-- Stepped off it: a dropped one may be collected from here on, and a full pack is
+		-- worth saying so about again the next time one is stood on.
+		self._waitClear = nil
+		self._refused = nil
 		return
 	end
 
-	-- Standing on it, but the subclass may still refuse it (health already full,
-	-- reserve already capped), in which case leave it to be collected later.
-	if not self:canTake(context) then
+	if self._waitClear then
 		return
 	end
 
-	self:take(context)
-
-	-- Taken. Pop the sparkle where it stood -- follow=false on the event, so the
-	-- burst lingers after the entity is gone -- then remove it. removeEntity while
-	-- the world is updating is deferred, so taking itself out mid-update is safe.
-	local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
-	if fx ~= nil then
-		fx:raise("sparkle")
+	-- Standing on it. A pack with no room for it leaves it here, and says so once per visit
+	-- rather than every frame the player stands over it.
+	if not self:collect(context) and not self._refused then
+		self._refused = true
+		context:packFull(self:itemKind())
 	end
-	-- Book the return *before* going, since it needs this one's transform: the Stage is the
-	-- only thing that can put a pickup back, because an entity outside the world is not
-	-- updated and so cannot time its own way back, and nothing can hide one in place
-	-- instead (Entity::setState is not scripted, so leaving the world is the only way to
-	-- disappear). See Main:_respawnLater, which also gates the return on the player not
-	-- standing over the spot.
-	if not self._loot then
-		context:_respawnLater(self:entityData(), self.owner.transform, self:respawnDelay())
-	end
-
-	-- Then go, and go properly. removeEntity while the world is updating is deferred, so
-	-- taking itself out mid-update is safe -- and it clears the entity's world pointer
-	-- immediately, which is what lets destroy() run here (Entity::destroy refuses to run on
-	-- an entity still in a world). Same pair the Spawner uses to despawn a zombie: without
-	-- the destroy the components are never torn down, and with a queue holding the entity
-	-- instead there was nothing to guarantee it was ever torn down at all.
-	self.world:removeEntity(self.owner)
-	self.owner:destroy()
 end
 ]]></text>
 </object>

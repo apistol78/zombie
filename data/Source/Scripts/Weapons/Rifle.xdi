@@ -55,14 +55,11 @@ local COLLISION_INTERACTABLE < const > = 0x00000002
 function Rifle:new(context)
 	Weapon.new(self, context)
 
-	-- Ammunition. The rifle holds a magazine, the player carries a reserve, and rounds only
-	-- move from one to the other on a reload. Spent in :attack and topped up by "AmmoPickup"
-	-- crates (Scripts/AmmoPickup, which asks the loadout for "rounds" rather than reaching
-	-- in here).
+	-- Ammunition. The rifle holds a magazine, the pack holds the spare rounds, and rounds only
+	-- move from one to the other on a reload. Spent in :attack; the pack is topped up by crates
+	-- (Scripts/AmmoPickup), which never hear of the rifle -- they hand the pack "rounds".
 	self._magSize = Config.rifle.magSize        -- rounds the rifle holds
 	self._mag = Config.rifle.mag                -- rounds in it right now
-	self._reserve = Config.rifle.reserve        -- spare rounds carried
-	self._reserveMax = Config.rifle.reserveMax  -- most that can be carried at once
 	self._reloadTime = Config.rifle.reloadTime  -- seconds to refill the magazine
 	self._interval = Config.rifle.fireInterval  -- minimum seconds between shots
 	self._range = Config.rifle.range            -- max shot distance (m)
@@ -74,7 +71,7 @@ function Rifle:slot()
 	return "rifle"
 end
 
-function Rifle:supplyKind()
+function Rifle:ammoItem()
 	return "rounds"
 end
 
@@ -158,7 +155,7 @@ end
 
 function Rifle:_pushAmmo()
 	if self._hud ~= nil then
-		self._hud:setAmmo(self._hudSlot, self._mag, self._reserve)
+		self._hud:setAmmo(self._hudSlot, self._mag, self:reserve())
 	end
 end
 
@@ -188,10 +185,14 @@ function Rifle:update(dt)
 	--
 	-- Expressed as a state rule rather than hung off the shot that emptied it, because every
 	-- route to an empty magazine wants the same answer: the last round fired, an ammo crate
-	-- walked over while dry, a magazine left empty because the reserve was. beginReload
-	-- refuses when there is nothing to load with, so a genuinely dry rifle costs two
-	-- comparisons a frame and keeps its red HUD plate until a crate turns up.
-	if self._mag <= 0 and self._reloadTimer <= 0.0 then
+	-- walked over while dry, a magazine left empty because the pack was. beginReload refuses
+	-- when there is nothing to load with, so a genuinely dry rifle costs a few comparisons a
+	-- frame and keeps its red HUD plate until a crate turns up.
+	--
+	-- Only while it is the weapon in hand. The pack's rounds are shared with the machine gun,
+	-- and a stowed rifle filling itself the moment a crate was walked over would be taking them
+	-- out from under the gun the player is actually holding. R still reloads it (Loadout:reload).
+	if self._drawn and self._mag <= 0 and self._reloadTimer <= 0.0 then
 		self:beginReload()
 	end
 
@@ -200,13 +201,20 @@ function Rifle:update(dt)
 		self:_pushReload(1.0 - self._reloadTimer / self._reloadTime)
 		if self._reloadTimer <= 0.0 then
 			-- Whole magazines are not swapped: only as many rounds as are actually left go
-			-- in, so the last reload of a run is a short one.
-			local take < const > = math.min(self._magSize - self._mag, self._reserve)
-			self._mag = self._mag + take
-			self._reserve = self._reserve - take
+			-- in, so the last reload of a run is a short one. Taken out of the pack only now,
+			-- at the end, so a reload put down part way (Rifle:lost) has cost nothing.
+			self._mag = self._mag + self:_takeFromPack(self._magSize - self._mag)
 			self:_pushReload(nil)
 			self:_pushAmmo()
 		end
+	end
+end
+
+-- Dropped mid-reload: the reload is abandoned rather than finished by a rifle nobody holds.
+function Rifle:lost()
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = 0.0
+		self:_pushReload(nil)
 	end
 end
 
@@ -219,7 +227,7 @@ function Rifle:beginReload()
 	if self._reloadTimer > 0.0 then
 		return false
 	end
-	if self._mag >= self._magSize or self._reserve <= 0 then
+	if self._mag >= self._magSize or self:reserve() <= 0 then
 		return false
 	end
 	self._reloadTimer = self._reloadTime
@@ -239,33 +247,16 @@ function Rifle:wantsCrosshair()
 	return self._mag > 0
 end
 
-function Rifle:full()
-	return self._reserve >= self._reserveMax
-end
-
-function Rifle:supply(rounds)
-	if self._reserve >= self._reserveMax then
-		return false
-	end
-	self._reserve = math.min(self._reserveMax, self._reserve + rounds)
-	self:_pushAmmo()
-	-- Taken standing over the crate with an empty rifle: start loading without making the
-	-- player ask for it.
-	if self._mag <= 0 then
-		self:beginReload()
-	end
-	return true
-end
-
--- Infinite ammunition (H): magazine and reserve both back to the top. Cheap to call every
--- frame -- which is how :update calls it -- because it does nothing at all once there is
--- nothing missing, which is the ordinary case between shots.
+-- Infinite ammunition (H): the magazine back to the top. The pack is left alone -- with the
+-- magazine full before every shot it is never drawn on, so there is nothing there to refill,
+-- and a cheat that quietly filled the player's slots with rounds would be a strange thing to
+-- find on turning it off. Cheap to call every frame -- which is how :update calls it --
+-- because it does nothing at all once there is nothing missing.
 function Rifle:_topUp()
-	if self._mag >= self._magSize and self._reserve >= self._reserveMax then
+	if self._mag >= self._magSize then
 		return
 	end
 	self._mag = self._magSize
-	self._reserve = self._reserveMax
 	-- A reload caught in flight -- the cheat switched on while the rifle was down -- has
 	-- nothing left to load, and leaving its timer running would keep the rifle out of the
 	-- sightline and unfireable for the rest of the 1.2 s. Cut it short and clear the sweep.

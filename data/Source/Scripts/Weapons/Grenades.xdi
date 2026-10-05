@@ -3,23 +3,27 @@
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
 
 import(traktor)
 
 -- Grenades
 --
 -- The other thing the player can throw at the night, and the only one that does not go
--- through the rifle at all: the mouse wheel swaps which of the two the left button does,
--- and the swap is the whole interface -- there is no separate throw key.
+-- through the rifle at all: the mouse wheel swaps which weapon the left button does, and the
+-- swap is the whole interface -- there is no separate throw key.
 --
 -- A whole weapon rather than a special case, which is the point of the split: it holds a
 -- count instead of a magazine, its "shot" is a rigid body that arcs and rolls, and it kills
 -- a crowd rather than one zombie -- and none of that reaches Main, which only ever asks the
 -- drawn weapon to attack.
 --
--- What it owns: the pouch, the throw, the fuses of everything already in the air, the blast
--- when one runs out, the held view model, and its own HUD tile. Its numbers come from
--- Config.grenade.
+-- The count is the pack's: grenades are an item that stacks (Scripts/Items/Items), and every
+-- throw takes one off the stack. The last one thrown takes the item out of the pack -- and with
+-- it the weapon, which the loadout then hands the trigger on from (Loadout:_inventoryChanged).
+--
+-- What it owns: the throw, the fuses of everything already in the air, the blast when one runs
+-- out, the held view model, and its own HUD tile. Its numbers come from Config.grenade.
 
 Grenades = Grenades or class("Grenades", Weapon)
 
@@ -50,8 +54,6 @@ local QUERY_DYNAMIC < const > = 2
 function Grenades:new(context)
 	Weapon.new(self, context)
 
-	self._count = Config.grenade.start        -- carried right now
-	self._max = Config.grenade.max            -- most that can be carried at once
 	self._interval = Config.grenade.interval  -- minimum seconds between throws
 	self._live = {}                           -- thrown and still in the air or ticking
 
@@ -70,12 +72,18 @@ function Grenades:new(context)
 	self._blastLift = Config.grenade.blastLift        -- ...plus this much straight up
 end
 
+-- The carousel seat is "grenades"; the item in the pack is one "grenade" at a time.
 function Grenades:slot()
 	return "grenades"
 end
 
-function Grenades:supplyKind()
-	return "grenades"
+function Grenades:item()
+	return "grenade"
+end
+
+-- How many are in the pack.
+function Grenades:_count()
+	return self._context:inventory():count("grenade")
 end
 
 -- The grenade in the player's hand: the same entity the throw builds, kept aside as a view
@@ -123,40 +131,32 @@ end
 -- rather than as a magazine over a supply, which is the whole reason setAmmo takes a nil.
 --
 -- Cheap enough to call from anywhere something changes, and that is how it is called: from the
--- throw and from the pickup, rather than every frame.
+-- loadout, whenever the pack changes, rather than every frame.
 function Grenades:_pushHud()
 	if self._hud ~= nil then
-		self._hud:setAmmo(self._hudSlot, self._count, nil)
+		self._hud:setAmmo(self._hudSlot, self:_count(), nil)
 	end
 end
 
-function Grenades:full()
-	return self._count >= self._max
-end
-
-function Grenades:supply(count)
-	if self._count >= self._max then
-		return false
-	end
-	self._count = math.min(self._max, self._count + count)
-	self:_pushHud()
-	return true
-end
-
--- Infinite ammunition (H): the pouch back to full. The throw interval is deliberately left
+-- Infinite ammunition (H): the stack back to full. The throw interval is deliberately left
 -- alone -- the cheat is about supply, and a grenade every 0.9 s is already plenty of night.
+--
+-- Only a stack the player has: the cheat keeps what is carried full rather than handing out
+-- grenades to someone who never picked one up. Topped up before the trigger is read (the loadout
+-- ticks before it fires), so with the cheat on the throw never takes the last one -- unless the
+-- pack has no room to put them back, in which case it runs out like any other.
 function Grenades:_topUp()
-	if self._count >= self._max then
+	local count < const > = self:_count()
+	local full < const > = Items.grenade.stack
+	if count <= 0 or count >= full then
 		return
 	end
-	self._count = self._max
-	self:_pushHud()
+	self._context:inventory():add("grenade", full - count)
 end
 
--- There is an aim worth a reticle for as long as there is something to throw at it. With an
--- empty pouch the throw refuses, so there is nothing to line up.
+-- There is an aim worth a reticle for as long as there is something to throw at it.
 function Grenades:wantsCrosshair()
-	return self._count > 0
+	return self:_count() > 0
 end
 
 -- Throw one. The grenade is a GrenadeProjectile entity over a dynamic rigid body, so what
@@ -177,15 +177,17 @@ function Grenades:attack()
 	if not self:ready() then
 		return false
 	end
-	-- Nothing left: no throw, and no sound either. The red plate on the HUD tile is the only
-	-- answer, exactly as an empty magazine's is.
-	if self._count <= 0 then
+	-- Nothing left: no throw, and no sound either. This is rare now -- the last one thrown takes
+	-- the grenades out of the hand -- but a throw asked for on the same frame still has to refuse.
+	if self:_count() <= 0 then
 		return false
 	end
 
-	self._count = self._count - 1
+	-- Off the stack. The pack announces it, and that is what writes the HUD -- and, for the last
+	-- one, what hands the trigger to the next weapon owned. The rest of the throw goes on
+	-- regardless: the grenade has left the hand.
 	self._cooldown = self._interval
-	self:_pushHud()
+	self._context:inventory():remove("grenade", 1)
 
 	context:kickCrosshair()
 
@@ -420,7 +422,7 @@ function Grenades:place()
 	if held == nil or self._context:player() == nil then
 		return
 	end
-	local show < const > = self._count > 0
+	local show < const > = self:_count() > 0
 	held.visible = show
 	if not show then
 		return

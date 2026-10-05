@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using {6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
 import(traktor)
 
 -- Chest
@@ -17,12 +18,15 @@ import(traktor)
 -- (class Scripts/Chest, with properties); ResolveExternal swaps it in for this entity's
 -- own, which holds nothing.
 --
---   item    (string) what is inside. One of the LOOT kinds below -- "ammo", "health",
---           "grenade", "key" -- or an EntityData guid, "{...}", for anything else.
+--   item    (string) what is inside: any item kind in Scripts/Items/Items that has a
+--           world entity -- "rounds", "flask", "grenade", "key", "machinegun", "helmet",
+--           "coin", "bread" -- or one of the older names below that still mean one
+--           ("ammo", "health"), or an EntityData guid, "{...}", for anything else.
 --           Empty or absent: the chest is empty, which is a thing worth placing too.
 --           A raw guid is NOT a build dependency (property values are never scanned),
 --           so whatever it names must be built by something else -- reference it from
---           a scene, or add it to LOOT here, where the escaped form makes it one.
+--           a scene, or give it an item kind, whose entity is one.
+--   count   (string, optional) how many of it, for an item that stacks -- "20" coins.
 --   notice  (string, optional) the line flashed when it opens, in place of the kind's
 --           own -- "THE SEXTON'S KEY", say.
 --
@@ -49,30 +53,32 @@ local HINGE < const > = Vector4(0.0, 0.42, -0.26, 0.0)
 -- The floor of the box, where loot is stood (gen_chest.py's FLOOR_H).
 local LOOT_Y < const > = 0.05
 
--- What a chest can be told to hold by name. `entity` is the EntityData built into the box
--- -- the escaped form is what makes each one a tracked build dependency -- and `at`/`turn`
--- place it on the floor in the chest's frame. The pickups stand upright as they do on the
--- ground; the key is laid flat along the box, since stood on end it is taller than the
--- chest is deep.
+-- What the box does with a kind beyond building its entity: the line that goes with it, and
+-- -- for the key -- how it lies. `at`/`turn` place it on the floor in the chest's frame. The
+-- pickups stand upright as they do on the ground; the key is laid flat along the box, since
+-- stood on end it is taller than the chest is deep.
+--
+-- Which entity a kind is built from is the item's own (Items: `entity`), so any kind the
+-- catalogue grows can go in a chest without a line here.
 local LOOT < const > = {
-	ammo = {
-		entity = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}"),
-		notice = "A CHEST OF ROUNDS"
-	},
-	health = {
-		entity = Guid("\{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}"),
-		notice = "A FLASK, STOPPERED AND WHOLE"
-	},
-	grenade = {
-		entity = Guid("\{6E9AD100-0000-4000-8000-000000000003}"),
-		notice = "A GRENADE, PACKED IN STRAW"
-	},
+	rounds = { notice = "A CHEST OF ROUNDS" },
+	flask = { notice = "A FLASK, STOPPERED AND WHOLE" },
+	grenade = { notice = "A GRENADE, PACKED IN STRAW" },
 	key = {
-		entity = Guid("\{6E9AD100-0000-4000-8000-000000000026}"),
 		at = Vector4(0.0, 0.02, 0.0, 0.0),
 		turn = Quaternion.fromEulerAngles(math.pi * 0.5, -math.pi * 0.5, 0.0),
 		notice = "AN IRON KEY"
-	}
+	},
+	machinegun = { notice = "A MACHINE GUN, OILED AND LOADED" },
+	helmet = { notice = "AN IRON HELMET" },
+	coin = { notice = "A FEW OLD COINS" },
+	bread = { notice = "A LOAF, WRAPPED IN CLOTH" }
+}
+
+-- The names chests in the scenes were given before there were item kinds.
+local ALIASES < const > = {
+	ammo = "rounds",
+	health = "flask"
 }
 
 local EMPTY_NOTICE < const > = "THE CHEST IS EMPTY"
@@ -90,15 +96,24 @@ function Chest:_property(name)
 	return v
 end
 
--- What is inside, as { entity, at, turn, notice }, or nil for an empty chest.
+-- What is inside, as { entity, at, turn, notice, count }, or nil for an empty chest.
 function Chest:_contents()
 	local item < const > = self:_property("item")
 	if item == nil then
 		return nil
 	end
-	local loot < const > = LOOT[string.lower(item)]
-	if loot ~= nil then
-		return loot
+	local name < const > = string.lower(item)
+	local kind < const > = ALIASES[name] or name
+	local def < const > = Items[kind]
+	if def ~= nil and def.entity ~= nil then
+		local loot < const > = LOOT[kind] or {}
+		return {
+			entity = def.entity,
+			at = loot.at,
+			turn = loot.turn,
+			notice = loot.notice or Items.describe(kind, tonumber(self:_property("count") or "")),
+			count = tonumber(self:_property("count") or "")
+		}
 	end
 	-- Not a kind: try it as an EntityData guid.
 	local g < const > = Guid(item)
@@ -186,6 +201,9 @@ function Chest:_spawnLoot(context)
 	local sc < const > = e:getComponent(traktor.world.ScriptComponent)
 	if sc ~= nil and sc.asLoot ~= nil then
 		sc:asLoot(SWING_TIME)
+		if loot.count ~= nil and sc.setCount ~= nil then
+			sc:setCount(loot.count)
+		end
 	end
 end
 

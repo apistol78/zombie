@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+
+import(traktor)
+
+-- ItemSlot
+--
+-- One cell of the inventory screen (Scripts/Views/InventoryView): a steel plate with the picture
+-- of whatever item is in it, the size of the stack in the corner, and three states lit over the
+-- top -- the cell under the mouse, the cell selected, and an item that is equipped. It knows
+-- nothing about the pack; the view tells it what to show and hears about clicks.
+--
+-- The art is the "MC_ItemSlot" export of the UI/Hud movie, authored in data/Assets/UI/Hud.svg by
+-- tools/gen_item_icons.py. Layers, back to front:
+--
+--   shadow       static
+--   plate        steel plate; static
+--   hover        a lighter face, shown under the mouse
+--   sel          the selection rim
+--   equip        the equipped mark: a lit corner and rim
+--   icon_<kind>  one picture per item kind, all authored on the middle of the cell and shown
+--                one at a time -- the same trick MC_MapLandmark plays with its glyphs
+--
+-- A kind with no picture of its own shows none, which is what an empty cell is too.
+
+ItemSlot = ItemSlot or class("ItemSlot", Widget)
+
+ItemSlot:setStyle("resource", "MC_ItemSlot")
+
+-- Must match tools/gen_item_icons.py.
+local S < const > = 64
+
+-- Every picture the art carries. A kind added to Scripts/Items/Items without one here (and in
+-- the art) simply draws no picture.
+local ICONS < const > = {
+	"rifle", "machinegun", "grenade", "rounds", "flask",
+	"bread", "coin", "helmet", "key", "relic"
+}
+
+local C_COUNT < const > = Color4f(1.0, 0.9, 0.68, 1.0)
+
+function ItemSlot:new(parent, skin)
+	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
+	assert(mc ~= nil, "ItemSlot; no such movie resource, is UI/Hud in the resource kits?")
+	self:_initialize(parent, mc)
+end
+
+function ItemSlot:getPreferredSize()
+	return { width = S, height = S }
+end
+
+function ItemSlot:place(x, y, width, height)
+	Widget.place(self, x, y, width, height)
+	self:_layoutCount()
+end
+
+-- What is in the cell: an item kind and how many, or nil for an empty cell. The count is only
+-- written for a stack of more than one -- a "1" on every rifle is noise.
+function ItemSlot:setItem(kind, count)
+	if kind ~= self._kind then
+		self._kind = kind
+		for name, icon in pairs(self._icons) do
+			icon.visible = (name == kind)
+		end
+	end
+	local text < const > = (kind ~= nil and count ~= nil and count > 1) and tostring(count) or ""
+	if text ~= self._countText then
+		self._countText = text
+		self._count:setText(text)
+		self:_layoutCount()
+	end
+	return self
+end
+
+function ItemSlot:setSelected(selected)
+	self._sel_mc.visible = selected == true
+	return self
+end
+
+function ItemSlot:setEquipped(equipped)
+	self._equip_mc.visible = equipped == true
+	return self
+end
+
+function ItemSlot:setOnClick(fn)
+	self._clickFn = fn
+	return self
+end
+
+-- Private
+
+function ItemSlot:_initialize(parent, mc)
+	Widget._initialize(self, parent, mc)
+
+	-- Fixed size art: never let a layout stretch the placement past it.
+	self._halign = Widget.ALIGN_CENTER
+	self._valign = Widget.ALIGN_CENTER
+
+	self._hover_mc = mc:getMember("hover")
+	self._sel_mc = mc:getMember("sel")
+	self._equip_mc = mc:getMember("equip")
+	assert(self._sel_mc ~= nil, "ItemSlot; movie resource is missing its parts")
+
+	self._hover_mc.visible = false
+	self._sel_mc.visible = false
+	self._equip_mc.visible = false
+
+	self._icons = {}
+	for _, name in ipairs(ICONS) do
+		local icon < const > = mc:getMember("icon_" .. name)
+		if icon ~= nil then
+			icon.visible = false
+			self._icons[name] = icon
+		end
+	end
+	self._kind = nil
+
+	-- Built with a string as long as it will ever carry, because a Static clamps its text bounds
+	-- to the width it was placed at; re-placed whenever the text changes for the same reason.
+	self._count = Static(self, "000")
+	self._count:setTextSize(14)
+	self._count:setTextColor(C_COUNT)
+	self._count:setText("")
+	self._countText = ""
+
+	self._clickFn = nil
+	self._inside = false
+	self._pressed = false
+
+	self:addEventListener(MousePressEvent, self, self._onMousePress)
+	self:addEventListener(MouseReleaseEvent, self, self._onMouseRelease)
+	self:addEventListener(MouseEnterEvent, self, self._onMouseEnter)
+	self:addEventListener(MouseLeaveEvent, self, self._onMouseLeave)
+end
+
+-- Bottom right, inside the plate's bevel.
+function ItemSlot:_layoutCount()
+	local cs < const > = self._count:getPreferredSize()
+	self._count:place(S - cs.width - 6, S - cs.height - 3, cs.width, cs.height)
+end
+
+function ItemSlot:_onMousePress(event)
+	self._pressed = true
+	self:setExclusive()
+	return true
+end
+
+function ItemSlot:_onMouseRelease(event)
+	self._pressed = false
+	self:releaseExclusive()
+	if self._inside and self._clickFn ~= nil then
+		self._clickFn(self)
+	end
+	return true
+end
+
+function ItemSlot:_onMouseEnter(event)
+	self._inside = true
+	self._hover_mc.visible = true
+	return true
+end
+
+function ItemSlot:_onMouseLeave(event)
+	self._inside = false
+	self._hover_mc.visible = false
+	return true
+end
+]]></text>
+</object>

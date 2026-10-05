@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{0643E6A6-4052-0446-992D-D481656BE93B}</id>
+	<name>Candles 01</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{05F56AA2-B575-914D-B97B-7C6CD1A312AB}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+						<item>{54CA99BF-4F5F-4DD5-97E4-33BB23E1E784}</item>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+						<item>{FD7626B1-645F-4A36-A534-B4598A1E8A2E}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{321048D9-7FD2-BB4A-A380-B19B63D84F75}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{9CD41C35-9513-7D40-8195-C3B335A3A654}</id>
+					<name>Light</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 1.359324, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.world.LightComponentData" version="13">
+							<lightType>Point</lightType>
+							<color>1, 0.588235, 0.239216, 1</color>
+							<intensity>250</intensity>
+							<castShadow>true</castShadow>
+							<nearRange>0</nearRange>
+							<farRange>10</farRange>
+							<radius>1.570796</radius>
+							<flickerAmount>0.6</flickerAmount>
+							<flickerFilter>0.4</flickerFilter>
+							<bakeMode>LbmIndirect</bakeMode>
+						</item>
+					</components>
+				</item>
+			</entityData>
+		</item>
+	</components>
+</object>

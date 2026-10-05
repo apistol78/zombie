@@ -11,102 +11,199 @@ import(traktor)
 -- Loadout
 --
 -- What the player has in their hands, and the only thing the Stage talks to about it. Main
--- hands it buttons and frames -- attack, altAttack, reload, cycle, update, place -- and it
--- routes them at whichever Scripts/Weapons/Weapon is drawn. Which one that is never leaves
--- this file.
+-- hands it buttons and frames -- trigger, altAttack, reload, cycle, update, place -- and it
+-- routes them at whichever Scripts/Weapons/Weapon is drawn.
 --
--- The split is what makes a third weapon cheap. Adding one is a Weapon subclass and one entry
--- in the list below: it gets a HUD column, a place in the wheel, its frames ticked, its view
--- model placed and stowed, and its ammunition fed by whichever crate names its supply kind --
--- with nothing to change in Main, in the HUD layout, or in the pickups.
+-- Which weapons the player *has* is not decided here any more. It is the pack's
+-- (Scripts/Items/Inventory, reached as context:inventory()): owning a weapon is having its item
+-- in the pack, and drawing it is equipping that item. So every weapon below exists from the
+-- start of the night whether or not it has been found, and what this file does is read the pack
+-- and keep the hands in step with it:
+--
+--   * The drawn weapon is whatever the pack has equipped as its "weapon", or nothing. The mouse
+--     wheel (cycle) and the inventory screen both change it the same way -- by equipping.
+--   * A weapon that leaves the pack -- dropped, or the last grenade thrown -- is told so (lost),
+--     and if it was the one in hand the trigger is handed to the next weapon owned.
+--   * A weapon that arrives while the hands are empty is drawn.
+--
+-- Adding a weapon is a Weapon subclass, one entry in the list below and its item in
+-- Scripts/Items/Items: it gets a place in the wheel, a HUD seat, its frames ticked and its view
+-- model placed and stowed, with nothing to change in Main or the HUD layout.
 --
 -- Two rules here are deliberate and worth keeping:
 --
---   * Every weapon is updated and resolved, not only the drawn one. A reload runs on while
---     the grenades are in hand, and a grenade already in the air is nobody's weapon at all.
+--   * Every weapon is updated and resolved, owned or not. A reload runs on while the grenades
+--     are in hand, and a grenade already in the air is nobody's weapon at all -- including after
+--     the last one in the pack has been thrown.
 --   * The alternate attack (right mouse) falls through to the shared Melee rather than
---     belonging to a slot, so the rifle butt still answers with a grenade in hand. See
---     Scripts/Weapons/Melee.
+--     belonging to a weapon, so the butt swing still answers with a grenade in hand -- or with
+--     nothing in hand at all. See Scripts/Weapons/Melee.
 
 Loadout = Loadout or class("Loadout")
 
 function Loadout:new(context)
 	self._context = context
 
-	-- The wheel's order, and the order the HUD tiles appear in along the bottom row. The rifle
-	-- first because it is what the night starts in the player's hands, then the two things that
-	-- answer a crowd rather than a target -- which is also roughly the order they get reached for.
-	--
-	-- This list is the whole of what it takes to add a weapon: it gets a place in the wheel, a HUD
-	-- column, its frames ticked, its view model placed and stowed, and its ammunition fed by
-	-- whichever crate names its supply kind. Nothing in Main, in the HUD layout or in the pickups
-	-- knows how long it is.
+	-- The wheel's order, and the order the seats stand on the HUD's carousel. The rifle first
+	-- because it is what the night starts in the player's hands, then the two things that
+	-- answer a crowd rather than a target. Only the ones in the pack are on the wheel.
 	self._weapons = {
 		Rifle(context),
 		MachineGun(context),
 		Grenades(context)
 	}
-	self._selected = 1
 
-	-- Not a slot: the alternate the right button always reaches, whatever is drawn.
+	-- Not a weapon of its own: the alternate the right button always reaches, whatever is drawn.
 	self._melee = Melee(context)
 
-	self:_announce()
+	-- What the pack said last time it changed: which weapons were in it, and which was drawn.
+	-- Kept so a change can be told apart from the state it changed to -- "the rifle has just
+	-- gone" rather than "there is no rifle" -- which is what the hand-off below runs on.
+	self._owned = {}
+	self._drawn = nil
+
+	context:inventory():listen(function() self:_inventoryChanged() end)
+	self:_inventoryChanged()
 end
 
--- The drawn weapon. Nothing outside this file needs to know which of the list it is.
+-- The drawn weapon, or nil with empty hands.
 function Loadout:current()
-	return self._weapons[self._selected]
+	local kind < const > = self._context:inventory():equipped("weapon")
+	if kind == nil then
+		return nil
+	end
+	return self:find(kind)
 end
 
-function Loadout:count()
-	return #self._weapons
-end
-
--- Look a weapon up by the name it answers to (Weapon:slot). For anything that genuinely has
--- business with one particular weapon; the routing below deliberately does not use it.
-function Loadout:find(slot)
+-- The weapon that is this item (Weapon:item), or nil.
+function Loadout:find(item)
 	for _, w in ipairs(self._weapons) do
-		if w:slot() == slot then
+		if w:item() == item then
 			return w
 		end
 	end
 	return nil
 end
 
--- Swap what the left button does. Bound to the mouse wheel, which is why it is a cycle rather
--- than a pair of hotkeys -- and why an empty slot can still be selected: with only two
--- weapons, skipping the empty one would make the wheel do nothing at all and leave the player
--- with no way to find out why. Selecting it and reading "0" answers that.
---
--- `step` is how many places to move; it wraps either way, so a wheel spun backwards works the
--- day a third weapon makes the direction meaningful.
-function Loadout:cycle(step)
-	local n < const > = #self._weapons
-	if n < 2 then
-		return
-	end
-	self._selected = ((self._selected - 1 + (step or 1)) % n) + 1
-	self:_announce()
+function Loadout:owns(w)
+	return self._owned[w] == true
 end
 
--- Turn the carousel to whatever now has the trigger, and tell the weapons themselves for
--- anything they want to do about it. The HUD is told once, here, rather than by each weapon
--- repainting its own tile: with one widget for the whole arsenal there is only one thing that
--- needs to know, and it needs to know *which*, not merely whether.
-function Loadout:_announce()
+-- Draw the next weapon in the pack. Bound to the mouse wheel; `step` is how many places to move
+-- and wraps either way. With empty hands it draws the first owned (or, backwards, the last).
+--
+-- Done by equipping, which is the one way the drawn weapon ever changes -- so the wheel and the
+-- inventory screen cannot disagree about what is in hand.
+function Loadout:cycle(step)
+	local owned = {}
+	local at = 0
+	local cur < const > = self:current()
+	for _, w in ipairs(self._weapons) do
+		if self:owns(w) then
+			table.insert(owned, w)
+			if w == cur then
+				at = #owned
+			end
+		end
+	end
+	local n < const > = #owned
+	if n == 0 or (n == 1 and at == 1) then
+		return
+	end
+	local s < const > = step or 1
+	local i
+	if at == 0 then
+		i = (s > 0) and 1 or n
+	else
+		i = ((at - 1 + s) % n) + 1
+	end
+	self._context:inventory():equip(owned[i]:item())
+end
+
+-- The pack changed. Called by the pack itself, after every change, with the change complete;
+-- an equip made from in here is announced again once this has returned, so this can simply
+-- return after making one. See Inventory:_changed.
+function Loadout:_inventoryChanged()
+	local inv < const > = self._context:inventory()
+
+	local lostAt = nil
+	local gained = nil
 	for i, w in ipairs(self._weapons) do
-		w:selectionChanged(i == self._selected)
+		local owned < const > = inv:count(w:item()) > 0
+		if owned ~= self:owns(w) then
+			self._owned[w] = owned
+			if owned then
+				gained = gained or w
+			else
+				w:lost()
+				if w == self._drawn then
+					lostAt = i
+				end
+			end
+		end
+	end
+
+	-- Hand the trigger on. The weapon in hand has gone -- thrown away, or thrown -- so the next
+	-- one owned along the wheel is drawn, the way a hand reaches for whatever is left. A weapon
+	-- arriving while nothing is drawn is drawn, so the first one found is in hand at once.
+	--
+	-- Neither happens when the hands were emptied on purpose (Main:unequipItem): nothing was
+	-- *lost* then, and the next weapon is the player's to reach for.
+	if inv:equipped("weapon") == nil then
+		if lostAt ~= nil then
+			local n < const > = #self._weapons
+			for k = 1, n - 1 do
+				local w < const > = self._weapons[((lostAt - 1 + k) % n) + 1]
+				if self:owns(w) then
+					inv:equip(w:item())
+					return
+				end
+			end
+		elseif gained ~= nil and self._drawn == nil then
+			inv:equip(gained:item())
+			return
+		end
+	end
+
+	self:_announce()
+
+	-- Every seat's count, whatever changed: rounds are shared by both firearms, so a crate
+	-- walked over or a belt loaded moves the number on the rifle's seat as well as the gun's.
+	for _, w in ipairs(self._weapons) do
+		w:_pushHud()
+	end
+end
+
+-- Tell the weapons which of them now has the trigger, and turn the carousel to it. The
+-- weapons are only told on a change; the carousel is told everything every time, which costs
+-- it nothing when nothing moved.
+function Loadout:_announce()
+	local cur < const > = self:current()
+	if cur ~= self._drawn then
+		self._drawn = cur
+		for _, w in ipairs(self._weapons) do
+			w:selectionChanged(w == cur)
+		end
 	end
 	if self._carousel ~= nil then
-		self._carousel:setSelected(self._hudSlot[self._selected])
+		local seat = nil
+		for i, w in ipairs(self._weapons) do
+			local s < const > = self._hudSlot[i]
+			if s ~= nil then
+				self._carousel:setPresent(s, self:owns(w))
+				if w == cur then
+					seat = s
+				end
+			end
+		end
+		self._carousel:setSelected(seat)
 	end
 end
 
 -- How many columns the HUD row has to reserve for the arsenal. One, however many weapons are
--- carried -- they share a single tile now -- or none at all if nothing in the loadout shows
--- itself. Asked by Main *before* the row is laid out, because a TableLayout is built with its
--- column list and cannot grow one afterwards.
+-- carried -- they share a single tile -- or none at all if nothing in the loadout shows itself.
+-- Asked by Main *before* the row is laid out, because a TableLayout is built with its column
+-- list and cannot grow one afterwards.
 function Loadout:hudColumns()
 	for _, w in ipairs(self._weapons) do
 		if w:hasHud() then
@@ -117,12 +214,12 @@ function Loadout:hudColumns()
 end
 
 -- Build that tile: one carousel, one seat per weapon that shows itself, in wheel order -- so
--- the ring turns the same way the wheel does and a weapon is always where the last spin left
--- it. Each weapon is handed its seat index and pushes its own state in from there.
+-- the ring turns the same way the wheel does. Each weapon is handed its seat index and pushes
+-- its own state in from there; which seats are on the ring at all is the pack's, and _announce
+-- keeps it so.
 --
--- _hudSlot maps a place in the loadout to a place on the ring, which are not the same list the
--- moment one weapon does not show itself; _announce needs the second, and everything else here
--- works in the first.
+-- _hudSlot maps a place in the loadout to a seat on the ring, which are not the same list the
+-- moment one weapon does not show itself.
 function Loadout:createHud(parent)
 	self._carousel = WeaponCarousel(parent)
 	self._hudSlot = {}
@@ -166,26 +263,36 @@ function Loadout:update(dt)
 end
 
 -- Left button, handed over as both a press and a hold: the drawn weapon decides which of the
--- two it reads (Weapon:trigger). Whatever the wheel has it on.
+-- two it reads (Weapon:trigger). Nothing happens with empty hands.
 function Loadout:trigger(pressed, held)
-	return self:current():trigger(pressed, held)
+	local w < const > = self:current()
+	if w == nil then
+		return false
+	end
+	return w:trigger(pressed, held)
 end
 
 -- Right button. Offered to the drawn weapon first -- a weapon with its own alternate says so
 -- by overriding it -- and otherwise the shared butt swing.
 function Loadout:altAttack()
-	if self:current():altAttack() then
+	local w < const > = self:current()
+	if w ~= nil and w:altAttack() then
 		return true
 	end
 	return self._melee:attack()
 end
 
--- R. Offered to every weapon rather than only the drawn one: topping up a half-empty rifle
--- with a grenade in hand is exactly the lull the key exists for.
+-- R. Offered to every weapon owned, the drawn one first: topping up a half-empty rifle with a
+-- grenade in hand is exactly the lull the key exists for, and with the two firearms sharing the
+-- pack's rounds the one in hand is the one that should get them first.
 function Loadout:reload()
+	local cur < const > = self:current()
 	local any = false
+	if cur ~= nil and cur:beginReload() then
+		any = true
+	end
 	for _, w in ipairs(self._weapons) do
-		if w:beginReload() then
+		if w ~= cur and self:owns(w) and w:beginReload() then
 			any = true
 		end
 	end
@@ -194,55 +301,31 @@ end
 
 -- H. The infinite ammunition cheat, handed to every weapon rather than only the drawn one --
 -- a cheat that refilled whatever happened to be in hand and nothing else would be a strange
--- thing to explain. What "full" means is each weapon's own business (Weapon:setInfiniteAmmo),
--- and a weapon that carries nothing quietly ignores it.
+-- thing to explain. What "full" means is each weapon's own business (Weapon:setInfiniteAmmo).
 function Loadout:setInfiniteAmmo(on)
 	for _, w in ipairs(self._weapons) do
 		w:setInfiniteAmmo(on)
 	end
 end
 
+-- Nothing in hand has nothing to aim.
 function Loadout:wantsCrosshair()
-	return self:current():wantsCrosshair()
+	local w < const > = self:current()
+	return w ~= nil and w:wantsCrosshair()
 end
 
--- The view models: the drawn weapon placed at the eye, every other one put away. Stowing
--- outright rather than lowering is deliberate -- with two weapons on screen there is no
--- telling at a glance what the left button would do.
+-- The view models: the drawn weapon placed at the eye, every other one put away -- owned or
+-- not. Stowing outright rather than lowering is deliberate: with two weapons on screen there
+-- is no telling at a glance what the left button would do.
 function Loadout:place()
-	for i, w in ipairs(self._weapons) do
-		if i == self._selected then
+	local cur < const > = self:current()
+	for _, w in ipairs(self._weapons) do
+		if w == cur then
 			w:place()
 		else
 			w:stow()
 		end
 	end
-end
-
--- Ammunition, routed by kind rather than by weapon: a crate says what it is carrying
--- ("rounds", "grenades") and whoever answers to that kind takes it. See Weapon:supplyKind,
--- Scripts/AmmoPickup and Scripts/GrenadePickup.
-function Loadout:supply(kind, amount)
-	local any = false
-	for _, w in ipairs(self._weapons) do
-		if w:supplyKind() == kind and w:supply(amount) then
-			any = true
-		end
-	end
-	return any
-end
-
--- Is everything that takes this kind already carrying all it can? What gates a crate being
--- taken at all, so a full player leaves it standing for the trip back. True for a kind
--- nothing in the loadout answers to, which is what leaves a crate for a weapon the player
--- does not have alone.
-function Loadout:supplyFull(kind)
-	for _, w in ipairs(self._weapons) do
-		if w:supplyKind() == kind and not w:full() then
-			return false
-		end
-	end
-	return true
 end
 ]]></text>
 </object>

@@ -18,9 +18,12 @@ import(traktor)
 -- It is deliberately a trade against the rifle rather than an upgrade, and the trade is made of
 -- three things that all point the same way. It reaches 26 m where the rifle reaches 40. Its cone
 -- opens as it fires, so the tenth round of a burst is spending ammunition on the trees. And it
--- feeds from the same crates the rifle does -- it answers to the same "rounds" supply kind -- so
--- carrying it is a claim on the rifle's ammunition, and the night's total supply did not go up
--- because the player picked one up.
+-- loads from the same "rounds" in the pack the rifle does, so carrying it is a claim on the
+-- rifle's ammunition -- every belt it takes on is six magazines the rifle no longer has -- and
+-- the night's total supply did not go up because the player found one.
+--
+-- Found, because it is not part of the kit the night starts with: it is an item lying in the
+-- world, taken into the pack with E, and it comes with its belt already on.
 --
 -- What it is *for* is the thing the rifle is worst at: a crowd already inside arm's reach, where
 -- forty metres of range is worth nothing and six rounds is not enough. Which is exactly the
@@ -59,12 +62,10 @@ local COLLISION_INTERACTABLE < const > = 0x00000002
 function MachineGun:new(context)
 	Weapon.new(self, context)
 
-	-- A belt rather than a magazine, and a much deeper reserve, but the same two-number economy
-	-- the rifle runs on: rounds only move from one to the other on a reload.
+	-- A belt rather than a magazine, but the same two-number economy the rifle runs on -- the
+	-- belt, and the rounds in the pack -- and rounds only move from one to the other on a reload.
 	self._beltSize = Config.machinegun.magSize
 	self._belt = Config.machinegun.mag
-	self._reserve = Config.machinegun.reserve
-	self._reserveMax = Config.machinegun.reserveMax
 	self._reloadTime = Config.machinegun.reloadTime
 	self._interval = Config.machinegun.fireInterval
 	self._range = Config.machinegun.range
@@ -112,9 +113,9 @@ function MachineGun:slot()
 	return "machinegun"
 end
 
--- The rifle's kind, on purpose. See the note at the top: the crates feed both, which is what
--- keeps this from being free.
-function MachineGun:supplyKind()
+-- The rifle's rounds, on purpose. See the note at the top: one pile of rounds feeds both, which
+-- is what keeps this from being free.
+function MachineGun:ammoItem()
 	return "rounds"
 end
 
@@ -191,7 +192,7 @@ end
 -- widget now instead of each dressing a label of its own.
 function MachineGun:_pushHud()
 	if self._hud ~= nil then
-		self._hud:setAmmo(self._hudSlot, self._belt, self._reserve)
+		self._hud:setAmmo(self._hudSlot, self._belt, self:reserve())
 	end
 end
 
@@ -232,8 +233,9 @@ function MachineGun:update(dt)
 
 	-- An empty belt reloads itself, exactly as the rifle's magazine does and for the same reason:
 	-- the cost is meant to live in the three seconds the belt change takes, not in remembering to
-	-- ask for it.
-	if self._belt <= 0 and self._reloadTimer <= 0.0 then
+	-- ask for it. And, as there, only while it is the weapon in hand -- a stowed gun loading itself
+	-- would take forty-five of the rifle's rounds off the pack unasked.
+	if self._drawn and self._belt <= 0 and self._reloadTimer <= 0.0 then
 		self:beginReload()
 	end
 
@@ -246,10 +248,9 @@ function MachineGun:update(dt)
 		end
 		if self._reloadTimer <= 0.0 then
 			-- Only as many rounds as are actually left go on, so the last belt of a run is a
-			-- short one.
-			local take < const > = math.min(self._beltSize - self._belt, self._reserve)
-			self._belt = self._belt + take
-			self._reserve = self._reserve - take
+			-- short one -- and they come out of the pack only now, so a belt change put down part
+			-- way (MachineGun:lost) has cost nothing.
+			self._belt = self._belt + self:_takeFromPack(self._beltSize - self._belt)
 			-- Clearing the sweep is what flashes the plate, so it goes after the belt is on
 			-- rather than with the timer running out.
 			if self._hud ~= nil then
@@ -279,7 +280,7 @@ function MachineGun:beginReload()
 	if self._reloadTimer > 0.0 then
 		return false
 	end
-	if self._belt >= self._beltSize or self._reserve <= 0 then
+	if self._belt >= self._beltSize or self:reserve() <= 0 then
 		return false
 	end
 	self._reloadTimer = self._reloadTime
@@ -296,32 +297,25 @@ function MachineGun:wantsCrosshair()
 	return self._belt > 0
 end
 
-function MachineGun:full()
-	return self._reserve >= self._reserveMax
+-- Dropped mid belt change: the change is abandoned rather than finished by a gun nobody holds.
+function MachineGun:lost()
+	if self._reloadTimer > 0.0 then
+		self._reloadTimer = 0.0
+		if self._hud ~= nil then
+			self._hud:setReload(self._hudSlot, nil)
+		end
+	end
 end
 
-function MachineGun:supply(rounds)
-	if self._reserve >= self._reserveMax then
-		return false
-	end
-	self._reserve = math.min(self._reserveMax, self._reserve + rounds)
-	self:_pushHud()
-	-- Walked over a crate with an empty gun: start the belt without making the player ask.
-	if self._belt <= 0 then
-		self:beginReload()
-	end
-	return true
-end
-
--- Infinite ammunition (H): belt and reserve both back to the top, and any belt change caught
--- in flight cut short -- three seconds of a gun lying out of the sightline with nothing left
--- to load is the longest wait in the game, and the cheat exists to not have it.
+-- Infinite ammunition (H): the belt back to the top, and any belt change caught in flight cut
+-- short -- three seconds of a gun lying out of the sightline with nothing left to load is the
+-- longest wait in the game, and the cheat exists to not have it. The pack is left alone, as the
+-- rifle leaves it: a belt that is never empty never draws on it.
 function MachineGun:_topUp()
-	if self._belt >= self._beltSize and self._reserve >= self._reserveMax then
+	if self._belt >= self._beltSize then
 		return
 	end
 	self._belt = self._beltSize
-	self._reserve = self._reserveMax
 	if self._reloadTimer > 0.0 then
 		self._reloadTimer = 0.0
 		if self._hud ~= nil then

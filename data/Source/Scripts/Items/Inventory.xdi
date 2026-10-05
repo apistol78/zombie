@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{17E40000-0000-4000-8000-000000000001}
+
+import(traktor)
+
+-- Inventory
+--
+-- What the player is carrying: a fixed number of slots, each empty or holding one stack of one
+-- kind of item (Scripts/Items/Items says what a kind is and how big its stack may grow), and
+-- which of those is equipped where. It is plain data with no opinion about what any of it
+-- means -- the loadout reads the weapons out of it, Main the food, the armour and the relic --
+-- which is what lets every one of those be written without knowing where the others keep
+-- their state.
+--
+-- Two rules it keeps for everyone, because they are the two that would otherwise be got wrong
+-- in a different place each time:
+--
+--   * Equipped is a *mark*, not a move. An equipped item stays in its slot, counted, droppable
+--     -- and the mark goes the moment the last of that kind leaves the pack, however it left.
+--     So a grenade thrown, a relic spent and a rifle dropped all unequip themselves, and
+--     nothing that takes an item out has to remember to.
+--
+--   * Every change is announced (listen). Whoever cares -- the loadout handing the trigger on
+--     when the drawn weapon goes, a HUD seat showing the rounds left -- hears it once, after
+--     the change, with the pack already in its new state. A listener that changes the pack in
+--     turn does not recurse: the second change is announced after the first has finished.
+--
+-- Stacks fill in a fixed order -- topping up what is already there before opening a new slot --
+-- and come out from the back, so the stack being drawn from is the one that empties and the
+-- slots at the front stay where the player left them. An emptied slot stays empty; nothing is
+-- shuffled up to fill it.
+--
+-- A keepsake (Items: `keep`) also carries its entities, one per item, in the order they went in
+-- -- see Scripts/Pickup for what is done with them.
+--
+-- Everything here is plain numbers and strings except those entities, so the pack survives a
+-- script hot reload exactly as the rest of the stage's plain data does.
+
+Inventory = Inventory or class("Inventory")
+
+function Inventory:new(capacity)
+	self._capacity = capacity
+	self._slots = {}        -- [1..capacity] = { kind, count, entities } or nil
+	self._equipped = {}     -- "weapon" / "hand" / "body" -> kind
+	self._listeners = {}
+	self._serial = 0        -- counts every change; a cheap "has anything moved" for a view
+end
+
+function Inventory:capacity()
+	return self._capacity
+end
+
+-- The stack in slot `i`, or nil. Read it, never write it: every change has to come through
+-- add/remove/removeSlot to be announced.
+function Inventory:slot(i)
+	return self._slots[i]
+end
+
+-- How many slots hold something.
+function Inventory:used()
+	local n = 0
+	for i = 1, self._capacity do
+		if self._slots[i] ~= nil then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+function Inventory:serial()
+	return self._serial
+end
+
+-- How many of `kind` are carried, across every stack of it.
+function Inventory:count(kind)
+	local n = 0
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s ~= nil and s.kind == kind then
+			n = n + s.count
+		end
+	end
+	return n
+end
+
+-- How many more of `kind` would fit: what is left on its stacks, plus a full stack for every
+-- empty slot. Zero for a kind the catalogue does not know.
+function Inventory:room(kind)
+	local def < const > = Items[kind]
+	if def == nil then
+		return 0
+	end
+	local n = 0
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s == nil then
+			n = n + def.stack
+		elseif s.kind == kind then
+			n = n + math.max(0, def.stack - s.count)
+		end
+	end
+	return n
+end
+
+-- Put up to `count` of `kind` in, and return how many went. Whatever did not fit is the
+-- caller's to leave where it was -- a pickup stays on the ground with the rest of its pile.
+--
+-- `entity` is a keepsake's own entity, which makes it exactly one.
+function Inventory:add(kind, count, entity)
+	local def < const > = Items[kind]
+	if def == nil or count == nil or count <= 0 then
+		return 0
+	end
+	if entity ~= nil then
+		count = 1
+	end
+
+	local left = count
+	local function put(s, k)
+		s.count = s.count + k
+		left = left - k
+		if entity ~= nil then
+			s.entities = s.entities or {}
+			table.insert(s.entities, entity)
+		end
+	end
+
+	-- Top up what is already there first...
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if left > 0 and s ~= nil and s.kind == kind and s.count < def.stack then
+			put(s, math.min(left, def.stack - s.count))
+		end
+	end
+	-- ...then open new stacks, front to back.
+	for i = 1, self._capacity do
+		if left <= 0 then
+			break
+		end
+		if self._slots[i] == nil then
+			local s < const > = { kind = kind, count = 0 }
+			self._slots[i] = s
+			put(s, math.min(left, def.stack))
+		end
+	end
+
+	local added < const > = count - left
+	if added > 0 then
+		self:_changed()
+	end
+	return added
+end
+
+-- Take up to `count` of `kind` out, from the last stack first. Returns how many came out and,
+-- for a keepsake, the entities that came with them.
+function Inventory:remove(kind, count)
+	local left = count or 1
+	local out = {}
+	for i = self._capacity, 1, -1 do
+		local s < const > = self._slots[i]
+		if left > 0 and s ~= nil and s.kind == kind then
+			local k < const > = math.min(left, s.count)
+			s.count = s.count - k
+			left = left - k
+			if s.entities ~= nil then
+				for _ = 1, k do
+					table.insert(out, table.remove(s.entities))
+				end
+			end
+			if s.count <= 0 then
+				self._slots[i] = nil
+			end
+		end
+	end
+	local removed < const > = (count or 1) - left
+	if removed > 0 then
+		self:_unequipGone(kind)
+		self:_changed()
+	end
+	return removed, out
+end
+
+-- Take a whole slot out at once -- what dropping a stack does. Returns the stack as it was.
+function Inventory:removeSlot(i)
+	local s < const > = self._slots[i]
+	if s == nil then
+		return nil
+	end
+	self._slots[i] = nil
+	self:_unequipGone(s.kind)
+	self:_changed()
+	return s
+end
+
+-- The first keepsake entity of `kind` in the pack: the one that is shown when a relic is held.
+function Inventory:first(kind)
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s ~= nil and s.kind == kind and s.entities ~= nil and #s.entities > 0 then
+			return s.entities[1]
+		end
+	end
+	return nil
+end
+
+-- Is this entity riding in the pack? Every keepsake is hidden while it is, so this is what
+-- tells one being carried from one that has been spent.
+function Inventory:holds(entity)
+	if entity == nil then
+		return false
+	end
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s ~= nil and s.entities ~= nil then
+			for _, e in ipairs(s.entities) do
+				if e == entity then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+-- Call `fn(entity)` for every keepsake in the pack.
+function Inventory:eachKept(fn)
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s ~= nil and s.entities ~= nil then
+			for _, e in ipairs(s.entities) do
+				fn(e)
+			end
+		end
+	end
+end
+
+-- ---- Equipment ----
+
+-- What is equipped in one of the three places ("weapon", "hand", "body"), or nil.
+function Inventory:equipped(place)
+	return self._equipped[place]
+end
+
+function Inventory:isEquipped(kind)
+	local def < const > = Items[kind]
+	return def ~= nil and def.equip ~= nil and self._equipped[def.equip] == kind
+end
+
+-- Equip `kind` where its catalogue entry says it goes, replacing whatever was there. Refuses a
+-- kind that is not carried or does not equip at all.
+function Inventory:equip(kind)
+	local def < const > = Items[kind]
+	if def == nil or def.equip == nil or self:count(kind) <= 0 then
+		return false
+	end
+	if self._equipped[def.equip] ~= kind then
+		self._equipped[def.equip] = kind
+		self:_changed()
+	end
+	return true
+end
+
+function Inventory:unequip(place)
+	if self._equipped[place] == nil then
+		return false
+	end
+	self._equipped[place] = nil
+	self:_changed()
+	return true
+end
+
+-- ---- Listening ----
+
+-- `fn(inventory)` is called after every change. Listeners are kept for the life of the pack.
+function Inventory:listen(fn)
+	table.insert(self._listeners, fn)
+end
+
+-- Private
+
+function Inventory:_unequipGone(kind)
+	if self:count(kind) > 0 then
+		return
+	end
+	for place, k in pairs(self._equipped) do
+		if k == kind then
+			self._equipped[place] = nil
+		end
+	end
+end
+
+-- Announce a change. A listener changing the pack again is not recursed into: the change is
+-- marked and the listeners run once more after this pass, so each of them always sees a pack
+-- that has finished changing.
+function Inventory:_changed()
+	self._serial = self._serial + 1
+	if self._notifying then
+		self._pending = true
+		return
+	end
+	self._notifying = true
+	local passes = 0
+	repeat
+		self._pending = false
+		passes = passes + 1
+		-- Protected, because a listener that throws would otherwise leave _notifying set for
+		-- good and every later change would go unannounced -- a HUD frozen on stale counts,
+		-- with the error long since scrolled away.
+		for _, fn in ipairs(self._listeners) do
+			local ok < const >, err < const > = pcall(fn, self)
+			if not ok then
+				print("Inventory: a listener failed; " .. tostring(err))
+			end
+		end
+	-- Bounded, so two listeners that keep undoing each other cannot hang the frame.
+	until not self._pending or passes >= 8
+	self._notifying = false
+end
+]]></text>
+</object>

@@ -38,11 +38,11 @@ Config = {
 		hurtRange = 1.3,
 		enemyDps = 20.0,        -- health drained per second per touching enemy
 
+		-- Nothing the player carries overrides either of these any more. A relic used to slow
+		-- the walk and bar the sprint while it was held; it is an item in the pack now, and
+		-- equipping one costs the legs nothing.
 		walkSpeed = 3.0,
 		sprintSpeed = 6.0,
-		-- Carrying a relic overrides both, and no amount of Shift helps: every relic run is a
-		-- route you commit to at a wary walk.
-		carrySpeed = 2.6,
 
 		-- Aim pitch clamps (rad). Sign is the trap here -- pitch grows *downward* (see the
 		-- note in Main:new), so min is how far up you can look and max how far down.
@@ -68,8 +68,9 @@ Config = {
 		range = 40.0,
 		magSize = 6,            -- rounds the rifle holds
 		mag = 6,                -- ...and how many are in it at the start of the night
-		reserve = 24,           -- spare rounds carried at the start
-		reserveMax = 60,        -- most that can be carried at once
+		-- No reserve here: the spare rounds are the "rounds" stacks in the pack (see items and
+		-- inventory.start below), shared with the machine gun, and how many can be carried is
+		-- however many stacks the player makes room for.
 		-- Long enough that *where* you choose to reload matters, which is the point of it.
 		reloadTime = 1.2,
 		fireInterval = 0.4      -- minimum seconds between shots
@@ -82,17 +83,18 @@ Config = {
 	-- this empties a belt into a crowd at arm's length and then leaves you standing there for
 	-- three seconds with nothing.
 	--
-	-- Both feed from the same crates (Scripts/AmmoPickup carries "rounds", which is the supply
-	-- kind both weapons answer to), so carrying it is also a claim on the rifle's ammunition --
-	-- which is what stops it simply replacing the rifle.
+	-- Both load from the same "rounds" stacks in the pack, so carrying it is a claim on the
+	-- rifle's ammunition in the most literal way: every belt it takes on is six magazines the
+	-- rifle no longer has. That is what stops it simply replacing the rifle.
+	--
+	-- It is not part of the kit the night starts with any more. It is found -- lying in the
+	-- world as an item to be picked up -- and it comes with its belt already on.
 	machinegun = {
 		-- Shorter than the rifle's forty metres, deliberately. It is a weapon for what is
 		-- already on top of you, and a rifle that reaches further is the reason to keep one.
 		range = 26.0,
 		magSize = 45,           -- rounds on a belt
-		mag = 45,               -- ...and how many are on it at the start of the night
-		reserve = 90,           -- spare rounds carried at the start
-		reserveMax = 180,       -- most that can be carried at once
+		mag = 45,               -- ...and how many are on it when it is found
 		-- A belt change, not a magazine swap: long enough that running dry in the open is the
 		-- mistake the weapon punishes you for, and the reason to break contact before it does.
 		reloadTime = 3.1,
@@ -163,14 +165,10 @@ Config = {
 
 	-- ---- Grenades ----
 	--
-	-- The other thing the player can throw at the night, and the only one that does not go
-	-- through the rifle at all: the mouse wheel swaps which of the two the left button does.
+	-- The other thing the player can throw at the night: grenades are a stack in the pack,
+	-- equipped like any other weapon, and every throw takes one off it. How many the night
+	-- starts with and how many share a slot are inventory.start and items.grenade below.
 	grenade = {
-		-- One at the start, deliberately: enough to find out what a grenade does and not
-		-- enough to plan around. Every one after it is a decision, since the only way to get
-		-- another is to walk to where one is lying.
-		start = 1,
-		max = 4,
 		interval = 0.9,         -- minimum seconds between throws
 
 		-- Speed and lift together decide the arc: from a level aim these two rise about three
@@ -544,24 +542,23 @@ Config = {
 	-- ---- Relics ----
 	relic = {
 		reachRange = 2.2,       -- how close to a relic you must be to take it (m)
-		wardRange = 3.5,        -- ...and to a ward post to set one down on it
-		dropAhead = 0.7,        -- how far in front of the player a dropped one lands
+		wardRange = 3.5,        -- ...and to a ward post, with one equipped, to light it
 		-- How much nearer a rival ward post has to be before the objective compass gives up
-		-- the one it is already pointing at. Without it, carrying a relic along the midline
-		-- between two dark posts flips the needle back and forth, and each flip reads as an
-		-- instruction changing rather than as jitter.
+		-- the one it is already pointing at. Without it, walking the midline between two dark
+		-- posts with relics in the pack flips the needle back and forth, and each flip reads as
+		-- an instruction changing rather than as jitter.
 		markerSwitchMargin = 4.0
 	},
 
 	-- ---- The cemetery key and its gate ----
 	--
 	-- One gate stands locked in the cemetery wall, and two of the ward posts stand
-	-- behind it. The key is carried exactly as a relic is -- off hand, one at a time --
-	-- but it is light: it does not slow the walk and it does not bar the sprint.
+	-- behind it. A key goes into the pack like anything else and is turned in a lock
+	-- straight out of it: there is nothing to equip, so E at a locked gate with a key
+	-- in the pack is the whole of it.
 	key = {
 		reachRange = 2.2,       -- how close to the key you must be to take it (m)
-		gateRange = 3.5,        -- ...and to the gate to turn it in the lock
-		dropAhead = 0.7         -- how far in front of the player a put-down key lands
+		gateRange = 3.5         -- ...and to the gate to turn it in the lock
 	},
 	-- Levers (the cave): how close to one you must be to pull it.
 	lever = {
@@ -588,8 +585,14 @@ Config = {
 	},
 
 	-- ---- Pickups ----
+	--
+	-- Everything lying in the world is an item for the pack now. The small things -- rounds,
+	-- food, grenades, coins -- are collected by walking over them, as they always were, but
+	-- only while the pack has room for them; the larger ones -- a weapon, armour, a relic, a
+	-- key -- are taken with E.
 	pickup = {
 		takeRange = 1.2,        -- how close the player's origin must come to collect one
+		reachRange = 2.2,       -- ...and how close to an E item (a weapon, armour) to take it
 
 		-- Respawns turn the map into a renewable supply that has to be *travelled* to.
 		-- Camping one is prevented by where rather than when: the stage holds a pickup back
@@ -600,14 +603,57 @@ Config = {
 		ammoRespawn = 45.0,
 
 		-- Health is the stronger of the two: rounds only let you keep killing, while health is
-		-- what lets you take a bad decision and survive it. So these come back slowly.
-		healAmount = 35.0,
+		-- what lets you take a bad decision and survive it. So these come back slowly -- and a
+		-- flask is no longer drunk where it lies: it goes into the pack, to be drunk when it is
+		-- needed, which is what makes it worth carrying one at full health.
 		healthRespawn = 180.0,
 
 		-- Between the two, which is about where a grenade sits: unlike ammunition it answers
 		-- a situation the rifle cannot, and unlike health it cannot undo a mistake already made.
 		grenades = 1,
 		grenadeRespawn = 90.0
+	},
+
+	-- ---- The pack ----
+	--
+	-- Scripts/Items/Inventory. A fixed number of slots, each holding one stack of one kind of
+	-- item; what a stack may grow to is the item's own (items, below). Room is the whole of the
+	-- economy here: a pack of rounds is a slot that is not a flask.
+	inventory = {
+		slots = 16,
+		columns = 8,            -- ...laid out this many to a row on the inventory screen
+		-- The kit the night starts with, in the order it fills the pack. The first weapon in
+		-- it is the one in hand.
+		start = {
+			{ "rifle", 1 },
+			{ "rounds", 24 },
+			{ "grenade", 1 }
+		},
+		-- How far in front of the player something dropped out of the pack lands (m). Past the
+		-- take range on purpose, so a walk-over item put down is not picked straight back up.
+		dropAhead = 1.4
+	},
+
+	-- ---- What each kind of item is ----
+	--
+	-- Only the numbers: names, icons and what each one does live in Scripts/Items/Items.
+	-- `stack` is how many share one slot.
+	items = {
+		rifle      = { stack = 1 },
+		machinegun = { stack = 1 },
+		-- One grenade at the start (inventory.start), deliberately: enough to find out what a
+		-- grenade does and not enough to plan around.
+		grenade    = { stack = 4 },
+		rounds     = { stack = 60 },
+		-- Food. `heal` is the health one restores when eaten from the pack, capped at the max.
+		flask      = { stack = 3, heal = 35.0 },
+		bread      = { stack = 5, heal = 15.0 },
+		coin       = { stack = 99 },
+		-- Worn on the body. `armor` is the share of contact damage it takes instead of the
+		-- player: 0.35 turns a 20 hp/s bite into 13.
+		helmet     = { stack = 1, armor = 0.35 },
+		key        = { stack = 5 },
+		relic      = { stack = 5 }
 	},
 
 	-- ---- The sunrise, once the night is won ----

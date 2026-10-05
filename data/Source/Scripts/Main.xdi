@@ -23,11 +23,20 @@
 -- and lulls, and publishes the verdict to the Spawner as _spawnDrive on this stage.
 #using \{9F2C606F-BD26-43E1-9A3F-B108C688FB02}
 
--- Scripts/Carryable, the base of everything the off hand carries. Not named in this
--- file -- the stage only ever talks to whichever component the carried entity holds
--- -- but the relic and the key are built on it, and this stage's one hand and the
--- HAND_KINDS roster below are the other half of its contract.
-#using \{1F58C1CA-F879-41CF-A107-D2EA6A75F8EB}
+-- Scripts/Items/Items and Scripts/Items/Inventory: what every kind of item is, and the
+-- pack the player carries them in. The pack is the stage's own (_inventory) and the one
+-- record of what the player has -- the weapons, the food, the armour, the keys and the
+-- relics are all read out of it.
+#using \{17E40000-0000-4000-8000-000000000001}
+#using \{17E40000-0000-4000-8000-000000000002}
+
+-- Scripts/Views/InventoryView, the pack on screen (Tab).
+#using \{17E40000-0000-4000-8000-000000000004}
+
+-- Scripts/Pickup, the base of everything lying in the world that goes into the pack. Not
+-- named in this file -- the stage only ever talks to whichever component an item holds --
+-- but the E scan below (TAKE_NAMES) and the drop are the other half of its contract.
+#using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
 
 import(traktor)
 
@@ -77,18 +86,19 @@ local EYE_HEIGHT_MAX_LAG < const > = 0.3
 local EYE_HEIGHT_SNAP < const > = 2.0
 
 
--- What the off hand can carry, in priority order: standing where two kinds are in
--- reach, E takes the earlier one -- the relic is the night's objective and the key a
--- detour, so the relic wins. Each entry is only an entity name and how close the
--- player must be to take one, because that is all the *scan* needs; everything else
--- about an item -- what it is spent on, what spending does, how it rides in the
--- hand, what the E line says -- is asked of its own Carryable component (see
--- Scripts/Carryable). Adding an item to the night is a Carryable subclass and one
--- line here.
-local HAND_KINDS < const > = {
-	{ entity = "Relic", reach = Config.relic.reachRange },
-	{ entity = "Key", reach = Config.key.reachRange }
-}
+-- What E can take into the pack, by entity name, in priority order: standing where two
+-- are in reach, E takes the earlier one -- the relic is the night's objective, the key a
+-- detour, and anything else (a weapon, a helmet: entities named "Item") comes after.
+-- That is all the *scan* needs; how close is close enough, what the E line says and
+-- what taking it does are asked of the item's own Pickup component (Scripts/Pickup).
+--
+-- The walk-over items -- rounds, food, grenades, coins -- are not on it: those notice the
+-- player standing on them by themselves.
+local TAKE_NAMES < const > = { "Relic", "Key", "Item" }
+
+-- How much nearer a rival ward post has to be before the objective compass gives up the
+-- one it is already pointing at; see Main:_wardObjective.
+local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
 
 -- Where the minimap sits: its own corner, clear of the prompt line in the middle and
 -- the HUD row along the bottom. The frame lays out at 1280x720 whatever
@@ -223,13 +233,25 @@ function Main:new(params, environment)
 	self._lblCheats:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblCheats:setVerticalAlign(Widget.ALIGN_TOP)
 
-	-- What the player is carrying. Built before the HUD row below, because the row reserves
-	-- a column per weapon tile -- so the arsenal decides how wide the row is rather than the
-	-- row deciding how many weapons there can be.
+	-- The pack: everything the player is carrying, and the one record of it. Filled with the
+	-- night's starting kit (Config.inventory.start) before anything reads it -- the loadout
+	-- below draws the first weapon in it as it is built.
+	--
+	-- Plain data throughout (but for the relics riding in it, which are their own entities),
+	-- so it survives a script hot reload as the rest of this stage's plain data does.
+	self._inventory = Inventory(Config.inventory.slots)
+	for _, entry in ipairs(Config.inventory.start) do
+		self._inventory:add(entry[1], entry[2])
+	end
+
+	-- What the player has in their hands. Built before the HUD row below, because the row
+	-- reserves a column per weapon tile -- so the arsenal decides how wide the row is rather
+	-- than the row deciding how many weapons there can be.
 	--
 	-- This is the only handle this stage has on the weapons, and it is deliberately the only
 	-- one: Main routes buttons and frames at it (update, place, attack, altAttack, reload,
-	-- cycle) and never asks what is in it. See Scripts/Weapons/Loadout.
+	-- cycle) and never asks what is in it. Which weapons there are to route at is the pack's,
+	-- and the loadout reads it there. See Scripts/Weapons/Loadout.
 	self._loadout = Loadout(self)
 
 	-- HUD: one row along the bottom, reading left to right as where to go, how alive
@@ -257,8 +279,9 @@ function Main:new(params, environment)
 	-- part of the HUD row -- it is floated (ILayout.FLOAT) over the centre of the screen
 	-- and placed by hand each frame in _updateCrosshair, since the centre moves with the
 	-- window size. Parented to the frame after the HUD but before the dialogs and the
-	-- dawn wash, so those cover it; it hides itself whenever a relic is carried or the
-	-- game is not being played.
+	-- dawn wash, so those cover it; it hides itself whenever the game is not being played,
+	-- and whenever the weapon in hand has nothing to aim (Weapon:wantsCrosshair). A relic in
+	-- the off hand has no say in it any more.
 	self._crosshair = Crosshair(self._frame)
 	self._crosshair.__layout = ILayout.FLOAT
 	self._crosshairShown = nil   -- nil so the first _updateCrosshair forces the state
@@ -333,6 +356,19 @@ function Main:new(params, environment)
 	self._notice.widget:setTextSize(24)
 	self._notice.widget:setTextColor(Color4f(1.0, 0.72, 0.34, 1.0))
 
+	-- ...and, smaller and quieter under it, what went into the pack or would not fit: "+ 12
+	-- ROUNDS", "THE PACK IS FULL". Its own line, because pickups happen all night and would
+	-- otherwise talk over the notices that matter -- a ward catching, a gate grinding open.
+	-- See _feed.
+	self._feedLine = { widget = Static(self._frame, ""), y = 136 }
+	self._feedLine.widget.__layout = ILayout.FLOAT
+	self._feedLine.widget:setTextSize(18)
+	self._feedLine.widget:setTextColor(Color4f(0.82, 0.84, 0.78, 1.0))
+	self._feedText = ""
+	self._feedTimer = 0.0
+	self._feedKind = nil      -- what the line is counting up, so two crates read as one
+	self._feedCount = 0
+
 	-- Ensure layouts are updated.
 	self._frame:update()
 
@@ -349,8 +385,9 @@ function Main:new(params, environment)
 	-- business, and it is pushed down to them through the loadout rather than asked for.
 	self._infiniteAmmo = false
 
-	-- Movement: WASD to move; hold Shift (STATE_SPRINT) to sprint. maxVelocity is set to
-	-- the current speed each frame so the character controller's velocity clamp permits it.
+	-- Movement: WASD to move; hold Shift (STATE_SPRINT) to sprint -- always, whatever is in
+	-- the pack or the hands. maxVelocity is set to the current speed each frame so the
+	-- character controller's velocity clamp permits it.
 	self._walkSpeed = Config.player.walkSpeed
 	self._sprintSpeed = Config.player.sprintSpeed
 	self._running = false   -- true while sprinting and moving; hides the crosshair, lowers the rifle
@@ -378,19 +415,16 @@ function Main:new(params, environment)
 	-- not updated and so cannot time its own return.
 	self._respawning = {}
 
-	-- The off hand. One thing carried in it at a time -- a relic, the key, whatever
-	-- HAND_KINDS grows next -- and one field for whichever it is. Everything per-kind
-	-- (what it is spent on, what spending does, how it rides in the hand, what the E
-	-- line says, what the walk may do under it) is asked of the entity's own Carryable
-	-- component, so this stage holds no opinion about what it is holding; see
-	-- Scripts/Carryable for the split, and HAND_KINDS above for the roster.
-	--
-	-- Carrying the relic is the whole point of that mechanic: it fills one hand rather
-	-- than both, so the rifle stays up and you can still fire -- but sprinting is out
-	-- and you move at a wary walk, so every relic run is a route you commit to. The
-	-- key rides the same hand -- one thing in it at a time, so a relic run and the key
-	-- run cannot be combined -- but a key is light and costs the walk nothing.
-	self._hand = nil             -- the carried entity, or nil
+	-- The off hand. What is in it is the pack's to say -- a relic equipped there (Inventory:
+	-- equipped("hand")) -- and this is only the entity being shown in it: the first relic in
+	-- the pack, posed in the left hand every frame (postUpdate) while one is equipped. The
+	-- weapon stays up beside it, and nothing else changes: a relic in hand used to slow the
+	-- walk, bar the sprint and take the crosshair away, and none of that is left.
+	self._handRelic = nil        -- the relic entity shown in the off hand, or nil
+
+	-- The ward the compass is holding on while there are relics in the pack; see
+	-- _wardObjective. A live record, so it is dropped in reload().
+	self._wardHold = nil
 
 	-- The cemetery gates. One stands locked in the wall around the graveyard, and two
 	-- of the ward posts stand behind it, so what it locks away is ground the night can
@@ -562,6 +596,15 @@ function Main:new(params, environment)
 	self._options = OptionsView(self._optionsDialog, environment)
 	self._options:setOnClose(function() self:_hideOptions() end)
 
+	-- The pack (Tab): Scripts/Views/InventoryView in a dialog of its own, on this Frame like
+	-- every other dialog here. Opening it pauses the night exactly as the pause menu does --
+	-- it sets the same _paused every frozen thing already reads -- so the pack is managed
+	-- with nothing moving, and the cursor is handed back to click it. See _setInventoryOpen.
+	self._inventoryOpen = false
+	self._inventoryDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._inventoryView = InventoryView(self._inventoryDialog, self)
+	self._inventoryView:setOnClose(function() self:_setInventoryOpen(false) end)
+
 	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
 	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
 	-- created after the HUD and the other dialogs so it covers them -- but before the
@@ -630,7 +673,40 @@ function Main:_showHud(show)
 	self._hud:setVisible(show)
 	self._prompt.widget:setVisible(show)
 	self._notice.widget:setVisible(show)
+	self._feedLine.widget:setVisible(show)
 	self._lblCheats:setVisible(show)
+end
+
+-- Open or close the pack (Tab). It is a pause in everything but name: _paused is what every
+-- frozen thing in this game already reads -- the zombies, the spawner, the pickups, the corpse
+-- timers, this stage's own update below the freeze -- so setting it is the whole of holding the
+-- night still while the player looks through their things. The HUD goes, as it does for the
+-- pause menu, and the cursor is handed back to click with.
+--
+-- Not over a cutscene or the dawn, which own the camera, and not on top of the pause menu or
+-- either of the night's ending screens.
+function Main:_setInventoryOpen(open)
+	if open == self._inventoryOpen then
+		return
+	end
+	if open and (self._gameOver or self._nightOver or self._paused or self._cutscene ~= nil) then
+		return
+	end
+	self._inventoryOpen = open
+	self._paused = open
+	self:_showHud(not open)
+	if open then
+		-- Shown first and filled second: show() lays the dialog out, and the view re-places its
+		-- labels in the cells that layout gives them (InventoryView:refresh).
+		self._inventoryDialog:show()
+		self._inventoryView:refresh()
+		self.environment.input.inputSystem:setExclusive(false)
+		self.environment.render.renderView:showCursor()
+	else
+		self._inventoryDialog:hide()
+		self.environment.input.inputSystem:setExclusive(true)
+		self.environment.render.renderView:hideCursor()
+	end
 end
 
 -- Enter/leave pause. Toggles the menu, takes the HUD off screen with it, frees or
@@ -788,6 +864,11 @@ function Main:finalize()
 		self._optionsDialog:remove()
 		self._optionsDialog = nil
 		self._options = nil
+	end
+	if self._inventoryDialog ~= nil then
+		self._inventoryDialog:remove()
+		self._inventoryDialog = nil
+		self._inventoryView = nil
 	end
 	if self._pauseDialog ~= nil then
 		self._pauseDialog:remove()
@@ -1028,15 +1109,21 @@ function Main:player()
 	return self._humanoid
 end
 
--- Sprinting while actually moving, and whether a relic fills the off hand. Both are things a
--- view model answers to: the first drops it to a low ready, the second moves it over to make
+-- Sprinting while actually moving, and whether a relic is held in the off hand. Both are things
+-- a view model answers to: the first drops it to a low ready, the second moves it over to make
 -- room. Weapons ask rather than being told, so a weapon that does not care says nothing.
 function Main:isRunning()
 	return self._running
 end
 
 function Main:isCarrying()
-	return self._hand ~= nil
+	return self._handRelic ~= nil
+end
+
+-- The pack (Scripts/Items/Inventory). The weapons read who owns them and how many spare rounds
+-- there are out of it; the pickups and the inventory screen go through the calls below.
+function Main:inventory()
+	return self._inventory
 end
 
 -- Has this one already been handed to the rag doll path? Anything that sweeps the horde has
@@ -1090,17 +1177,152 @@ end
 
 -- ---- What a pickup is given ----
 --
--- Ammunition by kind rather than by weapon, so a crate never names one: Scripts/AmmoPickup
--- asks for "rounds" and Scripts/GrenadePickup for "grenades", and the loadout hands it to
--- whichever weapon answers to that kind (Weapon:supplyKind). A new weapon with a new kind of
--- ammunition therefore needs a new crate and nothing else -- no field here, and no line in
--- either pickup.
-function Main:supply(kind, amount)
-	return self._loadout:supply(kind, amount)
+-- Everything lying in the world goes into the pack through here (Scripts/Pickup:collect): up
+-- to `count` of `kind`, and a keepsake's own `entity` with it. Returns how many went in -- the
+-- rest is the pickup's to leave where it lies -- and says so on the feed line.
+function Main:giveItem(kind, count, entity)
+	local added < const > = self._inventory:add(kind, count, entity)
+	if added <= 0 then
+		return 0
+	end
+	local text = self:_feedCounted(kind, added)
+
+	-- Something that has to be equipped before it does anything says how as it arrives -- the
+	-- relic above all, which lights nothing from the pack -- and a weapon found while another is
+	-- in hand says how to reach it.
+	local def < const > = Items[kind]
+	if added < count then
+		text = text .. "   THE PACK IS FULL"
+	elseif def ~= nil and def.equip ~= nil and not self._inventory:isEquipped(kind) then
+		text = text .. ((def.equip == "weapon") and "   SCROLL TO DRAW" or "   TAB TO EQUIP")
+	end
+	self:_feed(text, kind)
+	return added
 end
 
-function Main:supplyFull(kind)
-	return self._loadout:supplyFull(kind)
+-- A walk-over pickup the pack has no room for. Called once per visit by the pickup itself, so
+-- standing on one says it once rather than every frame.
+function Main:packFull(kind)
+	local def < const > = Items[kind]
+	local what < const > = (def ~= nil) and (def.plural or def.name) or "IT"
+	self:_feed("NO ROOM IN THE PACK FOR " .. what)
+end
+
+-- ---- What the inventory screen is given ----
+--
+-- Every action Scripts/Views/InventoryView offers, done here because the stage is what owns
+-- the consequences: the hands, the health, the world a dropped thing lands in. Each returns
+-- whether it did anything; the view redraws from the pack either way.
+
+-- Equip `kind` where it goes: a weapon drawn, a relic into the off hand, armour worn.
+function Main:equipItem(kind)
+	if not self._inventory:equip(kind) then
+		return false
+	end
+	local def < const > = Items[kind]
+	if def ~= nil and def.equip == "hand" then
+		self:_feed(def.name .. " IN HAND")
+	end
+	return true
+end
+
+-- Put `kind` back in the pack. Unequipping the weapon leaves the hands empty, on purpose --
+-- the loadout only reaches for the next weapon when one is *lost* (Loadout:_inventoryChanged).
+function Main:unequipItem(kind)
+	local def < const > = Items[kind]
+	if def == nil or def.equip == nil or self._inventory:equipped(def.equip) ~= kind then
+		return false
+	end
+	return self._inventory:unequip(def.equip)
+end
+
+-- Eat or drink one of `kind`. Refused at full health, so food is never wasted on nothing.
+function Main:useItem(kind)
+	local def < const > = Items[kind]
+	if def == nil or def.heal == nil or self._inventory:count(kind) <= 0 then
+		return false
+	end
+	if self._health >= self._maxHealth then
+		self:_feed("NOT HURT")
+		return false
+	end
+	self._inventory:remove(kind, 1)
+	local before < const > = self._health
+	self._health = math.min(self._maxHealth, self._health + def.heal)
+	-- Handed to the bar now rather than at the bottom of update, which does not run while the
+	-- pack is open: the bar animates itself above the freeze, so the drink is seen going down.
+	self._healthBar:setValue(self._health / self._maxHealth)
+	self:_feed("+ " .. tostring(math.floor(self._health - before + 0.5)) .. " HEALTH")
+	return true
+end
+
+-- Put the whole stack in slot `index` down in front of the player. A keepsake is its own entity
+-- and is stood back on the ground (Pickup:putDown); anything else is built fresh from its item's
+-- entity data and told how many it is (Pickup:asDropped) -- which also keeps it from coming
+-- back on a timer, and from being walked straight back into the pack.
+function Main:dropSlot(index)
+	local s < const > = self._inventory:slot(index)
+	if s == nil or self._humanoid == nil or self.world == nil then
+		return false
+	end
+	local def < const > = Items[s.kind]
+	if def == nil or (not def.keep and def.entity == nil) then
+		self:_feed("THAT CANNOT BE PUT DOWN")
+		return false
+	end
+
+	local stack < const > = self._inventory:removeSlot(index)
+	if def.keep then
+		for k, e in ipairs(stack.entities or {}) do
+			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+			if sc ~= nil and sc.putDown ~= nil then
+				sc:putDown(self:_dropTransform(k - 1))
+			end
+		end
+	else
+		local e < const > = self.world:createEntity(def.entity)
+		if e ~= nil then
+			-- The transform first: assigning it is what brings the item's script object into
+			-- being (ScriptComponent::setTransform), so it can be told what it is straight after.
+			e.transform = self:_dropTransform(0)
+			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+			if sc ~= nil and sc.asDropped ~= nil then
+				sc:asDropped(stack.count)
+			end
+		end
+	end
+	self:_feed("PUT DOWN " .. Items.describe(stack.kind, stack.count))
+	return true
+end
+
+-- How much of a bite the worn armour takes, 0..1.
+function Main:armor()
+	local kind < const > = self._inventory:equipped("body")
+	local def < const > = (kind ~= nil) and Items[kind] or nil
+	return (def ~= nil and def.armor ~= nil) and def.armor or 0.0
+end
+
+-- Where something put down out of the pack lands: Config.inventory.dropAhead in front of the
+-- player, stood on the ground and facing the way they are. `k` fans several out side by side --
+-- a stack of relics is that many crosses, not one on top of the other.
+function Main:_dropTransform(k)
+	local heading < const > = Quaternion.fromEulerAngles(self._heading, 0.0, 0.0)
+	local side < const > = ((k % 2) == 1) and 1.0 or -1.0
+	local across < const > = side * math.floor((k + 1) / 2) * 0.45
+	local at < const > = self._humanoid.transform.translation
+		+ heading * Vector4(across, 0.0, Config.inventory.dropAhead, 0.0)
+	return Transform(self:_groundAt(at), heading)
+end
+
+-- Show or hide a keepsake (a relic) through its own component, which knows about the little
+-- light hanging off it (Pickup:show).
+function Main:_showKept(entity, visible)
+	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
+	if sc ~= nil and sc.show ~= nil then
+		sc:show(visible)
+	else
+		entity.visible = visible
+	end
 end
 
 -- Mark one zombie dead: blood burst at the impact point, hand it over to its
@@ -1377,74 +1599,147 @@ function Main:_wardDistance(w)
 	return math.sqrt(dx * dx + dz * dz)
 end
 
--- The closest carryable still up for grabs, scanning the HAND_KINDS roster in
--- priority order: the first kind with a candidate wins outright, so standing where a
--- relic and the key are both in reach, E takes the relic -- the night's objective
--- beats the detour. Returns the entity and its Carryable component.
+-- The closest thing E could take into the pack, scanning TAKE_NAMES in priority order: the
+-- first name with a candidate in reach wins outright, so standing where a relic and the key are
+-- both in reach, E takes the relic -- the night's objective beats the detour. Returns the entity
+-- and its Pickup component. How close is close enough is each item's own (Pickup:reach), and so
+-- is whether it can be taken yet (Pickup:isReady -- a key still rising with a chest's lid).
 --
--- With inReach true each kind is limited to its own take range (the E prompt);
--- without it, the nearest of the first kind with anything left anywhere on the map,
--- which is what the objective compass points at with empty hands.
---
--- "Up for grabs" is visibility: a spent item is parked on its target and hidden
--- (Carryable:spend), and reading that off the entity rather than out of a table on
--- the Stage is what survives a script hot reload -- a table starts empty again while
--- the world does not, so without the visibility test a reload would put every spent
--- item back up for grabs as a ghost with no mesh to walk up to. Unlike the fixture
--- scan above this measures all three axes: an item can lie on ground the player is
--- not standing on.
-function Main:_nearestCarryable(inReach)
+-- "Lying here" is visibility: a relic in the pack or spent on a post is hidden (Pickup:show),
+-- and reading that off the entity rather than out of a table on the Stage is what keeps a spent
+-- one from being offered as a ghost with no mesh to walk up to. Measured in all three axes,
+-- unlike the fixture scans above: an item can lie on ground the player is not standing on.
+function Main:_nearestTakeable()
 	local world = self.world.world
 	if world == nil or self._humanoid == nil then
 		return nil, nil
 	end
 
 	local pp < const > = self._humanoid.transform.translation
-	for _, kind in ipairs(HAND_KINDS) do
-		local best, bestD = nil, inReach and (kind.reach * kind.reach) or math.huge
+	for _, name in ipairs(TAKE_NAMES) do
+		local best, bestSc, bestD = nil, nil, math.huge
 		local i = 0
 		while true do
-			local e = world:getEntity(kind.entity, i)
+			local e = world:getEntity(name, i)
 			if e == nil then
 				break
 			end
 			i = i + 1
-			if e.visible and e ~= self._hand then
-				local q = e.transform.translation
-				local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
-				local d = dx * dx + dy * dy + dz * dz
-				if d < bestD then
-					best, bestD = e, d
+			if e.visible then
+				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+				if sc ~= nil and sc.pressToTake ~= nil and sc:pressToTake() and sc:isReady() then
+					local q < const > = e.transform.translation
+					local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
+					local d < const > = dx * dx + dy * dy + dz * dz
+					local r < const > = sc:reach()
+					if d < r * r and d < bestD then
+						best, bestSc, bestD = e, sc, d
+					end
 				end
 			end
 		end
 		if best ~= nil then
-			return best, best:getComponent(traktor.world.ScriptComponent)
+			return best, bestSc
 		end
 	end
 	return nil, nil
 end
 
--- The carried item's Carryable component, or nil with empty hands. Fetched fresh
--- rather than cached beside the entity, so a script hot reload mid-carry can never
--- leave the stage talking to a stale component object.
-function Main:_handItem()
-	if self._hand == nil then
+-- The nearest entity called `name` still lying in the world, anywhere on the map -- what the
+-- objective compass points at when there is nothing in the pack to take anywhere.
+function Main:_nearestLying(name)
+	local world = self.world.world
+	if world == nil or self._humanoid == nil then
 		return nil
 	end
-	return self._hand:getComponent(traktor.world.ScriptComponent)
+	local pp < const > = self._humanoid.transform.translation
+	local best, bestD = nil, math.huge
+	local i = 0
+	while true do
+		local e = world:getEntity(name, i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		if e.visible then
+			local q < const > = e.transform.translation
+			local dx, dz = q.x - pp.x, q.z - pp.z
+			local d < const > = dx * dx + dz * dz
+			if d < bestD then
+				best, bestD = e, d
+			end
+		end
+	end
+	return best
 end
 
--- What the off hand says the legs may do: the carried item's own walk speed -- which
--- also bars the sprint -- or nil for no opinion, which is likewise the answer with
--- nothing in hand. The relic slows the walk; the key does not. See
--- Carryable:walkSpeed.
-function Main:_handWalkSpeed()
-	local item < const > = self:_handItem()
-	if item == nil then
-		return nil
+-- Where the compass points while there are relics in the pack: the nearest still-dark post.
+-- Only ever a suggestion -- with no altar to return to, where a relic goes is the player's
+-- decision, and walking past the needle to a post that covers better ground is the whole point
+-- of the mechanic.
+--
+-- Held on the post it already points at until a rival is clearly nearer (MARKER_SWITCH_MARGIN),
+-- and dropped the moment that post is lit, so walking the midline between two dark posts does
+-- not flip the needle back and forth -- each flip snaps and flashes it, and reads as an
+-- instruction changing rather than as jitter.
+function Main:_wardObjective()
+	local ward, wd = self:_nearestUnlitWard()
+	local held < const > = self._wardHold
+	if held ~= nil and not held.lit and ward ~= nil and ward ~= held then
+		if self:_wardDistance(held) <= wd + MARKER_SWITCH_MARGIN then
+			ward = held
+		end
 	end
-	return item:walkSpeed(self)
+	self._wardHold = ward
+	return ward ~= nil and ward.entity or nil
+end
+
+-- Light `ward` with a relic out of the pack -- which has to be in the off hand, the caller has
+-- checked. One comes out of the pack and the relic itself does the rest (Relic:light): it is
+-- parked on the post, the post takes light, and the night answers.
+--
+-- The relic that comes out is the last one in the pack, so with several carried the one shown
+-- in hand stays there until it is the only one left.
+function Main:_lightWardWithRelic(ward)
+	local removed < const >, out < const > = self._inventory:remove("relic", 1)
+	if removed <= 0 then
+		return false
+	end
+	local relic < const > = out[1]
+	local sc < const > = (relic ~= nil) and relic:getComponent(traktor.world.ScriptComponent) or nil
+	if sc ~= nil and sc.light ~= nil then
+		sc:light(self, ward)
+	else
+		-- A relic with no entity behind it (a pack restored without its keepsakes) still lights
+		-- the post it was carried to; there is just nothing to park on it.
+		self:_lightWard(ward)
+		if self:_wardsDone() then
+			self:_breakDawn()
+		end
+	end
+	return true
+end
+
+-- Turn a key from the pack in `gate`'s lock. The key is spent for good, and the gate opens
+-- itself -- the swing, the grind, and the invisible box that did the actual barring going out of
+-- the world are all Gate:unlock's. What is kept here is which gates stand open, as plain data,
+-- so it survives a hot reload (resolve re-asserts it).
+function Main:_unlockGate(gate)
+	if self._inventory:remove("key", 1) <= 0 then
+		return false
+	end
+	gate.unlocked = true
+	self._unlockedGateIndex[gate.index] = true
+	local gsc < const > = gate.entity:getComponent(traktor.world.ScriptComponent)
+	if gsc ~= nil then
+		gsc:unlock()
+	end
+	-- Each gate may say its own line (the cave's do, as a property); the cemetery's is the
+	-- default.
+	self:_showNotice((gsc ~= nil and gsc.notice ~= nil and gsc:notice()) or "THE CEMETERY GATE GRINDS OPEN")
+	-- Ground the night was keeping opens up, and the night notices.
+	self._orchestrator:notify("gateOpened")
+	return true
 end
 
 -- Stand something on whatever is underneath a point, so a relic put down on a
@@ -2020,10 +2315,11 @@ function Main:_updateMinimap()
 		for i = 1, self._minimapRelics do
 			local r = world:getEntity("Relic", i - 1)
 			if r ~= nil then
-				-- Spent is invisible: a placed relic is parked on its ward and hidden
-				-- (Carryable:spend), which is also what puts its dot on the post.
+				-- Spent is hidden and not in the pack: a relic in the pack is hidden too, but
+				-- rides along with the player (postUpdate), so its dot is the player's. A spent
+				-- one is parked on its ward (Pickup:spend), which puts its dot on the post.
 				local p < const > = r.transform.translation
-				self._minimap:setRelic(i, p.x, p.z, not r.visible)
+				self._minimap:setRelic(i, p.x, p.z, not r.visible and not self._inventory:holds(r))
 			end
 		end
 	end
@@ -2039,26 +2335,29 @@ function Main:_updateMinimap()
 end
 
 -- Aim the objective compass at wherever the player should be walking: the nearest
--- still-dark ward while carrying, otherwise the nearest relic still out in the
--- forest. Blank once the night is over, either way it ended.
+-- still-dark ward while there is a relic in the pack, then a locked gate while there is
+-- a key in it, and otherwise the nearest relic -- or failing that key -- still lying out
+-- in the forest. Blank once the night is over, either way it ended.
 --
--- Nearest is only ever a suggestion now. With no altar to return to, where a relic
--- goes is the player's decision -- the needle picks the closest unlit post so it has
--- something to say, and walking past it to a post that covers better ground is the
--- whole point of the mechanic.
+-- Nearest is only ever a suggestion. With no altar to return to, where a relic goes is
+-- the player's decision -- the needle picks the closest unlit post so it has something to
+-- say, and walking past it to a post that covers better ground is the whole point of the
+-- mechanic.
 function Main:_updateMarker(dt)
 	local target = nil
 	if not self._gameOver and not self._nightOver and self._humanoid ~= nil then
-		local item < const > = self:_handItem()
-		if item ~= nil then
-			-- Carrying: the item knows where it wants to go -- the relic picks a
-			-- still-dark post (with its own hold, so the needle does not flip on a
-			-- midline), the key its gate. See Carryable:objective.
-			target = item:objective(self)
-		else
-			-- Empty hands: the nearest thing worth picking up, kinds in priority
-			-- order -- the relic run is the objective, the key run the detour.
-			target = self:_nearestCarryable(false)
+		local inv < const > = self._inventory
+		if inv:count("relic") > 0 then
+			target = self:_wardObjective()
+		end
+		if target == nil and inv:count("key") > 0 then
+			local gate < const > = self:_nearestLockedGate()
+			target = (gate ~= nil) and gate.entity or nil
+		end
+		if target == nil then
+			-- Nothing in the pack to take anywhere: the nearest thing worth picking up, in
+			-- priority order -- the relic run is the objective, the key run the detour.
+			target = self:_nearestLying("Relic") or self:_nearestLying("Key")
 		end
 	end
 
@@ -2086,10 +2385,11 @@ function Main:_updateMarker(dt)
 end
 
 -- Place the aiming crosshair at the centre of the screen, and show it only while the
--- player is actually sighting down the rifle: not while a relic is carried (both the
--- ask and the fiction -- the reticle belongs to the gun, and a hand is off it holding
--- the relic), and not while the game is paused, lost or won. Called from update above
--- its early-returns, so those "not playing" states can hide it.
+-- player is actually sighting down a weapon: not on the run, not with nothing in hand
+-- to aim, and not while the game is paused, lost or won. A relic in the off hand has no
+-- say in it -- it used to hide the reticle, and that rule is gone with the rest of the
+-- relic's carry penalties. Called from update above its early-returns, so those "not
+-- playing" states can hide it.
 function Main:_updateCrosshair(dt)
 	-- Whether there is an aim worth drawing a reticle for is the drawn weapon's call rather
 	-- than this stage's: the rifle hides it while the magazine is empty, because with no round
@@ -2102,7 +2402,6 @@ function Main:_updateCrosshair(dt)
 		and not self._paused
 		and self._cutscene == nil
 		and not self._running
-		and self._hand == nil
 		and loaded
 		and self._humanoid ~= nil
 
@@ -2137,97 +2436,140 @@ function Main:_showNotice(text)
 	self._noticeTimer = 3.5
 end
 
--- E, edge triggered. With something in hand: spend it on its target if one is in
--- reach (a relic on a still-dark ward post, the key in the cemetery gate), otherwise
--- put it down. With empty hands: take the nearest carryable in reach, kinds in
--- HAND_KINDS priority order -- the relic before the key, as the roster says.
+-- The feed line under it: what just went into the pack, or why it did not. `kind` is the item
+-- the line is counting, for _feedCounted; anything else said here starts a fresh count.
+function Main:_feed(text, kind)
+	self._feedText = text
+	self._feedTimer = 2.5
+	self._feedKind = kind
+end
+
+-- "+ 12 ROUNDS", counted up across pickups of the same kind while the line is still up, so
+-- walking through two crates reads as the 24 rounds it was rather than as the last 12.
+function Main:_feedCounted(kind, count)
+	if self._feedKind == kind and self._feedTimer > 0.0 then
+		self._feedCount = self._feedCount + count
+	else
+		self._feedCount = count
+	end
+	return "+ " .. Items.describe(kind, self._feedCount)
+end
+
+-- What E would do right now, as one answer for both the press (_interact) and the prompt
+-- line (_updateHudText), so the promise and the press can never disagree. Returns a verb --
+-- "take", "light", "unlock", "chest", "lever", or one of the refusals "needRelic", "noBudge",
+-- "locked" that only explain -- and whatever it would be done to.
 --
--- All of it through the item's own Carryable component: what its target is, what
--- spending does, and where a dropped one lands are its answers (Scripts/Carryable,
--- and Scripts/Relic / Scripts/Key for the answers themselves). The Stage owns only
--- what is in the hand -- and, one remove out, everything the items write back
--- through it: which wards burn, which gates are open, and the dawn that breaks.
-function Main:_interact()
-	if self._hand ~= nil then
-		local item < const > = self:_handItem()
-		self._hand = nil
-		if item == nil then
-			return
-		end
-		local target < const > = item:findTarget(self)
-		if target ~= nil then
-			item:spend(self, target)
-		else
-			-- Nothing to spend it on underfoot: just put it down, which buys the
-			-- rifle back.
-			item:drop(self)
-		end
-		return
+-- In this order, and each for a reason:
+--
+--   * Something lying in reach goes into the pack first, so a relic beside a dark post is taken
+--     before the one in hand is spent, and a key in an opened chest before the next chest.
+--   * A dark ward in reach takes the relic in the off hand. Only one *equipped* lights it: a
+--     relic in the pack is something the player has decided to carry, and one in hand is one
+--     they have decided to spend -- which is the whole of what equipping it means.
+--   * A locked gate takes a key straight out of the pack; keys are never equipped.
+--   * Then the chests and the levers, as before.
+--   * Last, the lines that only say why nothing happens: a relic carried but not in hand at a
+--     dark post, a lever gate no key fits, a locked gate with no key.
+function Main:_whatWouldE()
+	local e < const >, item < const > = self:_nearestTakeable()
+	if item ~= nil then
+		return "take", item
 	end
 
-	local e < const >, item < const > = self:_nearestCarryable(true)
-	if e ~= nil and item ~= nil then
-		self._hand = e
-		-- Committing to a run is exactly when the night should lean in. What kind
-		-- of run this is, the item says (Carryable:takeEvent), and the orchestrator
-		-- ignores an event it has no tuning for.
-		self._orchestrator:notify(item:takeEvent())
-		return
+	local inv < const > = self._inventory
+	local ward < const > = self:_nearestUnlitWard(Config.relic.wardRange)
+	if ward ~= nil and inv:equipped("hand") == "relic" then
+		return "light", ward
 	end
 
-	-- Nothing to take: open a chest, if one stands closed in reach. After the
-	-- carryables on purpose, so a key lying in a chest already opened -- or beside a
-	-- closed one -- is taken first. Empty hands only: a full hand puts its load down.
+	local gate < const > = self:_nearestLockedGate(self._gateRange)
+	if gate ~= nil and inv:count("key") > 0 then
+		return "unlock", gate
+	end
+
 	local chest < const > = self:_nearestClosedChest(self._chestRange)
 	if chest ~= nil then
-		self:_openChest(chest)
-		return
+		return "chest", chest
 	end
 
-	-- Or pull a lever. Empty hands too: a hand holding something puts it down first.
 	local lever < const > = self:_nearestUnpulledLever(self._leverRange)
 	if lever ~= nil then
-		self:_pullLever(lever)
+		return "lever", lever
+	end
+
+	if ward ~= nil and inv:count("relic") > 0 then
+		return "needRelic", ward
+	end
+	if self:_nearestShutLeverGate(self._gateRange) ~= nil then
+		return "noBudge", nil
+	end
+	if gate ~= nil then
+		return "locked", gate
+	end
+	return nil, nil
+end
+
+-- E, edge triggered. See _whatWouldE for what it does and in which order; the pack, the
+-- wards, the gates, the chests and the levers each own what doing it means.
+function Main:_interact()
+	local verb < const >, target < const > = self:_whatWouldE()
+	if verb == "take" then
+		if not target:collect(self) then
+			self:packFull(target:itemKind())
+		end
+	elseif verb == "light" then
+		self:_lightWardWithRelic(target)
+	elseif verb == "unlock" then
+		self:_unlockGate(target)
+	elseif verb == "chest" then
+		self:_openChest(target)
+	elseif verb == "lever" then
+		self:_pullLever(target)
+	elseif verb == "needRelic" then
+		self:_feed("EQUIP A RELIC TO LIGHT THE WARD   TAB")
 	end
 end
 
--- Objective line, the contextual prompt for whatever E would do right now, and
--- the transient notice under them.
+-- Objective line, the contextual prompt for whatever E would do right now, and the
+-- transient notice and the feed under them.
 function Main:_updateHudText(dt)
 	local prompt = ""
 	if not self._gameOver and not self._nightOver then
-		-- The three verbs are the carried (or takeable) item's own words; what E
-		-- would actually do is the same question _interact answers, asked of the
-		-- same component, so the promise and the press cannot disagree.
-		local held < const > = self:_handItem()
-		if held ~= nil then
-			if held:findTarget(self) ~= nil then
-				prompt = "E   " .. held:promptSpend()
-			else
-				prompt = "E   " .. held:promptDrop()
-			end
-		else
-			local _ < const >, item < const > = self:_nearestCarryable(true)
-			if item ~= nil then
-				prompt = "E   " .. item:promptTake()
-			elseif self:_nearestClosedChest(self._chestRange) ~= nil then
-				prompt = "E   OPEN THE CHEST"
-			elseif self:_nearestUnpulledLever(self._leverRange) ~= nil then
-				prompt = "E   PULL THE LEVER"
-			elseif self:_nearestShutLeverGate(self._gateRange) ~= nil then
-				-- No key opens it; the line hints that something else does.
-				prompt = "THE GATE WON'T BUDGE"
-			elseif self:_nearestLockedGate(self._gateRange) ~= nil then
-				-- Not an E: standing at the locked gate with nothing to open it
-				-- with, the line says what is missing rather than offering a press.
-				prompt = "THE GATE IS LOCKED"
-			end
+		local verb < const >, target < const > = self:_whatWouldE()
+		if verb == "take" then
+			prompt = "E   " .. target:promptTake()
+		elseif verb == "light" then
+			prompt = "E   LIGHT THE WARD"
+		elseif verb == "unlock" then
+			prompt = "E   UNLOCK THE GATE"
+		elseif verb == "chest" then
+			prompt = "E   OPEN THE CHEST"
+		elseif verb == "lever" then
+			prompt = "E   PULL THE LEVER"
+		elseif verb == "needRelic" then
+			-- A relic in the pack is not one in hand: the line says how to get it there.
+			prompt = "TAB   EQUIP A RELIC TO LIGHT THE WARD"
+		elseif verb == "noBudge" then
+			-- No key opens it; the line hints that something else does.
+			prompt = "THE GATE WON'T BUDGE"
+		elseif verb == "locked" then
+			-- Not an E: standing at the locked gate with nothing to open it with, the
+			-- line says what is missing rather than offering a press.
+			prompt = "THE GATE IS LOCKED"
 		end
 	end
 	self:_setLabel(self._prompt, prompt)
 
 	self._noticeTimer = math.max(0.0, self._noticeTimer - dt)
 	self:_setLabel(self._notice, self._noticeTimer > 0.0 and self._noticeText or "")
+
+	-- Held while paused, so what the inventory screen did -- a flask drunk, a stack put down --
+	-- is still there to read when it closes.
+	if not self._paused then
+		self._feedTimer = math.max(0.0, self._feedTimer - dt)
+	end
+	self:_setLabel(self._feedLine, self._feedTimer > 0.0 and self._feedText or "")
 end
 
 -- Play one of the player's own cues by name: the stingers and the ambience bed, which
@@ -2314,6 +2656,13 @@ function Main:update(info)
 	-- to hide itself when the game pauses, is lost or is won.
 	self:_updateCrosshair(dt)
 
+	-- The inventory screen, while it is up. Above the early-returns, since being up is
+	-- exactly what freezes the rest of the frame: it keeps its double-click clock and
+	-- redraws itself whenever the pack moves.
+	if self._inventoryOpen then
+		self._inventoryView:update(dt)
+	end
+
 	-- Wards ease up to full in their own Ward components (Scripts/Ward), which run
 	-- every frame regardless of this stage's freeze -- so a ward caught on the frame
 	-- the player died still finishes catching rather than sticking at its flare.
@@ -2361,11 +2710,20 @@ function Main:update(info)
 			-- a page at a time rather than dropping them into the game from two
 			-- dialogs deep. isVisible(false) asks about this dialog alone -- the
 			-- recursive default would also be answering for the Frame above it.
+			--
+			-- With the pack open it closes the pack, and goes no further: Escape out of
+			-- the inventory is back to the game, not on into the pause menu.
 			if self._optionsDialog:isVisible(false) then
 				self:_hideOptions()
+			elseif self._inventoryOpen then
+				self:_setInventoryOpen(false)
 			else
 				self:_setPaused(not self._paused)
 			end
+		elseif mapping ~= nil and mapping:isStatePressed("STATE_INVENTORY") then
+			-- Tab opens the pack and closes it again. Not from the pause menu, which
+			-- _setInventoryOpen refuses on its own.
+			self:_setInventoryOpen(not self._inventoryOpen)
 		end
 	end
 	if self._paused then
@@ -2477,7 +2835,7 @@ function Main:update(info)
 		end
 	end
 
-	-- E takes a relic, puts it down, or places it on the altar.
+	-- E takes what is lying in reach, lights a ward, turns a key; see _whatWouldE.
 	do
 		local mapping < const > = self.environment.input.inputMapping
 		if mapping ~= nil and mapping:isStatePressed("STATE_INTERACT") then
@@ -2495,15 +2853,12 @@ function Main:update(info)
 			local look = mapping:getStateValue("STATE_LOOK_X")
 			local lookY = -mapping:getStateValue("STATE_LOOK_Y")
 			-- Hold Shift to sprint. maxVelocity tracks the target speed so the character
-			-- controller's clamp doesn't cap the sprint. A carried item that cares
-			-- overrides both -- the relic makes it a shuffle, and no amount of Shift
-			-- helps; the key stays out of it. See Carryable:walkSpeed.
+			-- controller's clamp doesn't cap the sprint. Nothing carried or held has a
+			-- say in either -- a relic in hand used to make it a shuffle, and no longer
+			-- does.
 			local speed = self._walkSpeed
 			local sprinting = false
-			local carryWalk < const > = self:_handWalkSpeed()
-			if carryWalk ~= nil then
-				speed = carryWalk
-			elseif mapping:isStateDown("STATE_SPRINT") then
+			if mapping:isStateDown("STATE_SPRINT") then
 				speed = self._sprintSpeed
 				sprinting = true
 			end
@@ -2619,7 +2974,8 @@ function Main:update(info)
 				i = i + 1
 			end
 			if dps > 0.0 then
-				self._health = self._health - dps * dt
+				-- Whatever armour is worn takes its share of every bite (Config.items).
+				self._health = self._health - dps * (1.0 - self:armor()) * dt
 				-- Spurt blood while being eaten: raise the Humanoid's "blood" event on a
 				-- timer, each raise spawning a short blood-splatter effect at the player.
 				-- "hurt" rides the same timer -- the player's own voice, and the only
@@ -2646,15 +3002,10 @@ function Main:update(info)
 					-- possible, since those frames are played rather than frozen, and a
 					-- hive must not open into a Game Over menu.
 					self:_endCutscene()
-					-- Let go of whatever is carried, or it hangs in the air where the
-					-- player's hands were: postUpdate stops running once _gameOver is
-					-- set. The item drops itself (Carryable:drop); the stage just
-					-- lets go of it.
-					local held < const > = self:_handItem()
-					if held ~= nil then
-						held:drop(self)
-					end
-					self._hand = nil
+					-- Nothing to let go of: what the player carries is in the pack, and
+					-- a relic held in hand stays in front of the camera it was posed
+					-- against, which is where the Game Over menu is being looked at from.
+					--
 					-- Take the HUD off screen, as the pause menu does -- the dialogs
 					-- are panes now, and a health bar reading zero behind one is not
 					-- what the moment is about. One way only: dying ends this stage,
@@ -2819,6 +3170,26 @@ function Main:postUpdate(info)
 		self._camera.transform = Transform.lookAt(eye, eye + fwd, Vector4(0.0, 1.0, 0.0, 0.0))
 	end
 
+	-- Which relic is in the off hand, settled before the view models are placed, since they
+	-- make room for one (Main:isCarrying). The first relic in the pack while one is equipped
+	-- there, nothing otherwise; the one it replaces goes back out of sight -- unless it has left
+	-- the pack, put down or spent, when whatever left it with has already decided whether it
+	-- shows.
+	if self._humanoid ~= nil then
+		local inv < const > = self._inventory
+		local want < const > = (inv:equipped("hand") == "relic") and inv:first("relic") or nil
+		if want ~= self._handRelic then
+			local old < const > = self._handRelic
+			if old ~= nil and inv:holds(old) then
+				self:_showKept(old, false)
+			end
+			self._handRelic = want
+			if want ~= nil then
+				self:_showKept(want, true)
+			end
+		end
+	end
+
 	-- The view models. Which weapon is in shot, where it sits relative to the eye, and what
 	-- it does while reloading or on the run all belong to the weapons themselves -- this only
 	-- says "now, from here". Below the camera, so a model welded to the view is not a frame
@@ -2827,16 +3198,22 @@ function Main:postUpdate(info)
 	-- See Weapon:place, Weapon:stow and Loadout:place.
 	self._loadout:place()
 
-	-- The carried item: held up in the player's off hand, riding the full aim exactly
-	-- like the weapon, so it rises and drops with the view instead of lagging behind
-	-- it. Where in the hand it sits is the item's own answer -- the relic clear of
-	-- the rifle and the aim, the key nearer and turned into profile. See
-	-- Carryable:carryTransform.
-	if self._hand ~= nil and self._humanoid ~= nil then
-		local item < const > = self:_handItem()
-		if item ~= nil then
-			self._hand.transform = item:carryTransform(self)
-		end
+	-- The relics in the pack. The one in hand is held up in the off hand, riding the full aim
+	-- exactly like the weapon, so it rises and drops with the view instead of lagging behind it
+	-- (Relic:carryTransform); the rest ride along, hidden, wherever the player is -- which is
+	-- what keeps their dots on the minimap with the player rather than wherever they were found.
+	if self._humanoid ~= nil then
+		local at < const > = Transform(self._humanoid.transform.translation, Quaternion.identity)
+		self._inventory:eachKept(function(e)
+			if e == self._handRelic then
+				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+				if sc ~= nil and sc.carryTransform ~= nil then
+					e.transform = sc:carryTransform(self)
+				end
+			else
+				e.transform = at
+			end
+		end)
 	end
 end
 
@@ -2857,11 +3234,13 @@ function Main:reload()
 	-- player owns is raised through it (_playCue), so a stale one means a silent night.
 	self._bloodEvents = nil
 	-- Ward records hold live entity handles, so they have to be re-resolved.
-	-- resolve() restores which of them burn from _litWardIndex, which survives.
-	-- (The compass hold on one of those records lives on the carried relic's own
-	-- component now -- Relic:objective -- whose guards cope with a stale record, so
-	-- there is nothing to clear for it here.)
+	-- resolve() restores which of them burn from _litWardIndex, which survives. The
+	-- compass hold is one of those records, so it goes with them.
 	self._wards = nil
+	self._wardHold = nil
+	-- The relic shown in hand is found again from the pack on the next postUpdate. The
+	-- pack keeps its relics' entities, exactly as the old off hand kept the one it held.
+	self._handRelic = nil
 	-- Gate records likewise hold live entity handles, so they are re-resolved too.
 	-- resolve() restores which are open from _unlockedGateIndex, which survives, and
 	-- Gate:unlock is safe to re-assert on a gate whose bar is already gone.

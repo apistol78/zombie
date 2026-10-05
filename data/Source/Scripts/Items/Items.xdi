@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Items
+--
+-- Every kind of thing the pack can hold, keyed by the name the rest of the game uses for it
+-- ("rifle", "rounds", "relic"). It is a catalogue and nothing more: what the player is actually
+-- carrying is Scripts/Items/Inventory's, and what an item *does* is asked of whoever owns that
+-- -- the loadout draws a weapon, Main eats food and wears armour, a ward takes a relic. This is
+-- only where all of them look up what an item is called, what it looks like, how many share a
+-- slot and which way it is used.
+--
+-- What an entry says:
+--
+--   name     what the inventory screen and the prompts call it
+--   plural   ...and a stack of more than one, where that is not just the name
+--   info     one line for the inventory screen; short, the detail column is narrow
+--   icon     which picture of MC_ItemSlot it is drawn with (data/Assets/UI/Hud.svg, from
+--            tools/gen_item_icons.py); the kind itself unless it says otherwise
+--   stack    how many share one slot -- Config.items, since it is a balance number
+--   equip    which of the player's three places it goes when equipped:
+--              "weapon"  in hand; the trigger is on it (Scripts/Weapons/Loadout)
+--              "hand"    the off hand; what lights a ward (a relic)
+--              "body"    worn; takes `armor` of the contact damage (Config.items)
+--   heal     food: the health one restores when it is used from the pack (Config.items)
+--   entity   the EntityData a dropped one is rebuilt from. The escaped form is what makes it a
+--            tracked build dependency as well as a guid, exactly as Scripts/Spawner references
+--            the zombie -- which is also how every one of those entities ends up in the build.
+--   keep     the item *is* its entity, and the entity is never destroyed: taken, it is hidden
+--            and rides along in the pack; dropped, the same one comes back out; spent, it is
+--            parked where it was spent. Only the relic is one -- the minimap, the compass and
+--            the count of wards the night needs all read the relics off their entities, and a
+--            relic that was rebuilt from scratch on every drop would be a new relic to them.
+--
+-- Adding a kind is an entry here, its numbers in Config.items and an icon in the art. Something
+-- lying in the world becomes one by carrying a Scripts/Pickup that names it.
+
+Items = {}
+
+local function item(kind, def)
+	local tune < const > = Config.items[kind] or {}
+	def.kind = kind
+	def.icon = def.icon or kind
+	def.stack = tune.stack or 1
+	def.heal = tune.heal
+	def.armor = tune.armor
+	Items[kind] = def
+end
+
+-- ---- Weapons ----
+--
+-- Each of these is one Scripts/Weapons/Weapon in the loadout, which finds its weapon by this
+-- name (Weapon:item). Owning one is having it in the pack; drawing it is equipping it.
+
+item("rifle", {
+	name = "RIFLE",
+	info = "SIX IN THE MAGAZINE. REACHES FAR.",
+	equip = "weapon",
+	entity = Guid("\{17E40000-0000-4000-8000-000000000010}")
+})
+
+item("machinegun", {
+	name = "MACHINE GUN",
+	info = "A BELT OF 45. HOLD TO FIRE.",
+	equip = "weapon",
+	entity = Guid("\{17E40000-0000-4000-8000-000000000011}")
+})
+
+-- A stack and a weapon at once: drawn like the rifle, and every throw takes one off it. The
+-- last one thrown takes the weapon out of the pack with it, and the loadout hands the trigger
+-- to whatever is left.
+item("grenade", {
+	name = "GRENADE",
+	plural = "GRENADES",
+	info = "THROWN. TAKES A CROWD WITH IT.",
+	equip = "weapon",
+	entity = Guid("\{6E9AD100-0000-4000-8000-000000000003}")
+})
+
+-- ---- What the weapons eat ----
+
+-- Both firearms load from these: what the rifle used to call its reserve and the machine gun
+-- its spare belts are the same stacks now.
+item("rounds", {
+	name = "ROUND",
+	plural = "ROUNDS",
+	info = "FOR THE RIFLE AND THE MACHINE GUN.",
+	entity = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
+})
+
+-- ---- Food ----
+
+item("flask", {
+	name = "FLASK",
+	plural = "FLASKS",
+	info = "SOMETHING RED. DRINK IT TO HEAL.",
+	entity = Guid("\{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}")
+})
+
+item("bread", {
+	name = "BREAD",
+	info = "STALE, BUT IT WILL DO.",
+	entity = Guid("\{17E40000-0000-4000-8000-000000000016}")
+})
+
+-- ---- Everything else ----
+
+-- Nothing in the night buys anything yet. They are worth picking up because a pack is worth
+-- managing, and they are the one thing in it that is only ever taking up room.
+item("coin", {
+	name = "COIN",
+	plural = "COINS",
+	info = "OLD SILVER. NOTHING TO SPEND IT ON.",
+	entity = Guid("\{17E40000-0000-4000-8000-000000000014}")
+})
+
+item("helmet", {
+	name = "IRON HELMET",
+	info = "WORN, IT TAKES A THIRD OF EVERY BITE.",
+	equip = "body",
+	entity = Guid("\{17E40000-0000-4000-8000-000000000012}")
+})
+
+-- Turned in a lock straight out of the pack: E at a locked gate with one in it is the whole
+-- of it, so there is nothing to equip.
+item("key", {
+	name = "IRON KEY",
+	plural = "IRON KEYS",
+	info = "OPENS A LOCKED GATE.",
+	entity = Guid("\{6E9AD100-0000-4000-8000-000000000026}")
+})
+
+-- Equipped into the off hand, which is what lets it light a ward: E at a dark post with one
+-- in hand. Carried in the pack it is only weight -- and no longer slows anything.
+item("relic", {
+	name = "RELIC",
+	plural = "RELICS",
+	info = "EQUIP IT, THEN LIGHT A WARD.",
+	equip = "hand",
+	keep = true
+})
+
+-- What a count of `kind` is called: "RIFLE", "12 ROUNDS", "A RELIC". Unknown kinds answer with
+-- the kind itself, upper cased, rather than nothing -- a typo in a chest's property should still
+-- say what it was.
+function Items.describe(kind, count)
+	local def < const > = Items[kind]
+	if def == nil then
+		return string.upper(tostring(kind))
+	end
+	if count == nil or count == 1 then
+		return def.name
+	end
+	return tostring(count) .. " " .. (def.plural or def.name)
+end
+]]></text>
+</object>

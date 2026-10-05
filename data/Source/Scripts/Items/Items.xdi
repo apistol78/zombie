@@ -27,6 +27,8 @@ import(traktor)
 --              "hand"    the off hand; what lights a ward (a relic)
 --              "body"    worn; takes `armor` of the contact damage (Config.items)
 --   heal     food: the health one restores when it is used from the pack (Config.items)
+--   event    what one going into the pack is called to the SpawnOrchestrator, however it got
+--            there -- off the ground or out of a chest -- or nil for no surge
 --   entity   the EntityData a dropped one is rebuilt from. The escaped form is what makes it a
 --            tracked build dependency as well as a guid, exactly as Scripts/Spawner references
 --            the zombie -- which is also how every one of those entities ends up in the build.
@@ -37,7 +39,8 @@ import(traktor)
 --            relic that was rebuilt from scratch on every drop would be a new relic to them.
 --
 -- Adding a kind is an entry here, its numbers in Config.items and an icon in the art. Something
--- lying in the world becomes one by carrying a Scripts/Pickup that names it.
+-- lying in the world becomes one by carrying a Scripts/Pickup that names it, and a chest holds
+-- one by naming it in its contents (Scripts/Chest) -- no entity needed for that.
 
 Items = {}
 
@@ -131,6 +134,7 @@ item("key", {
 	name = "IRON KEY",
 	plural = "IRON KEYS",
 	info = "OPENS A LOCKED GATE.",
+	event = "keyTaken",
 	entity = Guid("\{6E9AD100-0000-4000-8000-000000000026}")
 })
 
@@ -141,6 +145,7 @@ item("relic", {
 	plural = "RELICS",
 	info = "EQUIP IT, THEN LIGHT A WARD.",
 	equip = "hand",
+	event = "relicTaken",
 	keep = true
 })
 

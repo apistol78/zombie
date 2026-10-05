@@ -555,10 +555,10 @@ Config = {
 	-- One gate stands locked in the cemetery wall, and two of the ward posts stand
 	-- behind it. A key goes into the pack like anything else and is turned in a lock
 	-- straight out of it: there is nothing to equip, so E at a locked gate with a key
-	-- in the pack is the whole of it.
+	-- in the pack is the whole of it. How close to a key you must be to take one is
+	-- pickup.reachRange, as for every other E item.
 	key = {
-		reachRange = 2.2,       -- how close to the key you must be to take it (m)
-		gateRange = 3.5         -- ...and to the gate to turn it in the lock
+		gateRange = 3.5         -- how close to the gate to turn a key in the lock (m)
 	},
 	-- Levers (the cave): how close to one you must be to pull it.
 	lever = {
@@ -575,13 +575,17 @@ Config = {
 	-- ---- Chests ----
 	--
 	-- What each chest holds is not here: it is a property on each placed chest, so the
-	-- level decides it (see Scripts/Chest).
+	-- level decides it (see Scripts/Chest). Opening one shows what is inside in a window of
+	-- its own (Scripts/Views/ChestView), and the player takes what they want.
 	chest = {
-		reachRange = 1.8,       -- how close to a closed chest you must be to open it (m)
+		reachRange = 1.8,       -- how close to a chest you must be to open or search it (m)
 		-- How far the lid swings back (rad; ~105 deg leaves it resting past upright) and
-		-- how long that takes. Loot waits out the swing before it can be collected.
+		-- how long that takes.
 		swingAngle = 1.85,
-		swingTime = 0.9
+		swingTime = 0.9,
+		-- How many stacks the chest window shows. A chest authored with more than this
+		-- shows the first ones, and the rest as they are taken.
+		slots = 8
 	},
 
 	-- ---- Pickups ----
@@ -590,28 +594,14 @@ Config = {
 	-- food, grenades, coins -- are collected by walking over them, as they always were, but
 	-- only while the pack has room for them; the larger ones -- a weapon, armour, a relic, a
 	-- key -- are taken with E.
+	--
+	-- Nothing respawns. Every pickup is in the world once, so the supply of the night is
+	-- exactly what the scenes place and the chests hold -- tune it there, by placement, not here.
+	-- How much one pickup holds is not here either: it is the `count` property on the pickup's
+	-- own entity (Entities/AmmoPickup/AmmoPickup holds 12 rounds), see Scripts/Pickup.
 	pickup = {
 		takeRange = 1.2,        -- how close the player's origin must come to collect one
-		reachRange = 2.2,       -- ...and how close to an E item (a weapon, armour) to take it
-
-		-- Respawns turn the map into a renewable supply that has to be *travelled* to.
-		-- Camping one is prevented by where rather than when: the stage holds a pickup back
-		-- until the player is respawnClearance away from the spot.
-		respawnClearance = 12.0,
-
-		ammoRounds = 12,
-		ammoRespawn = 45.0,
-
-		-- Health is the stronger of the two: rounds only let you keep killing, while health is
-		-- what lets you take a bad decision and survive it. So these come back slowly -- and a
-		-- flask is no longer drunk where it lies: it goes into the pack, to be drunk when it is
-		-- needed, which is what makes it worth carrying one at full health.
-		healthRespawn = 180.0,
-
-		-- Between the two, which is about where a grenade sits: unlike ammunition it answers
-		-- a situation the rifle cannot, and unlike health it cannot undo a mistake already made.
-		grenades = 1,
-		grenadeRespawn = 90.0
+		reachRange = 2.2        -- ...and how close to an E item (a weapon, armour, a key) to take it
 	},
 
 	-- ---- The pack ----

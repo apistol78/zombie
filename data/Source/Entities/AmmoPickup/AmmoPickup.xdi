@@ -32,8 +32,23 @@
 			</eventData>
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
-			<class>{3C1978BC-A996-4620-AC8B-8CC610C23091}</class>
-			<properties/>
+			<class>{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}</class>
+			<properties type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>count</first>
+						<second type="traktor.PropertyString">
+							<value>12</value>
+						</second>
+					</item>
+					<item>
+						<first>item</first>
+						<second type="traktor.PropertyString">
+							<value>rounds</value>
+						</second>
+					</item>
+				</value>
+			</properties>
 			<editorSupport>false</editorSupport>
 		</item>
 		<item type="traktor.animation.PathComponentData" version="1">

@@ -7,81 +7,56 @@ import(traktor)
 
 -- Chest
 --
--- An iron-strapped strongbox the player opens with E (Main:_interact calls open()).
--- The lid swings up about its hinge, the hinges creak, and whatever the chest holds
--- is put inside it, standing on the floor of the box, to be collected the way that
--- thing is always collected: a pickup by walking over it, a carryable with E.
+-- An iron-strapped strongbox the player opens with E. The lid swings up about its hinge and
+-- the hinges creak; what is inside is not put into the world at all. It is shown -- Main puts
+-- up the chest window (Scripts/Views/ChestView) with the box's contents in it -- and the
+-- player takes what they want straight into the pack. Whatever is left stays in the chest,
+-- to be come back for.
 --
--- What a chest holds is the level designer's, not this script's. It is read from the
--- ScriptComponentData's properties, so each chest placed in a scene can hold something
--- different -- give the scene's ExternalEntityData wrapper its own ScriptComponentData
--- (class Scripts/Chest, with properties); ResolveExternal swaps it in for this entity's
--- own, which holds nothing.
+-- This component owns the lid and what the level put in the box; which chests stand open and
+-- what is left in each is the Stage's (Main:_openChest), as plain data, so it survives a script
+-- hot reload the way the wards and the gates do.
 --
---   item    (string) what is inside: any item kind in Scripts/Items/Items that has a
---           world entity -- "rounds", "flask", "grenade", "key", "machinegun", "helmet",
---           "coin", "bread" -- or one of the older names below that still mean one
---           ("ammo", "health"), or an EntityData guid, "{...}", for anything else.
---           Empty or absent: the chest is empty, which is a thing worth placing too.
---           A raw guid is NOT a build dependency (property values are never scanned),
---           so whatever it names must be built by something else -- reference it from
---           a scene, or give it an item kind, whose entity is one.
---   count   (string, optional) how many of it, for an item that stacks -- "20" coins.
---   notice  (string, optional) the line flashed when it opens, in place of the kind's
---           own -- "THE SEXTON'S KEY", say.
+-- What a chest holds is the level designer's. It is read from the ScriptComponentData's
+-- properties, so each chest placed in a scene can hold something different -- give the scene's
+-- ExternalEntityData wrapper its own ScriptComponentData (class Scripts/Chest, with
+-- properties); ResolveExternal swaps it in for this entity's own, which holds nothing.
 --
--- Attach to an entity named "Chest" (the name is what Main collects them by, as for
--- wards and gates) whose GroupComponent holds a child named "Lid": the lid mesh with
--- its origin on the hinge and the lid extending +Z, authored at HINGE in the chest's
--- frame. The swing rebuilds exactly that transform with the opening pitch added, so a
--- closed chest stands precisely as it was authored. Models: tools/gen_chest.py.
+--   item    (string) what is inside: a comma separated list of item kinds out of
+--           Scripts/Items/Items, each with an optional count after a colon --
+--           "rounds:24, flask, grenade:2". Two older names still mean a kind ("ammo",
+--           "health"). Empty or absent: the chest is empty, which is a thing worth placing
+--           too. A relic cannot go in a chest -- relics are their own entities out in the
+--           world (Items: `keep`) -- and is left out with a warning, as is a kind the
+--           catalogue does not know.
+--   count   (string, optional) how many, for a chest holding a single kind written without
+--           one of its own -- the form the older chests were written in.
+--   notice  (string, optional) a line of its own, shown under the chest window's title --
+--           "THE SEXTON'S KEY", say.
 --
--- open() is idempotent and takes instant=true -- the reload-restore path, the same
--- contract as Gate:unlock -- to snap the lid open without the creak and without putting
--- a second item in the box.
+-- Attach to an entity named "Chest" (the name is what Main collects them by, as for wards and
+-- gates) whose GroupComponent holds a child named "Lid": the lid mesh with its origin on the
+-- hinge and the lid extending +Z, authored at HINGE in the chest's frame. The swing rebuilds
+-- exactly that transform with the opening pitch added, so a closed chest stands precisely as it
+-- was authored. Models: tools/gen_chest.py.
+--
+-- open() is idempotent and takes instant=true -- the reload-restore path, the same contract as
+-- Gate:unlock -- to snap the lid open without the creak.
 
 Chest = Chest or class("Chest", traktor.world.ScriptComponent)
 
 local SWING_ANGLE < const > = Config.chest.swingAngle   -- how far the lid swings back (rad)
 local SWING_TIME < const > = Config.chest.swingTime     -- ...and how long it takes (s)
 
--- Where the hinge runs in the chest's own frame: the top of the back wall. Must match
--- the Lid child's translation in Entities/Chest/Chest and BODY_H/DEPTH in
--- tools/gen_chest.py.
+-- Where the hinge runs in the chest's own frame: the top of the back wall. Must match the Lid
+-- child's translation in Entities/Chest/Chest and BODY_H/DEPTH in tools/gen_chest.py.
 local HINGE < const > = Vector4(0.0, 0.42, -0.26, 0.0)
-
--- The floor of the box, where loot is stood (gen_chest.py's FLOOR_H).
-local LOOT_Y < const > = 0.05
-
--- What the box does with a kind beyond building its entity: the line that goes with it, and
--- -- for the key -- how it lies. `at`/`turn` place it on the floor in the chest's frame. The
--- pickups stand upright as they do on the ground; the key is laid flat along the box, since
--- stood on end it is taller than the chest is deep.
---
--- Which entity a kind is built from is the item's own (Items: `entity`), so any kind the
--- catalogue grows can go in a chest without a line here.
-local LOOT < const > = {
-	rounds = { notice = "A CHEST OF ROUNDS" },
-	flask = { notice = "A FLASK, STOPPERED AND WHOLE" },
-	grenade = { notice = "A GRENADE, PACKED IN STRAW" },
-	key = {
-		at = Vector4(0.0, 0.02, 0.0, 0.0),
-		turn = Quaternion.fromEulerAngles(math.pi * 0.5, -math.pi * 0.5, 0.0),
-		notice = "AN IRON KEY"
-	},
-	machinegun = { notice = "A MACHINE GUN, OILED AND LOADED" },
-	helmet = { notice = "AN IRON HELMET" },
-	coin = { notice = "A FEW OLD COINS" },
-	bread = { notice = "A LOAF, WRAPPED IN CLOTH" }
-}
 
 -- The names chests in the scenes were given before there were item kinds.
 local ALIASES < const > = {
 	ammo = "rounds",
 	health = "flask"
 }
-
-local EMPTY_NOTICE < const > = "THE CHEST IS EMPTY"
 
 -- A string property off this component's ScriptComponentData, or nil.
 function Chest:_property(name)
@@ -96,46 +71,48 @@ function Chest:_property(name)
 	return v
 end
 
--- What is inside, as { entity, at, turn, notice, count }, or nil for an empty chest.
-function Chest:_contents()
-	local item < const > = self:_property("item")
-	if item == nil then
-		return nil
+-- What the level put in the box, as a fresh list of { kind, count } in the order it was
+-- written. A new list every call: the Stage takes one when the chest is first opened and keeps
+-- track of what is left in it from there, so nothing here is ever spent.
+function Chest:contents()
+	local list = {}
+	local spec < const > = self:_property("item")
+	if spec == nil then
+		return list
 	end
-	local name < const > = string.lower(item)
-	local kind < const > = ALIASES[name] or name
-	local def < const > = Items[kind]
-	if def ~= nil and def.entity ~= nil then
-		local loot < const > = LOOT[kind] or {}
-		return {
-			entity = def.entity,
-			at = loot.at,
-			turn = loot.turn,
-			notice = loot.notice or Items.describe(kind, tonumber(self:_property("count") or "")),
-			count = tonumber(self:_property("count") or "")
-		}
+
+	local entries = {}
+	for entry in string.gmatch(spec, "[^,]+") do
+		local name < const >, n < const > = string.match(entry, "^%s*([%a_]+)%s*:?%s*(%d*)%s*$")
+		if name == nil then
+			print('Chest: cannot read "' .. entry .. '" in "' .. spec .. '"; left out.')
+		else
+			table.insert(entries, { name = string.lower(name), count = tonumber(n) })
+		end
 	end
-	-- Not a kind: try it as an EntityData guid.
-	local g < const > = Guid(item)
-	if g:isValid() and g:isNotNull() then
-		return { entity = g }
+
+	-- The older form: one kind, and its count in a property of its own.
+	if #entries == 1 and entries[1].count == nil then
+		entries[1].count = tonumber(self:_property("count") or "")
 	end
-	print('Chest: unknown item "' .. item .. '"; the chest is empty.')
-	return nil
+
+	for _, entry in ipairs(entries) do
+		local kind < const > = ALIASES[entry.name] or entry.name
+		local def < const > = Items[kind]
+		if def == nil then
+			print('Chest: unknown item "' .. entry.name .. '"; left out.')
+		elseif def.keep then
+			print('Chest: a ' .. kind .. ' cannot be kept in a chest; left out.')
+		elseif (entry.count or 1) > 0 then
+			table.insert(list, { kind = kind, count = entry.count or 1 })
+		end
+	end
+	return list
 end
 
--- The line Main flashes as it opens: the level's own, else the kind's, else a plain
--- "something" for a raw guid, else that it is empty.
+-- The level's own line for this chest, or nil.
 function Chest:notice()
-	local own < const > = self:_property("notice")
-	if own ~= nil then
-		return own
-	end
-	local loot < const > = self:_contents()
-	if loot == nil then
-		return EMPTY_NOTICE
-	end
-	return loot.notice or "SOMETHING IN THE CHEST"
+	return self:_property("notice")
 end
 
 function Chest:open(instant)
@@ -146,11 +123,9 @@ function Chest:open(instant)
 	self._openT = instant and 1.0 or 0.0
 	self._posed = false
 
-	-- The creak and the loot are both skipped on the restore path: the chest was
-	-- already opened in an earlier life of this script, and whatever was in it is
-	-- either still lying in the box or long since taken.
+	-- The creak is skipped on the restore path: the chest was already opened in an earlier
+	-- life of this script, and putting it back the way it was is not an event.
 	if not instant then
-		self._lootPending = true
 		local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
 		if fx ~= nil then
 			fx:raise("open")
@@ -172,48 +147,11 @@ function Chest:_lid()
 	return self._lidEntity
 end
 
--- Build what is inside into the box. Done from update rather than open() because it
--- needs the stage's world layer, and done on the first frame of the swing so the thing
--- is there to be seen as the lid comes up.
-function Chest:_spawnLoot(context)
-	self._lootPending = false
-	local loot < const > = self:_contents()
-	if loot == nil or context.world == nil then
-		return
-	end
-	-- createEntity builds it AND adds it to the world (see Scripts/Hive).
-	local e < const > = context.world:createEntity(loot.entity)
-	if e == nil then
-		print("Chest: could not build the item's entity data; is it built?")
-		return
-	end
-	local base < const > = self.owner.transform
-	local at < const > = (loot.at or Vector4(0.0, 0.0, 0.0, 0.0)) + Vector4(0.0, LOOT_Y, 0.0, 0.0)
-	local turn < const > = loot.turn or Quaternion.identity
-	-- Assigning the transform also brings the item's script object into being
-	-- (ScriptComponent::setTransform validates it), which is what lets it be told,
-	-- straight after, that it came out of a chest.
-	e.transform = Transform(base.translation + base.rotation * at, base.rotation * turn)
-
-	-- A pickup out of a chest is loot: it does not come back once taken -- or every
-	-- opened chest would be a crate that refills itself -- and it waits out the swing
-	-- before it can be collected, so it is seen before it is taken.
-	local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-	if sc ~= nil and sc.asLoot ~= nil then
-		sc:asLoot(SWING_TIME)
-		if loot.count ~= nil and sc.setCount ~= nil then
-			sc:setCount(loot.count)
-		end
-	end
-end
-
+-- The swing. Runs whether or not the chest window has the game paused, so the lid is seen
+-- coming up behind it.
 function Chest:update(context, totalTime, deltaTime)
-	if self._lootPending and context ~= nil then
-		self:_spawnLoot(context)
-	end
-
-	-- A closed chest's lid stands exactly where it was authored: nothing to do. _posed
-	-- stops an open one being re-written every frame forever.
+	-- A closed chest's lid stands exactly where it was authored: nothing to do. _posed stops an
+	-- open one being re-written every frame forever.
 	if not self._opened or self._posed then
 		return
 	end
@@ -232,8 +170,8 @@ function Chest:update(context, totalTime, deltaTime)
 	local k < const > = 1.0 - (1.0 - t) * (1.0 - t)
 	local a < const > = k * SWING_ANGLE
 
-	-- Negative pitch: a pitch about +X carries the lid's +Z (its front edge) downward,
-	-- so lifting it is the other way.
+	-- Negative pitch: a pitch about +X carries the lid's +Z (its front edge) downward, so
+	-- lifting it is the other way.
 	local base < const > = self.owner.transform
 	local br < const > = base.rotation
 	lid.transform = Transform(base.translation + br * HINGE, br * Quaternion.fromEulerAngles(0.0, -a, 0.0))

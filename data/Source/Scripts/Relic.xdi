@@ -43,16 +43,6 @@ function Relic:reach()
 	return REACH
 end
 
--- Never comes back on its own: there are exactly as many relics as the scene placed, and the
--- night's count of wards to light is taken from that (Main:resolve).
-function Relic:respawnDelay()
-	return 0.0
-end
-
-function Relic:takeEvent()
-	return "relicTaken"
-end
-
 function Relic:promptTake()
 	return "TAKE THE RELIC"
 end

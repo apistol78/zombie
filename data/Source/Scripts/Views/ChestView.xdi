@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
+#using \{17E40000-0000-4000-8000-000000000003}
+
+import(traktor)
+
+-- ChestView
+--
+-- What is in a chest, on screen, for the player to take what they want from: a row of
+-- Scripts/Widgets/ItemSlot cells, one per stack in the box, a line or two about the one
+-- selected, and the buttons that take it. A UiKit Container that builds its own rows, like
+-- Scripts/Views/InventoryView beside it; Main shows it in a dialog of its own, with the game
+-- held still behind it (Main:_setChestOpen).
+--
+-- It changes nothing itself. What is in the chest is the stage's (Main keeps what is left in
+-- every opened chest), and every action is handed back to it:
+--
+--   context:chestContents(index)      what is still in the chest, { { kind, count }, ... }
+--   context:takeFromChest(index, i)   the stack in cell i into the pack, as much as fits
+--   context:takeAllFromChest(index)   ...and every stack, in order
+--
+-- A stack the pack has no room for stays in the chest, and the window says so; the way to make
+-- room is Tab, which goes on to the pack. Taking the last thing out leaves the window up, showing
+-- an empty chest; only the player closes it.
+--
+-- Click a cell to select it; click it again straight away to take it.
+
+ChestView = ChestView or class("ChestView", Container)
+
+local C_TITLE < const > = Color4f(1.0, 0.9, 0.68, 1.0)
+local C_LABEL < const > = Color4f(0.82, 0.85, 0.9, 1.0)
+local C_HINT < const > = Color4f(0.55, 0.58, 0.64, 1.0)
+local C_NAME < const > = Color4f(1.0, 0.9, 0.68, 1.0)
+local C_MESSAGE < const > = Color4f(0.62, 0.86, 0.52, 1.0)
+
+local CELL_GAP < const > = 8
+local BUTTON_W < const > = 132
+
+-- Two clicks on the same cell inside this long are a double click (s).
+local DOUBLE_CLICK < const > = 0.4
+
+-- Set a Static's text and re-place it in the cell its layout gave it; see InventoryView, which
+-- does the same for the same reason -- a Static clamps its bounds to the text it was placed with.
+local function setText(static, text)
+	static:setText(text)
+	local p < const > = static:getPlacement()
+	if p.width > 0 then
+		static:place(p.x, p.y, p.width, p.height)
+	end
+end
+
+-- The longest of a set of strings, so a column can be laid out wide enough for any of them.
+local function longest(strings)
+	local best = ""
+	for _, s in ipairs(strings) do
+		if string.len(s) > string.len(best) then
+			best = s
+		end
+	end
+	return best
+end
+
+-- What the item in a cell is called, with how many: "24 ROUNDS", "IRON KEY".
+local function describe(entry)
+	return Items.describe(entry.kind, entry.count)
+end
+
+-- What it is called when there is more than one, for "no room for" lines.
+local function plural(kind)
+	local def < const > = Items[kind]
+	return (def ~= nil) and (def.plural or def.name) or string.upper(tostring(kind))
+end
+
+function ChestView:new(parent, context)
+	Container.new(self, parent, TableLayout({ 0 }, { 0 }, 0, 0, 0, 14))
+
+	self._context = context
+	self._index = nil         -- the chest being looked into
+	self._selected = nil      -- the selected cell, or nil
+	self._serial = nil        -- the pack's serial when last drawn
+	self._clock = 0.0
+	self._lastClick = nil
+
+	-- Every string the detail lines might show, for sizing their column.
+	local names, infos = { "THE CHEST IS EMPTY" }, { "" }
+	for _, def in pairs(Items) do
+		if type(def) == "table" then
+			table.insert(names, "999 " .. (def.plural or def.name))
+			table.insert(infos, def.info or "")
+		end
+	end
+
+	local title < const > = Static(self, "CHEST")
+	title:setTextSize(34)
+	title:setTextColor(C_TITLE)
+
+	-- The chest's own line, if the level gave it one.
+	self._notice = Static(self, "AN IRON KEY, GREEN WITH DAMP, LYING IN STRAW")
+	self._notice:setTextSize(16)
+	self._notice:setTextColor(C_HINT)
+
+	-- ---- What is in it ----
+	local slots < const > = Config.chest.slots
+	local cdef = {}
+	for _ = 1, slots do
+		table.insert(cdef, 0)
+	end
+	local grid < const > = Container(self, TableLayout(cdef, { 0 }, 0, 0, CELL_GAP, CELL_GAP))
+	self._cells = {}
+	for i = 1, slots do
+		local cell < const > = ItemSlot(grid)
+		cell:setOnClick(function() self:_onCell(i) end)
+		self._cells[i] = cell
+	end
+
+	-- ---- The one selected ----
+	self._name = Static(self, longest(names))
+	self._name:setTextSize(24)
+	self._name:setTextColor(C_NAME)
+	self._info = Static(self, longest(infos))
+	self._info:setTextSize(15)
+	self._info:setTextColor(C_HINT)
+
+	local buttons < const > = Container(self, TableLayout({ 0, 0, 0 }, { 0 }, 0, 4, 10, 0))
+	self._takeButton = PushButton(buttons, "TAKE")
+	self._takeButton:setMinimumWidth(BUTTON_W)
+	self._takeButton:setOnClick(function() self:_take() end)
+	self._takeAllButton = PushButton(buttons, "TAKE ALL")
+	self._takeAllButton:setMinimumWidth(BUTTON_W)
+	self._takeAllButton:setOnClick(function() self:_takeAll() end)
+	local close < const > = PushButton(buttons, "CLOSE")
+	close:setMinimumWidth(BUTTON_W)
+	close:setOnClick(function() self:_close() end)
+
+	-- ---- The pack, and what the last take did ----
+	local footer < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, 28, 0))
+	self._pack = Static(footer, "PACK   SLOTS 00 / 00")
+	self._pack:setTextSize(16)
+	self._pack:setTextColor(C_LABEL)
+	self._message = Static(footer, "NO ROOM IN THE PACK FOR IRON HELMET   TAB FOR THE PACK")
+	self._message:setTextSize(16)
+	self._message:setTextColor(C_MESSAGE)
+
+	local hint < const > = Static(self, "DOUBLE CLICK TO TAKE     E TO CLOSE     TAB FOR THE PACK")
+	hint:setTextSize(14)
+	hint:setTextColor(C_HINT)
+end
+
+function ChestView:setOnClose(fn)
+	self._closeFn = fn
+	return self
+end
+
+-- Look into chest `index`. Called by the host after the dialog has been shown, so the labels
+-- are re-placed in cells the layout has already given them.
+function ChestView:showChest(index, notice)
+	self._index = index
+	self._selected = 1
+	self._lastClick = nil
+	setText(self._notice, notice or "")
+	setText(self._message, "")
+	self:refresh()
+end
+
+-- Redraw everything from what is in the chest and in the pack.
+function ChestView:refresh()
+	local context < const > = self._context
+	local left < const > = (self._index ~= nil) and context:chestContents(self._index) or {}
+	local inv < const > = context:inventory()
+	self._serial = inv:serial()
+
+	if #left > #self._cells then
+		print("ChestView: chest " .. tostring(self._index) .. " holds " .. #left .. " stacks; the window shows " .. #self._cells .. ".")
+	end
+	if self._selected ~= nil and self._selected > math.min(#left, #self._cells) then
+		self._selected = (#left > 0) and math.min(#left, #self._cells) or nil
+	end
+
+	for i, cell in ipairs(self._cells) do
+		local entry < const > = left[i]
+		if entry ~= nil then
+			cell:setItem(entry.kind, entry.count)
+		else
+			cell:setItem(nil, nil)
+		end
+		cell:setEquipped(false)
+		cell:setSelected(i == self._selected)
+	end
+
+	local entry < const > = (self._selected ~= nil) and left[self._selected] or nil
+	if entry ~= nil then
+		local def < const > = Items[entry.kind]
+		setText(self._name, describe(entry))
+		setText(self._info, (def ~= nil and def.info) or "")
+	else
+		setText(self._name, (#left == 0) and "THE CHEST IS EMPTY" or "")
+		setText(self._info, "")
+	end
+	self._takeButton:setEnable(entry ~= nil)
+	self._takeAllButton:setEnable(#left > 0)
+
+	setText(self._pack, "PACK   SLOTS " .. tostring(inv:used()) .. " / " .. tostring(inv:capacity()))
+end
+
+-- Tick the double-click clock, and redraw if the pack has moved. Called by the host every frame
+-- the window is up.
+function ChestView:update(dt)
+	self._clock = self._clock + dt
+	if self._context:inventory():serial() ~= self._serial then
+		self:refresh()
+	end
+end
+
+-- Private
+
+function ChestView:_onCell(i)
+	local left < const > = self._context:chestContents(self._index)
+	if left[i] == nil then
+		return
+	end
+	local last < const > = self._lastClick
+	self._lastClick = { index = i, time = self._clock }
+	self._selected = i
+	if last ~= nil and last.index == i and self._clock - last.time <= DOUBLE_CLICK then
+		self._lastClick = nil
+		self:_take()
+		return
+	end
+	self:refresh()
+end
+
+function ChestView:_take()
+	if self._index == nil or self._selected == nil then
+		return
+	end
+	local left < const > = self._context:chestContents(self._index)
+	local entry < const > = left[self._selected]
+	if entry == nil then
+		return
+	end
+	local kind < const > = entry.kind
+	local before < const > = entry.count
+	local added < const > = self._context:takeFromChest(self._index, self._selected)
+	if added <= 0 then
+		setText(self._message, "NO ROOM IN THE PACK FOR " .. plural(kind) .. "   TAB FOR THE PACK")
+	elseif added < before then
+		setText(self._message, "TOOK " .. Items.describe(kind, added) .. "   THE PACK IS FULL")
+	else
+		setText(self._message, "TOOK " .. Items.describe(kind, added))
+	end
+	self:_afterTake()
+end
+
+function ChestView:_takeAll()
+	if self._index == nil then
+		return
+	end
+	local any < const >, rest < const > = self._context:takeAllFromChest(self._index)
+	if rest then
+		setText(self._message, any and "THE PACK IS FULL   TAB FOR THE PACK" or "NO ROOM IN THE PACK   TAB FOR THE PACK")
+	elseif any then
+		setText(self._message, "TOOK EVERYTHING")
+	end
+	self:_afterTake()
+end
+
+-- Redraw around what is left. An emptied chest stays on screen, reading as empty, until the
+-- player closes it: a window that vanished on its own the moment the last stack came out read as
+-- the game taking it away from them.
+function ChestView:_afterTake()
+	self:refresh()
+end
+
+function ChestView:_close()
+	if self._closeFn ~= nil then
+		self._closeFn()
+	end
+end
+]]></text>
+</object>

@@ -30,8 +30,10 @@
 #using \{17E40000-0000-4000-8000-000000000001}
 #using \{17E40000-0000-4000-8000-000000000002}
 
--- Scripts/Views/InventoryView, the pack on screen (Tab).
+-- Scripts/Views/InventoryView, the pack on screen (Tab), and Scripts/Views/ChestView, a chest's
+-- contents on screen (E at one).
 #using \{17E40000-0000-4000-8000-000000000004}
+#using \{17E40000-0000-4000-8000-000000000005}
 
 -- Scripts/Pickup, the base of everything lying in the world that goes into the pack. Not
 -- named in this file -- the stage only ever talks to whichever component an item holds --
@@ -171,12 +173,6 @@ local CUTSCENE_RADIUS < const > = Config.cutscene.radius
 -- enough: at the 3 m/s walk that is a step every two thirds of a second, and sprinting
 -- doubles the rate on its own without a second number to tune.
 local STEP_STRIDE < const > = Config.player.stepStride
-
--- How far the player has to be from where a collected pickup stood before it is put
--- back (see the respawn pass in Main:update). Comfortably past Pickup's own TAKE_RANGE
--- of 1.2 m, so one can never reappear inside the radius that would collect it again on
--- the same frame, and far enough that it is not appearing in the player's face.
-local RESPAWN_CLEARANCE < const > = Config.pickup.respawnClearance
 
 -- The landmarks the map marks, in the order they are drawn. Looked up by entity
 -- name and quietly skipped when a scene has none of them, which is what keeps this
@@ -410,11 +406,6 @@ function Main:new(params, environment)
 	-- the stage and thirty controllers to decide whether it is still news.
 	self._gunshot = nil
 
-	-- Collected pickups waiting to be put back, as { entity, timer } -- see
-	-- _respawnLater. Held by the Stage because a pickup that has left the world is
-	-- not updated and so cannot time its own return.
-	self._respawning = {}
-
 	-- The off hand. What is in it is the pack's to say -- a relic equipped there (Inventory:
 	-- equipped("hand")) -- and this is only the entity being shown in it: the first relic in
 	-- the pack, posed in the left hand every frame (postUpdate) while one is equipped. The
@@ -430,21 +421,26 @@ function Main:new(params, environment)
 	-- of the ward posts stand behind it, so what it locks away is ground the night can
 	-- be won on. The gate owns itself entirely -- the pair of leaves and their swing,
 	-- the grind, and the invisible "GateBlocker" box that does the actual barring,
-	-- which its own unlock() takes out of the world (see Scripts/Gate) -- and the key
-	-- that opens it owns being a key (Scripts/Key). This stage keeps only what is
+	-- which its own unlock() takes out of the world (see Scripts/Gate) -- and a key is
+	-- an item in the pack (_unlockGate spends one). This stage keeps only what is
 	-- *around* the gates: where they stand, which are still locked, and how close the
 	-- player has to be for the "locked" prompt to bother saying so.
 	self._gateRange = Config.key.gateRange        -- how close to a locked gate the prompt reaches
 	self._gates = nil             -- resolved off the world; index order is stable, see resolve
 	self._unlockedGateIndex = {}  -- gate index -> true; plain data, so it survives a hot reload
 
-	-- Chests. Each one owns its lid, its creak and putting what it holds into the box
-	-- (Scripts/Chest) -- and what it holds is the level's, a property on each placed
-	-- chest -- so this stage keeps only the same three things it keeps for the gates:
-	-- where they stand, which are already open, and how close E reaches.
+	-- Chests. Each one owns its lid and its creak (Scripts/Chest), and what it held when the
+	-- night began is the level's, a property on each placed chest. What this stage keeps is
+	-- what the gates keep -- where they stand, which are open, how close E reaches -- and one
+	-- thing more: what is still in each chest once it has been opened. The player takes from
+	-- that through the chest window (Scripts/Views/ChestView, see _setChestOpen), and what
+	-- they leave is there to come back for. Plain data, keyed by chest index, so it survives a
+	-- hot reload with the rest.
 	self._chestRange = Config.chest.reachRange
 	self._chests = nil            -- resolved off the world; index order is stable, see resolve
 	self._openedChestIndex = {}   -- chest index -> true; plain data, so it survives a hot reload
+	self._chestContents = {}      -- chest index -> { { kind, count }, ... } still inside it
+	self._chestOpen = nil         -- the index of the chest whose window is up, or nil
 
 	-- Levers, and the gates only a lever opens (the cave's portcullises). A lever owns
 	-- its throw and finds its own gate by id (Scripts/Lever); a lever gate is a Gate
@@ -605,6 +601,12 @@ function Main:new(params, environment)
 	self._inventoryView = InventoryView(self._inventoryDialog, self)
 	self._inventoryView:setOnClose(function() self:_setInventoryOpen(false) end)
 
+	-- A chest's contents (E at a chest): Scripts/Views/ChestView, in its dialog, held the same way
+	-- as the pack's. See _openChest and _setChestOpen.
+	self._chestDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._chestView = ChestView(self._chestDialog, self)
+	self._chestView:setOnClose(function() self:_setChestOpen(nil) end)
+
 	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
 	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
 	-- created after the HUD and the other dialogs so it covers them -- but before the
@@ -677,35 +679,67 @@ function Main:_showHud(show)
 	self._lblCheats:setVisible(show)
 end
 
--- Open or close the pack (Tab). It is a pause in everything but name: _paused is what every
--- frozen thing in this game already reads -- the zombies, the spawner, the pickups, the corpse
--- timers, this stage's own update below the freeze -- so setting it is the whole of holding the
--- night still while the player looks through their things. The HUD goes, as it does for the
--- pause menu, and the cursor is handed back to click with.
+-- Hold the night still for one of the game's own windows -- the pack or a chest -- or let it
+-- go again. It is a pause in everything but name: _paused is what every frozen thing in this
+-- game already reads -- the zombies, the spawner, the pickups, the corpse timers, this stage's
+-- own update below the freeze -- so setting it is the whole of holding the night still while
+-- the player looks through their things. The HUD goes, as it does for the pause menu, and the
+-- cursor is handed back to click with.
 --
--- Not over a cutscene or the dawn, which own the camera, and not on top of the pause menu or
--- either of the night's ending screens.
+-- Refused over a cutscene or the dawn, which own the camera, and on top of the pause menu,
+-- another window, or either of the night's ending screens.
+function Main:_canOpenPanel()
+	return not (self._gameOver or self._nightOver or self._paused or self._cutscene ~= nil)
+end
+
+function Main:_holdForPanel(hold)
+	self._paused = hold
+	self:_showHud(not hold)
+	self.environment.input.inputSystem:setExclusive(not hold)
+	if hold then
+		self.environment.render.renderView:showCursor()
+	else
+		self.environment.render.renderView:hideCursor()
+	end
+end
+
+-- Open or close the pack (Tab).
 function Main:_setInventoryOpen(open)
 	if open == self._inventoryOpen then
 		return
 	end
-	if open and (self._gameOver or self._nightOver or self._paused or self._cutscene ~= nil) then
+	if open and not self:_canOpenPanel() then
 		return
 	end
 	self._inventoryOpen = open
-	self._paused = open
-	self:_showHud(not open)
+	self:_holdForPanel(open)
 	if open then
 		-- Shown first and filled second: show() lays the dialog out, and the view re-places its
 		-- labels in the cells that layout gives them (InventoryView:refresh).
 		self._inventoryDialog:show()
 		self._inventoryView:refresh()
-		self.environment.input.inputSystem:setExclusive(false)
-		self.environment.render.renderView:showCursor()
 	else
 		self._inventoryDialog:hide()
-		self.environment.input.inputSystem:setExclusive(true)
-		self.environment.render.renderView:hideCursor()
+	end
+end
+
+-- Put up the window for chest `index` (the chest's own `notice` line under its title), or with
+-- nil take it down. Only the player takes it down -- E, Escape, the CLOSE button, or Tab, which
+-- goes on to the pack -- even once the chest is empty.
+function Main:_setChestOpen(index, notice)
+	if index == self._chestOpen then
+		return
+	end
+	if index ~= nil and (self._chestOpen ~= nil or not self:_canOpenPanel()) then
+		return
+	end
+	self._chestOpen = index
+	self:_holdForPanel(index ~= nil)
+	if index ~= nil then
+		self._chestDialog:show()
+		self._chestView:showChest(index, notice)
+	else
+		self._chestDialog:hide()
 	end
 end
 
@@ -798,17 +832,18 @@ function Main:_census(when)
 	local all < const > = world:getEntitiesWithinRange(Vector4(0.0, 0.0, 0.0, 1.0), 1.0e6).size
 	print(string.format(
 		"census (%s): entities %d | enemies %d effects? %d | dead %d pendingImpulse %d " ..
-		"respawning %d | lua heap %.1f KiB",
+		"| lua heap %.1f KiB",
 		when,
 		all,
 		world:getEntities("Enemy").size,
 		all - world:getEntities("Enemy").size,
 		n(self._deadEnemies),
-		-- Careful: the length operator must not start a line. The script preprocessor
-		-- trims each line and treats a leading '#' as a directive, so "#self._respawning"
-		-- on its own line is an unknown keyword and the whole script fails to build --
-		-- before it is ever compiled, so Lua's own syntax check says nothing.
-		n(self._pendingImpulse), #self._respawning,
+		-- Careful if a length is ever added here: the length operator must not start a
+		-- line. The script preprocessor trims each line and treats a leading '#' as a
+		-- directive, so "#self._list" on its own line is an unknown keyword and the whole
+		-- script fails to build -- before it is ever compiled, so Lua's own syntax check
+		-- says nothing.
+		n(self._pendingImpulse),
 		allocatedMemory() / 1024.0
 	))
 end
@@ -869,6 +904,11 @@ function Main:finalize()
 		self._inventoryDialog:remove()
 		self._inventoryDialog = nil
 		self._inventoryView = nil
+	end
+	if self._chestDialog ~= nil then
+		self._chestDialog:remove()
+		self._chestDialog = nil
+		self._chestView = nil
 	end
 	if self._pauseDialog ~= nil then
 		self._pauseDialog:remove()
@@ -1187,10 +1227,18 @@ function Main:giveItem(kind, count, entity)
 	end
 	local text = self:_feedCounted(kind, added)
 
+	-- Committing to a run is exactly when the night should lean in. What kind of run taking
+	-- this item is -- the key's, a relic's -- the item says (Items: `event`), and it is said
+	-- here so it counts the same off the ground or out of a chest. The orchestrator ignores an
+	-- event it has no tuning for.
+	local def < const > = Items[kind]
+	if def ~= nil and def.event ~= nil and self._orchestrator ~= nil then
+		self._orchestrator:notify(def.event)
+	end
+
 	-- Something that has to be equipped before it does anything says how as it arrives -- the
 	-- relic above all, which lights nothing from the pack -- and a weapon found while another is
 	-- in hand says how to reach it.
-	local def < const > = Items[kind]
 	if added < count then
 		text = text .. "   THE PACK IS FULL"
 	elseif def ~= nil and def.equip ~= nil and not self._inventory:isEquipped(kind) then
@@ -1526,17 +1574,18 @@ function Main:_nearestLockedGate(maxDist)
 	return self:_nearestRecord(self._gates, stillLocked, maxDist)
 end
 
-local function stillClosed(c)
-	return not c.opened
+-- The nearest chest E has anything to do with: one still shut, or one opened with something
+-- still left in it. A chest emptied is done with, and the prompt stops offering it.
+function Main:_nearestChest(maxDist)
+	return self:_nearestRecord(self._chests, function(c)
+		if not c.opened then
+			return true
+		end
+		local left < const > = self._chestContents[c.index]
+		return left ~= nil and #left > 0
+	end, maxDist)
 end
 
-function Main:_nearestClosedChest(maxDist)
-	return self:_nearestRecord(self._chests, stillClosed, maxDist)
-end
-
--- Open a chest: the lid, the creak and the loot are Chest:open's; what is kept here is
--- which chests stand open, as plain data for the hot reload, and the line saying what
--- was inside -- which the chest words, since only it knows what it held.
 local function notPulled(l)
 	return not l.pulled
 end
@@ -1578,14 +1627,74 @@ function Main:_pullLever(lever)
 	end
 end
 
+-- E at a chest. The first time, the lid comes up (Chest:open) and what the level put in the box
+-- becomes what is left in it (Chest:contents); every time, the chest window goes up over it --
+-- unless there is nothing in it to show, which a line says instead.
 function Main:_openChest(chest)
-	chest.opened = true
-	self._openedChestIndex[chest.index] = true
 	local sc < const > = chest.entity:getComponent(traktor.world.ScriptComponent)
-	if sc ~= nil then
-		sc:open()
-		self:_showNotice(sc:notice())
+	if not chest.opened then
+		chest.opened = true
+		self._openedChestIndex[chest.index] = true
+		self._chestContents[chest.index] = (sc ~= nil and sc.contents ~= nil) and sc:contents() or {}
+		if sc ~= nil then
+			sc:open()
+		end
 	end
+	local left < const > = self._chestContents[chest.index]
+	if left == nil or #left == 0 then
+		self:_showNotice("THE CHEST IS EMPTY")
+		return
+	end
+	self:_setChestOpen(chest.index, (sc ~= nil and sc.notice ~= nil) and sc:notice() or nil)
+end
+
+-- ---- What the chest window is given ----
+--
+-- Everything Scripts/Views/ChestView offers, done here because the stage owns both ends of it:
+-- what is left in the chest, and the pack it goes into.
+
+-- What is still in chest `index`, as { { kind, count }, ... }. Read it, do not change it.
+function Main:chestContents(index)
+	return self._chestContents[index] or {}
+end
+
+-- Take the stack at `slot` out of chest `index` into the pack -- as much of it as fits, the rest
+-- staying where it is. Returns how many went, and the kind.
+function Main:takeFromChest(index, slot)
+	local left < const > = self._chestContents[index]
+	local entry < const > = (left ~= nil) and left[slot] or nil
+	if entry == nil then
+		return 0, nil
+	end
+	local added < const > = self:giveItem(entry.kind, entry.count)
+	entry.count = entry.count - added
+	if entry.count <= 0 then
+		table.remove(left, slot)
+	end
+	return added, entry.kind
+end
+
+-- Take everything that fits, stack by stack in the order the chest holds them. Returns whether
+-- anything went, and whether anything was left behind for want of room.
+function Main:takeAllFromChest(index)
+	local left < const > = self._chestContents[index]
+	if left == nil then
+		return false, false
+	end
+	local any = false
+	local slot = 1
+	while slot <= #left do
+		local before < const > = #left
+		local added < const > = self:takeFromChest(index, slot)
+		if added > 0 then
+			any = true
+		end
+		-- An emptied stack has been removed, so the next one has moved up into this slot.
+		if #left == before then
+			slot = slot + 1
+		end
+	end
+	return any, #left > 0
 end
 
 -- Flat distance from the player to one ward record, measured the same way.
@@ -1602,8 +1711,7 @@ end
 -- The closest thing E could take into the pack, scanning TAKE_NAMES in priority order: the
 -- first name with a candidate in reach wins outright, so standing where a relic and the key are
 -- both in reach, E takes the relic -- the night's objective beats the detour. Returns the entity
--- and its Pickup component. How close is close enough is each item's own (Pickup:reach), and so
--- is whether it can be taken yet (Pickup:isReady -- a key still rising with a chest's lid).
+-- and its Pickup component. How close is close enough is each item's own (Pickup:reach).
 --
 -- "Lying here" is visibility: a relic in the pack or spent on a post is hidden (Pickup:show),
 -- and reading that off the entity rather than out of a table on the Stage is what keeps a spent
@@ -1627,7 +1735,7 @@ function Main:_nearestTakeable()
 			i = i + 1
 			if e.visible then
 				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-				if sc ~= nil and sc.pressToTake ~= nil and sc:pressToTake() and sc:isReady() then
+				if sc ~= nil and sc.pressToTake ~= nil and sc:pressToTake() then
 					local q < const > = e.transform.translation
 					local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
 					local d < const > = dx * dx + dy * dy + dz * dz
@@ -2463,12 +2571,12 @@ end
 -- In this order, and each for a reason:
 --
 --   * Something lying in reach goes into the pack first, so a relic beside a dark post is taken
---     before the one in hand is spent, and a key in an opened chest before the next chest.
+--     before the one in hand is spent.
 --   * A dark ward in reach takes the relic in the off hand. Only one *equipped* lights it: a
 --     relic in the pack is something the player has decided to carry, and one in hand is one
 --     they have decided to spend -- which is the whole of what equipping it means.
 --   * A locked gate takes a key straight out of the pack; keys are never equipped.
---   * Then the chests and the levers, as before.
+--   * Then a chest -- shut, or opened with something left in it -- and the levers.
 --   * Last, the lines that only say why nothing happens: a relic carried but not in hand at a
 --     dark post, a lever gate no key fits, a locked gate with no key.
 function Main:_whatWouldE()
@@ -2488,7 +2596,7 @@ function Main:_whatWouldE()
 		return "unlock", gate
 	end
 
-	local chest < const > = self:_nearestClosedChest(self._chestRange)
+	local chest < const > = self:_nearestChest(self._chestRange)
 	if chest ~= nil then
 		return "chest", chest
 	end
@@ -2544,7 +2652,8 @@ function Main:_updateHudText(dt)
 		elseif verb == "unlock" then
 			prompt = "E   UNLOCK THE GATE"
 		elseif verb == "chest" then
-			prompt = "E   OPEN THE CHEST"
+			-- Shut, or opened before with something left in it.
+			prompt = target.opened and "E   SEARCH THE CHEST" or "E   OPEN THE CHEST"
 		elseif verb == "lever" then
 			prompt = "E   PULL THE LEVER"
 		elseif verb == "needRelic" then
@@ -2584,31 +2693,6 @@ function Main:_playCue(name)
 		return nil
 	end
 	return self._bloodEvents:raise(name)
-end
-
--- Book a collected pickup's return: Scripts/Pickup destroys itself and leaves *this*
--- behind -- which entity data to rebuild from, and the transform to rebuild it at -- to be
--- built again after `delay` seconds. A delay of zero (the Pickup base's default) or no
--- entity data means it is gone for good, so this is also the switch that turns respawning
--- off per kind.
---
--- Deliberately a recipe rather than the entity itself. Holding the collected entity out of
--- the world and putting the same object back was the first version of this, and it is a
--- lifetime trap: the queue lives on the Stage's Lua object, which Stage::destroy releases
--- *before* the world is torn down, so a queued entity's last reference goes at a moment
--- decided by the garbage collector -- and anything still pointing at it, including the
--- world's own entity list if one had just been put back, is then pointing at freed memory.
--- A Guid and a Transform cannot dangle.
-function Main:_respawnLater(entityData, transform, delay)
-	if entityData == nil or transform == nil or delay == nil or delay <= 0.0 then
-		return false
-	end
-	table.insert(self._respawning, {
-		entityData = entityData,
-		transform = transform,
-		timer = delay
-	})
-	return true
 end
 
 function Main:update(info)
@@ -2662,6 +2746,10 @@ function Main:update(info)
 	if self._inventoryOpen then
 		self._inventoryView:update(dt)
 	end
+	-- ...and a chest's window, the same.
+	if self._chestOpen ~= nil then
+		self._chestView:update(dt)
+	end
 
 	-- Wards ease up to full in their own Ward components (Scripts/Ward), which run
 	-- every frame regardless of this stage's freeze -- so a ward caught on the frame
@@ -2711,19 +2799,30 @@ function Main:update(info)
 			-- dialogs deep. isVisible(false) asks about this dialog alone -- the
 			-- recursive default would also be answering for the Frame above it.
 			--
-			-- With the pack open it closes the pack, and goes no further: Escape out of
-			-- the inventory is back to the game, not on into the pause menu.
+			-- With the pack or a chest open it closes that, and goes no further: Escape
+			-- out of either is back to the game, not on into the pause menu.
 			if self._optionsDialog:isVisible(false) then
 				self:_hideOptions()
 			elseif self._inventoryOpen then
 				self:_setInventoryOpen(false)
+			elseif self._chestOpen ~= nil then
+				self:_setChestOpen(nil)
 			else
 				self:_setPaused(not self._paused)
 			end
 		elseif mapping ~= nil and mapping:isStatePressed("STATE_INVENTORY") then
 			-- Tab opens the pack and closes it again. Not from the pause menu, which
-			-- _setInventoryOpen refuses on its own.
-			self:_setInventoryOpen(not self._inventoryOpen)
+			-- _setInventoryOpen refuses on its own. From a chest's window it goes on to
+			-- the pack -- the way to make room for what is in the chest.
+			if self._chestOpen ~= nil then
+				self:_setChestOpen(nil)
+				self:_setInventoryOpen(true)
+			else
+				self:_setInventoryOpen(not self._inventoryOpen)
+			end
+		elseif mapping ~= nil and self._chestOpen ~= nil and mapping:isStatePressed("STATE_INTERACT") then
+			-- E opened the chest's window, and E closes it.
+			self:_setChestOpen(nil)
 		end
 	end
 	if self._paused then
@@ -2936,10 +3035,9 @@ function Main:update(info)
 		end
 	end
 
-	-- Health and ammo pickups collect themselves now: each carries a Pickup
-	-- ScriptComponent (Scripts/Pickup, subclassed by HealthPickup / AmmoPickup) that
-	-- notices the player walking over it and applies its effect straight to this
-	-- stage. (Treasure pickups and their HUD counter have been removed.)
+	-- Walk-over pickups collect themselves: each carries a Scripts/Pickup ScriptComponent
+	-- that notices the player standing on it and puts what it is -- named in the
+	-- component's properties -- into the pack (giveItem).
 
 	-- Enemy contact damage: every enemy within hurt range drains health, and
 	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
@@ -3089,45 +3187,6 @@ function Main:update(info)
 		end
 	end
 
-	-- Pickups on their way back: the mirror image of the corpse pass above. Scripts/Pickup
-	-- takes a collected one out of the world and books it here (_respawnLater), and this
-	-- is what puts it back where it stood.
-	--
-	-- Held off while the player is standing within RESPAWN_CLEARANCE of the spot, rather
-	-- than dropped straight in on the timer. A crate materialising in front of someone is
-	-- the one way this can look broken, and the wait is also what stops a spot being
-	-- farmed: camp the place a flask stood and it simply never refills, so the way to get
-	-- one is to leave and come back. The timer is *not* held with it -- it has already
-	-- elapsed -- so stepping off the spot brings it back at once.
-	--
-	-- Iterated backwards so a due entry can be removed mid-loop. Each one is built fresh
-	-- from its entity data, exactly as the Spawner builds a zombie and a hive builds its
-	-- brood -- WorldLayer:createEntity adds it to the world itself -- so what comes back is
-	-- a new pickup with nothing carried over from the one that was taken.
-	do
-		local pp = self._humanoid ~= nil and self._humanoid.transform.translation or nil
-		for i = #self._respawning, 1, -1 do
-			local r = self._respawning[i]
-			r.timer = r.timer - dt
-			if r.timer <= 0.0 then
-				local clear = true
-				if pp ~= nil then
-					local q < const > = r.transform.translation
-					local dx < const > = q.x - pp.x
-					local dz < const > = q.z - pp.z
-					clear = dx * dx + dz * dz >= RESPAWN_CLEARANCE * RESPAWN_CLEARANCE
-				end
-				if clear then
-					table.remove(self._respawning, i)
-					local pickup = self.world:createEntity(r.entityData)
-					if pickup ~= nil then
-						pickup.transform = r.transform
-					end
-				end
-			end
-		end
-	end
-
 	-- Update HUD. The bar animates itself from here on (see the :update calls at
 	-- the top of this function); this only hands it the current health.
 	self._healthBar:setValue(self._health / self._maxHealth)
@@ -3262,11 +3321,6 @@ function Main:reload()
 	-- therefore costs that one hive its opening -- it stays marked awake and dormant --
 	-- which is a fair price for reload never being able to strand a stale entity.
 	self._pendingHive = nil
-	-- Pending pickup respawns are dropped too -- not because they could dangle (they are
-	-- plain data now, see _respawnLater) but because a reload brings the world back with
-	-- every pickup already in it, so building one again would stand a second pickup in the
-	-- same spot.
-	self._respawning = {}
 end
 
 ]]></text>

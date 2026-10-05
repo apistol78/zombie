@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{24613848-1E97-D54E-B42F-80D995A7FCA3}</id>
+	<name>Lamp</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+					<id>{A21151B0-5B65-F94E-8526-1D74E83B71B0}</id>
+					<name>Lamp</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components/>
+					<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
+				</item>
+			</entityData>
+		</item>
+		<item type="traktor.physics.JointComponentData">
+			<jointDesc type="traktor.physics.BallJointDesc">
+				<anchor>0, 1, 0, 1</anchor>
+			</jointDesc>
+		</item>
+	</components>
+</object>

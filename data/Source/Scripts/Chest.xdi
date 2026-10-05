@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
-#using {6E9AD100-0000-4000-8000-000000000010}
 #using \{17E40000-0000-4000-8000-000000000001}
 import(traktor)
 
 -- Chest
 --
 -- An iron-strapped strongbox the player opens with E. The lid swings up about its hinge and
--- the hinges creak; what is inside is not put into the world at all. It is shown -- Main puts
--- up the chest window (Scripts/Views/ChestView) with the box's contents in it -- and the
--- player takes what they want straight into the pack. Whatever is left stays in the chest,
+-- the hinges creak -- both the entity's theater act ACT, not this script -- and what is inside
+-- is not put into the world at all. It is shown -- Main puts up the chest window
+-- (Scripts/Views/ChestView) with the box's contents in it -- and the player takes what they
+-- want straight into the pack. Whatever is left stays in the chest,
 -- to be come back for.
 --
 -- This component owns the lid and what the level put in the box; which chests stand open and
@@ -35,22 +35,20 @@ import(traktor)
 --           "THE SEXTON'S KEY", say.
 --
 -- Attach to an entity named "Chest" (the name is what Main collects them by, as for wards and
--- gates) whose GroupComponent holds a child named "Lid": the lid mesh with its origin on the
--- hinge and the lid extending +Z, authored at HINGE in the chest's frame. The swing rebuilds
--- exactly that transform with the opening pitch added, so a closed chest stands precisely as it
--- was authored. Models: tools/gen_chest.py.
+-- gates) carrying a TheaterEntityComponent with an act named ACT. In Entities/Chest/Chest that
+-- act pitches the GroupComponent's "Lid" child (the lid mesh, origin on the hinge, extending
+-- +Z) back about the hinge, and carries the creak as an event key at its start, so the swing
+-- and its sound are timed together in the theater editor. The act runs on whether or not
+-- the chest window has the game paused (that pause is only the scripts' _paused flag), so the
+-- lid is seen coming up behind it. Models: tools/gen_chest.py.
 --
 -- open() is idempotent and takes instant=true -- the reload-restore path, the same contract as
--- Gate:unlock -- to snap the lid open without the creak.
+-- Hive:activate -- which only re-marks the chest: the lid is C++ state that survived the reload
+-- standing exactly where the act left it, and replaying the act would creak it again.
 
 Chest = Chest or class("Chest", traktor.world.ScriptComponent)
 
-local SWING_ANGLE < const > = Config.chest.swingAngle   -- how far the lid swings back (rad)
-local SWING_TIME < const > = Config.chest.swingTime     -- ...and how long it takes (s)
-
--- Where the hinge runs in the chest's own frame: the top of the back wall. Must match the Lid
--- child's translation in Entities/Chest/Chest and BODY_H/DEPTH in tools/gen_chest.py.
-local HINGE < const > = Vector4(0.0, 0.42, -0.26, 0.0)
+local ACT < const > = "Open"   -- the act that swings the lid up and creaks the hinges
 
 -- The names chests in the scenes were given before there were item kinds.
 local ALIASES < const > = {
@@ -115,66 +113,26 @@ function Chest:notice()
 	return self:_property("notice")
 end
 
+-- Play the act, which is the whole of opening: the lid and the creak are both on it. A chest
+-- without the act (Performance:play logs which) or without a theater component at all stays
+-- shut and silent, but it still opens to the player -- Main shows its contents regardless.
 function Chest:open(instant)
 	if self._opened then
 		return
 	end
 	self._opened = true
-	self._openT = instant and 1.0 or 0.0
-	self._posed = false
+	if instant then
+		return
+	end
 
-	-- The creak is skipped on the restore path: the chest was already opened in an earlier
-	-- life of this script, and putting it back the way it was is not an event.
-	if not instant then
-		local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
-		if fx ~= nil then
-			fx:raise("open")
-		end
+	local performance < const > = self.owner:getComponent(traktor.theater.TheaterEntityComponent)
+	if performance ~= nil then
+		performance:play(ACT)
 	end
 end
 
 function Chest:isOpen()
 	return self._opened == true
-end
-
-function Chest:_lid()
-	if self._lidEntity == nil then
-		local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
-		if group ~= nil then
-			self._lidEntity = group:getEntity("Lid", 0)
-		end
-	end
-	return self._lidEntity
-end
-
--- The swing. Runs whether or not the chest window has the game paused, so the lid is seen
--- coming up behind it.
-function Chest:update(context, totalTime, deltaTime)
-	-- A closed chest's lid stands exactly where it was authored: nothing to do. _posed stops an
-	-- open one being re-written every frame forever.
-	if not self._opened or self._posed then
-		return
-	end
-	local lid < const > = self:_lid()
-	if lid == nil then
-		return
-	end
-
-	local t = math.min(1.0, (self._openT or 0.0) + deltaTime / SWING_TIME)
-	self._openT = t
-	if t >= 1.0 then
-		self._posed = true
-	end
-
-	-- Out of the latch quickly, then easing back against the hinge stops.
-	local k < const > = 1.0 - (1.0 - t) * (1.0 - t)
-	local a < const > = k * SWING_ANGLE
-
-	-- Negative pitch: a pitch about +X carries the lid's +Z (its front edge) downward, so
-	-- lifting it is the other way.
-	local base < const > = self.owner.transform
-	local br < const > = base.rotation
-	lid.transform = Transform(base.translation + br * HINGE, br * Quaternion.fromEulerAngles(0.0, -a, 0.0))
 end
 ]]></text>
 </object>

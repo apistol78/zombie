@@ -576,13 +576,10 @@ Config = {
 	--
 	-- What each chest holds is not here: it is a property on each placed chest, so the
 	-- level decides it (see Scripts/Chest). Opening one shows what is inside in a window of
-	-- its own (Scripts/Views/ChestView), and the player takes what they want.
+	-- its own (Scripts/Views/ChestView), and the player takes what they want. How the lid
+	-- swings is not here either: it is the "Open" theater act on Entities/Chest/Chest.
 	chest = {
 		reachRange = 1.8,       -- how close to a chest you must be to open or search it (m)
-		-- How far the lid swings back (rad; ~105 deg leaves it resting past upright) and
-		-- how long that takes.
-		swingAngle = 1.85,
-		swingTime = 0.9,
 		-- How many stacks the chest window shows. A chest authored with more than this
 		-- shows the first ones, and the rest as they are taken.
 		slots = 8

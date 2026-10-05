@@ -42,19 +42,6 @@
 			<eventCollide/>
 			<transformFilter>0</transformFilter>
 		</item>
-		<item type="traktor.world.EventSetComponentData">
-			<eventData>
-				<item>
-					<first>open</first>
-					<second type="traktor.spray.SoundEventData" version="1">
-						<sound>{C4E57000-0000-4000-8000-000000000006}</sound>
-						<positional>true</positional>
-						<follow>false</follow>
-						<autoStopFar>true</autoStopFar>
-					</second>
-				</item>
-			</eventData>
-		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
 			<class>{C4E57000-0000-4000-8000-000000000001}</class>
 			<properties type="traktor.PropertyGroup">
@@ -97,5 +84,96 @@
 				</item>
 			</entityData>
 		</item>
-	</components>
-</object>
+		<item type="traktor.theater.TheaterEntityComponentData">
+			<acts>
+				<item type="traktor.theater.ActData">
+					<name>Open</name>
+					<duration>1.5</duration>
+					<tracks>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{C4E57000-0000-4000-8000-000000000011}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events>
+								<item>
+									<T>0</T>
+									<event type="traktor.spray.SoundEventData" version="1">
+										<sound>{C4E57000-0000-4000-8000-000000000006}</sound>
+										<positional>true</positional>
+										<follow>false</follow>
+										<autoStopFar>true</autoStopFar>
+									</event>
+								</item>
+							</events>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0.42, -0.26, 1</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.225</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0.42, -0.26, 1</value>
+												<orientation>0, -0.809375, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.45</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0.42, -0.26, 1</value>
+												<orientation>0, -1.3875, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.675</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0.42, -0.26, 1</value>
+												<orientation>0, -1.73438, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.9</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>0, 0.42, -0.26, 1</value>
+												<orientation>0, -1.85, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+								</transform>
+								<properties/>
+							</item>
+						</tracks>
+					</item>
+				</acts>
+			</item>
+		</components>
+	</object>

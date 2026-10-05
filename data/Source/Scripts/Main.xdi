@@ -429,13 +429,13 @@ function Main:new(params, environment)
 	self._gates = nil             -- resolved off the world; index order is stable, see resolve
 	self._unlockedGateIndex = {}  -- gate index -> true; plain data, so it survives a hot reload
 
-	-- Chests. Each one owns its lid and its creak (Scripts/Chest), and what it held when the
-	-- night began is the level's, a property on each placed chest. What this stage keeps is
-	-- what the gates keep -- where they stand, which are open, how close E reaches -- and one
-	-- thing more: what is still in each chest once it has been opened. The player takes from
-	-- that through the chest window (Scripts/Views/ChestView, see _setChestOpen), and what
-	-- they leave is there to come back for. Plain data, keyed by chest index, so it survives a
-	-- hot reload with the rest.
+	-- Chests. Each one owns its lid and its creak (its "Open" act, Scripts/Chest), and what it
+	-- held when the night began is the level's, a property on each placed chest. What this
+	-- stage keeps is what the gates keep -- where they stand, which are open, how close E
+	-- reaches -- and one thing more: what is still in each chest once it has been opened. The
+	-- player takes from that through the chest window (Scripts/Views/ChestView, see
+	-- _setChestOpen), and what they leave is there to come back for. Plain data, keyed by chest
+	-- index, so it survives a hot reload with the rest.
 	self._chestRange = Config.chest.reachRange
 	self._chests = nil            -- resolved off the world; index order is stable, see resolve
 	self._openedChestIndex = {}   -- chest index -> true; plain data, so it survives a hot reload

@@ -92,7 +92,7 @@ function Startup:new(params, environment)
 	self._frame = Frame(root, 640, 360, TableLayout({ 100 }, { 100 }, 0, 0, 0, 0))
 
 	-- Menu: the logo over one button per selectable stage, then Options and Exit.
-	-- The Dialog auto-centers on its parent Frame; one column, four auto-height rows.
+	-- The Dialog auto-centers on its parent Frame; one column, one auto-height row each.
 	--
 	-- The logo goes *inside* the dialog rather than being floated over the frame
 	-- above it. A Dialog centres itself on its Frame and offers no way to be placed,
@@ -100,7 +100,7 @@ function Startup:new(params, environment)
 	-- from overlapping by hand at every window size; as a row it is laid out with
 	-- the buttons and the whole menu centres as one block. It replaces the old
 	-- "SELECT STAGE" heading, which the logo now says better.
-	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0, 0 }, 24, 24, 0, 16))
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
 
 	self._title = Title(self._dialog)
 
@@ -113,12 +113,8 @@ function Startup:new(params, environment)
 	buttonTerrain:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonTerrain:setOnClick(function() self:_select("TERRAIN") end)
 
-	-- Caves: the experimental underground map built from the modular cave kit
-	-- (Entities/Cave, tools/gen_cave_kit.py), played by the same Main stage script.
-	local buttonCave = MenuButton(self._dialog, "Caves")
-	buttonCave:setMinimumWidth(220)
-	buttonCave:setHorizontalAlign(Widget.ALIGN_CENTER)
-	buttonCave:setOnClick(function() self:_select("CAVE") end)
+	-- No button for the caves: they are reached from the forest, through the cave mouth in
+	-- Scene 2, with whatever the player is carrying (see Scripts/StageExit).
 
 	-- Options: graphics quality, which is the whole of it for now.
 	local buttonOptions = MenuButton(self._dialog, "Options")
@@ -132,7 +128,7 @@ function Startup:new(params, environment)
 	buttonExit:setHorizontalAlign(Widget.ALIGN_CENTER)
 	buttonExit:setOnClick(function() self:_leave(function() self:terminate() end) end)
 
-	self._buttons = { buttonTerrain, buttonCave, buttonOptions, buttonExit }
+	self._buttons = { buttonTerrain, buttonOptions, buttonExit }
 
 	-- The options dialog, built here and kept hidden: the view brings the rows, this
 	-- stage brings the box they sit in. Parented to the same Frame as the menu, which

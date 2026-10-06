@@ -178,6 +178,16 @@ function MachineGun:reset()
 	self._flash = 0.0
 end
 
+function MachineGun:saveState()
+	return { belt = self._belt }
+end
+
+function MachineGun:restoreState(state)
+	if state ~= nil and state.belt ~= nil then
+		self._belt = math.max(0, math.min(self._beltSize, state.belt))
+	end
+end
+
 function MachineGun:hasHud()
 	return true
 end

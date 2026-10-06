@@ -139,6 +139,16 @@ function Rifle:reset()
 	self._flash = 0.0
 end
 
+function Rifle:saveState()
+	return { mag = self._mag }
+end
+
+function Rifle:restoreState(state)
+	if state ~= nil and state.mag ~= nil then
+		self._mag = math.max(0, math.min(self._magSize, state.mag))
+	end
+end
+
 function Rifle:hasHud()
 	return true
 end

@@ -240,6 +240,79 @@ function Inventory:eachKept(fn)
 	end
 end
 
+-- ---- Between stages ----
+--
+-- The pack goes with the player from one stage to the next (Main:leaveStage), and a stage is a
+-- world of its own: a keepsake's entity belongs to the world it was found in and cannot follow.
+-- So what travels is the plain part -- every slot's kind and count, and what is equipped where --
+-- and the stage that owns the keepsakes hands their entities back on the way in (:attachKept).
+-- In a stage that has none of them the slot simply holds the count without them; see
+-- :keptMissing.
+
+-- Every slot as { kind, count }, and the equipped marks: plain data, no entities.
+function Inventory:saveState()
+	local slots = {}
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s ~= nil then
+			slots[i] = { kind = s.kind, count = s.count }
+		end
+	end
+	local equipped = {}
+	for place, kind in pairs(self._equipped) do
+		equipped[place] = kind
+	end
+	return { slots = slots, equipped = equipped }
+end
+
+-- Replace the whole pack with a saved one. Announced once, as a single change.
+function Inventory:restoreState(state)
+	self._slots = {}
+	self._equipped = {}
+	for i, s in pairs(state.slots or {}) do
+		if i >= 1 and i <= self._capacity and Items[s.kind] ~= nil and s.count > 0 then
+			self._slots[i] = { kind = s.kind, count = s.count }
+		end
+	end
+	for place, kind in pairs(state.equipped or {}) do
+		if self:count(kind) > 0 then
+			self._equipped[place] = kind
+		end
+	end
+	self:_changed()
+end
+
+-- Give `kind`'s stacks back their entities, front to back, as many as each stack counts. Not a
+-- change to what is carried -- only to what it is carried as -- so nothing is announced.
+function Inventory:attachKept(kind, entities)
+	local k = 1
+	for i = 1, self._capacity do
+		local s < const > = self._slots[i]
+		if s ~= nil and s.kind == kind then
+			s.entities = s.entities or {}
+			while #s.entities < s.count and k <= #entities do
+				table.insert(s.entities, entities[k])
+				k = k + 1
+			end
+		end
+	end
+end
+
+-- Does the stack in slot `i` count keepsakes it has no entities for? True in a stage other than
+-- the one they belong to; such a stack cannot be put down there, since there is nothing to stand
+-- on the ground.
+function Inventory:keptMissing(i)
+	local s < const > = self._slots[i]
+	if s == nil then
+		return false
+	end
+	local def < const > = Items[s.kind]
+	if def == nil or not def.keep then
+		return false
+	end
+	return s.entities == nil or #s.entities < s.count
+end
+
 -- ---- Equipment ----
 
 -- What is equipped in one of the three places ("weapon", "hand", "body"), or nil.

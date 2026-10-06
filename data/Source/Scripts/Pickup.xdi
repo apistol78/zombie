@@ -118,6 +118,12 @@ function Pickup:asDropped(count)
 	self._waitClear = true
 end
 
+-- What is left of this pile, put back by the stage when the player returns to a world they had
+-- already taken some of (Main:_restorePickups).
+function Pickup:setCount(count)
+	self._count = count
+end
+
 -- ---- Into the pack ----
 
 -- Put as much of this as fits into the pack. True when anything went; whatever did not fit
@@ -154,6 +160,12 @@ function Pickup:_taken(context)
 	if self:isKeepsake() then
 		self:show(false)
 		return
+	end
+
+	-- The stage keeps the books on what has been taken, so a world left for another stage and
+	-- come back to does not lay it out a second time (Main:pickupTaken).
+	if context.pickupTaken ~= nil then
+		context:pickupTaken(self.owner)
 	end
 
 	-- Then go, for good, and go properly. removeEntity while the world is updating is deferred, so

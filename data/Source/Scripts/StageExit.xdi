@@ -16,6 +16,21 @@ import(traktor)
 -- (this class with "target" and an optional "notice" line shown on the way out):
 -- ResolveExternal swaps both in for the referenced entity's, so one asset serves every
 -- exit. The cave's sits on the ledge outside Cave_Entrance (tools/gen_cave_layout.py).
+--
+-- Two more properties, both optional:
+--
+--   prompt     Offered rather than taken: standing in the volume puts "E   <prompt>" on the
+--              prompt line like any other interaction, and only pressing E leaves -- Main
+--              finds the exits that offer (:offers) in its E scan (_whatWouldE) and takes one
+--              through :take. Scene 2's cave mouth offers ("ENTER THE CAVE"); the way out of
+--              the cave does not, it is walked through.
+--   spawn      The name of an entity in the destination's world to stand the player on when
+--              they arrive -- facing the way it faces. Without it they arrive wherever that
+--              scene puts its Humanoid. The cave's exit names Scene 2's "CaveReturn", in
+--              front of the cave mouth.
+--
+-- Whatever the player carries goes with them, and the world they leave is remembered for
+-- when they come back: see Main:leaveStage.
 
 StageExit = StageExit or class("StageExit", traktor.world.ScriptComponent)
 
@@ -32,30 +47,55 @@ function StageExit:_property(name)
 	return v
 end
 
+-- The E line this exit offers, or nil for one that is walked through.
+function StageExit:prompt()
+	return self:_property("prompt")
+end
+
+-- Is `point` (the player) standing where this exit offers itself? Never for a walked-through one.
+function StageExit:offers(point)
+	if self:prompt() == nil then
+		return false
+	end
+	local volume < const > = self:_volume()
+	return volume ~= nil and volume:inside(point)
+end
+
+-- Leave through this exit: what E does at one that offers. Returns whether the trip started.
+function StageExit:take(context)
+	return context:leaveStage(self:_property("target") or "TERRAIN", self:_property("notice"), self:_property("spawn"))
+end
+
+function StageExit:_volume()
+	if self._volumeComponent == nil then
+		self._volumeComponent = self.owner:getComponent(traktor.world.VolumeComponent)
+	end
+	return self._volumeComponent
+end
+
 function StageExit:update(context, totalTime, deltaTime)
-	if context == nil or self._left then
+	-- One that offers waits for E (Main:_interact); only a walked-through one acts on its own.
+	if context == nil or self._left or self:prompt() ~= nil then
 		return
 	end
 	-- Not while the game is frozen or already over: a body sliding into the trigger
 	-- behind a Game Over screen must not whisk the stage away from under its menu.
-	if context._gameOver or context._paused or context._cutscene ~= nil then
+	if context._gameOver or context._paused or context._nightOver or context._cutscene ~= nil then
 		return
 	end
-	if self._volume == nil then
-		self._volume = self.owner:getComponent(traktor.world.VolumeComponent)
-	end
-	if self._player == nil then
-		self._player = self.world:getEntity("Humanoid")
-	end
-	if self._volume == nil or self._player == nil then
+	-- Nor before the stage has found the player. Until then the Humanoid is still where the
+	-- scene put it -- not yet stood on the spot it arrived at from another stage (Main:resolve)
+	-- -- and an exit near that spot would see it standing inside and send it straight back.
+	if context._humanoid == nil then
 		return
 	end
-	if not self._volume:inside(self._player.transform.translation) then
+	local volume < const > = self:_volume()
+	if volume == nil or not volume:inside(context._humanoid.transform.translation) then
 		return
 	end
 	-- Asked once. leaveStage refuses while another load is in flight (a restart, the
 	-- pause menu's exit), in which case this simply asks again next frame.
-	if context.leaveStage ~= nil and context:leaveStage(self:_property("target") or "TERRAIN", self:_property("notice")) then
+	if self:take(context) then
 		self._left = true
 	end
 end

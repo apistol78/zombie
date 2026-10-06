@@ -20525,6 +20525,93 @@
 			</components>
 		</item>
 		<item type="traktor.world.EntityData" version="2">
+			<id>{64DE9190-2C89-42D5-993C-DEDF69115B4C}</id>
+			<name>Cave Mouth</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{411110C6-4357-40CE-B008-636AB828E9B9}</id>
+							<name>Cave_Mouth</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>22.5, 24.2225, 81, 0</translation>
+								<rotation>0, -0.573576, 0, 0.819152</rotation>
+							</transform>
+							<components/>
+							<entityData>{0C613153-7D1B-874B-A70D-A1F1BB914C5F}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4079A540-A41F-476F-A202-80591F959901}</id>
+							<name>StageExit</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>20.151, 25.3, 81.855, 0</translation>
+								<rotation>0, -0.573576, 0, 0.819152</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.VolumeComponentData">
+									<size>6, 4, 4, 0</size>
+								</item>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{7743D1EA-AA64-450B-8984-CA52017B5912}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>prompt</first>
+												<second type="traktor.PropertyString">
+													<value>ENTER THE CAVE</value>
+												</second>
+											</item>
+											<item>
+												<first>target</first>
+												<second type="traktor.PropertyString">
+													<value>CAVE</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{CC103709-631E-4E37-9A73-233D5761B478}</entityData>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{9FFAA3A4-C9B8-46C3-9C92-9FA3D2E033FF}</id>
+							<name>CaveReturn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>17.332, 24.83, 82.881, 0</translation>
+								<rotation>0, -0.573576, 0, 0.819152</rotation>
+							</transform>
+							<components/>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
 			<id>{C4E57000-0000-4000-8000-000000000020}</id>
 			<name>Chests</name>
 			<state>

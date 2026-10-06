@@ -194,6 +194,21 @@ Main = Main or class("Main", Stage)
 function Main:new(params, environment)
 	Stage.new(self, params, environment)
 
+	-- Which stage this is, and what the player brought into it. Both gameplay stages run this
+	-- class, so each learns which it is from the name it was loaded by -- the Loading stage's
+	-- transition, handed on as params.target -- and a Restart, which passes nothing, is always
+	-- the forest (every gameplay stage's RESTART leads to Stages/STG - Terrain).
+	--
+	-- params.carry is what a trip from another stage brought along (see leaveStage): the
+	-- player -- pack, hands, health -- and the books of every world already visited, this one
+	-- among them if the player has been here before tonight. Absent, the night is new.
+	self._stageKey = (params ~= nil and params.target) or "TERRAIN"
+	local carry < const > = (params ~= nil) and params.carry or nil
+	self._worlds = (carry ~= nil and carry.worlds) or {}
+	-- The entity to stand the player on once the world is there (resolve), or nil to leave
+	-- them wherever the scene puts its Humanoid.
+	self._arrival = (carry ~= nil) and carry.spawn or nil
+
 	-- Initialize UiKit. Two resource kits: the HUD widgets' own art (UI/Hud,
 	-- imported from data/Assets/UI/Hud.svg) and UiKit's own movie, which the
 	-- menus and every Static come from. HealthBar/WeaponCarousel look their
@@ -235,9 +250,17 @@ function Main:new(params, environment)
 	--
 	-- Plain data throughout (but for the relics riding in it, which are their own entities),
 	-- so it survives a script hot reload as the rest of this stage's plain data does.
+	--
+	-- Or, arriving from another stage, with what the player had when they left it. The relics
+	-- in it come without their entities -- those belong to the world they were found in -- and
+	-- are handed back by that world on the way into it (_restorePickups).
 	self._inventory = Inventory(Config.inventory.slots)
-	for _, entry in ipairs(Config.inventory.start) do
-		self._inventory:add(entry[1], entry[2])
+	if carry ~= nil and carry.player ~= nil then
+		self._inventory:restoreState(carry.player.inventory)
+	else
+		for _, entry in ipairs(Config.inventory.start) do
+			self._inventory:add(entry[1], entry[2])
+		end
 	end
 
 	-- What the player has in their hands. Built before the HUD row below, because the row
@@ -638,6 +661,51 @@ function Main:new(params, environment)
 	-- dialog and the dawn wash: it is meant to be on screen whatever else is.
 	self._fps = FpsCounter(self._frame, environment)
 
+	-- The ways out of this stage that are taken with E (the cave mouth's): the StageExit
+	-- components that offer a prompt, resolved off the world. See _exitInReach.
+	self._exits = nil
+
+	-- Every pickup this world laid out, by where it was first found (_collectPickups), and the
+	-- stacks the player has put down in it since (dropSlot): the books that let a world left
+	-- for another stage be laid out again as the player left it.
+	self._pickups = nil
+	self._pickupKeyOf = nil
+	self._dropped = {}
+
+	-- Arriving from another stage: the player as they left it...
+	if carry ~= nil and carry.player ~= nil then
+		local p < const > = carry.player
+		self._health = math.max(1.0, math.min(self._maxHealth, p.health or self._maxHealth))
+		self._healthBar:setValue(self._health / self._maxHealth)
+		self._kills = p.kills or 0
+		self._loadout:restore(p.weapons)
+		self._godMode = p.godMode == true
+		self._infiniteAmmo = p.infiniteAmmo == true
+		if self._infiniteAmmo then
+			self._loadout:setInfiniteAmmo(true)
+		end
+		self:_updateCheatLabel()
+	end
+	if carry ~= nil then
+		self._orchestrator:restoreState(carry.orchestrator)
+	end
+
+	-- ...and this world as they left it, if they have been here before tonight. The index
+	-- tables are the same plain data a script hot reload keeps, so resolve() puts the wards,
+	-- hives, gates, chests and levers back exactly as it does after one; the pickups are
+	-- _collectPickups' to lay out again.
+	local here < const > = self._worlds[self._stageKey]
+	if here ~= nil then
+		self._litWardIndex = here.litWards or {}
+		self._awakeHiveIndex = here.awakeHives or {}
+		self._unlockedGateIndex = here.unlockedGates or {}
+		self._openedChestIndex = here.openedChests or {}
+		self._chestContents = here.chestContents or {}
+		self._pulledLeverIndex = here.pulledLevers or {}
+		self._pickupState = here.pickups
+		self._droppedState = here.dropped
+	end
+
 	environment.input.inputSystem:setExclusive(true)
 	environment.render.renderView:hideCursor()
 end
@@ -870,20 +938,87 @@ end
 
 -- Leave for another stage through the loading screen. "target" names one of the Loading
 -- stage's transitions (TERRAIN, CAVE, STARTUP; Loading falls back to STARTUP on anything
--- else), "notice" is an optional line flashed on the way out. Scripts/StageExit calls this
--- when the player walks into its volume -- the cave mouth's -- and it is the one hook for
--- anything else that should take the player somewhere. Returns whether the trip started:
--- false while another load (restart, the menus' exit) is already in flight.
-function Main:leaveStage(target, notice)
-	if self._loader ~= nil or target == nil then
+-- else), "notice" is an optional line flashed on the way out, and "spawn" the entity in the
+-- destination's world to stand the player on (nil: wherever its scene puts the Humanoid).
+-- Scripts/StageExit calls this when the player walks into its volume -- or presses E in one that
+-- offers itself (_interact) -- and it is the one hook for anything else that should take the player
+-- somewhere. Returns whether the trip started: false while another load (restart, the menus'
+-- exit) is already in flight, or once the night is decided.
+--
+-- The player goes as they are. What they carry -- the pack, the rounds in each weapon, their
+-- health, the cheats they had on -- rides through the Loading stage to the next one (_carry),
+-- and so do the books of this world: which wards burn, which chests stand open and what is left
+-- in them, what has been taken off the ground and where the relics are. Coming back here later
+-- tonight therefore finds it as it was left, rather than laid out afresh to be looted twice.
+-- The horde is not kept: the dead stay dead and the living are the spawner's to raise again.
+function Main:leaveStage(target, notice, spawn)
+	if self._loader ~= nil or target == nil or self._gameOver or self._nightOver then
 		return false
 	end
 	if notice ~= nil then
 		self:_showNotice(notice)
 	end
 	self:_census("leave")
-	self._loader = self:loadStageAsync("LOADING", { target = target })
+	self._loader = self:loadStageAsync("LOADING", { target = target, carry = self:_carry(spawn) })
 	return self._loader ~= nil
+end
+
+-- Everything that goes to the next stage, as plain data (but for the Transforms of things
+-- put down, which are values). The world books are keyed by stage, so the cave's and the
+-- forest's travel side by side for as long as the night lasts.
+function Main:_carry(spawn)
+	self._worlds[self._stageKey] = self:_saveWorld()
+	return {
+		spawn = spawn,
+		worlds = self._worlds,
+		orchestrator = self._orchestrator:saveState(),
+		player = {
+			inventory = self._inventory:saveState(),
+			weapons = self._loadout:snapshot(),
+			health = self._health,
+			kills = self._kills,
+			godMode = self._godMode,
+			infiniteAmmo = self._infiniteAmmo,
+		},
+	}
+end
+
+-- This world's books. The index tables are the ones resolve() restores from; the pickups are
+-- written out per home key (see _collectPickups) and only where something has changed: taken
+-- for good, a pile partly taken, or a keepsake -- a relic -- carried, put down or spent.
+function Main:_saveWorld()
+	local pickups = {}
+	for key, rec in pairs(self._pickups or {}) do
+		local sc < const > = rec.sc
+		if rec.taken then
+			pickups[key] = { taken = true }
+		elseif sc:isKeepsake() then
+			pickups[key] = {
+				carried = self._inventory:holds(rec.entity),
+				visible = rec.entity.visible,
+				at = rec.entity.transform
+			}
+		elseif sc._count ~= nil then
+			pickups[key] = { count = sc:itemCount() }
+		end
+	end
+	local dropped = {}
+	for e, _ in pairs(self._dropped) do
+		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and sc.itemKind ~= nil then
+			table.insert(dropped, { kind = sc:itemKind(), count = sc:itemCount(), at = e.transform })
+		end
+	end
+	return {
+		litWards = self._litWardIndex,
+		awakeHives = self._awakeHiveIndex,
+		unlockedGates = self._unlockedGateIndex,
+		openedChests = self._openedChestIndex,
+		chestContents = self._chestContents,
+		pulledLevers = self._pulledLeverIndex,
+		pickups = pickups,
+		dropped = dropped
+	}
 end
 
 -- Called by Stage::destroy on the way out, *before* the layers -- and so before the
@@ -983,6 +1118,15 @@ function Main:resolve()
 	if world == nil then
 		return
 	end
+	-- ...and not until the world has been through one update of its own. This stage's script
+	-- is updated *before* its layers are (Stage::update), and a ScriptComponent only builds its
+	-- script object on its first update or setTransform after joining the world -- so on the
+	-- very first frame every ward, chest and pickup is still a bare component with none of its
+	-- methods, and restoring one (turnOn, open, show) or asking what a pickup is would find
+	-- nothing to call. postUpdate, which runs after the world, says when it has.
+	if not self._worldUpdated then
+		return
+	end
 	-- Collect the night's fixtures once: the wards, the hives and the gates, all
 	-- through _collectRecords above -- the stable ordering and the replay-free restore
 	-- are its two rules, and the same two for all three. Each list ends up empty
@@ -1032,6 +1176,30 @@ function Main:resolve()
 	if self._levers == nil then
 		self._levers = self:_collectRecords(world, "Lever", "pulled", self._pulledLeverIndex, "pull")
 	end
+	-- The ways out taken with E: every StageExit whose component offers a prompt. The ones that
+	-- are walked through (the cave's) see to themselves and are not listed.
+	if self._exits == nil then
+		self._exits = {}
+		local i = 0
+		while true do
+			local e < const > = world:getEntity("StageExit", i)
+			if e == nil then
+				break
+			end
+			i = i + 1
+			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+			if sc ~= nil and sc.offers ~= nil and sc:prompt() ~= nil then
+				table.insert(self._exits, sc)
+			end
+		end
+	end
+	-- Every pickup lying in the world, and -- for a world the player has been in before tonight
+	-- -- laid out again as they left it. Before the humanoid is resolved below, which is what
+	-- the pickups wait on before anything can be walked over: so nothing has left the ground,
+	-- or moved off its first spot, when they are counted.
+	if self._pickups == nil then
+		self:_collectPickups(world)
+	end
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
 	end
@@ -1065,6 +1233,24 @@ function Main:resolve()
 		self._character = self._humanoid:getComponent(traktor.physics.CharacterComponent)
 		if self._character ~= nil then
 			self._heading = self._character.headAngle
+		end
+	end
+	-- Arriving from another stage at a named spot -- out of the cave, in front of its mouth:
+	-- stand the player on it, facing the way it faces. Assigning the entity's transform is what
+	-- moves the character controller's body and turns its head (CharacterComponent::setTransform),
+	-- so the heading is read back from it afterwards. A scene without the spot leaves the player
+	-- where the Humanoid stands.
+	if self._arrival ~= nil and self._character ~= nil then
+		local spot < const > = self._arrival
+		local mark < const > = world:getEntity(spot)
+		self._arrival = nil
+		if mark ~= nil then
+			self._humanoid.transform = mark.transform
+			self._heading = self._character.headAngle
+			self._pitch = 0.0
+			self._eyeY = nil
+		else
+			print("Main: no arrival spot named '" .. tostring(spot) .. "' in this scene")
 		end
 	end
 	if self._poseController == nil and self._humanoid ~= nil then
@@ -1256,6 +1442,116 @@ function Main:packFull(kind)
 	self:_feed("NO ROOM IN THE PACK FOR " .. what)
 end
 
+-- A pickup has gone for good, all of it into the pack (Pickup:_taken). Booked so the world can
+-- be laid out without it if the player leaves for another stage and comes back.
+function Main:pickupTaken(entity)
+	local key < const > = (self._pickupKeyOf ~= nil) and self._pickupKeyOf[entity] or nil
+	if key ~= nil then
+		self._pickups[key].taken = true
+		self._pickupKeyOf[entity] = nil
+	end
+	self._dropped[entity] = nil
+end
+
+-- ---- The pickups' books ----
+--
+-- Pickup promises that nothing taken ever comes back, and a world is built afresh every time its
+-- stage is loaded -- so a trip into the cave and out again would lay the whole forest out a
+-- second time unless the stage remembers what was taken from it. It does that here, keyed by
+-- where each pickup was first found: the scene puts every one in the same place every load, so
+-- that spot is a name for it that survives the world being rebuilt (and is kept on the component
+-- as _home, so a script hot reload that keeps the world finds the same names again).
+
+-- Count every pickup in the world once, and lay out what was saved for it, if anything was.
+function Main:_collectPickups(world)
+	self._pickups = {}
+	self._pickupKeyOf = {}
+	local all < const > = world:getEntitiesWithinRange(Vector4(0.0, 0.0, 0.0, 1.0), 1.0e6)
+	for i = 0, all.size - 1 do
+		local e < const > = all:get(i)
+		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and sc.itemKind ~= nil and sc.collect ~= nil and not self._dropped[e] then
+			local key = sc._home
+			if key == nil then
+				local p < const > = e.transform.translation
+				key = string.format("%s@%.2f,%.2f,%.2f", tostring(sc:itemKind()), p.x, p.y, p.z)
+				-- Two of a kind on the very same spot would share a name; the second gets a mark.
+				while self._pickups[key] ~= nil do
+					key = key .. "'"
+				end
+				sc._home = key
+			end
+			self._pickups[key] = { entity = e, sc = sc }
+			self._pickupKeyOf[e] = key
+		end
+	end
+
+	if self._pickupState ~= nil or self._droppedState ~= nil then
+		self:_restorePickups(world, self._pickupState or {}, self._droppedState or {})
+		self._pickupState = nil
+		self._droppedState = nil
+	end
+end
+
+-- Lay the pickups out as the player left them (see _saveWorld): the ones taken taken away, the
+-- piles partly taken cut down, every relic back where it was -- in the pack, on the ground or
+-- parked on the post it lit -- and the stacks the player put down put back down.
+function Main:_restorePickups(world, saved, dropped)
+	local carried = {}
+	for key, s in pairs(saved) do
+		local rec < const > = self._pickups[key]
+		if rec ~= nil then
+			if s.taken then
+				rec.taken = true
+				self._pickupKeyOf[rec.entity] = nil
+				-- Same pair as Pickup:_taken: removed, then destroyed, or its components linger.
+				world:removeEntity(rec.entity)
+				rec.entity:destroy()
+			elseif s.carried then
+				-- In the pack: hidden, and handed back to it below.
+				rec.sc:show(false)
+				local kind < const > = rec.sc:itemKind()
+				carried[kind] = carried[kind] or {}
+				table.insert(carried[kind], rec.entity)
+			elseif s.at ~= nil then
+				rec.entity.transform = s.at
+				rec.sc:show(s.visible == true)
+			elseif s.count ~= nil then
+				rec.sc:setCount(s.count)
+			end
+		end
+	end
+	for kind, list in pairs(carried) do
+		self._inventory:attachKept(kind, list)
+	end
+	for _, d in ipairs(dropped) do
+		self:_putDownNew(d.kind, d.count, d.at)
+	end
+end
+
+-- Build a stack of `kind` fresh from its item's entity data and stand it at `transform`, told how
+-- many it is (Pickup:asDropped) -- which also keeps it from being walked straight back into the
+-- pack. Booked as put down, so it is still lying there if the player leaves and comes back.
+function Main:_putDownNew(kind, count, transform)
+	local def < const > = Items[kind]
+	if def == nil or def.entity == nil then
+		return nil
+	end
+	local e < const > = self.world:createEntity(def.entity)
+	if e == nil then
+		return nil
+	end
+	-- The transform first: assigning it is what brings the item's script object into being
+	-- (ScriptComponent::setTransform), so it can be told what it is straight after.
+	e.transform = transform
+	local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+	if sc ~= nil and sc.asDropped ~= nil then
+		sc:asDropped(count)
+	end
+	self._dropped[e] = true
+	return e
+end
+
 -- ---- What the inventory screen is given ----
 --
 -- Every action Scripts/Views/InventoryView offers, done here because the stage is what owns
@@ -1306,8 +1602,7 @@ end
 
 -- Put the whole stack in slot `index` down in front of the player. A keepsake is its own entity
 -- and is stood back on the ground (Pickup:putDown); anything else is built fresh from its item's
--- entity data and told how many it is (Pickup:asDropped) -- which also keeps it from coming
--- back on a timer, and from being walked straight back into the pack.
+-- entity data (_putDownNew).
 function Main:dropSlot(index)
 	local s < const > = self._inventory:slot(index)
 	if s == nil or self._humanoid == nil or self.world == nil then
@@ -1316,6 +1611,12 @@ function Main:dropSlot(index)
 	local def < const > = Items[s.kind]
 	if def == nil or (not def.keep and def.entity == nil) then
 		self:_feed("THAT CANNOT BE PUT DOWN")
+		return false
+	end
+	-- A relic carried out of the world it belongs to has no entity here to stand on the ground
+	-- (Inventory:keptMissing): it can be put down again once the player is back in that world.
+	if self._inventory:keptMissing(index) then
+		self:_feed("THAT CANNOT BE PUT DOWN HERE")
 		return false
 	end
 
@@ -1328,16 +1629,7 @@ function Main:dropSlot(index)
 			end
 		end
 	else
-		local e < const > = self.world:createEntity(def.entity)
-		if e ~= nil then
-			-- The transform first: assigning it is what brings the item's script object into
-			-- being (ScriptComponent::setTransform), so it can be told what it is straight after.
-			e.transform = self:_dropTransform(0)
-			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-			if sc ~= nil and sc.asDropped ~= nil then
-				sc:asDropped(stack.count)
-			end
-		end
+		self:_putDownNew(stack.kind, stack.count, self:_dropTransform(0))
 	end
 	self:_feed("PUT DOWN " .. Items.describe(stack.kind, stack.count))
 	return true
@@ -1603,6 +1895,20 @@ end
 
 function Main:_nearestShutLeverGate(maxDist)
 	return self:_nearestRecord(self._leverGates, leverGateShut, maxDist)
+end
+
+-- The StageExit the player is standing in that offers itself to E (the cave mouth), or nil.
+function Main:_exitInReach()
+	if self._exits == nil or self._humanoid == nil then
+		return nil
+	end
+	local at < const > = self._humanoid.transform.translation
+	for _, sc in ipairs(self._exits) do
+		if sc:offers(at) then
+			return sc
+		end
+	end
+	return nil
 end
 
 -- Pull a lever: the throw and the gate opening are Lever:pull's; kept here is which
@@ -2572,7 +2878,7 @@ end
 
 -- What E would do right now, as one answer for both the press (_interact) and the prompt
 -- line (_updateHudText), so the promise and the press can never disagree. Returns a verb --
--- "take", "light", "unlock", "chest", "lever", or one of the refusals "needRelic", "noBudge",
+-- "take", "light", "unlock", "chest", "lever", "exit", or one of the refusals "needRelic", "noBudge",
 -- "locked" that only explain -- and whatever it would be done to.
 --
 -- In this order, and each for a reason:
@@ -2584,6 +2890,7 @@ end
 --     they have decided to spend -- which is the whole of what equipping it means.
 --   * A locked gate takes a key straight out of the pack; keys are never equipped.
 --   * Then a chest -- shut, or opened with something left in it -- and the levers.
+--   * Then a way out of the stage -- the cave mouth -- whose line is the exit's own prompt.
 --   * Last, the lines that only say why nothing happens: a relic carried but not in hand at a
 --     dark post, a lever gate no key fits, a locked gate with no key.
 function Main:_whatWouldE()
@@ -2611,6 +2918,11 @@ function Main:_whatWouldE()
 	local lever < const > = self:_nearestUnpulledLever(self._leverRange)
 	if lever ~= nil then
 		return "lever", lever
+	end
+
+	local exit < const > = self:_exitInReach()
+	if exit ~= nil then
+		return "exit", exit
 	end
 
 	if ward ~= nil and inv:count("relic") > 0 then
@@ -2641,6 +2953,8 @@ function Main:_interact()
 		self:_openChest(target)
 	elseif verb == "lever" then
 		self:_pullLever(target)
+	elseif verb == "exit" then
+		target:take(self)
 	elseif verb == "needRelic" then
 		self:_feed("EQUIP A RELIC TO LIGHT THE WARD   TAB")
 	end
@@ -2663,6 +2977,8 @@ function Main:_updateHudText(dt)
 			prompt = target.opened and "E   SEARCH THE CHEST" or "E   OPEN THE CHEST"
 		elseif verb == "lever" then
 			prompt = "E   PULL THE LEVER"
+		elseif verb == "exit" then
+			prompt = "E   " .. target:prompt()
 		elseif verb == "needRelic" then
 			-- A relic in the pack is not one in hand: the line says how to get it there.
 			prompt = "TAB   EQUIP A RELIC TO LIGHT THE WARD"
@@ -3202,6 +3518,9 @@ end
 -- postUpdate runs after every entity has updated this frame, so the camera follows the
 -- player's *post-update* position -- no one-frame lag behind the character.
 function Main:postUpdate(info)
+	-- The world has updated at least once: every component's script object exists. See resolve.
+	self._worldUpdated = true
+
 	if self._gameOver or self._paused then
 		return
 	end
@@ -3316,6 +3635,7 @@ function Main:reload()
 	self._chests = nil
 	self._levers = nil
 	self._leverGates = nil
+	self._exits = nil
 	-- Hive records likewise; resolve() restores which of them are open from
 	-- _awakeHiveIndex, which survives. A cutscene in flight holds one of those records,
 	-- so it goes too -- reloading mid-shot cuts back to the player rather than leaving
@@ -3328,6 +3648,13 @@ function Main:reload()
 	-- therefore costs that one hive its opening -- it stays marked awake and dormant --
 	-- which is a fair price for reload never being able to strand a stale entity.
 	self._pendingHive = nil
+	-- The pickups' books hold live entity handles too, and are counted again from whatever world
+	-- comes back (a pickup that survives keeps its name on itself, Pickup _home). What was put
+	-- down is forgotten: a stack lying in the world across a hot reload stays where it is, but is
+	-- no longer remembered if the player then leaves this stage.
+	self._pickups = nil
+	self._pickupKeyOf = nil
+	self._dropped = {}
 end
 
 ]]></text>

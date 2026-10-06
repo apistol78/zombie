@@ -118,6 +118,18 @@ end
 function Weapon:reset()
 end
 
+-- What this weapon holds that the pack does not -- the rounds loaded in it -- as plain data, or
+-- nil for one that holds nothing of its own. Taken when the player leaves for another stage and
+-- handed back to the same weapon in the stage they arrive in (Loadout:snapshot / :restore), so a
+-- rifle carried into the cave with four in the magazine comes out of the loading screen with
+-- four. Anything in flight -- a reload half done, a grenade in the air -- is left behind.
+function Weapon:saveState()
+	return nil
+end
+
+function Weapon:restoreState(state)
+end
+
 -- Does this weapon take a seat on the HUD's weapon carousel? Asked before the row is laid
 -- out, because a TableLayout is built with its column list and cannot grow one afterwards
 -- -- see Loadout:hudColumns and the HUD block in Main:new.

@@ -81,6 +81,21 @@ function SpawnOrchestrator:notify(kind)
 	self._burstCap = math.max(self._burstCap, cap)
 end
 
+-- The surge in progress, as plain data, for the trip to another stage (Main:leaveStage)...
+function SpawnOrchestrator:saveState()
+	return { burst = self._burst, burstCap = self._burstCap }
+end
+
+-- ...and taken up again on arrival, in place of the nightfall surge the constructor opened
+-- with: walking out of the cave is the same night carrying on, not a new one falling.
+function SpawnOrchestrator:restoreState(state)
+	if state == nil then
+		return
+	end
+	self._burst = state.burst or 0.0
+	self._burstCap = state.burstCap or 0
+end
+
 -- One step of the night, ticked with the simulation delta from below Main:update's
 -- freeze returns, so a pause or a cutscene holds the surge where it stood.
 --

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{0C613153-7D1B-874B-A70D-A1F1BB914C5F}</id>
+	<name>Cave_Mouth</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{F8B6F22C-014C-024B-BC25-F25E41502E4D}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{B2384602-11A5-C348-AAB6-DF602C6B07ED}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+	</components>
+</object>

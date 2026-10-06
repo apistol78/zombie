@@ -254,6 +254,27 @@ function Loadout:reset()
 	self._melee:reset()
 end
 
+-- What every weapon holds of its own, keyed by its item, for the trip to another stage (see
+-- Weapon:saveState). Plain data; the pack carries the rest.
+function Loadout:snapshot()
+	local out = {}
+	for _, w in ipairs(self._weapons) do
+		out[w:item()] = w:saveState()
+	end
+	return out
+end
+
+-- ...and handed back on arrival, with every seat's count redrawn from it.
+function Loadout:restore(states)
+	if states == nil then
+		return
+	end
+	for _, w in ipairs(self._weapons) do
+		w:restoreState(states[w:item()])
+		w:_pushHud()
+	end
+end
+
 -- Below Main's freeze returns: cadences, reloads and fuses all stop with the game.
 function Loadout:update(dt)
 	for _, w in ipairs(self._weapons) do

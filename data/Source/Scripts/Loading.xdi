@@ -20,7 +20,8 @@ import(traktor)
 --   self:loadStageAsync("LOADING", { target = "MAIN" })
 --
 -- "target" must name one of *this* stage's transitions (TERRAIN / CAVE / STARTUP,
--- declared in Stages/Loading), since this is the stage that performs the load.
+-- declared in Stages/Loading), since this is the stage that performs the load. An
+-- optional "carry" rides through untouched to the stage loaded; see Main:leaveStage.
 
 Loading = Loading or class("Loading", Stage)
 
@@ -84,7 +85,15 @@ function Loading:new(params, environment)
 	if target == nil or not self:haveTransition(target) then
 		target = "STARTUP"
 	end
-	self._loader = self:loadStageAsync(target, nil)
+	-- The stage loaded is told which of these transitions it was reached by -- the gameplay
+	-- stages share one class (Scripts/Main), and that is how each knows which world it is --
+	-- and is handed whatever the caller carried across: the player's pack, health and hands,
+	-- and the state of the worlds already visited (Main:leaveStage). Nothing carried means a
+	-- fresh night, as from the menu.
+	self._loader = self:loadStageAsync(target, {
+		target = target,
+		carry = (params ~= nil) and params.carry or nil
+	})
 	self._done = false
 
 	-- Input is left exactly as the calling stage set it up: nothing here is

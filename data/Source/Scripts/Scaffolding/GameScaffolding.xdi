@@ -127,7 +127,7 @@ end
 
 -- A smaller, dimmer line: what the page shows, and what to click.
 function GameScaffolding:note(parent, text)
-	return Static(parent, text):setTextSize(14):setTextColor(C_NOTE)
+	-- return Static(parent, text):setTextSize(14):setTextColor(C_NOTE)
 end
 
 -- A row on the backdrop: a caption, then `cells` more cells, each sized to what is put in it.

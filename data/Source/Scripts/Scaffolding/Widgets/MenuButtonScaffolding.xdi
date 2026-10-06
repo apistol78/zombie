@@ -23,7 +23,7 @@ import(traktor)
 
 MenuButtonScaffolding = MenuButtonScaffolding or class("MenuButtonScaffolding", GameScaffolding)
 
-local MENU < const > = { "New Game", "Options", "Exit" }
+local MENU < const > = { "Continue", "New Game", "Options", "Exit" }
 local MENU_W < const > = 220
 local ARROW_W < const > = 44
 local VALUE_W < const > = 150

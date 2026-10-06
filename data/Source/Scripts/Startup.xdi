@@ -9,6 +9,9 @@
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
 #using \{3E8A5D21-6C47-4B9F-8E12-A47D0C93F5B6}
 
+-- Scripts/SaveGame: whether there is a night to continue, and what it was.
+#using \{5EDB4A29-67A6-5A46-ADBA-88BC29BB7363}
+
 import(traktor)
 
 -- Startup
@@ -100,7 +103,15 @@ function Startup:new(params, environment)
 	-- from overlapping by hand at every window size; as a row it is laid out with
 	-- the buttons and the whole menu centres as one block. It replaces the old
 	-- "SELECT STAGE" heading, which the logo now says better.
-	self._dialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
+	--
+	-- Continue heads the column when there is a saved night to go back to (Scripts/SaveGame),
+	-- and is not there at all otherwise -- so the rows are counted rather than fixed.
+	local canContinue < const > = SaveGame.exists(environment)
+	local rows = { 0, 0, 0, 0 }   -- the logo, New Game, Options, Exit
+	if canContinue then
+		table.insert(rows, 0)
+	end
+	self._dialog = Dialog(self._frame, TableLayout({ 0 }, rows, 24, 24, 0, 16))
 
 	self._title = Title(self._dialog)
 
@@ -108,6 +119,17 @@ function Startup:new(params, environment)
 	-- falls through Widget:place to "take the whole cell", and PushButton:place then
 	-- stretches its background to match -- so against a 520 px logo they would each
 	-- have become 520 px wide instead of the 220 asked for here.
+	local buttonContinue = nil
+	if canContinue then
+		buttonContinue = MenuButton(self._dialog, "Continue")
+		buttonContinue:setMinimumWidth(220)
+		buttonContinue:setHorizontalAlign(Widget.ALIGN_CENTER)
+		buttonContinue:setOnClick(function() self:_continue() end)
+	end
+
+	-- New Game starts the night afresh. The saved one is kept until the new night saves over it
+	-- -- through the pause menu, or at the cave mouth -- so a New Game abandoned in the first
+	-- minute costs nothing.
 	local buttonTerrain = MenuButton(self._dialog, "New Game")
 	buttonTerrain:setMinimumWidth(220)
 	buttonTerrain:setHorizontalAlign(Widget.ALIGN_CENTER)
@@ -129,6 +151,9 @@ function Startup:new(params, environment)
 	buttonExit:setOnClick(function() self:_leave(function() self:terminate() end) end)
 
 	self._buttons = { buttonTerrain, buttonOptions, buttonExit }
+	if buttonContinue ~= nil then
+		table.insert(self._buttons, 1, buttonContinue)
+	end
 
 	-- The options dialog, built here and kept hidden: the view brings the rows, this
 	-- stage brings the box they sit in. Parented to the same Frame as the menu, which
@@ -167,6 +192,24 @@ function Startup:_select(target)
 		return
 	end
 	self._loader = self:loadStageAsync("LOADING", { target = target })
+	self:_leave(nil)
+end
+
+-- Continue the saved night: read it back and hand it to the Loading stage exactly as a trip
+-- between stages hands over what the player carries (Scripts/Main leaveStage) -- the stage it
+-- was saved in, and everything about the player and the worlds -- with where the player stood
+-- riding along in it. Guarded like _select. A save that cannot be read is said so in the log and
+-- leaves the menu where it is.
+function Startup:_continue()
+	if self._loader ~= nil or self._leaving or self._paging then
+		return
+	end
+	local save < const > = SaveGame.read(self.environment)
+	if save == nil or save.target == nil then
+		print("Startup: the saved night could not be read")
+		return
+	end
+	self._loader = self:loadStageAsync("LOADING", { target = save.target, carry = save.carry })
 	self:_leave(nil)
 end
 

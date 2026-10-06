@@ -30,6 +30,10 @@
 #using \{17E40000-0000-4000-8000-000000000001}
 #using \{17E40000-0000-4000-8000-000000000002}
 
+-- Scripts/SaveGame: the one saved night, in the session manager's save data. What goes in it is
+-- what a stage switch carries (see leaveStage and _saveGame).
+#using \{5EDB4A29-67A6-5A46-ADBA-88BC29BB7363}
+
 -- Scripts/Views/InventoryView, the pack on screen (Tab), and Scripts/Views/ChestView, a chest's
 -- contents on screen (E at one).
 #using \{17E40000-0000-4000-8000-000000000004}
@@ -189,6 +193,20 @@ local LANDMARKS < const > = {
 	{ entity = "Altar", glyph = "altar" },
 }
 
+-- A Transform as plain numbers and back: position, and the rotation as Euler angles (head,
+-- pitch, bank). Everything a stage switch carries is plain data -- it is also what goes into a
+-- save (Scripts/SaveGame), which cannot store a Transform. Euler angles rather than the
+-- quaternion's components, since the script binding of Quaternion does not reach z and w.
+local function plainTransform(t)
+	local p < const > = t.translation
+	local e < const > = t.rotation.eulerAngles
+	return { p.x, p.y, p.z, e.x, e.y, e.z }
+end
+
+local function fromPlainTransform(a)
+	return Transform(Vector4(a[1], a[2], a[3], 1.0), Quaternion.fromEulerAngles(a[4], a[5], a[6]))
+end
+
 Main = Main or class("Main", Stage)
 
 function Main:new(params, environment)
@@ -208,6 +226,9 @@ function Main:new(params, environment)
 	-- The entity to stand the player on once the world is there (resolve), or nil to leave
 	-- them wherever the scene puts its Humanoid.
 	self._arrival = (carry ~= nil) and carry.spawn or nil
+	-- ...or, continuing a saved night, exactly where the player stood when it was saved (see
+	-- _saveGame): { x, y, z, heading }. Takes the place of the spot above.
+	self._arrivalPlace = (carry ~= nil) and carry.place or nil
 
 	-- Initialize UiKit. Two resource kits: the HUD widgets' own art (UI/Hud,
 	-- imported from data/Assets/UI/Hud.svg) and UiKit's own movie, which the
@@ -587,7 +608,10 @@ function Main:new(params, environment)
 	-- holding a "PAUSED" title and Resume / Options / Exit. Dialog/PushButton come via
 	-- UiKit.
 	self._paused = false
-	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
+	--
+	-- Save sits under Resume, and only on a target that can save at all (Scripts/SaveGame).
+	local canSave < const > = SaveGame.available(environment)
+	self._pauseDialog = Dialog(self._frame, TableLayout({ 0 }, canSave and { 0, 0, 0, 0, 0 } or { 0, 0, 0, 0 }, 24, 24, 0, 16))
 	local pauseTitle = Static(self._pauseDialog, "PAUSED")
 	pauseTitle:setTextSize(40)
 	pauseTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
@@ -597,6 +621,10 @@ function Main:new(params, environment)
 	pauseTitle:setTextColor(Color4f(1.0, 1.0, 1.0, 1.0))
 	self._resumeButton = PushButton(self._pauseDialog, "Resume")
 	self._resumeButton:setOnClick(function() self:_setPaused(false) end)
+	if canSave then
+		self._saveButton = PushButton(self._pauseDialog, "Save")
+		self._saveButton:setOnClick(function() self:_saveFromMenu() end)
+	end
 	self._optionsButton = PushButton(self._pauseDialog, "Options")
 	self._optionsButton:setOnClick(function() self:_showOptions() end)
 	-- Exit back to the startup stage, via the loading screen (see _exitToStartup).
@@ -959,13 +987,40 @@ function Main:leaveStage(target, notice, spawn)
 		self:_showNotice(notice)
 	end
 	self:_census("leave")
-	self._loader = self:loadStageAsync("LOADING", { target = target, carry = self:_carry(spawn) })
+	local carry < const > = self:_carry(spawn)
+	self._loader = self:loadStageAsync("LOADING", { target = target, carry = carry })
+	-- Every trip between the forest and the cave is also a save: the night as it stands, to be
+	-- continued in the stage being left for, at the spot the player arrives on.
+	if self._loader ~= nil and (target == "TERRAIN" or target == "CAVE") then
+		SaveGame.write(self.environment, { target = target, carry = carry })
+	end
 	return self._loader ~= nil
 end
 
--- Everything that goes to the next stage, as plain data (but for the Transforms of things
--- put down, which are values). The world books are keyed by stage, so the cave's and the
--- forest's travel side by side for as long as the night lasts.
+-- Save the night as it stands: what a trip to another stage would carry, plus which stage this
+-- is and where the player is standing in it, so Continue (Scripts/Startup) puts them back on the
+-- spot. Refused once the night is decided or while a load is already under way. Returns whether
+-- it was written.
+function Main:_saveGame()
+	if self._humanoid == nil or self._gameOver or self._nightOver or self._loader ~= nil then
+		return false
+	end
+	local carry < const > = self:_carry(nil)
+	local at < const > = self._humanoid.transform.translation
+	carry.place = { x = at.x, y = at.y, z = at.z, heading = self._heading }
+	return SaveGame.write(self.environment, { target = self._stageKey, carry = carry })
+end
+
+-- The pause menu's Save: save, then straight back into the night with a line saying so.
+function Main:_saveFromMenu()
+	local saved < const > = self:_saveGame()
+	self:_setPaused(false)
+	self:_showNotice(saved and "GAME SAVED" or "THE GAME COULD NOT BE SAVED")
+end
+
+-- Everything that goes to the next stage, as plain data throughout -- transforms included
+-- (plainTransform) -- since it is also what a save is made of. The world books are keyed by
+-- stage, so the cave's and the forest's travel side by side for as long as the night lasts.
 function Main:_carry(spawn)
 	self._worlds[self._stageKey] = self:_saveWorld()
 	return {
@@ -996,7 +1051,7 @@ function Main:_saveWorld()
 			pickups[key] = {
 				carried = self._inventory:holds(rec.entity),
 				visible = rec.entity.visible,
-				at = rec.entity.transform
+				at = plainTransform(rec.entity.transform)
 			}
 		elseif sc._count ~= nil then
 			pickups[key] = { count = sc:itemCount() }
@@ -1006,7 +1061,7 @@ function Main:_saveWorld()
 	for e, _ in pairs(self._dropped) do
 		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
 		if sc ~= nil and sc.itemKind ~= nil then
-			table.insert(dropped, { kind = sc:itemKind(), count = sc:itemCount(), at = e.transform })
+			table.insert(dropped, { kind = sc:itemKind(), count = sc:itemCount(), at = plainTransform(e.transform) })
 		end
 	end
 	return {
@@ -1240,6 +1295,18 @@ function Main:resolve()
 	-- moves the character controller's body and turns its head (CharacterComponent::setTransform),
 	-- so the heading is read back from it afterwards. A scene without the spot leaves the player
 	-- where the Humanoid stands.
+	if self._arrivalPlace ~= nil and self._character ~= nil then
+		local pl < const > = self._arrivalPlace
+		self._arrivalPlace = nil
+		self._arrival = nil
+		self._humanoid.transform = Transform(
+			Vector4(pl.x, pl.y + 0.05, pl.z, 1.0),
+			Quaternion.fromEulerAngles(pl.heading or 0.0, 0.0, 0.0)
+		)
+		self._heading = self._character.headAngle
+		self._pitch = 0.0
+		self._eyeY = nil
+	end
 	if self._arrival ~= nil and self._character ~= nil then
 		local spot < const > = self._arrival
 		local mark < const > = world:getEntity(spot)
@@ -1514,7 +1581,7 @@ function Main:_restorePickups(world, saved, dropped)
 				carried[kind] = carried[kind] or {}
 				table.insert(carried[kind], rec.entity)
 			elseif s.at ~= nil then
-				rec.entity.transform = s.at
+				rec.entity.transform = fromPlainTransform(s.at)
 				rec.sc:show(s.visible == true)
 			elseif s.count ~= nil then
 				rec.sc:setCount(s.count)
@@ -1525,7 +1592,7 @@ function Main:_restorePickups(world, saved, dropped)
 		self._inventory:attachKept(kind, list)
 	end
 	for _, d in ipairs(dropped) do
-		self:_putDownNew(d.kind, d.count, d.at)
+		self:_putDownNew(d.kind, d.count, fromPlainTransform(d.at))
 	end
 end
 
@@ -2522,6 +2589,10 @@ function Main:_breakDawn()
 	end
 	self._nightOver = true
 	self._dawn = 0.0
+
+	-- The night is won, so there is nothing left to continue: the saved one is forgotten, and
+	-- the menu offers New Game alone again.
+	SaveGame.clear(self.environment)
 
 	-- The HUD is done here, not when the victory card finally goes up: what is left
 	-- is the sunrise, and a health bar and an ammunition count are the wrong things to

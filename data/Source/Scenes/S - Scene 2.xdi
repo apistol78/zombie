@@ -419,7 +419,7 @@
 							</state>
 							<transform>
 								<translation>0, 3.319462, 21.97621, 0</translation>
-								<rotation>0, 0.990216, -0.139543, -0</rotation>
+								<rotation>0, 0.990216, -0.139543, 0</rotation>
 							</transform>
 							<components>
 								<item type="traktor.world.CameraComponentData">
@@ -4562,33 +4562,6 @@
 									</bodyDesc>
 									<eventCollide/>
 									<transformFilter>0</transformFilter>
-								</item>
-							</components>
-						</item>
-						<item type="traktor.world.EntityData" version="2">
-							<id>{2AEDFAF2-30D6-478C-8983-6DE2036D248F}</id>
-							<name>AtmoLight</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>false</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>-21, 24.288401, 69.5, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
-							</transform>
-							<components>
-								<item type="traktor.world.LightComponentData" version="13">
-									<lightType>Point</lightType>
-									<color>1, 0.55, 0.2, 1</color>
-									<intensity>900</intensity>
-									<castShadow>false</castShadow>
-									<nearRange>0</nearRange>
-									<farRange>7</farRange>
-									<radius>1.570796</radius>
-									<flickerAmount>0.45</flickerAmount>
-									<flickerFilter>0.3</flickerFilter>
-									<bakeMode>LbmIndirect</bakeMode>
 								</item>
 							</components>
 						</item>
@@ -20563,7 +20536,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>20.151, 25.3, 81.855, 0</translation>
+								<translation>20.150999, 25.299999, 81.855003, 0</translation>
 								<rotation>0, -0.573576, 0, 0.819152</rotation>
 							</transform>
 							<components>
@@ -20602,7 +20575,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>17.332, 24.83, 82.881, 0</translation>
+								<translation>17.332001, 24.83, 82.880997, 0</translation>
 								<rotation>0, -0.573576, 0, 0.819152</rotation>
 							</transform>
 							<components/>

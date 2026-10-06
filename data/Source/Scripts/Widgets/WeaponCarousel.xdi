@@ -21,12 +21,15 @@ import(traktor)
 -- the HUD says one thing at a time instead of three at once.
 --
 -- The art is the "MC_WeaponCarousel" export of the UI/Hud movie, authored in
--- data/Assets/UI/Hud.svg (tools/gen_hud_svg.py). Layers, back to front:
+-- data/Assets/UI/Hud.svg (tools/gen_hud_svg.py), in the Skyrim style the rest of
+-- the HUD is: smoke with a silver rule above and below, and the weapons as flat
+-- silver silhouettes -- they are drawn in colour (the inventory shows them so)
+-- and flattened here by a colour transform. Layers, back to front:
 --
---   shadow       static
---   warn         red rim proud of the plate; pulses while the drawn weapon is dry
---   plate        steel plate; static
---   rail         the groove the seats ride in; static
+--   shadow       the smoke; static
+--   warn         the same smoke in red; pulses while the drawn weapon is dry
+--   plate        the two rules; static
+--   rail         the ring the seats ride, as a faint line; static
 --   socket       the seat at the front of the ring; static
 --   socketglow   its light; kicked as a weapon arrives at the front
 --   seat_rifle   ) one per weapon, each authored at the *front* of the ring and
@@ -92,11 +95,19 @@ local PIP_HIDE < const > = 0.8
 -- selection is carried by a spin instead of by a highlight moving.
 local SPIN_RATE < const > = 5.0
 
-local C_TEXT < const > = Color4f(1.0, 0.9, 0.68, 1.0)
-local C_TEXT_EMPTY < const > = Color4f(1.0, 0.42, 0.34, 1.0)
-local C_PIP < const > = Color4f(0.72, 0.69, 0.6, 1.0)
-local C_PIP_EMPTY < const > = Color4f(0.82, 0.36, 0.3, 1.0)
-local C_NAME < const > = Color4f(0.62, 0.66, 0.74, 1.0)
+local C_TEXT < const > = Color4f(0.96, 0.96, 0.94, 1.0)
+local C_TEXT_EMPTY < const > = Color4f(0.92, 0.3, 0.24, 1.0)
+local C_PIP < const > = Color4f(0.52, 0.52, 0.51, 1.0)
+local C_PIP_EMPTY < const > = Color4f(0.82, 0.32, 0.26, 1.0)
+local C_NAME < const > = Color4f(0.5, 0.5, 0.49, 1.0)
+
+-- Every seat, and the spent case, flattened to one silver: the colour channels are
+-- multiplied away and this added back, which keeps each picture's own outline and
+-- alpha and nothing else.
+local SILHOUETTE < const > = traktor.spark.ColorTransform(
+	Color4f(0.0, 0.0, 0.0, 1.0),
+	Color4f(0.9, 0.9, 0.87, 0.0)
+)
 
 -- Horizontal scale about the vertical line x = px.
 local function scaleX(mc, px, s)
@@ -150,13 +161,14 @@ end
 function WeaponCarousel:addSlot(kind, name)
 	local seat < const > = self._mc:getMember("seat_" .. kind)
 	assert(seat ~= nil, "WeaponCarousel; no seat art for '" .. tostring(kind) .. "' in UI/Hud")
+	seat.colorTransform = SILHOUETTE
 
 	-- Every seat's own little number, under it on the ring. Built with a string as
 	-- long as it will ever carry, because a Static clamps its text bounds to the
 	-- width it was placed at -- one placed empty is placed at no width at all and
 	-- clips every later count away to nothing.
 	local pip = Static(self, "000")
-	pip:setTextSize(13)
+	pip:setTextSize(14)
 	pip:setTextColor(C_PIP)
 	pip:setHorizontalAlign(Widget.ALIGN_CENTER)
 
@@ -368,8 +380,9 @@ function WeaponCarousel:_initialize(parent, mc)
 	-- flash, dry pulse -- so a carousel nobody is turning holds its cache.
 	mc.cacheAsBitmap = true
 
-	self._halign = Widget.ALIGN_CENTER
-	self._valign = Widget.ALIGN_CENTER
+	-- Bottom right of whatever it is placed in, where Skyrim keeps what is in hand.
+	self._halign = Widget.ALIGN_RIGHT
+	self._valign = Widget.ALIGN_BOTTOM
 
 	self._slots = {}
 	self._selected = nil      -- the seat in hand; nil for empty hands
@@ -394,13 +407,14 @@ function WeaponCarousel:_initialize(parent, mc)
 	self._track_mc.visible = false
 	self._bar_mc.visible = false
 	self._casing_mc.visible = false
+	self._casing_mc.colorTransform = SILHOUETTE
 	self._glow_mc.alpha = 0.0
 	self._socketglow_mc.alpha = 0.12
 
 	-- Created after the art so they end up on top of it, and before any seat's pip
 	-- so the two rows of text keep a stable order of their own.
 	self._name = Static(self, "")
-	self._name:setTextSize(13)
+	self._name:setTextSize(14)
 	self._name:setTextColor(C_NAME)
 	self._name:setHorizontalAlign(Widget.ALIGN_CENTER)
 
@@ -570,7 +584,7 @@ function WeaponCarousel:_refreshText()
 end
 
 -- Name and count side by side in the space the ring leaves, both centred on their
--- own half of it: the name small and cool, the count large and warm, so the number
+-- own half of it: the name small and grey, the count large and white, so the number
 -- is what the eye lands on. Re-placed on every change, as TreasureCounter does --
 -- a Static clamps its bounds to the width it was placed at, and a Widget lays out
 -- no children of its own.

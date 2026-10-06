@@ -11,8 +11,8 @@ import(traktor)
 -- for PushButton anywhere -- but instead of snapping between its up, hover and down
 -- colours it eases between them:
 --
---   hover    the plate warms to the hover colour and swells a few pixels about its
---            centre, the caption warms towards candle light;
+--   hover    a bar of light comes up behind the caption and swells a few pixels
+--            about its centre, and the caption goes from grey to white;
 --   press    the plate squashes in quickly;
 --   release  ...and springs back past its size before settling, so a click reads
 --            as a click even when the stage it starts is on screen a frame later.
@@ -46,9 +46,9 @@ local SQUASH_Y < const > = 4
 local MAX_FRACTION_X < const > = 0.08
 local REVEAL_RISE < const > = 12  -- px below its place a revealing button starts
 
--- The caption's hover colour: the ward-flame amber, a little paler so it still
--- reads as text rather than as a light.
-local TEXT_HOVER < const > = traktor.Color4f(1.0, 0.86, 0.60, 1.0)
+-- The caption's hover colour: Skyrim's, where the entry under the cursor is the
+-- one menu line in full white and every other is grey.
+local TEXT_HOVER < const > = traktor.Color4f(1.0, 1.0, 1.0, 1.0)
 
 local function outCubic(k)
 	local f < const > = k - 1

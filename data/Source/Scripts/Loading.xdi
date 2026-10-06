@@ -65,8 +65,8 @@ function Loading:new(params, environment)
 	-- percentage to show: the bar pulses (fills, then drains again) rather than
 	-- repeatedly filling, so it reads as "working" and not as fake progress.
 	self._bar = ProgressBar(self._dialog)
-	self._bar:setBackColor(Color4f(0.1, 0.1, 0.1, 1.0))
-	self._bar:setFrontColor(Color4f(0.75, 0.07, 0.07, 1.0))
+	self._bar:setBackColor(Color4f(0.16, 0.16, 0.16, 0.8))
+	self._bar:setFrontColor(Color4f(0.88, 0.88, 0.85, 1.0))
 	self._pulse = 0.0
 	self._pulseRate = 0.7   -- fill-or-drain sweeps per second
 

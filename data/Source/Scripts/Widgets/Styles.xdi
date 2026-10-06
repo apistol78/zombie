@@ -2,11 +2,25 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 
+-- The Skyrim look, laid over UiKit's own styles. Call after Widget.initialize and
+-- before building anything, since a widget reads its styles as it is created.
 function setupUiKitStyles()
-	Dialog:setStyle("background", traktor.Color4f(82 / 255, 69 / 255, 42 / 255, 1.0))
-	PushButton:setStyle("background", traktor.Color4f(82 / 255, 69 / 255, 42 / 255, 0.5))
-	PushButton:setStyle("backgroundHover", traktor.Color4f(112 / 255, 95 / 255, 57 / 255, 0.5))
-	PushButton:setStyle("backgroundDown", traktor.Color4f(58 / 255, 48 / 255, 28 / 255, 0.65))
+	-- The pane behind every menu is drawn in UI/Hud (MC_Dialog) exactly as it should
+	-- look -- smoke with a silver rule top and bottom -- so it is left untinted.
+	Dialog:setStyle("background", traktor.Color4f(1.0, 1.0, 1.0, 1.0))
+
+	-- A menu entry is its caption alone, grey, until the mouse is on it: then a bar
+	-- of light comes up behind it (MC_PushButton in UI/UiKit2, drawn white for this
+	-- to tint) and the caption goes white (MenuButton). NOTE text comes out a good deal
+	-- brighter than its value -- 0.5 reads as a mid grey, 0.7 already as near white --
+	-- so the greys in this UI are all well under what they look like.
+	PushButton:setStyle("background", traktor.Color4f(1.0, 1.0, 1.0, 0.0))
+	PushButton:setStyle("backgroundHover", traktor.Color4f(1.0, 1.0, 1.0, 0.2))
+	PushButton:setStyle("backgroundDown", traktor.Color4f(1.0, 1.0, 1.0, 0.34))
+	PushButton:setStyle("text", traktor.Color4f(0.48, 0.48, 0.47, 1.0))
+
+	-- Every label carries a soft shadow, so white text holds up over fog and snow.
+	Static:setStyle("textDropShadow", traktor.Color4f(0.0, 0.0, 0.0, 0.75))
 end
 ]]></text>
 </object>

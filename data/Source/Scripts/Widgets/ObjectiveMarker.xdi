@@ -7,69 +7,80 @@ import(traktor)
 
 -- ObjectiveMarker
 --
--- HUD compass for wherever the player is supposed to be going: a needle on a dial
--- with the range beside it. The art is the "MC_ObjectiveMarker" export of the
--- UI/Hud movie, authored in data/Assets/UI/Hud.svg, on the same plate as the
--- ammunition and treasure tiles.
+-- The compass strip along the top of the screen, Skyrim's: the cardinal letters and a
+-- tick between each pair slide past as the player turns, and wherever the player is
+-- supposed to be going rides along it as a pale gold quest marker with the range
+-- written under it. The art is the "MC_ObjectiveMarker" export of the UI/Hud movie,
+-- authored in data/Assets/UI/Hud.svg (tools/gen_hud_svg.py).
 --
--- The needle shows a *relative* bearing -- straight up is dead ahead, so lining it
--- up with the fixed tick at the top of the dial and walking is the whole
--- interaction. Scene 2 is 353 near-identical pines in the dark; without this the
--- relic hunt is frustration rather than fear.
+-- The strip shows the half circle in front of the player: dead ahead is the notch in
+-- the middle, a quarter turn either way is the end of the strip. A target behind the
+-- player stands at whichever end is nearer, so turning towards it is always the
+-- answer. Scene 2 is 353 near-identical pines in the dark; without this the relic hunt
+-- is frustration rather than fear.
 --
 -- Layers in the SVG, back to front:
 --
---   shadow  static
---   plate   steel plate; static
---   dial    recessed face with the fixed heading ticks; static
---   needle  spun about the dial centre by the bearing, dimmed when there is no
---           target left to point at
---   glow    white overlay; alpha kicked when the objective changes
+--   shadow     the smoke behind the strip; static
+--   plate      the two rules, the finials and the notch; static
+--   tick_ne    ) the ticks halfway between the letters, authored on the centre line
+--   tick_se    ) and slid along it by bearing
+--   tick_sw    )
+--   tick_nw    )
+--   needle     the quest marker, authored on the centre line and slid along it
+--   glow       white overlay; alpha kicked when the objective changes
 --
--- Fixed size, so the HUD row never shifts as the range counts down, and the text
--- is re-placed by hand on every change (as in TreasureCounter -- a Widget lays out
--- no children).
+-- The letters and the range are text, written over the art by this widget.
 --
 -- GOTCHA: the SVG importer bakes every shape at absolute movie coordinates, so a
--- child sprite's origin is the movie's origin, not the art's. Rotating one swings
--- it away from that origin, hence spinAbout below (the same helper WeaponCarousel
--- uses for its ejected case).
+-- child sprite's origin is the movie's origin, not the art's. Everything that slides
+-- is authored on the centre line, so placing it is an offset from there.
 
 ObjectiveMarker = ObjectiveMarker or class("ObjectiveMarker", Widget)
 
 ObjectiveMarker:setStyle("resource", "MC_ObjectiveMarker")
 
 -- All of these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
-local W < const > = 180
-local H < const > = 56
-local DIAL_X < const > = 28
-local DIAL_Y < const > = 28
-local TEXT_X < const > = 50
-local TEXT_W < const > = 120
+local W < const > = 560
+local H < const > = 58
+local CX < const > = 280            -- dead ahead
+local CY < const > = 21             -- centre line of the strip
+local STRIP_BOTTOM < const > = 36
 
-local C_TEXT < const > = Color4f(1.0, 0.88, 0.66, 1.0)
+local SPAN < const > = 240          -- px from dead ahead to a quarter turn
+local HALF_FOV < const > = math.pi * 0.5
+local FADE_FROM < const > = 0.72    -- how far out (of SPAN) the letters start to fade
 
-local TURN_RATE < const > = 14.0   -- needle easing (1/s); fast enough to feel direct
-local ARRIVED < const > = 3.0      -- range under which the dial reads as "here" (m)
+local C_LETTER < const > = Color4f(0.94, 0.94, 0.92, 1.0)
+local C_RANGE < const > = Color4f(0.62, 0.62, 0.6, 1.0)
 
--- Rotate about (px, py). setRotation takes degrees and turns about the sprite
--- origin, so X/Y undo the swing that puts (px, py) back where the art was drawn.
-local function spinAbout(mc, px, py, deg)
-	local r < const > = math.rad(deg)
-	local c < const > = math.cos(r)
-	local s < const > = math.sin(r)
-	mc.rotation = deg
-	mc.X = px - (px * c - py * s)
-	mc.Y = py - (px * s + py * c)
+local ARRIVED < const > = 3.0       -- range under which the marker reads as "here" (m)
+
+-- World bearing of each letter and tick: north is +Z, east +X.
+local LETTERS < const > = {
+	{ text = "N", bearing = 0.0 },
+	{ text = "E", bearing = math.pi * 0.5 },
+	{ text = "S", bearing = math.pi },
+	{ text = "W", bearing = math.pi * 1.5 }
+}
+local TICKS < const > = {
+	{ name = "tick_ne", bearing = math.pi * 0.25 },
+	{ name = "tick_se", bearing = math.pi * 0.75 },
+	{ name = "tick_sw", bearing = math.pi * 1.25 },
+	{ name = "tick_nw", bearing = math.pi * 1.75 }
+}
+
+-- Into -pi..pi.
+local function wrap(a)
+	return (a + math.pi) % (math.pi * 2.0) - math.pi
 end
 
--- Shortest way round from a to b, in degrees.
-local function shortestDelta(a, b)
-	local d = (b - a) % 360.0
-	if d > 180.0 then
-		d = d - 360.0
-	end
-	return d
+-- Where on the strip a relative bearing lands, and how visible it is there.
+local function onStrip(rel)
+	local x < const > = CX + rel / HALF_FOV * SPAN
+	local d < const > = math.abs(rel) / HALF_FOV
+	local t < const > = math.max(0.0, math.min(1.0, (d - FADE_FROM) / (1.0 - FADE_FROM)))
+	return x, 1.0 - t * t * (3.0 - 2.0 * t)
 end
 
 function ObjectiveMarker:new(parent, skin)
@@ -84,32 +95,47 @@ end
 
 function ObjectiveMarker:place(x, y, width, height)
 	Widget.place(self, x, y, width, height)
-	self:_layoutText()
+	self:_layout()
+end
+
+-- Which way the player is facing, in radians: 0 is north (+Z), positive turns east.
+-- This is what slides the letters; the target's bearing is relative to it already.
+function ObjectiveMarker:setHeading(heading)
+	if heading ~= self._heading then
+		self._heading = heading
+		self._dirty = true
+	end
+	return self
 end
 
 -- Point at something. "bearing" is in radians, relative to the way the player is
 -- facing (0 = dead ahead, positive = to the right); "distance" is in metres. Pass
--- nil for either to say there is nothing to point at, which parks the needle and
--- blanks the range.
+-- nil for either to say there is nothing to point at, which takes the marker off
+-- the strip and blanks the range.
 function ObjectiveMarker:setTarget(bearing, distance)
 	if bearing == nil then
-		self._active = false
+		if self._active then
+			self._active = false
+			self._dirty = true
+		end
 		if self._shown ~= nil then
 			self._shown = nil
-			self._text:setText("")
-			self:_layoutText()
+			self._range:setText("")
+			self._dirty = true
 		end
 		return self
 	end
 
 	if not self._active then
-		-- Just acquired, or switched from a relic to the altar: flash the plate and
-		-- snap the needle rather than sweeping it round from wherever it parked.
+		-- Just acquired, or switched from a relic to a ward: flash the strip so the
+		-- hand-off reads as a new instruction.
 		self._active = true
 		self._flash = 1.0
-		self._angle = math.deg(bearing)
 	end
-	self._targetAngle = math.deg(bearing)
+	if bearing ~= self._bearing then
+		self._bearing = bearing
+		self._dirty = true
+	end
 
 	local text
 	if distance < ARRIVED then
@@ -119,32 +145,26 @@ function ObjectiveMarker:setTarget(bearing, distance)
 	end
 	if text ~= self._shown then
 		self._shown = text
-		self._text:setText(text)
-		self:_layoutText()
+		self._range:setText(text)
+		self._dirty = true
 	end
 	return self
 end
 
--- Called when the thing being pointed at changes, so the next setTarget snaps and
--- flashes instead of sweeping across the dial.
+-- Called when the thing being pointed at changes, so the next setTarget flashes the
+-- strip.
 function ObjectiveMarker:retarget()
 	self._active = false
 	return self
 end
 
 function ObjectiveMarker:update(dt)
-	-- Ease the needle round the short way. Fast enough to track mouse-look directly,
-	-- slow enough to take the jitter out of a target that is nearly on top of you.
-	local delta < const > = shortestDelta(self._angle, self._targetAngle)
-	self._angle = self._angle + delta * math.min(1.0, dt * TURN_RATE)
-	spinAbout(self._needle_mc, DIAL_X, DIAL_Y, self._angle)
-
-	-- Nothing to point at: leave the needle where it is, faded back.
-	self._needle_mc.alpha = self._active and 1.0 or 0.15
-
 	if self._flash > 0.0 then
 		self._flash = math.max(0.0, self._flash - dt * 2.4)
 		self._glow_mc.alpha = math.sin(self._flash * math.pi) * 0.3
+	end
+	if self._dirty then
+		self:_layout()
 	end
 end
 
@@ -153,39 +173,86 @@ end
 function ObjectiveMarker:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
-	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
-	-- The needle eases toward its target and then stops moving, at which point the
-	-- transform stops changing and the cache holds until the bearing shifts again.
-	mc.cacheAsBitmap = true
+	-- Everything on the strip moves whenever the player turns, which is most frames,
+	-- so only the parts that never move are cached.
+	mc:getMember("shadow").cacheAsBitmap = true
+	mc:getMember("plate").cacheAsBitmap = true
 
 	self._halign = Widget.ALIGN_CENTER
-	self._valign = Widget.ALIGN_CENTER
+	self._valign = Widget.ALIGN_TOP
 
-	self._angle = 0.0
-	self._targetAngle = 0.0
+	self._heading = 0.0
+	self._bearing = 0.0
 	self._active = false
 	self._flash = 0.0
 	self._shown = nil
+	self._dirty = true
 
 	self._needle_mc = mc:getMember("needle")
 	self._glow_mc = mc:getMember("glow")
 	assert(self._needle_mc ~= nil, "ObjectiveMarker; movie resource is missing its parts")
-
 	self._glow_mc.alpha = 0.0
-	self._needle_mc.alpha = 0.15
 
-	-- Created after the art so it ends up on top of it.
-	self._text = Static(self, "")
-	self._text:setTextSize(22)
-	self._text:setTextColor(C_TEXT)
-	self._text:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self:_layoutText()
+	self._ticks = {}
+	for _, t in ipairs(TICKS) do
+		table.insert(self._ticks, { mc = mc:getMember(t.name), bearing = t.bearing })
+	end
+
+	-- Created after the art so they end up on top of it.
+	self._letters = {}
+	for _, l in ipairs(LETTERS) do
+		local s < const > = Static(self, l.text)
+		s:setTextSize(20)
+		s:setTextColor(C_LETTER)
+		table.insert(self._letters, { widget = s, bearing = l.bearing })
+	end
+
+	self._range = Static(self, "")
+	self._range:setTextSize(14)
+	self._range:setTextColor(C_RANGE)
+
+	-- The marker passes over the letters, not under them. Text can only be created on
+	-- top of the art, so the marker trades places with the last thing created -- the
+	-- range, which never sits on the strip and so loses nothing by going under it.
+	local dl < const > = mc.displayList
+	dl:swap(dl:getObjectDepth(self._needle_mc), dl:getObjectDepth(self._range._mc))
+
+	self:_layout()
 end
 
--- Centre the range in the space the art leaves beside the dial.
-function ObjectiveMarker:_layoutText()
-	local ts < const > = self._text:getPreferredSize()
-	self._text:place(TEXT_X, (H - ts.height) / 2, TEXT_W, ts.height)
+-- Slide everything to where the heading and the target put it. A Static clamps its
+-- text to the width it was placed at, so the range is re-placed at its own size.
+function ObjectiveMarker:_layout()
+	self._dirty = false
+
+	for _, t in ipairs(self._ticks) do
+		local x < const >, a < const > = onStrip(wrap(t.bearing - self._heading))
+		t.mc.X = x - CX
+		t.mc.alpha = a * 0.75
+		t.mc.visible = a > 0.0
+	end
+
+	for _, l in ipairs(self._letters) do
+		local x < const >, a < const > = onStrip(wrap(l.bearing - self._heading))
+		local ps < const > = l.widget:getPreferredSize()
+		l.widget:place(x - ps.width / 2, CY - ps.height / 2, ps.width, ps.height)
+		l.widget:setAlpha(a)
+		l.widget:setVisible(a > 0.0)
+	end
+
+	-- The marker never leaves the strip: a target behind the player waits at the
+	-- nearer end, as Skyrim's do.
+	self._needle_mc.visible = self._active
+	self._range:setVisible(self._active)
+	if self._active then
+		local rel < const > = math.max(-HALF_FOV, math.min(HALF_FOV, wrap(self._bearing)))
+		local x < const > = CX + rel / HALF_FOV * SPAN
+		self._needle_mc.X = x - CX
+
+		local ps < const > = self._range:getPreferredSize()
+		local rx < const > = math.max(0, math.min(W - ps.width, x - ps.width / 2))
+		self._range:place(rx, STRIP_BOTTOM + 1, ps.width, ps.height)
+	end
 end
 ]]></text>
 </object>

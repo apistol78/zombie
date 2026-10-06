@@ -130,9 +130,8 @@ end
 function Weapon:restoreState(state)
 end
 
--- Does this weapon take a seat on the HUD's weapon carousel? Asked before the row is laid
--- out, because a TableLayout is built with its column list and cannot grow one afterwards
--- -- see Loadout:hudColumns and the HUD block in Main:new.
+-- Does this weapon take a seat on the HUD's weapon carousel? Asked as the carousel is built
+-- -- see Loadout:createHud.
 --
 -- A weapon that says yes also needs a seat authored for it in data/Assets/UI/Hud.svg, under
 -- its own slot name; see Scripts/Widgets/WeaponCarousel, which refuses one it has no art for

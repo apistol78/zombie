@@ -73,10 +73,11 @@ function Relic:light(context, ward)
 		context:_showNotice(notice)
 	end
 
-	-- Closing the circle ends the night. Checked after the ward, so its notice is replaced by
-	-- the dawn's rather than overwriting it.
+	-- Closing the circle: in the forest that ends the night, in the cave it only clears the cave
+	-- (Main:_circleClosed). Checked after the ward, so its notice is replaced by that one rather
+	-- than overwriting it.
 	if context:_wardsDone() then
-		context:_breakDawn()
+		context:_circleClosed()
 	end
 end
 

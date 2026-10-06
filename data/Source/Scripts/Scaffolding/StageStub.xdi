@@ -30,12 +30,20 @@ function StageStub:new()
 	self:emptyPack()
 end
 
--- Start again from the night's starting kit. A new Inventory rather than a cleared one, so a
--- view that reads context:inventory() afresh each time (ChestView) sees a pack with no history,
--- while one that kept the old pack (InventoryView keeps its own) is not disturbed.
+-- A pack with something in it to preview against: a weapon, its rounds and a grenade. The
+-- night itself starts empty-handed (Config.inventory.start), which would leave nothing to look at.
+local SAMPLE_KIT < const > = {
+	{ "rifle", 1 },
+	{ "rounds", 24 },
+	{ "grenade", 1 }
+}
+
+-- Start again from the sample kit. A new Inventory rather than a cleared one, so a view that
+-- reads context:inventory() afresh each time (ChestView) sees a pack with no history, while one
+-- that kept the old pack (InventoryView keeps its own) is not disturbed.
 function StageStub:emptyPack()
 	self._inventory = Inventory(Config.inventory.slots)
-	for _, entry in ipairs(Config.inventory.start) do
+	for _, entry in ipairs(SAMPLE_KIT) do
 		self._inventory:add(entry[1], entry[2])
 	end
 	return self._inventory

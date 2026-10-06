@@ -39,13 +39,15 @@ local LOOP < const > = loop()
 function HealthBarScaffolding:build(parent)
 	self:note(parent, "HEALTH BAR   Top: bitten to nothing, then healed. Below: held at fixed values.")
 
-	self._live = self:tick(HealthBar(self:row(parent, "live")))
+	-- Kept up at full health too: in game the bar fades away there, which is no use on
+	-- a page that is about the bar.
+	self._live = self:tick(HealthBar(self:row(parent, "live"))):setAlwaysShown(true)
 	self._key = 1
 	self._wait = LOOP[1][1]
 
 	for _, v in ipairs(SAMPLES) do
 		local label < const > = string.format("%d%%", math.floor(v * 100 + 0.5))
-		self:tick(HealthBar(self:row(parent, label))):setValue(v)
+		self:tick(HealthBar(self:row(parent, label))):setAlwaysShown(true):setValue(v)
 	end
 end
 

@@ -7,7 +7,7 @@ import(traktor)
 
 -- ItemSlot
 --
--- One cell of the inventory screen (Scripts/Views/InventoryView): a steel plate with the picture
+-- One cell of the inventory screen (Scripts/Views/InventoryView): a smoked cell with the picture
 -- of whatever item is in it, the size of the stack in the corner, and three states lit over the
 -- top -- the cell under the mouse, the cell selected, and an item that is equipped. It knows
 -- nothing about the pack; the view tells it what to show and hears about clicks.
@@ -16,10 +16,10 @@ import(traktor)
 -- tools/gen_item_icons.py. Layers, back to front:
 --
 --   shadow       static
---   plate        steel plate; static
---   hover        a lighter face, shown under the mouse
---   sel          the selection rim
---   equip        the equipped mark: a lit corner and rim
+--   plate        smoke and a faint silver rule; static
+--   hover        a faint wash and a brighter rule, shown under the mouse
+--   sel          the selection rim, in white
+--   equip        the equipped mark: a silver diamond in the top left corner
 --   icon_<kind>  one picture per item kind, all authored on the middle of the cell and shown
 --                one at a time -- the same trick MC_MapLandmark plays with its glyphs
 --
@@ -39,7 +39,7 @@ local ICONS < const > = {
 	"bread", "coin", "helmet", "key", "relic"
 }
 
-local C_COUNT < const > = Color4f(1.0, 0.9, 0.68, 1.0)
+local C_COUNT < const > = Color4f(0.92, 0.92, 0.9, 1.0)
 
 function ItemSlot:new(parent, skin)
 	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
@@ -135,7 +135,7 @@ function ItemSlot:_initialize(parent, mc)
 	self:addEventListener(MouseLeaveEvent, self, self._onMouseLeave)
 end
 
--- Bottom right, inside the plate's bevel.
+-- Bottom right, inside the rule.
 function ItemSlot:_layoutCount()
 	local cs < const > = self._count:getPreferredSize()
 	self._count:place(S - cs.width - 6, S - cs.height - 3, cs.width, cs.height)

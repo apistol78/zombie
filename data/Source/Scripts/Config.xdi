@@ -609,13 +609,12 @@ Config = {
 	inventory = {
 		slots = 16,
 		columns = 8,            -- ...laid out this many to a row on the inventory screen
-		-- The kit the night starts with, in the order it fills the pack. The first weapon in
-		-- it is the one in hand.
-		start = {
-			{ "rifle", 1 },
-			{ "rounds", 24 },
-			{ "grenade", 1 }
-		},
+		-- The kit the night starts with, in the order it fills the pack; the first weapon in it
+		-- is the one in hand. Empty: the night starts with bare hands, and the first thing to do
+		-- is the chest in the house the player wakes in (Scenes/S - Scene 2), which holds the
+		-- rifle, its rounds and the grenades -- what this list used to hand out, plus what that
+		-- chest held before, so the night's supply is the same as it was.
+		start = {},
 		-- How far in front of the player something dropped out of the pack lands (m). Past the
 		-- take range on purpose, so a walk-over item put down is not picked straight back up.
 		dropAhead = 1.4

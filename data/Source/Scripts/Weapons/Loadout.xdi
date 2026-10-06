@@ -200,19 +200,6 @@ function Loadout:_announce()
 	end
 end
 
--- How many columns the HUD row has to reserve for the arsenal. One, however many weapons are
--- carried -- they share a single tile -- or none at all if nothing in the loadout shows itself.
--- Asked by Main *before* the row is laid out, because a TableLayout is built with its column
--- list and cannot grow one afterwards.
-function Loadout:hudColumns()
-	for _, w in ipairs(self._weapons) do
-		if w:hasHud() then
-			return 1
-		end
-	end
-	return 0
-end
-
 -- Build that tile: one carousel, one seat per weapon that shows itself, in wheel order -- so
 -- the ring turns the same way the wheel does. Each weapon is handed its seat index and pushes
 -- its own state in from there; which seats are on the ring at all is the pack's, and _announce

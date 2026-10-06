@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
 #using \{17E40000-0000-4000-8000-000000000001}
 #using \{17E40000-0000-4000-8000-000000000003}
 #using \{6E9AD100-0000-4000-8000-000000000010}
@@ -33,11 +34,11 @@ import(traktor)
 
 InventoryView = InventoryView or class("InventoryView", Container)
 
-local C_TITLE < const > = Color4f(1.0, 0.9, 0.68, 1.0)
-local C_LABEL < const > = Color4f(0.82, 0.85, 0.9, 1.0)
-local C_HINT < const > = Color4f(0.55, 0.58, 0.64, 1.0)
-local C_NAME < const > = Color4f(1.0, 0.9, 0.68, 1.0)
-local C_GOOD < const > = Color4f(0.62, 0.86, 0.52, 1.0)
+local C_TITLE < const > = Color4f(0.96, 0.96, 0.94, 1.0)
+local C_LABEL < const > = Color4f(0.58, 0.58, 0.57, 1.0)
+local C_HINT < const > = Color4f(0.4, 0.4, 0.39, 1.0)
+local C_NAME < const > = Color4f(1.0, 1.0, 1.0, 1.0)
+local C_GOOD < const > = Color4f(0.9, 0.85, 0.66, 1.0)
 
 local CELL_GAP < const > = 8
 local BUTTON_W < const > = 132
@@ -150,13 +151,13 @@ function InventoryView:new(parent, context)
 	self._effect:setTextColor(C_GOOD)
 
 	local buttons < const > = Container(detail, TableLayout({ 0, 0, 0 }, { 0 }, 0, 6, 10, 0))
-	self._equipButton = PushButton(buttons, "UNEQUIP")
+	self._equipButton = MenuButton(buttons, "UNEQUIP")
 	self._equipButton:setMinimumWidth(BUTTON_W)
 	self._equipButton:setOnClick(function() self:_equip() end)
-	self._useButton = PushButton(buttons, "DRINK")
+	self._useButton = MenuButton(buttons, "DRINK")
 	self._useButton:setMinimumWidth(BUTTON_W)
 	self._useButton:setOnClick(function() self:_use() end)
-	self._dropButton = PushButton(buttons, "DROP")
+	self._dropButton = MenuButton(buttons, "DROP")
 	self._dropButton:setMinimumWidth(BUTTON_W)
 	self._dropButton:setOnClick(function() self:_drop() end)
 
@@ -183,7 +184,7 @@ function InventoryView:new(parent, context)
 	local hint < const > = Static(footer, "DOUBLE CLICK TO EQUIP OR USE     TAB TO CLOSE")
 	hint:setTextSize(14)
 	hint:setTextColor(C_HINT)
-	local close < const > = PushButton(footer, "Close")
+	local close < const > = MenuButton(footer, "CLOSE")
 	close:setMinimumWidth(BUTTON_W)
 	close:setOnClick(function()
 		if self._closeFn ~= nil then

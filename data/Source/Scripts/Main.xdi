@@ -44,6 +44,10 @@
 -- but the E scan below (TAKE_NAMES) and the drop are the other half of its contract.
 #using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
 
+-- Scripts/Widgets/MenuButton: every button on this stage's menus, so they all light the
+-- way the main menu's do.
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+
 import(traktor)
 
 -- Main
@@ -112,6 +116,11 @@ local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
 -- Main:new), and they match the frame's own 24/20 layout margins.
 local MAP_X < const > = 24
 local MAP_Y < const > = 20
+
+-- ...and the HUD's margins, the same: the compass strip hangs off the top one, the health bar
+-- and the weapon tile stand on the bottom one.
+local HUD_MARGIN_X < const > = 24
+local HUD_MARGIN_Y < const > = 20
 
 -- Slack around the scene's points of interest when fitting the map to them, so
 -- nothing ends up drawn on the bezel.
@@ -294,22 +303,21 @@ function Main:new(params, environment)
 	-- and the loadout reads it there. See Scripts/Weapons/Loadout.
 	self._loadout = Loadout(self)
 
-	-- HUD: one row along the bottom, reading left to right as where to go, how alive
-	-- you are, and what you have to fight with. The compass and the health bar are the
-	-- stage's own -- they are about the night and the player, not about a weapon -- and
-	-- what follows them is the arsenal's own tile, a carousel carrying every weapon at
-	-- once with whichever has the trigger at the front of it.
+	-- HUD, laid out as Skyrim's: the compass strip across the top, the health bar bottom
+	-- centre, and the arsenal's own tile -- a carousel carrying every weapon at once, with
+	-- whichever has the trigger at the front of it -- bottom right. The compass and the
+	-- health bar are the stage's own, since they are about the night and the player and
+	-- not about a weapon.
 	--
-	-- Ammunition sits next to health because those two are what the player is actually
-	-- spending. All of them want a per-frame :update to run their animations, which is what
-	-- the loadout's updateHud does for the weapon tile.
-	local hudColumns = { 0, 0 }   -- the compass and the health bar...
-	for _ = 1, self._loadout:hudColumns() do
-		table.insert(hudColumns, 0)   -- ...then whatever the arsenal asks for, which is one
-	end
-	self._hud = Container(self._frame, TableLayout(hudColumns, { 0 }, 0, 0, 18, 0))
-	self._hud:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self._hud:setVerticalAlign(Widget.ALIGN_BOTTOM)
+	-- One container over the whole frame (inside its margins) holds all three, and each
+	-- keeps to its own edge by its own alignment: a FloodLayout hands every child the
+	-- whole area and Widget:place then sits it where its halign/valign say. Floated and
+	-- placed by hand (_placeHud) rather than laid out by the frame, whose one cell is the
+	-- cheats line's. All of them want a per-frame :update to run their animations, which
+	-- is what the loadout's updateHud does for the weapon tile.
+	self._hud = Container(self._frame, FloodLayout())
+	self._hud.__layout = ILayout.FLOAT
+	self._hudPlaced = nil   -- the frame size it was last placed for
 	self._marker = ObjectiveMarker(self._hud)
 	self._healthBar = HealthBar(self._hud)
 	self._loadout:createHud(self._hud)
@@ -359,13 +367,13 @@ function Main:new(params, environment)
 	self._lblGameOver = Static(self._gameOverDialog, "GAME OVER")
 	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
 	self._lblGameOver:setTextSize(60)
-	self._lblGameOver:setTextColor(Color4f(0.9, 0.05, 0.05, 1.0))
+	self._lblGameOver:setTextColor(Color4f(0.8, 0.14, 0.11, 1.0))
 	-- Restart: reload this stage from scratch via its "RESTART" self-transition.
-	self._restartButton = PushButton(self._gameOverDialog, "Restart")
+	self._restartButton = MenuButton(self._gameOverDialog, "RESTART")
 	self._restartButton:setMinimumWidth(220)
 	self._restartButton:setOnClick(function() self:_restart() end)
 	-- Exit: back to the Startup menu, via the loading screen (see _exitToStartup).
-	self._gameOverExitButton = PushButton(self._gameOverDialog, "Exit")
+	self._gameOverExitButton = MenuButton(self._gameOverDialog, "EXIT")
 	self._gameOverExitButton:setMinimumWidth(220)
 	self._gameOverExitButton:setOnClick(function() self:_exitToStartup() end)
 	-- No explicit hide needed: Dialog starts hidden (Dialog:_initialize ends in
@@ -384,26 +392,26 @@ function Main:new(params, environment)
 	-- WARDS ARE LIT" once the circle closed). It is gone: the count is on the minimap
 	-- as lit and unlit posts, and lighting one already reads out on the notice line
 	-- below, so the banner was saying a third time what the screen said twice.
-	self._prompt = { widget = Static(self._frame, ""), y = 66 }
+	self._prompt = { widget = Static(self._frame, ""), y = 84 }
 	self._prompt.widget.__layout = ILayout.FLOAT
 	self._prompt.widget:setTextSize(22)
-	self._prompt.widget:setTextColor(Color4f(0.92, 0.94, 0.9, 1.0))
+	self._prompt.widget:setTextColor(Color4f(0.96, 0.96, 0.94, 1.0))
 
 	-- Transient line for things that happen rather than things that are true --
 	-- currently only a ward catching light.
-	self._notice = { widget = Static(self._frame, ""), y = 102 }
+	self._notice = { widget = Static(self._frame, ""), y = 120 }
 	self._notice.widget.__layout = ILayout.FLOAT
 	self._notice.widget:setTextSize(24)
-	self._notice.widget:setTextColor(Color4f(1.0, 0.72, 0.34, 1.0))
+	self._notice.widget:setTextColor(Color4f(0.92, 0.85, 0.64, 1.0))
 
 	-- ...and, smaller and quieter under it, what went into the pack or would not fit: "+ 12
 	-- ROUNDS", "THE PACK IS FULL". Its own line, because pickups happen all night and would
 	-- otherwise talk over the notices that matter -- a ward catching, a gate grinding open.
 	-- See _feed.
-	self._feedLine = { widget = Static(self._frame, ""), y = 136 }
+	self._feedLine = { widget = Static(self._frame, ""), y = 154 }
 	self._feedLine.widget.__layout = ILayout.FLOAT
 	self._feedLine.widget:setTextSize(18)
-	self._feedLine.widget:setTextColor(Color4f(0.82, 0.84, 0.78, 1.0))
+	self._feedLine.widget:setTextColor(Color4f(0.58, 0.58, 0.57, 1.0))
 	self._feedText = ""
 	self._feedTimer = 0.0
 	self._feedKind = nil      -- what the line is counting up, so two crates read as one
@@ -411,6 +419,7 @@ function Main:new(params, environment)
 
 	-- Ensure layouts are updated.
 	self._frame:update()
+	self:_placeHud()
 
 	-- Player health / game-over.
 	self._maxHealth = Config.player.maxHealth
@@ -619,16 +628,16 @@ function Main:new(params, environment)
 	-- against the opaque grey panel this dialog used to have and is not against the
 	-- night showing through the one it has now.
 	pauseTitle:setTextColor(Color4f(1.0, 1.0, 1.0, 1.0))
-	self._resumeButton = PushButton(self._pauseDialog, "Resume")
+	self._resumeButton = MenuButton(self._pauseDialog, "RESUME")
 	self._resumeButton:setOnClick(function() self:_setPaused(false) end)
 	if canSave then
-		self._saveButton = PushButton(self._pauseDialog, "Save")
+		self._saveButton = MenuButton(self._pauseDialog, "SAVE")
 		self._saveButton:setOnClick(function() self:_saveFromMenu() end)
 	end
-	self._optionsButton = PushButton(self._pauseDialog, "Options")
+	self._optionsButton = MenuButton(self._pauseDialog, "OPTIONS")
 	self._optionsButton:setOnClick(function() self:_showOptions() end)
 	-- Exit back to the startup stage, via the loading screen (see _exitToStartup).
-	self._exitButton = PushButton(self._pauseDialog, "Exit")
+	self._exitButton = MenuButton(self._pauseDialog, "EXIT")
 	self._exitButton:setOnClick(function() self:_exitToStartup() end)
 
 	-- The options, in a dialog of their own behind the pause menu: the same
@@ -674,14 +683,14 @@ function Main:new(params, environment)
 	local victoryTitle = Static(self._victoryDialog, "DAWN")
 	victoryTitle:setTextSize(60)
 	victoryTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
-	victoryTitle:setTextColor(Color4f(0.85, 0.5, 0.08, 1.0))
+	victoryTitle:setTextColor(Color4f(0.94, 0.88, 0.7, 1.0))
 	local victorySub = Static(self._victoryDialog, "THE NIGHT IS OVER")
 	victorySub:setTextSize(22)
 	victorySub:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self._victoryRestart = PushButton(self._victoryDialog, "Again")
+	self._victoryRestart = MenuButton(self._victoryDialog, "AGAIN")
 	self._victoryRestart:setMinimumWidth(220)
 	self._victoryRestart:setOnClick(function() self:_restart() end)
-	self._victoryExit = PushButton(self._victoryDialog, "Exit")
+	self._victoryExit = MenuButton(self._victoryDialog, "EXIT")
 	self._victoryExit:setMinimumWidth(220)
 	self._victoryExit:setOnClick(function() self:_exitToStartup() end)
 
@@ -765,8 +774,8 @@ end
 -- _updateCrosshair, and the minimap in _updateMinimap; hiding either from here would
 -- last exactly one frame.
 --
--- Hiding the row hides everything in it: the compass, the health bar and the weapon
--- carousel are children of that container, and Spark visibility is inherited.
+-- Hiding the container hides everything in it: the compass, the health bar and the weapon
+-- carousel are its children, and Spark visibility is inherited.
 function Main:_showHud(show)
 	self._hud:setVisible(show)
 	self._prompt.widget:setVisible(show)
@@ -2202,7 +2211,7 @@ function Main:_lightWardWithRelic(ward)
 		-- the post it was carried to; there is just nothing to park on it.
 		self:_lightWard(ward)
 		if self:_wardsDone() then
-			self:_breakDawn()
+			self:_circleClosed()
 		end
 	end
 	return true
@@ -2551,6 +2560,26 @@ function Main:_wardsDone()
 	return need > 0 and self._wardsLit >= need
 end
 
+-- The last ward this stage needs has just taken light. What that means depends on where it
+-- burns: in the forest it is the whole night won, and the dawn breaks (_breakDawn); anywhere
+-- else -- the cave -- it is only that place made safe. The cave says so, once, and that is all:
+-- no sunrise, no victory card, nothing that takes the player's hands off them. They find their
+-- own way back out, and the night is still waiting in the forest.
+--
+-- A cave cleared once stays cleared -- its lit wards are in the world books every trip and save
+-- carries (_saveWorld) -- so coming back to it finds every post burning and says nothing more.
+function Main:_circleClosed()
+	if self._stageKey == "TERRAIN" then
+		self:_breakDawn()
+		return
+	end
+	if self._cleared then
+		return
+	end
+	self._cleared = true
+	self:_showNotice("CAVE IS CLEARED")
+end
+
 -- Hand the world what it needs off the ward state: where consecrated ground is, and how
 -- hard the night should push. Rebuilt only when a ward is lit -- wards never move, so
 -- there is nothing to do per frame.
@@ -2860,6 +2889,9 @@ function Main:_updateMarker(dt)
 		self._marker:retarget()
 	end
 
+	-- The strip turns with the player whether or not there is anything on it.
+	self._marker:setHeading(self._heading or 0.0)
+
 	if target == nil then
 		self._marker:setTarget(nil)
 	else
@@ -2869,7 +2901,8 @@ function Main:_updateMarker(dt)
 		local dz < const > = p.z - pp.z
 		-- Relative bearing. Forward is (sin h, 0, cos h), so the world bearing of
 		-- (dx, dz) is atan2(dx, dz), and subtracting the player's heading turns it
-		-- into "how far round from straight ahead" -- which is what the needle shows.
+		-- into "how far round from straight ahead" -- which is where on the strip the
+		-- quest marker stands.
 		self._marker:setTarget(atan2(dx, dz) - self._heading, math.sqrt(dx * dx + dz * dz))
 	end
 
@@ -2920,6 +2953,19 @@ function Main:_updateCrosshair(dt)
 		(pl.height - sz.height) * 0.5,
 		sz.width, sz.height
 	)
+end
+
+-- Spread the HUD container over the frame, inside the frame's own margins, whenever the
+-- frame changes size; its FloodLayout then sits each widget against its own edge. Floated,
+-- so nothing else places it.
+function Main:_placeHud()
+	local pl < const > = self._frame:getPlacement()
+	local placed < const > = self._hudPlaced
+	if placed ~= nil and placed.width == pl.width and placed.height == pl.height then
+		return
+	end
+	self._hudPlaced = { width = pl.width, height = pl.height }
+	self._hud:place(HUD_MARGIN_X, HUD_MARGIN_Y, pl.width - HUD_MARGIN_X * 2, pl.height - HUD_MARGIN_Y * 2)
 end
 
 -- Flash a line under the objective for a few seconds.
@@ -3133,6 +3179,9 @@ function Main:update(info)
 	-- Aiming crosshair. Above the early-returns for the same reason: it has to be able
 	-- to hide itself when the game pauses, is lost or is won.
 	self:_updateCrosshair(dt)
+
+	-- Keep the HUD to the edges of the frame, which move with the window's aspect.
+	self:_placeHud()
 
 	-- The inventory screen, while it is up. Above the early-returns, since being up is
 	-- exactly what freezes the rest of the frame: it keeps its double-click clock and

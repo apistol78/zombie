@@ -7,88 +7,55 @@ import(traktor)
 
 -- HealthBar
 --
--- In game health bar. Its art is authored in data/Assets/UI/Hud.svg and
--- imported as a Spark movie (UI/Hud); this widget instantiates that movie's
--- "MC_HealthBar" export and animates the named sprites inside it. The movie
--- has to be listed in the Widget.initialize resource kits of whoever uses the
--- widget (see Scripts/Main and Scripts/Scaffolding/GameScaffolding).
+-- In game health bar, Skyrim's: a long thin red bar in a pointed silver frame,
+-- bottom centre, that drains from both ends towards the middle and fades away
+-- altogether once the player has been at full health for a while. Its art is
+-- authored in data/Assets/UI/Hud.svg and imported as a Spark movie (UI/Hud); this
+-- widget instantiates that movie's "MC_HealthBar" export and animates the named
+-- sprites inside it. The movie has to be listed in the Widget.initialize resource
+-- kits of whoever uses the widget (see Scripts/Main and
+-- Scripts/Scaffolding/GameScaffolding).
 --
 -- Layers in the SVG, back to front, and how each is driven:
 --
---   shadow  static
---   warn    red rim proud of the plate; alpha pulses when health is critical
---   plate   steel plate and the hexagonal heart badge; static
---   track   recessed channel the fill runs in; static
---   ghost   damage lag bar; scaled horizontally
---   fill    the health fill, drawn greyscale; scaled horizontally and tinted
---   edge    bright head of the fill; translated, never scaled, so it stays crisp
---   pips    segment dividers, over the fill; static
+--   shadow  smoke behind the frame; static
+--   warn    red glow round the frame; alpha pulses when health is critical
+--   plate   the silver frame and its finials; static
+--   track   the empty channel the fill runs in; static
+--   ghost   damage lag bar; scaled horizontally about the centre
+--   fill    the health fill, drawn greyscale; scaled about the centre and tinted
 --   flash   white overlay; alpha kicked on every hit
---   heart   heart icon; scaled by the heartbeat
 --
 -- GOTCHA: the SVG importer bakes every shape at absolute movie coordinates, so
 -- a child sprite's origin is the movie's origin, not the art's. Scaling one
--- pushes it away from that origin -- hence the two helpers below, which
--- translate back so a chosen pivot stays put.
+-- pushes it away from that origin -- hence scaleX below, which translates back
+-- so the centre of the track stays put.
 
 HealthBar = HealthBar or class("HealthBar", Widget)
 
 HealthBar:setStyle("resource", "MC_HealthBar")
 
 -- All of these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
-local W < const > = 460
-local H < const > = 56
-local TRACK_X < const > = 62
-local TRACK_W < const > = 388
-local EDGE_W < const > = 3
-local BADGE_X < const > = 28
-local BADGE_Y < const > = 28
+local W < const > = 360
+local H < const > = 40
+local CENTRE_X < const > = 180    -- middle of the track, which the bar drains towards
 
 local NO_SHIFT < const > = Color4f(0.0, 0.0, 0.0, 0.0)
 
--- Fill tints. The fill art is greyscale so one colour transform recolours the
--- whole shaded bar.
-local TINT_GOOD < const > = { 0.28, 0.85, 0.26 }
-local TINT_FAIR < const > = { 0.96, 0.72, 0.12 }
-local TINT_POOR < const > = { 0.93, 0.16, 0.12 }
+-- Skyrim's red, whatever the health. The fill art is greyscale so this one
+-- colour transform shades the whole bar.
+local TINT < const > = { 0.92, 0.17, 0.13 }
+
+-- Full health and nothing happening: after this long the bar fades out, and it
+-- comes straight back on any change.
+local IDLE_HIDE < const > = 3.0     -- seconds at full health before fading
+local FADE_OUT < const > = 1.2      -- how fast it goes (1/s)
+local FADE_IN < const > = 6.0       -- ...and comes back
 
 -- Horizontal scale about the vertical line x = px.
 local function scaleX(mc, px, s)
 	mc.xScale = s * 100
 	mc.X = px * (1 - s)
-end
-
--- Uniform scale about the point (px, py).
-local function scaleAbout(mc, px, py, s)
-	mc.scale = Vector2(s * 100, s * 100)
-	mc.X = px * (1 - s)
-	mc.Y = py * (1 - s)
-end
-
--- Two stage heartbeat over a normalized cycle: a big thump, a smaller echo,
--- then rest.
-local function thump(t)
-	if t < 0.14 then
-		return math.sin((t / 0.14) * math.pi)
-	elseif t >= 0.2 and t < 0.32 then
-		return 0.5 * math.sin(((t - 0.2) / 0.12) * math.pi)
-	end
-	return 0.0
-end
-
--- Green from 60% up, amber through the middle, fully red by 20% -- so the
--- colour alone tells you how close to death you are.
-local function healthTint(v)
-	local a, b, k
-	if v >= 0.45 then
-		a, b, k = TINT_FAIR, TINT_GOOD, math.min((v - 0.45) / 0.15, 1.0)
-	else
-		a, b, k = TINT_POOR, TINT_FAIR, math.max(math.min((v - 0.2) / 0.25, 1.0), 0.0)
-	end
-	return
-		a[1] + (b[1] - a[1]) * k,
-		a[2] + (b[2] - a[2]) * k,
-		a[3] + (b[3] - a[3]) * k
 end
 
 function HealthBar:new(parent, skin)
@@ -112,12 +79,22 @@ function HealthBar:setValue(value)
 	elseif value > self._value then
 		self._ghost = value
 	end
+	if value ~= self._value then
+		self._idle = 0.0
+	end
 	self._value = value
 	return self
 end
 
 function HealthBar:getValue()
 	return self._value
+end
+
+-- Keep the bar up regardless of health, or let it fade at full health again.
+-- For screens that are about the bar itself, such as the scaffolding.
+function HealthBar:setAlwaysShown(always)
+	self._alwaysShown = always == true
+	return self
 end
 
 -- Tick the animations; call once per frame. Safe to keep calling while the
@@ -137,25 +114,18 @@ function HealthBar:update(dt)
 	-- Hit flash.
 	if self._flash > 0.0 then
 		self._flash = math.max(0.0, self._flash - dt * 3.5)
-		self._flash_mc.alpha = self._flash * 0.4
+		self._flash_mc.alpha = self._flash * 0.45
 	end
 
-	-- Heartbeat: quicker and deeper the closer to death.
-	local urgency < const > = 1.0 - math.min(self._value / 0.6, 1.0)
-	self._beat = (self._beat + dt * (1.1 + urgency * 1.9)) % 1.0
-	scaleAbout(self._heart_mc, BADGE_X, BADGE_Y,
-		1.0 + (0.09 + urgency * 0.15) * thump(self._beat))
-
-	-- Critical rim, pulsing, fading in over the last quarter of health.
+	-- Critical glow, pulsing, fading in over the last quarter of health.
 	local critical < const > = 1.0 - math.min(self._value / 0.25, 1.0)
 	self._pulse = (self._pulse + dt * 2.2) % 1.0
 	self._warn_mc.alpha = critical * (0.3 + 0.7 * (0.5 + 0.5 * math.sin(self._pulse * math.pi * 2)))
 
 	-- Tint the greyscale fill, washed brighter for as long as a hit flash lasts.
-	local r, g, b = healthTint(self._value)
-	local k < const > = 1.0 + self._flash * 0.3
+	local k < const > = 1.0 + self._flash * 0.35
 	self._fill_mc.colorTransform = traktor.spark.ColorTransform(
-		Color4f(r * k, g * k, b * k, 1.0),
+		Color4f(TINT[1] * k, TINT[2] * k, TINT[3] * k, 1.0),
 		NO_SHIFT
 	)
 
@@ -164,15 +134,21 @@ function HealthBar:update(dt)
 	self:_setLength(self._fill_mc, self._value)
 	self:_setLength(self._ghost_mc, self._ghost)
 
-	-- The bright head rides the end of the fill, and is dropped once the fill
-	-- is too short to carry it.
-	local w < const > = self._value * TRACK_W
-	if w > EDGE_W * 2 then
-		self._edge_mc.visible = true
-		self._edge_mc.X = w - EDGE_W
+	-- Skyrim's bar is only there while it has something to say: full and unchanged
+	-- for a few seconds and it fades away.
+	local settled < const > = (self._value >= 1.0) and (self._ghost >= 1.0) and not self._alwaysShown
+	if settled then
+		self._idle = self._idle + dt
 	else
-		self._edge_mc.visible = false
+		self._idle = 0.0
 	end
+	local target < const > = (settled and self._idle >= IDLE_HIDE) and 0.0 or 1.0
+	if self._shown < target then
+		self._shown = math.min(target, self._shown + dt * FADE_IN)
+	elseif self._shown > target then
+		self._shown = math.max(target, self._shown - dt * FADE_OUT)
+	end
+	self._mc.alpha = self._shown
 end
 
 -- Private
@@ -181,28 +157,28 @@ function HealthBar:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
 	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
-	-- NOTE the heartbeat in update scales the badge every frame, so this re-captures
-	-- every frame and currently costs more than it saves; drop this line, or gate the
-	-- thump on the badge actually having moved, if the HUD shows up in a profile.
+	-- Nothing in here moves at rest -- the glow only pulses below a quarter health --
+	-- so the cache holds while the player is not being hurt.
 	mc.cacheAsBitmap = true
 
-	-- Fixed size art, so never let a layout stretch the placement past it.
+	-- Fixed size art, so never let a layout stretch the placement past it. Bottom
+	-- centre of whatever it is placed in, as Skyrim has it.
 	self._halign = Widget.ALIGN_CENTER
-	self._valign = Widget.ALIGN_CENTER
+	self._valign = Widget.ALIGN_BOTTOM
 
 	self._value = 1.0
 	self._ghost = 1.0
 	self._hold = 0.0
 	self._flash = 0.0
-	self._beat = 0.0
 	self._pulse = 0.0
+	self._idle = 0.0
+	self._shown = 1.0
+	self._alwaysShown = false
 
 	self._ghost_mc = mc:getMember("ghost")
 	self._fill_mc = mc:getMember("fill")
-	self._edge_mc = mc:getMember("edge")
 	self._flash_mc = mc:getMember("flash")
 	self._warn_mc = mc:getMember("warn")
-	self._heart_mc = mc:getMember("heart")
 	assert(self._fill_mc ~= nil, "HealthBar; movie resource is missing its parts")
 
 	self._flash_mc.alpha = 0.0
@@ -214,7 +190,7 @@ end
 function HealthBar:_setLength(mc, value)
 	if value > 0.002 then
 		mc.visible = true
-		scaleX(mc, TRACK_X, value)
+		scaleX(mc, CENTRE_X, value)
 	else
 		mc.visible = false
 	end

@@ -12658,21 +12658,6 @@
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
-							<id>{4687E106-BF5F-4898-9B9D-228BA272416B}</id>
-							<name>AmmoPickup</name>
-							<state>
-								<visible>true</visible>
-								<dynamic>true</dynamic>
-								<locked>false</locked>
-							</state>
-							<transform>
-								<translation>7.438034, 31.830444, 4.711197, 0</translation>
-								<rotation>0, -0.991445, 0, 0.130526</rotation>
-							</transform>
-							<components/>
-							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
-						</item>
-						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{A330C0DE-7F10-4E62-9B55-000000000200}</id>
 							<name>GrenadePickup</name>
 							<state>
@@ -13255,7 +13240,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-38.140785, 24.350645, 2.056916, 0</translation>
+								<translation>-37.42086, 24.350645, 3.479844, 0</translation>
 								<rotation>0, 0.944234, 0, 0.329274</rotation>
 							</transform>
 							<components/>
@@ -20655,7 +20640,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>grenade:2, rounds:12</value>
+													<value>rifle, rounds:36, grenade:3</value>
 												</second>
 											</item>
 											<item>
@@ -20734,6 +20719,186 @@
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>CEMETARY KEY</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7184BD05-3BEC-1741-9419-768C9A4B765B}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>8.641684, 22.728239, 7.857978, 0</translation>
+								<rotation>0, 0.85011, 0, -0.526605</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rifle, rounds:36, grenade:3</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3192BC9B-9F9B-334D-BC86-93CB84DDDB5E}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>7.286629, 32.722725, 4.469048, 0</translation>
+								<rotation>0, -0.204737, 0, 0.978817</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rifle, rounds:36, grenade:3</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0867D4D6-71A2-CE41-8984-601D291ED695}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-37.8116, 23.768124, -1.077981, 0</translation>
+								<rotation>0, 0.053779, 0, 0.998553</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rifle, rounds:36, grenade:3</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{92E6FF95-3619-C449-8B97-4FE6803D9878}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-103.905891, 23.189135, -35.322552, 0</translation>
+								<rotation>0, -0.937785, 0, 0.347217</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rifle, rounds:36, grenade:3</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D18DA2B3-7D3C-D441-94D7-75448BB6C9B7}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-155.744736, 19.49832, 24.546352, 0</translation>
+								<rotation>0, -0.194938, 0, 0.980815</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rifle, rounds:36, grenade:3</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
 												</second>
 											</item>
 										</value>

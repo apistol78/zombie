@@ -220,9 +220,9 @@ local COLUMN_GAP < const > = 36 -- between the two columns of graphics rows
 -- added.
 local COLUMN_SPLIT < const > = math.floor(#SETTINGS / 2)
 
-local C_TITLE < const > = Color4f(1.0, 0.9, 0.68, 1.0)
-local C_LABEL < const > = Color4f(0.82, 0.85, 0.9, 1.0)
-local C_HINT < const > = Color4f(0.55, 0.58, 0.64, 1.0)
+local C_TITLE < const > = Color4f(0.96, 0.96, 0.94, 1.0)
+local C_LABEL < const > = Color4f(0.58, 0.58, 0.57, 1.0)
+local C_HINT < const > = Color4f(0.4, 0.4, 0.39, 1.0)
 
 -- Build the rows into this container. No margins of its own: the dialog the host
 -- wraps this in brings those, and a view that padded itself as well would sit in a
@@ -310,7 +310,7 @@ function OptionsView:new(parent, environment)
 	hint:setTextColor(C_HINT)
 	hint:setHorizontalAlign(Widget.ALIGN_CENTER)
 
-	local back < const > = MenuButton(self, "Back")
+	local back < const > = MenuButton(self, "BACK")
 	back:setMinimumWidth(BACK_W)
 	back:setHorizontalAlign(Widget.ALIGN_CENTER)
 	back:setOnClick(function() self:_close() end)

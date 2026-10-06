@@ -350,10 +350,12 @@ function Main:new(params, environment)
 	self._minimapBuilt = false   -- resolve has dealt with it
 	self._minimapMapped = false  -- ...and found something worth drawing
 
-	-- Game Over menu (hidden until death): the "GAME OVER" banner plus Restart / Exit
-	-- buttons, as a modal Dialog auto-centered over the HUD (one column: title, then
-	-- two buttons). Dialog is ILayout.FLOAT, so it is excluded from the frame's layout
-	-- and does not disturb the HUD row.
+	-- Game Over menu: the "GAME OVER" banner over its buttons, as a modal Dialog
+	-- auto-centered over the HUD. Not built until the player dies (_showGameOver), because
+	-- which buttons it has is only known then: Load Last Save heads them when there is a
+	-- saved night to go back to (Scripts/SaveGame), and a save can be written at any point
+	-- before that. Dialog is ILayout.FLOAT, so it is excluded from the frame's layout and
+	-- does not disturb the HUD row.
 	--
 	-- It MUST be parented to self._frame -- this stage's one and only Frame -- and not
 	-- to a second full-screen Frame of its own. Each Frame is a separate widget tree
@@ -363,21 +365,7 @@ function Main:new(params, environment)
 	-- Frames the always-visible HUD dispatches first, refreshes itself and clears the
 	-- flag, so the other tree's _eventFilter stays at its initial 0x00000000 and every
 	-- event fails the mask test -- its buttons silently never receive a click.
-	self._gameOverDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0 }, 24, 24, 0, 16))
-	self._lblGameOver = Static(self._gameOverDialog, "GAME OVER")
-	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self._lblGameOver:setTextSize(60)
-	self._lblGameOver:setTextColor(Color4f(0.8, 0.14, 0.11, 1.0))
-	-- Restart: reload this stage from scratch via its "RESTART" self-transition.
-	self._restartButton = MenuButton(self._gameOverDialog, "RESTART")
-	self._restartButton:setMinimumWidth(220)
-	self._restartButton:setOnClick(function() self:_restart() end)
-	-- Exit: back to the Startup menu, via the loading screen (see _exitToStartup).
-	self._gameOverExitButton = MenuButton(self._gameOverDialog, "EXIT")
-	self._gameOverExitButton:setMinimumWidth(220)
-	self._gameOverExitButton:setOnClick(function() self:_exitToStartup() end)
-	-- No explicit hide needed: Dialog starts hidden (Dialog:_initialize ends in
-	-- setVisible(false)), exactly as the pause dialog below relies on.
+	self._gameOverDialog = nil
 
 	-- Contextual prompt and transient notice, both centred near the top.
 	--
@@ -959,6 +947,60 @@ function Main:_exitToStartup()
 	end
 	self:_census("exit")
 	self._loader = self:loadStageAsync("LOADING", { target = "STARTUP" })
+end
+
+-- Build the Game Over menu and put it up. Built here, at the moment of death, rather than with
+-- the rest of the UI: whether it offers Load Last Save depends on there being a save *now*.
+-- On this stage's one Frame like every other dialog (see the note in Main:new).
+function Main:_showGameOver()
+	if self._gameOverDialog ~= nil then
+		self._gameOverDialog:show()
+		return
+	end
+	local canLoad < const > = SaveGame.exists(self.environment)
+	local rows = { 0, 0, 0 }   -- the banner, Restart, Exit
+	if canLoad then
+		table.insert(rows, 0)
+	end
+	self._gameOverDialog = Dialog(self._frame, TableLayout({ 0 }, rows, 24, 24, 0, 16))
+	self._lblGameOver = Static(self._gameOverDialog, "GAME OVER")
+	self._lblGameOver:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._lblGameOver:setTextSize(60)
+	self._lblGameOver:setTextColor(Color4f(0.8, 0.14, 0.11, 1.0))
+	-- Load Last Save: back to the night as it was last saved -- the same trip Continue takes
+	-- from the main menu (_loadLastSave). First, since it is the one most likely wanted.
+	if canLoad then
+		self._loadSaveButton = MenuButton(self._gameOverDialog, "LOAD LAST SAVE")
+		self._loadSaveButton:setMinimumWidth(220)
+		self._loadSaveButton:setOnClick(function() self:_loadLastSave() end)
+	end
+	-- Restart: a new night from scratch, via the "RESTART" transition.
+	self._restartButton = MenuButton(self._gameOverDialog, "RESTART")
+	self._restartButton:setMinimumWidth(220)
+	self._restartButton:setOnClick(function() self:_restart() end)
+	-- Exit: back to the Startup menu, via the loading screen (see _exitToStartup).
+	self._gameOverExitButton = MenuButton(self._gameOverDialog, "EXIT")
+	self._gameOverExitButton:setMinimumWidth(220)
+	self._gameOverExitButton:setOnClick(function() self:_exitToStartup() end)
+	self._frame:update()
+	self._gameOverDialog:show()
+end
+
+-- Go back to the last saved night: read it and leave for the stage it was saved in, carrying
+-- what it carried -- exactly what Continue does from the menu (Scripts/Startup). Loaded async and
+-- switched to in Main:update, like _restart. A save that cannot be read after all leaves the
+-- Game Over menu where it is.
+function Main:_loadLastSave()
+	if self._loader ~= nil then
+		return
+	end
+	local save < const > = SaveGame.read(self.environment)
+	if save == nil or save.target == nil then
+		print("Main: the saved night could not be read")
+		return
+	end
+	self:_census("load")
+	self._loader = self:loadStageAsync("LOADING", { target = save.target, carry = save.carry })
 end
 
 -- Restart: reload this gameplay stage from scratch via its "RESTART" self-transition
@@ -3553,8 +3595,8 @@ function Main:update(info)
 					-- and Restart builds a new one.
 					self:_showHud(false)
 					-- Show the Game Over menu and free the mouse cursor so its
-					-- Restart / Exit buttons are clickable (as the pause menu does).
-					self._gameOverDialog:show()
+					-- buttons are clickable (as the pause menu does).
+					self:_showGameOver()
 					self.environment.input.inputSystem:setExclusive(false)
 					self.environment.render.renderView:showCursor()
 				end

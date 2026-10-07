@@ -435,13 +435,10 @@ Config = {
 		-- orchestrator's business now (see the block below); every cap it publishes is
 		-- clamped to this.
 		--
-		-- maxEnemiesStart / maxEnemiesPerWard are the *fallback* pressure, used only by
-		-- a stage that publishes no _spawnDrive (nothing does any more, but the spawner
-		-- has no business dying over it): the old flat formula, 9 + 3 per lit ward,
-		-- reaching the ceiling as Scene 2's seventh ward catches.
+		-- fallbackCap is the cap used only by a stage that publishes no _spawnDrive
+		-- (nothing does any more, but the spawner has no business dying over it).
 		maxEnemies = 30,
-		maxEnemiesStart = 9,    -- fallback: with nothing lit yet
-		maxEnemiesPerWard = 3,  -- fallback: what each lit ward adds
+		fallbackCap = 9,
 		spawnMin = 8.0,         -- nearest a zombie may be placed to the player (m)
 		spawnMax = 20.0,        -- ...and furthest
 		despawnDist = 60.0,     -- past this from the player a zombie is taken away again
@@ -499,12 +496,7 @@ Config = {
 			wardLit    = { duration = 35.0, cap = 14 },  -- ...and cashing it in (on top of the hive's brood)
 			gateOpened = { duration = 25.0, cap = 12 },  -- the cemetery opening up
 			keyTaken   = { duration = 20.0, cap = 10 }   -- committing to the key run
-		},
-
-		-- Escalation: each lit ward makes every *later* burst this much bigger, so the
-		-- night still climbs as the circle closes and the last relic run is the bad one
-		-- -- the role spawner.maxEnemiesPerWard played when the pressure was flat.
-		capPerWard = 2
+		}
 	},
 
 	-- ---- Hives ----
@@ -552,10 +544,7 @@ Config = {
 		-- free, and since it is now the only thing a ward does to the zombies already in the
 		-- forest, it is the knob to reach for if lighting a post stops feeling like it bought
 		-- anything.
-		purgeRadius = 15.0,
-		-- The bill: each ward lit makes the forest outside it this much faster. You are buying
-		-- an island and paying for it with a worse forest, so the last relic run is the bad one.
-		pacePerWard = 0.1
+		purgeRadius = 15.0
 	},
 
 	-- ---- Relics ----

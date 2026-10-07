@@ -40,12 +40,10 @@ end
 
 -- Tuning.
 -- How many may be alive at once. The ceiling is the law -- every cap the
--- orchestrator publishes is clamped to it here -- and the start/per-ward pair is
--- only the fallback pressure for a stage that publishes no drive. See the note in
--- Config, and the drive block below.
+-- orchestrator publishes is clamped to it here -- and the fallback cap is only for
+-- a stage that publishes no drive. See the note in Config, and the drive block below.
 local MAX_ENEMIES < const > = Config.spawner.maxEnemies
-local MAX_ENEMIES_START < const > = Config.spawner.maxEnemiesStart
-local MAX_ENEMIES_PER_WARD < const > = Config.spawner.maxEnemiesPerWard
+local FALLBACK_CAP < const > = Config.spawner.fallbackCap
 local SPAWN_MIN < const > = Config.spawner.spawnMin       -- nearest a spawn may appear to the player (m)
 local SPAWN_MAX < const > = Config.spawner.spawnMax      -- farthest a spawn may appear (m)
 local DESPAWN_DIST < const > = Config.spawner.despawnDist   -- remove spawned enemies past this distance (m)
@@ -345,8 +343,7 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- (a relic taken, a ward lit, the gate opened) into bursts and lulls and publishes
 	-- the verdict as context._spawnDrive -- one { cap, interval } table, mutated in
 	-- place, read here fresh every update. This spawner keeps owning *where* a zombie
-	-- rises; proximity still escalates with the wards below, so late bursts arrive
-	-- nearer as well as bigger.
+	-- rises.
 	--
 	-- Note the cap is a cap and not a target. It says how many the spawner may keep
 	-- alive, not how many there will be: the despawn rules above still take away
@@ -355,20 +352,17 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- collapses to the lull's, nothing is taken away either: the crowd the burst built
 	-- stands until the player kills it, which is what a lull is *for*.
 	--
-	-- The else-branch is the old flat ward pressure, kept as the fallback for a stage
-	-- that publishes no drive: nothing does any more, but the spawner has no business
-	-- dying over a missing table.
-	local lit < const > = context._wardsLit or 0
+	-- The else-branch is a flat fallback for a stage that publishes no drive: nothing
+	-- does any more, but the spawner has no business dying over a missing table.
 	local wards < const > = context._litWards
-	local spawnMin < const > = math.max(SPAWN_MIN - 0.8 * lit, 4.0)
 	local drive < const > = context._spawnDrive
 	local interval, cap
 	if drive ~= nil then
 		interval = drive.interval
 		cap = math.min(drive.cap, MAX_ENEMIES)
 	else
-		interval = SPAWN_INTERVAL * math.max(1.0 - 0.1 * lit, 0.5)
-		cap = math.min(MAX_ENEMIES_START + MAX_ENEMIES_PER_WARD * lit, MAX_ENEMIES)
+		interval = SPAWN_INTERVAL
+		cap = math.min(FALLBACK_CAP, MAX_ENEMIES)
 	end
 
 	-- 3) Only spawn while under the cap, and throttle attempts.
@@ -411,7 +405,7 @@ function Spawner:update(context, totalTime, deltaTime)
 			-- Wall clearance is tested on the nav point, before any ray is spent on it:
 			-- it is the mesh's edge that is the problem, and the mesh is what knows
 			-- where that is.
-			if flat2 >= spawnMin * spawnMin and flat2 <= SPAWN_MAX * SPAWN_MAX
+			if flat2 >= SPAWN_MIN * SPAWN_MIN and flat2 <= SPAWN_MAX * SPAWN_MAX
 				and clearOfWalls(self._navMesh, p) then
 				-- Settle onto the actual surface, and take the ground's own verdict on
 				-- whether this is a place to stand: a near-vertical hit means the nav

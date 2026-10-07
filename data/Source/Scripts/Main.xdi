@@ -59,7 +59,7 @@ import(traktor)
 --
 -- Every gameplay number this stage runs on comes from Scripts/Config. The fields below are
 -- still the stage's own -- other scripts read them off the context (EnemyController takes
--- _hurtRange and _enemyPace), and several are state that moves during the night -- but
+-- _hurtRange), and several are state that moves during the night -- but
 -- their starting values are Config's, and the ones that never move are Config's outright.
 -- Retune the night there, not here.
 --
@@ -512,22 +512,16 @@ function Main:new(params, environment)
 	-- to, so every relic picked up is also a decision about where the next patch of
 	-- cleared ground should be, and the posts are close enough together that lighting two
 	-- neighbours wastes most of the second one's radius.
-	--
-	-- The trade is that each one also winds the rest of the night up (see
-	-- _publishWards and Scripts/Spawner): you are buying an island and paying for it
-	-- with a worse forest, so the last relic run is the bad one.
 	self._wards = nil            -- resolved off the world; index order is stable, see resolve
 	self._wardsLit = 0
 	self._wardsNeeded = nil      -- how many have to burn to win; counted in resolve
 	self._litWardIndex = {}      -- ward index -> true; plain data, so it survives a hot reload
 	self._litWards = {}          -- published to the Spawner
-	self._enemyPace = 1.0        -- published to EnemyController
 	-- The disc the Spawner is barred from and the minimap draws, and -- a separate quantity
 	-- that only used to share its number -- how far the flare reaches when a post takes
 	-- light (Main:_purgeWard). Config notes the constraint between the two.
 	self._wardRadius = Config.ward.radius            -- no-spawn radius of a lit ward (m)
 	self._purgeRadius = Config.ward.purgeRadius      -- radius of the kill when a ward takes light (m)
-	self._enemyPacePerWard = Config.ward.pacePerWard -- zombie speed added per lit ward
 	self._noticeText = ""
 	self._noticeTimer = 0.0
 
@@ -2645,15 +2639,15 @@ function Main:_circleClosed()
 	self:_showNotice("CAVE IS CLEARED")
 end
 
--- Hand the world what it needs off the ward state: where consecrated ground is, and how
--- hard the night should push. Rebuilt only when a ward is lit -- wards never move, so
--- there is nothing to do per frame.
+-- Hand the world what it needs off the ward state: where consecrated ground is. Rebuilt
+-- only when a ward is lit -- wards never move, so there is nothing to do per frame.
 --
--- One consumer each, now. _litWards is read by Scripts/Spawner alone, which will not
--- place anything inside a lit ward; every Scripts/EnemyController used to read it too and
--- steer out of one, and that whole rule is gone -- the horde walks over consecrated
--- ground and only the flare that lit it ever touched them (see _purgeWard, and the note
--- at the top of Scripts/EnemyController). _enemyPace is read by the controllers.
+-- _litWards is read by Scripts/Spawner alone, which will not place anything inside a lit
+-- ward; every Scripts/EnemyController used to read it too and steer out of one, and that
+-- whole rule is gone -- the horde walks over consecrated ground and only the flare that
+-- lit it ever touched them (see _purgeWard, and the note at the top of
+-- Scripts/EnemyController). The count of lit wards no longer winds the night up either:
+-- the horde is as fast and as many after the last ward as before the first.
 --
 -- Only r2 is published, since comparing squared distances is all the spawner does. The
 -- plain radius went with the steering that needed it: it is _wardRadius, one field away,
@@ -2672,7 +2666,6 @@ function Main:_publishWards()
 		end
 	end
 	self._litWards = lit
-	self._enemyPace = 1.0 + self._enemyPacePerWard * self._wardsLit
 end
 
 -- The night is won. Everything after this is the payoff: the spawner is shut off,

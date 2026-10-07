@@ -630,21 +630,16 @@ function EnemyController:update(context, totalTime, deltaTime)
 		return
 	end
 
-	-- Pace multiplier from the Stage: every ward the player lights makes the forest
-	-- outside it faster (see Main:_publishWards). Read per frame and applied to
-	-- maxVelocity as well, so already-spawned zombies speed up too -- setting it
-	-- once at resolve would leave the existing horde ambling at the old rate.
-	-- Defaults to 1.0, so this controller still behaves standalone.
-	local pace < const > = context._enemyPace or 1.0
-
-	local speed = self._patrolSpeed * pace
+	-- Re-applied every frame because the stagger and the push-out raise maxVelocity for
+	-- themselves and leave it for the brains to put back (see Scripts/Npc/Npc).
+	local speed = self._patrolSpeed
 	if self._state == "attack" then
-		speed = self._attackSpeed * pace
+		speed = self._attackSpeed
 	elseif self._state == "investigate" then
-		speed = self._investigateSpeed * pace
+		speed = self._investigateSpeed
 	end
 	if self._character ~= nil then
-		self._character.maxVelocity = self._attackSpeed * pace
+		self._character.maxVelocity = self._attackSpeed
 	end
 
 	-- ---- Collect the finished path query, then choose a destination and issue the next ----

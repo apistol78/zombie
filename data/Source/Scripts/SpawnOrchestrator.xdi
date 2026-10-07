@@ -38,7 +38,6 @@ local EVENTS < const > = Config.orchestrator.events
 local LULL_CAP < const > = Config.orchestrator.lullCap
 local LULL_INTERVAL < const > = Config.orchestrator.lullInterval
 local BURST_INTERVAL < const > = Config.orchestrator.burstInterval
-local CAP_PER_WARD < const > = Config.orchestrator.capPerWard
 local MAX_ENEMIES < const > = Config.spawner.maxEnemies
 
 SpawnOrchestrator = SpawnOrchestrator or class("SpawnOrchestrator")
@@ -77,9 +76,9 @@ function SpawnOrchestrator:notify(kind)
 	if ev == nil then
 		return
 	end
-	-- Escalation: the same event is a bigger burst later in the night, so the last
-	-- relic run is the bad one -- the role the flat per-ward pressure used to play.
-	local cap < const > = math.min(ev.cap + CAP_PER_WARD * (self._stage._wardsLit or 0), MAX_ENEMIES)
+	-- The same event is the same burst all night long: how many wards are already lit
+	-- does not make it any bigger.
+	local cap < const > = math.min(ev.cap, MAX_ENEMIES)
 	self._burst = math.max(self._burst, ev.duration)
 	self._burstCap = math.max(self._burstCap, cap)
 end

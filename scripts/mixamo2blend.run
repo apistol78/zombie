@@ -9,7 +9,8 @@
    --skin=<file.fbx>      Which fbx is the skin (default largest fbx).
    --textures=<folder>    Where embedded textures are written (default output folder).
    --packed-size=<n>      Size of textures kept packed inside the .blend (default 64).
-   --blender=<exe>        Blender executable (default from PATH, .blend association or Program Files).
+   --blender=<exe>        Blender executable or command, e.g. "flatpak run org.blender.Blender"
+                          (default BLENDER, then PATH or Flatpak, .blend association, Program Files or /opt).
    --keep-temp            Keep extracted files and generated python script.
 
  Outputs:
@@ -219,36 +220,83 @@ local function versionKey(name)
 	return (tonumber(major) or 0) * 1000 + (tonumber(minor) or 0)
 end
 
--- Locate system installed Blender; same order as the engine's blend importer, then Program Files.
+-- Blender as the start of a command line. An executable file is quoted; anything else is taken as a
+-- command already, since whereIs answers "flatpak run org.blender.Blender" for a Flatpak install
+-- (and wraps a file it finds on PATH in quotes of its own).
+local function launcher(s)
+	s = (s:gsub("^\"(.*)\"$", "%1"))
+	if fileSystem:exist(Path(s)) then
+		return quote(s)
+	end
+	return s
+end
+
+-- Newest of the versioned install folders matching a pattern ("Blender 4.2", "blender-4.2.1-linux-x64").
+local function newestInstall(pattern, exeName)
+	local best, bestKey = nil, -1
+	local installs = fileSystem:find(pattern)
+	for i = 0, installs.size - 1 do
+		local f = installs:get(i)
+		local exe = f.path.pathName .. "/" .. exeName
+		if f.directory and versionKey(f.path.fileName) > bestKey and fileSystem:exist(Path(exe)) then
+			best, bestKey = Path(exe).pathNameOS, versionKey(f.path.fileName)
+		end
+	end
+	return best
+end
+
+-- Locate system installed Blender; same order as the engine's blend importer, then the usual
+-- install folders (Program Files on Windows, unpacked release tarballs in /opt on Linux).
 local function findBlender()
-	local explicit = option("blender", os:getEnvironment("BLENDER"))
+	local explicit = option("blender", os:getEnvironment("BLENDER") or "")
 	if explicit ~= "" then
-		return explicit
+		return launcher(explicit)
 	end
 
 	local onPath = os:whereIs("blender")
 	if onPath ~= nil then
-		return onPath.pathNameOS
+		return launcher(onPath.pathNameOS)
 	end
 
 	local associated = os:getAssociatedExecutable("blend")
 	if associated ~= nil then
 		if associated.fileName:lower() == "blender-launcher.exe" then
-			return associated.pathOnlyOS .. "/blender.exe"
+			return launcher(associated.pathOnlyOS .. "/blender.exe")
 		end
-		return associated.pathNameOS
+		return launcher(associated.pathNameOS)
 	end
 
-	local best, bestKey = nil, -1
-	local installs = fileSystem:find("C:/Program Files/Blender Foundation/*")
-	for i = 0, installs.size - 1 do
-		local f = installs:get(i)
-		local exe = f.path.pathName .. "/blender.exe"
-		if f.directory and versionKey(f.path.fileName) > bestKey and fileSystem:exist(Path(exe)) then
-			best, bestKey = exe, versionKey(f.path.fileName)
+	local installed =
+		newestInstall("C:/Program Files/Blender Foundation/*", "blender.exe") or
+		newestInstall("/opt/blender*", "blender")
+	if installed ~= nil then
+		return launcher(installed)
+	end
+	return nil
+end
+
+-- A Flatpak Blender runs sandboxed: /tmp is private to it and the rest of the file system is only
+-- what the app was granted. Grant each folder it has to read or write, for this run only.
+local function sandboxed(command, folders)
+	local prefix, rest = command:match("^(flatpak%s+run)%s+(.*)$")
+	if prefix == nil then
+		return command
+	end
+	local grants, seen = "", {}
+	for _, folder in ipairs(folders) do
+		if not seen[folder] then
+			grants = grants .. " " .. quote("--filesystem=" .. folder)
+			seen[folder] = true
 		end
 	end
-	return best
+	return prefix .. grants .. " " .. rest
+end
+
+-- fileSystem:get never flags a directory on Linux (the native volume leaves it unset), but find
+-- does on every platform, so look the path up in its parent folder instead.
+local function isDirectory(path)
+	local found = fileSystem:find(path.pathName)
+	return found.size > 0 and found:get(0).directory
 end
 
 -- Collect all .fbx files in a volume (native folder or zip), recursively.
@@ -316,9 +364,11 @@ function main(args)
 		return 1
 	end
 
+	-- Everything handed to Blender is in the OS's own form; on Linux pathName carries the engine's
+	-- volume prefix ("c:/tmp/...") which only the engine understands.
 	local input = fileSystem:getAbsolutePath(Path(args:get(0)))
-	local outputPath = fileSystem:getAbsolutePath(Path(args:get(1))).pathName
-	local texturePath = fileSystem:getAbsolutePath(Path(option("textures", outputPath))).pathName
+	local outputPath = fileSystem:getAbsolutePath(Path(args:get(1))).pathNameOS
+	local texturePath = fileSystem:getAbsolutePath(Path(option("textures", outputPath))).pathNameOS
 	local packedSize = tonumber(option("packed-size", "64"))
 	local keepTemp = run.commandLine:hasOption("keep-temp")
 
@@ -327,30 +377,33 @@ function main(args)
 		stderr:printLn("Unable to find Blender; use --blender=<exe> or set BLENDER.")
 		return 1
 	end
-	stdout:printLn("Using Blender \"" .. blender .. "\".")
+	stdout:printLn("Using Blender " .. blender .. ".")
 
-	local tempPath = os.writableFolderPath .. "/Traktor/Mixamo2Blend"
+	local tempPath = Path(os.writableFolderPath .. "/Traktor/Mixamo2Blend").pathNameOS
 	fileSystem:makeAllDirectories(Path(tempPath))
 	fileSystem:makeAllDirectories(Path(outputPath))
 	fileSystem:makeAllDirectories(Path(texturePath))
 
 	local temporaries = {}
 
+	-- Folders Blender reads from or writes to; a sandboxed Blender is granted exactly these.
+	local folders = { tempPath, outputPath, texturePath }
+
 	-- Gather fbx files; extract them from the zip into the temporary folder.
 	local fbxs
-	local inputFile = fileSystem:get(input)
-	if inputFile == nil then
-		stderr:printLn("Input \"" .. input.pathName .. "\" not found.")
+	if fileSystem:get(input) == nil then
+		stderr:printLn("Input \"" .. input.pathNameOS .. "\" not found.")
 		return 1
-	elseif inputFile.directory then
+	elseif isDirectory(input) then
 		fbxs = collectFbx(fileSystem, input.pathName, {})
 		for _, fbx in ipairs(fbxs) do
-			fbx.file = fbx.path.pathName
+			fbx.file = fbx.path.pathNameOS
 		end
+		folders[#folders + 1] = input.pathNameOS
 	else
 		local zipStream = fileSystem:open(input, File.FmRead)
 		if zipStream == nil then
-			stderr:printLn("Unable to open \"" .. input.pathName .. "\".")
+			stderr:printLn("Unable to open \"" .. input.pathNameOS .. "\".")
 			return 1
 		end
 		local zip = ZipVolume(zipStream)
@@ -367,7 +420,7 @@ function main(args)
 	end
 
 	if #fbxs == 0 then
-		stderr:printLn("No fbx files found in \"" .. input.pathName .. "\".")
+		stderr:printLn("No fbx files found in \"" .. input.pathNameOS .. "\".")
 		return 1
 	end
 
@@ -415,7 +468,7 @@ function main(args)
 		stdout:printLn(job.fbx.path.fileName .. " -> " .. job.output)
 
 		local command =
-			quote(blender) ..
+			sandboxed(blender, folders) ..
 			" -b --factory-startup --python-exit-code 1 --python " .. quote(script) ..
 			" -- " .. job.mode ..
 			" " .. quote(job.fbx.file) ..

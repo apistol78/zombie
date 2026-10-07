@@ -21618,6 +21618,138 @@
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
 						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{4CAF3107-2CC2-4558-8415-250D9242FA03}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-33.5, 22.8, -2, 0</translation>
+								<rotation>0, 0.350496, 0, 0.936564</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>age</first>
+												<second type="traktor.PropertyString">
+													<value>49</value>
+												</second>
+											</item>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.85</value>
+												</second>
+											</item>
+											<item>
+												<first>greeting</first>
+												<second type="traktor.PropertyString">
+													<value>MY SNARES CAUGHT NOTHING BUT THE DEAD THIS WEEK.</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>300</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>coin:6, rounds:10</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>THE TRAPPER</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DB0CD14F-E54D-4627-9D56-97B704B7A9A3}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14, 22.84, 24, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>age</first>
+												<second type="traktor.PropertyString">
+													<value>34</value>
+												</second>
+											</item>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.9</value>
+												</second>
+											</item>
+											<item>
+												<first>greeting</first>
+												<second type="traktor.PropertyString">
+													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>300</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:8, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>THE HUNTSMAN</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
 					</entityData>
 				</item>
 			</components>

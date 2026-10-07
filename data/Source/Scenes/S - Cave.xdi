@@ -53,7 +53,7 @@
 			<navMesh>{2D79D2A0-411F-400D-A1C1-D8F7AD5C45DF}</navMesh>
 		</item>
 		<item type="traktor.world.FogComponentData" version="5">
-			<mediumColor>0.235294, 0.333333, 0.298039, 1</mediumColor>
+			<mediumColor>0.341176, 0.290196, 0.203922, 1</mediumColor>
 			<mediumDensity>0.3</mediumDensity>
 			<mediumShader>{18A8E64F-6181-4434-B1A7-017D8C9A3552}</mediumShader>
 			<distanceFogEnable>false</distanceFogEnable>
@@ -202,7 +202,7 @@
 							</state>
 							<transform>
 								<translation>0, 0, 0, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{3A518A8A-569B-40A6-AF3D-55468F3E34B1}</entityData>
@@ -277,7 +277,7 @@
 							</state>
 							<transform>
 								<translation>16, 0, 16, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{6867002B-B0EC-4920-9CE0-6D7B6C055EAE}</entityData>
@@ -322,7 +322,7 @@
 							</state>
 							<transform>
 								<translation>40, 0, 16, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{95EE2636-ADC0-4E73-9D84-6043A346DE3D}</entityData>
@@ -442,7 +442,7 @@
 							</state>
 							<transform>
 								<translation>88, 0, 0, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{7FD468C5-2A7E-4D34-820F-70486715C6BE}</entityData>
@@ -532,7 +532,7 @@
 							</state>
 							<transform>
 								<translation>72, -4, -24, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{6867002B-B0EC-4920-9CE0-6D7B6C055EAE}</entityData>
@@ -637,7 +637,7 @@
 							</state>
 							<transform>
 								<translation>32, -4, -40, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{297DFA08-7003-4338-8992-14B49D11CC90}</entityData>
@@ -756,7 +756,7 @@
 							</state>
 							<transform>
 								<translation>192, 0, 0, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{33A13FD8-8129-46C4-BCA4-AAE181285B10}</entityData>
@@ -1314,7 +1314,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>185.300003, 4.19498, -17.200001, 0</translation>
+								<translation>185.300003, 2.845521, -17.200001, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -1633,15 +1633,15 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>target</first>
-												<second type="traktor.PropertyString">
-													<value>TERRAIN</value>
-												</second>
-											</item>
-											<item>
 												<first>spawn</first>
 												<second type="traktor.PropertyString">
 													<value>CaveReturn</value>
+												</second>
+											</item>
+											<item>
+												<first>target</first>
+												<second type="traktor.PropertyString">
+													<value>TERRAIN</value>
 												</second>
 											</item>
 										</value>
@@ -1751,7 +1751,7 @@
 							</state>
 							<transform>
 								<translation>70.640701, -3.85406, -31.968367, 0</translation>
-								<rotation>-0.012884, -0.999189, -0.003892, 0.037936</rotation>
+								<rotation>-0.012884, -0.99919, -0.003892, 0.037936</rotation>
 							</transform>
 							<components/>
 							<entityData>{7E2A9C11-4B3D-4A6E-9C2F-1A2B3C4D5E04}</entityData>
@@ -2284,7 +2284,7 @@
 							</state>
 							<transform>
 								<translation>0.5, 4.164152, -0.5, 0</translation>
-								<rotation>0, 1, 0, 0</rotation>
+								<rotation>0, 1, 0, -0</rotation>
 							</transform>
 							<components/>
 							<entityData>{8BD207AF-2277-514B-A378-D531495E8067}</entityData>
@@ -3364,7 +3364,7 @@
 							</state>
 							<transform>
 								<translation>166.5, 12.5033, -7.5, 0</translation>
-								<rotation>0, -0.999714, 0, 0.023894</rotation>
+								<rotation>0, -0.999715, 0, 0.023894</rotation>
 							</transform>
 							<components/>
 							<entityData>{66B2A602-74EE-F046-8DEB-64B795A2593A}</entityData>

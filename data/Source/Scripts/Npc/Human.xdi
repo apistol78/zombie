@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{4E9C0000-0000-4000-8000-000000000001}
+
+import(traktor)
+
+-- Human: a living character placed in the scene -- the wanderer, the merchant and the worker
+-- of Scripts/Npc/Npc. Three states:
+--
+--   * ROUTINE -- what it does when the night leaves it alone, by class:
+--       wanderer  walks its `route` (Scripts/Npc/Route), or with none ambles about the spot
+--                 it was placed on, never more than Config.npc.strayRadius from it.
+--       merchant  stands where it was placed, facing the way it was placed. Selling is to come;
+--                 for now E talks to it.
+--       worker    the same, at its work (the graph's "work" state) -- the smith at the anvil,
+--                 the woodcutter at the block.
+--     Talked to (:talk), any of them stops and faces the player for a few seconds.
+--
+--   * FIGHT -- goes for a character it hates (Config.npc.factions), one that has hurt it, or the
+--     player once the player has made an enemy of it (`hostility`). Chases at a run and strikes
+--     in reach (Npc:_strike).
+--
+--   * FLEE -- runs from whatever frightens it: too hurt for its courage, or more of them than
+--     its courage will stand. Leg by leg away from the threat, until it has gone a few seconds
+--     without seeing it. A shot heard nearby frightens it too, and the timid run from that alone.
+--
+-- Which of fight and flee is decided afresh every perception sample, so a villager that
+-- squares up to one zombie runs when the second arrives, and turns back once it is hurt less
+-- than it is angry. Back in ROUTINE it walks back to its post or route on its own.
+--
+-- Attach to an entity named "Npc" with an AiCharacterComponent and an animated mesh whose
+-- graph takes "moving", "running", "attack", "hit", "dead" and "work" (Entities/NPC/AG - Villager,
+-- Entities/NPC/Hunter Female/AG - Hunter Female). A graph may leave any of them out: setting a
+-- parameter it does not have does nothing.
+
+Human = Human or class("Human", Npc)
+
+local NPC < const > = Config.npc
+local CLOSE_QUARTERS < const > = Config.enemy.closeQuarters
+
+-- Awareness dot (see the debug block in update), as the horde's: white going about its day,
+-- cyan talking to the player, red fighting, yellow running.
+local DEBUG_DOT_HEIGHT < const > = 2.1
+local DEBUG_DOT_SIZE < const > = 5.0
+local DEBUG_C_ROUTINE < const > = Color4f(0.85, 0.85, 0.85, 1.0)
+local DEBUG_C_ATTEND < const > = Color4f(0.20, 0.80, 0.90, 1.0)
+local DEBUG_C_FIGHT < const > = Color4f(1.0, 0.12, 0.06, 1.0)
+local DEBUG_C_FLEE < const > = Color4f(1.0, 0.90, 0.10, 1.0)
+
+-- The timid run from a shot alone; braver ones only take fright at it.
+local SHOT_FLEE_COURAGE < const > = 0.35
+
+function Human:new()
+	Npc.new(self)
+	self._class = "wanderer"
+	self._usesWork = true       -- the graph has a "work" state (see Npc:_stagger)
+
+	-- The Hunter Female graph has no hit reaction, so a hard blow only stops them for a moment
+	-- rather than for the length of the horde's Hit animation (Npc:flinch).
+	self._flinchTime = 0.5
+
+	self._state = "routine"     -- "routine" | "fight" | "flee"
+	self._target = nil          -- what FIGHT is after (an entity; may be the player)
+	self._seenTimer = 0.0       -- FIGHT gives up this long after last seeing it (s)
+	self._fleeFrom = nil        -- where the threat FLEE is running from was last seen (Vector4)
+	self._calmTimer = 0.0       -- FLEE ends once this has run out well clear of the threat (s)
+	self._attend = 0.0          -- facing the player after being talked to (s)
+	self._heardShot = nil       -- the last shot's sequence number, as the horde keeps it
+	self._wanderWait = 0.0      -- an aimless wanderer's pause between legs (s)
+	self._wanderTarget = nil
+end
+
+-- ---- What the Stage asks ----
+
+-- Whether E may talk to it: standing, not in the middle of a fight or a flight, and not set
+-- against the player.
+function Human:canTalk(context)
+	return not self._dead and self._state == "routine" and not self:hatesPlayer()
+end
+
+-- Talked to: say something, and stop to face the player for a while. The line is the scene's
+-- `greeting` if it has one and the character is in its own mood; otherwise a stock line for the
+-- mood it is in, so a villager the player frightened earlier says so.
+function Human:talk(context)
+	self:_stats()
+	self._attend = NPC.attendTime
+	self:_dropPath()
+	if self._greeting ~= nil and self._mood == self._baseMood then
+		return self._greeting
+	end
+	return NPC.lines[self._mood] or NPC.lines.neutral
+end
+
+function Human:state()
+	return self._state
+end
+
+-- ---- Deciding ----
+
+-- Fight or flee from `foe`, at `dist`, with `count` hostiles about. See the top of the file.
+function Human:_face(foe, dist, threat, context)
+	-- The one being faced counts whatever its distance: `threat` is only the ones close by, and
+	-- a timid pedlar does not square up to a bandit because he is still twenty metres off.
+	threat = math.max(threat, self:_threatOf(foe, context))
+	local hurt < const > = self:healthFraction() < (1.0 - self._courage) * NPC.fleeHealth
+	if hurt or threat > self._courage then
+		if self._state ~= "flee" then
+			self:_setMood("scared")
+			self._repathTimer = 0.0
+			self:_dropPath()
+		end
+		self._state = "flee"
+		self._target = nil
+		self._fleeFrom = foe.transform.translation
+		self._calmTimer = NPC.calmTime
+	else
+		if self._state ~= "fight" or self._target ~= foe then
+			self:_setMood("angry")
+			self._repathTimer = 0.0
+		end
+		self._state = "fight"
+		self._target = foe
+		self._seenTimer = NPC.forgetTime
+	end
+	self._attend = 0.0
+end
+
+-- One perception sample: who is about that it hates, can it see them, and what does it do
+-- about it. A few times a second, as the horde samples, since it costs rays.
+function Human:_perceive(context, pos, playerPos, pdist)
+	local range < const > = NPC.sightRange
+
+	-- Whoever just hurt it is seen, whatever the rays would say: nobody takes a blow and
+	-- wonders where it came from.
+	local provoked < const > = self._provoked
+	self._provoked = nil
+
+	local foe, foeDist, threat = self:_nearestHated(context, pos, range, nil, NPC.threatRange)
+	if foe ~= nil and not self:_sees(context, pos, foe.transform.translation) then
+		foe, foeDist = nil, math.huge
+	end
+	if self:hatesPlayer() and pdist < range and pdist < (foeDist or math.huge) and self:_sees(context, pos, playerPos) then
+		foe, foeDist = self._player, pdist
+		threat = threat + self:_threatOf(self._player, context)
+	end
+	if provoked ~= nil and self:_standing(context, provoked) then
+		foe = provoked
+		foeDist = (provoked.transform.translation - pos).length
+	end
+
+	if foe ~= nil then
+		self:_face(foe, foeDist, threat, context)
+	elseif self._state == "fight" and self._target ~= nil
+		and self:_sees(context, pos, self._target.transform.translation) then
+		-- Nothing new, but the one it is already after is still in view.
+		self._seenTimer = NPC.forgetTime
+	end
+
+	-- A shot nearby: frightening, if it is not already busy with something worse. The timid
+	-- run from it; the rest only take fright.
+	local shot < const > = context._gunshot
+	if shot ~= nil and shot.seq ~= self._heardShot then
+		self._heardShot = shot.seq
+		local hx < const > = shot.x - pos.x
+		local hz < const > = shot.z - pos.z
+		if self._state == "routine" and hx * hx + hz * hz < NPC.hearRange * NPC.hearRange then
+			if self._mood ~= "angry" then
+				self:_setMood("scared")
+			end
+			if self._courage < SHOT_FLEE_COURAGE then
+				self._state = "flee"
+				self._fleeFrom = Vector4(shot.x, pos.y, shot.z, 1.0)
+				self._calmTimer = NPC.calmTime
+				self._attend = 0.0
+				self._repathTimer = 0.0
+					self:_dropPath()
+			end
+		end
+	end
+end
+
+-- ---- Each state's destination ----
+
+-- Where ROUTINE is walking to this frame, or nil to stand. Issues path queries as it goes.
+--
+-- Someone who has just been spoken to, or who has the player standing close by, stops whatever
+-- they were doing and faces them (see update). Only in ROUTINE: a villager running from a zombie
+-- does not stop to look at anyone, and one fighting is already facing what it is fighting.
+-- Entered at noticeRange and let go a little further out, so a player standing on the line
+-- does not have them stopping and starting.
+function Human:_routine(context, pos, pdist, deltaTime)
+	local near < const > = NPC.noticeRange + (self._noticing and NPC.noticeSlack or 0.0)
+	self._noticing = pdist < near and not self:hatesPlayer()
+	if self._attend > 0.0 or self._noticing then
+		self._attend = math.max(0.0, self._attend - deltaTime)
+		self:_dropPath()
+		return nil
+	end
+
+	if self._class == "wanderer" then
+		if self:_route(context) ~= nil then
+			local point < const >, waiting < const > = self:_routeStep(pos, deltaTime)
+			if waiting then
+				self:_dropPath()
+				return nil
+			end
+			return point
+		end
+
+		-- No route: amble about the spot it was placed on, a short leg at a time.
+		if self._wanderWait > 0.0 then
+			self._wanderWait = self._wanderWait - deltaTime
+			return nil
+		end
+		local goal = self._wanderTarget
+		if goal ~= nil then
+			local dx < const > = goal.x - pos.x
+			local dz < const > = goal.z - pos.z
+			if dx * dx + dz * dz < NPC.arrive * NPC.arrive then
+				goal = nil
+				self._wanderWait = 2.0 + math.random() * 4.0
+				self:_dropPath()
+			end
+		end
+		if goal == nil and self._wanderWait <= 0.0 then
+			goal = self:_randomPoint(self._post.x, self._post.y, self._post.z, NPC.strayRadius)
+			self._repathTimer = 0.0
+		end
+		self._wanderTarget = goal
+		return goal
+	end
+
+	-- Merchant, worker: back to the post, then stand at it.
+	local dx < const > = self._post.x - pos.x
+	local dz < const > = self._post.z - pos.z
+	if dx * dx + dz * dz > NPC.arrive * NPC.arrive then
+		return self._post
+	end
+	self:_dropPath()
+	return nil
+end
+
+-- Where FLEE is running to: a leg of up to fleeLeg metres away from the threat, re-drawn on
+-- arrival or every couple of seconds, so a pursuer that comes round is run from again.
+--
+-- Straight away from the threat is often straight into a wall, a fence or the edge of the mesh,
+-- and running at it pinned a frightened villager in a corner to be eaten. So the leg is chosen
+-- rather than aimed: seven headings fanned out from "away" (straight, then 45, 90 and 135
+-- degrees either side), each walked out along the mesh surface (the same constrain query
+-- :_onMesh probes with, only fleeLeg long), and the one whose reachable end lies furthest from
+-- the threat wins. A heading that is blocked within a couple of metres hardly counts at all,
+-- so a fence is run along rather than into. With no route yet to ask through, it falls back on
+-- straight away.
+local FLEE_FAN < const > = { 0.0, 0.785, -0.785, 1.571, -1.571, 2.356, -2.356 }
+
+function Human:_fleeGoal(pos)
+	local from < const > = self._fleeFrom
+	local ax = pos.x - from.x
+	local az = pos.z - from.z
+	local al < const > = math.sqrt(ax * ax + az * az)
+	if al < 0.001 then
+		ax, az = math.sin(self._heading), math.cos(self._heading)
+	else
+		ax, az = ax / al, az / al
+	end
+
+	local query < const > = self._pathQuery
+	if query ~= nil then
+		local away < const > = (math.atan2 or math.atan)(ax, az)
+		local best, bestScore = nil, -math.huge
+		for _, turn in ipairs(FLEE_FAN) do
+			local h < const > = away + turn
+			local want < const > = Vector4(pos.x + math.sin(h) * NPC.fleeLeg, pos.y, pos.z + math.cos(h) * NPC.fleeLeg, 1.0)
+			local reached < const > = query:constrain(pos, want)
+			if reached ~= nil then
+				local mx < const >, mz < const > = reached.x - pos.x, reached.z - pos.z
+				local tx < const >, tz < const > = reached.x - from.x, reached.z - from.z
+				local score = math.sqrt(tx * tx + tz * tz)
+				if mx * mx + mz * mz < 4.0 then
+					score = score - 100.0
+				end
+				if score > bestScore then
+					best, bestScore = reached, score
+				end
+			end
+		end
+		if best ~= nil then
+			return best
+		end
+	end
+
+	local x < const > = pos.x + ax * NPC.fleeLeg
+	local z < const > = pos.z + az * NPC.fleeLeg
+	return self:_randomPoint(x, pos.y, z, 3.0) or self:_ground(x, z, pos.y)
+end
+
+function Human:update(context, totalTime, deltaTime)
+	local me < const > = self.owner
+	if context == nil or me == nil or self.world == nil then
+		return
+	end
+	if context._gameOver or context._paused then
+		return
+	end
+	if self:_checkDead(context) then
+		return
+	end
+	-- A hive cutscene freezes everything outside the hive (EnemyController says why); the
+	-- village is never inside one.
+	if context._cutscene ~= nil then
+		return
+	end
+
+	self:_stats()
+	if not self:_resolve(context) then
+		return
+	end
+
+	local pos < const > = me.transform.translation
+	if self._post == nil then
+		-- Where it was placed, and facing which way: what a merchant and a worker go back to,
+		-- and what an aimless wanderer strays about.
+		self._post = pos
+		self._postHeading = self._heading
+	end
+	local playerPos < const > = self._player.transform.translation
+	local pdist < const > = (playerPos - pos).length
+
+	self:_tickMood(deltaTime)
+
+	if self._target ~= nil and not self:_standing(context, self._target) then
+		self._target = nil
+	end
+
+	if math.random() < 0.25 then
+		self:_perceive(context, pos, playerPos, pdist)
+	end
+
+	-- ---- Leaving FIGHT and FLEE ----
+	--
+	-- A fight ends when the target is down, out of sight long enough to be forgotten, or has
+	-- been chased too far from home: a villager sees a bandit off, it does not follow him across
+	-- the map -- which, with a bandit that runs and a village that is braver than he is, is
+	-- exactly what used to happen.
+	--
+	-- A flight ends once the character has gone calmTime without seeing anything to run from
+	-- (every sighting while still afraid winds it back, see :_face). Not on distance: a
+	-- villager cornered somewhere it could not run further from the threat, the threat long
+	-- gone, stayed frightened for good.
+	if self._state == "fight" then
+		self._seenTimer = self._seenTimer - deltaTime
+		local strayed = false
+		if self._target ~= nil then
+			local tp < const > = self._target.transform.translation
+			local hx < const >, hz < const > = tp.x - self._post.x, tp.z - self._post.z
+			strayed = hx * hx + hz * hz > NPC.chaseLeash * NPC.chaseLeash
+		end
+		if self._target == nil or self._seenTimer <= 0.0 or strayed then
+			self._state = "routine"
+			self._target = nil
+			self._repathTimer = 0.0
+			self:_dropPath()
+		end
+	elseif self._state == "flee" then
+		self._calmTimer = self._calmTimer - deltaTime
+		if self._calmTimer <= 0.0 then
+			self._state = "routine"
+			self._fleeFrom = nil
+			self._repathTimer = 0.0
+			self:_dropPath()
+		end
+	end
+
+	-- ---- Debug: what is this one doing? ----
+	local dbg < const > = context.debug
+	local colour < const > = (self._state == "fight" and DEBUG_C_FIGHT)
+		or (self._state == "flee" and DEBUG_C_FLEE)
+		or (self._attend > 0.0 and DEBUG_C_ATTEND)
+		or DEBUG_C_ROUTINE
+	if dbg ~= nil then
+		dbg:point(pos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, colour)
+	end
+
+	-- Shoved or flinching: the reel replaces everything below (Npc:_stagger).
+	if self._hitTimer > 0.0 then
+		self:_stagger(deltaTime)
+		return
+	end
+
+	-- ---- Where to, and how fast ----
+	self:_collectPath()
+	self._repathTimer = self._repathTimer - deltaTime
+
+	local speed = self._walkSpeed
+	local goal = nil
+	local face = nil
+	local faceRange = CLOSE_QUARTERS
+	local target < const > = self._target
+	local tpos < const > = target ~= nil and target.transform.translation or nil
+
+	if self._state == "fight" then
+		speed = self._runSpeed
+		goal = tpos
+		face = tpos
+		if self._repathTimer <= 0.0 and self:_canPath() then
+			self._repathTimer = 0.5
+			self:_requestPath(pos, self:_ground(tpos.x, tpos.z, pos.y))
+		end
+	elseif self._state == "flee" then
+		speed = self._runSpeed
+		if (self._repathTimer <= 0.0 or self._pathQuery == nil) and self:_canPath() then
+			self._repathTimer = 2.0
+			self:_requestPath(pos, self:_fleeGoal(pos))
+		end
+		goal = true
+	else
+		goal = self:_routine(context, pos, pdist, deltaTime)
+		if goal ~= nil and self._repathTimer <= 0.0 and self:_canPath() then
+			self._repathTimer = 1.5
+			self:_requestPath(pos, self:_ground(goal.x, goal.z, pos.y))
+		end
+		if self._attend > 0.0 or self._noticing then
+			-- Facing the player who spoke to it, or who has come close.
+			face = playerPos
+			faceRange = NPC.talkRange * 2.0
+		elseif goal == nil and self._class ~= "wanderer" then
+			-- At its post: facing the way it was placed (a point just ahead along that heading).
+			face = pos + Vector4(math.sin(self._postHeading), 0.0, math.cos(self._postHeading), 0.0)
+			faceRange = 2.0
+		end
+	end
+
+	local targetX, targetZ = 0.0, 0.0
+	if goal ~= nil then
+		targetX, targetZ = self:_steer(pos)
+	end
+	if dbg ~= nil then
+		self:_drawPath(dbg, pos, colour)
+	end
+
+	-- The clamp the character controller holds its speed to: this frame's pace, so a stroll is
+	-- a stroll and a run is a run (Npc:_drive raises it itself for a push out of the player).
+	self._character.maxVelocity = speed
+
+	local moving < const > = self:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, target ~= self._player and target or nil, deltaTime) or false
+
+	-- ---- Striking ----
+	local striking = false
+	if self._state == "fight" and tpos ~= nil and (tpos - pos).length < self._reach then
+		striking = true
+		self:_strike(context, target, deltaTime)
+	end
+
+	if self._pose ~= nil then
+		self._pose:setParameterValue("moving", moving)
+		self._pose:setParameterValue("running", moving and speed > self._walkSpeed)
+		self._pose:setParameterValue("attack", striking)
+		self._pose:setParameterValue("work",
+			self._class == "worker" and self._state == "routine" and not moving and self._attend <= 0.0
+			and not self._noticing)
+	end
+end
+]]></text>
+</object>

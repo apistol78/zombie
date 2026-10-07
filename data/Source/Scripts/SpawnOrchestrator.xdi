@@ -56,10 +56,13 @@ function SpawnOrchestrator:new(stage)
 	self._burst = 0.0      -- seconds of surge left; at or below zero the night is lulling
 	self._burstCap = 0     -- ...and how many it may hold alive while it lasts
 
-	-- The night opening is itself an event: without this the forest starts empty and
-	-- stays empty until the player first touches something, which reads as the game
-	-- not having started rather than as a lull.
-	self:notify("nightfall")
+	-- The night opens in the lull, not with a surge: the story is that the first wave has
+	-- already come and been fought off, and what is left is the trickle -- a straggler
+	-- rising every lullInterval, never more than lullCap of them. The spawner's first
+	-- attempt is immediate, so the forest is not standing empty either; it is just quiet,
+	-- and stays quiet until the player first touches something. (There used to be a
+	-- "nightfall" burst here, which put a crowd round the house the player wakes in --
+	-- and round the village next to it -- in the first twenty seconds.)
 end
 
 -- A gameplay event: the night notices. Unknown kinds are ignored rather than
@@ -86,8 +89,8 @@ function SpawnOrchestrator:saveState()
 	return { burst = self._burst, burstCap = self._burstCap }
 end
 
--- ...and taken up again on arrival, in place of the nightfall surge the constructor opened
--- with: walking out of the cave is the same night carrying on, not a new one falling.
+-- ...and taken up again on arrival, in place of the lull the constructor opened with:
+-- walking out of the cave mid-surge is the same night carrying on, not a new one falling.
 function SpawnOrchestrator:restoreState(state)
 	if state == nil then
 		return

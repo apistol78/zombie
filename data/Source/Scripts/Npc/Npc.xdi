@@ -1,0 +1,1160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
+
+import(traktor)
+
+-- Npc: what every character in the world is made of, whatever it is -- a zombie, a villager,
+-- one day an animal. A ScriptComponent on an entity with an AiCharacterComponent and an
+-- animated mesh, as EnemyController always was; the brains are subclasses:
+--
+--   * Scripts/EnemyController -- "braindead": the horde. Its own state machine, tuned over a
+--     long time, on top of the locomotion here.
+--   * Scripts/Npc/Human -- wanderer, merchant and worker: an everyday routine, and the shared
+--     fight / flee reactions below when the night intrudes on it.
+--
+-- What lives here is what all of them need and none of them should own:
+--
+--   * Who it is -- class, faction, health, age, courage, mood and hostility toward the player
+--     -- read once from the ScriptComponentData's properties, falling back on its class and
+--     then on Config.npc (see :_stats).
+--   * Getting about -- the nav mesh path queries, keeping a step on the mesh, the push away
+--     from everyone nearby, the player's personal space and the limited turn rate (:_drive).
+--     Moved here out of EnemyController line for line, so the horde walks exactly as it did.
+--   * Being hurt -- health, the shove and the flinch, the rag doll. Damage itself arrives
+--     through the Stage (Main:damage), which owns the kill.
+--   * Seeing -- a line of sight to anything, and the nearest character it hates.
+--   * What it carries -- a list of { kind, count } off its `items` property, the same form a
+--     chest holds, which is what it leaves to be searched when it dies.
+--
+-- Properties (all strings, all optional) on a placed character's ScriptComponentData:
+--
+--   class      wanderer | merchant | worker | braindead
+--   faction    a key of Config.npc.factions (villager, bandit, undead)
+--   name       what the prompts call it ("THE SMITH")
+--   greeting   what it says when talked to; a stock line by mood otherwise
+--   route      the name of a Scripts/Npc/Route to walk (wanderers, and placed zombies)
+--   items      what it carries -- "coin:12, bread", as a chest's `item`
+--   health, age, courage, hostility    numbers
+--   mood       neutral | happy | angry | scared
+
+Npc = Npc or class("Npc", traktor.world.ScriptComponent)
+
+local COLLISION_DEFAULT < const > = 0x00000001
+
+-- Locomotion tuning is the horde's: it is what every number in Config.enemy was tuned for, and
+-- a villager walking round a boulder has exactly the problems a zombie walking round one has.
+local CFG < const > = Config.enemy
+local CFG_MELEE < const > = Config.melee
+local NPC < const > = Config.npc
+
+-- Inside this range of the player, a chasing zombie faces the player rather than facing
+-- the way it is steering (see the facing block in :_drive, which is also the story of why
+-- it exists).
+local CLOSE_QUARTERS < const > = CFG.closeQuarters
+
+-- Least a turning zombie still advances, as a fraction of its speed, so a turn is walked
+-- as an arc instead of pivoted on the spot. See the move block in :_drive, and the longer
+-- note in Config.
+local TURN_CREEP < const > = CFG.turnCreep
+
+-- How far ahead of a zombie its step is tested against the nav mesh (m), see :_onMesh.
+-- Comfortably more than one frame of walking, so the edge is felt before it is reached,
+-- and short enough that the probe does not round a corner the zombie has not got to yet.
+local NAV_PROBE < const > = 0.6
+
+-- The floor under all of that: however hard it is being pushed and by however many, no
+-- zombie walks nearer the player than this (see the personal space block in :_drive). It
+-- is not a fourth number to keep in step with the other three -- it is exactly where the
+-- _playerSpace push already comes to rest, since that push cancels a unit path direction
+-- at half its radius, restated as a hard limit instead of a term in a blend.
+local PERSONAL_SPACE < const > = CFG.playerSpace * 0.5
+
+-- ...and, well inside it, the line where the two capsules actually touch. Physics holds
+-- that one -- see Config's overlapSpace -- so what is left here is undoing an overlap that
+-- was never walked into: a speed per metre of overlap, and a ceiling on it.
+local OVERLAP_SPACE < const > = CFG.overlapSpace
+local PUSH_OUT_GAIN < const > = CFG.pushOutGain
+local PUSH_OUT_MAX < const > = CFG.pushOutMax
+
+-- Being shoved (see :hit and :_stagger, and Scripts/Weapons/Melee, which swings the rifle
+-- butt). How far the shove carries, how long it takes to deliver, and how long the zombie
+-- is out of the fight altogether. The distance is delivered exactly, by metres owed rather
+-- than by a speed held for a time -- see :_stagger.
+local HIT_KNOCKBACK < const > = CFG_MELEE.knockback
+local HIT_PUSH_TIME < const > = CFG_MELEE.pushTime
+local HIT_STUN < const > = CFG_MELEE.stun
+
+-- Nav path debug drawing (see :_drawPath): lifted off the ground only so it does not z-fight
+-- the terrain in a depth-tested capture -- the layer itself draws through everything.
+local DEBUG_PATH_LIFT < const > = 0.15
+local DEBUG_PATH_WIDTH < const > = 2.0
+local DEBUG_PATH_NODE_SIZE < const > = 3.0
+
+-- The two lists every character is found in: the horde, which the Spawner, the wards and the
+-- dawn count as "the zombies", and everyone placed in the scene.
+local LISTS < const > = { "Enemy", "Npc" }
+
+function Npc:new()
+	self._repathTimer = 0.0
+	self._heading = nil       -- current facing (radians)
+	self._turnRate = CFG.turnRate      -- max turn speed while steering (rad/s)
+	self._faceTurnRate = CFG.faceTurnRate -- ...and the faster one used to track a target up close
+	self._avoidRadius = CFG.avoidRadius -- start avoiding other characters within this distance (m)
+	self._separation = CFG.separation  -- how strongly avoidance overrides path following
+
+	-- How much room a character leaves the *player*, as opposed to the two and a half metres
+	-- it leaves another character. It is not there to keep its distance -- it is there to stop
+	-- it standing inside the man it is eating. The push ramps from nothing at this distance to
+	-- _separation at the player's own position, so the two cancel at exactly half of it,
+	-- which is where a zombie comes to rest.
+	self._playerSpace = CFG.playerSpace
+
+	self._dead = false   -- set once killed; switches the body to rag doll
+
+	-- Shoved or flinching (see :hit, :flinch). _hitTimer is the whole reel, _pushTimer the part
+	-- of it the "hit" pulse is held for, and _pushLeft the metres of shove still owed (none for
+	-- a flinch). All three at rest, so a character nobody has hit costs one compare a frame.
+	self._hitTimer = 0.0
+	self._pushTimer = 0.0
+	self._pushLeft = 0.0
+	self._hitX = 0.0     -- ...and the way out, on the ground plane (unit length)
+	self._hitZ = 0.0
+
+	-- Stand still this long after first appearing, leaving "moving" untouched (see :_drive).
+	-- Zombies rise out of the ground and set this; everyone else is already standing.
+	self._spawnDelay = 0.0
+
+	self._strikeTimer = 0.0   -- until the next blow at another character may land (s)
+	self._grudges = {}        -- characters that have hurt this one: fought whatever the factions say
+end
+
+-- ---- Who it is ----
+
+-- A property off this component's ScriptComponentData, as a string, or nil.
+function Npc:_property(name)
+	local props < const > = self.properties
+	if props == nil then
+		return nil
+	end
+	local v < const > = props:getProperty(name)
+	if v == nil or v == "" then
+		return nil
+	end
+	return v
+end
+
+-- One setting: the scene's property, else this character's class in Config.npc, else the
+-- defaults. Numbers come back as numbers however the property was typed.
+function Npc:_setting(name, class)
+	local v = self:_property(name)
+	local def < const > = NPC.defaults[name]
+	if v ~= nil then
+		if type(def) == "number" then
+			v = tonumber(v) or def
+		end
+		return v, true
+	end
+	local tune < const > = NPC.classes[class]
+	if tune ~= nil and tune[name] ~= nil then
+		return tune[name], false
+	end
+	return def, false
+end
+
+-- How far into old age or childhood a character is: 0 for an adult, rising to 1 at 0 and 90.
+local function ageFactor(age)
+	if age < NPC.youngAge then
+		return (NPC.youngAge - age) / NPC.youngAge
+	elseif age > NPC.oldAge then
+		return math.min(1.0, (age - NPC.oldAge) / (90.0 - NPC.oldAge))
+	end
+	return 0.0
+end
+
+-- Read who this character is, once. Lazy rather than in :new because a component's properties
+-- are not there to be read until it has joined a world. A subclass sets self._class in :new
+-- to say what it is when the scene says nothing (EnemyController: braindead).
+function Npc:_stats()
+	if self._statsRead then
+		return
+	end
+	self._statsRead = true
+
+	local class < const > = self:_property("class") or self._class or "wanderer"
+	self._class = class
+	self._faction = self:_setting("faction", class)
+	self._name = self:_property("name")
+	self._greeting = self:_property("greeting")
+	self._routeName = self:_property("route")
+
+	self._maxHealth = self:_setting("health", class)
+	if self._health == nil then
+		self._health = self._maxHealth   -- a restored character arrives with its own already
+	end
+
+	self._age = self:_setting("age", class)
+	local aged < const > = ageFactor(self._age)
+	local courage, given = self:_setting("courage", class)
+	if not given then
+		courage = courage - NPC.ageCourage * aged
+	end
+	self._courage = math.max(0.0, math.min(1.0, courage))
+
+	self._baseMood = self:_setting("mood", class)
+	self._mood = self._mood or self._baseMood
+	self._moodTimer = 0.0
+	if self._hostility == nil then
+		self._hostility = self:_setting("hostility", class)
+	end
+
+	self._reach = self:_setting("reach", class)
+	self._strikeDamage = self:_setting("strikeDamage", class)
+	self._strikeInterval = self:_setting("strikeInterval", class)
+	local pace < const > = 1.0 - NPC.agePace * aged
+	self._walkSpeed = self:_setting("walkSpeed", class) * pace
+	self._runSpeed = self:_setting("runSpeed", class) * pace
+
+	-- What it carries. Kinds the catalogue does not know, and relics -- which are their own
+	-- entities out in the world -- are left out, as a chest leaves them out.
+	if self._loot == nil then
+		self._loot = {}
+		local spec < const > = self:_property("items")
+		if spec == nil and class == "braindead" then
+			-- A zombie the scene says nothing about -- every one the Spawner or a hive sends up --
+			-- carries whatever it died with, drawn now (Config.npc.zombieLoot).
+			for _, roll in ipairs(NPC.zombieLoot) do
+				if math.random() < roll.chance then
+					table.insert(self._loot, { kind = roll.kind, count = roll.count })
+				end
+			end
+		end
+		for _, entry in ipairs(Items.parseList(spec, "Npc")) do
+			local def < const > = Items[entry.name]
+			if def == nil then
+				print('Npc: unknown item "' .. entry.name .. '"; left out.')
+			elseif not def.keep and (entry.count or 1) > 0 then
+				table.insert(self._loot, { kind = entry.name, count = entry.count or 1 })
+			end
+		end
+	end
+end
+
+function Npc:faction()
+	self:_stats()
+	return self._faction
+end
+
+function Npc:class()
+	self:_stats()
+	return self._class
+end
+
+function Npc:displayName()
+	self:_stats()
+	return self._name
+end
+
+function Npc:mood()
+	self:_stats()
+	return self._mood
+end
+
+function Npc:isDead()
+	return self._dead
+end
+
+-- What it has on it, as { { kind, count }, ... }. Read by the Stage when it dies, which takes
+-- the list over as the body's contents -- see Main:killEnemy.
+function Npc:loot()
+	self:_stats()
+	return self._loot
+end
+
+-- How a living character feels, as plain data for the Stage's books (Main:_saveNpcs), and
+-- back again (Main:_restoreNpcs). A grudge against another character is not kept: that
+-- character is a different entity the next time the world is built.
+function Npc:snapshot()
+	self:_stats()
+	return { health = self._health, hostility = self._hostility, mood = self._mood }
+end
+
+function Npc:restore(s)
+	self:_stats()
+	self._health = math.min(self._maxHealth, s.health or self._health)
+	self._hostility = s.hostility or self._hostility
+	if s.mood ~= nil and s.mood ~= self._baseMood then
+		self:_setMood(s.mood)
+	end
+end
+
+-- Whether this character attacks the player on sight: its faction says so, or it has come to
+-- hate them itself.
+function Npc:hatesPlayer()
+	self:_stats()
+	local f < const > = NPC.factions[self._faction]
+	return (f ~= nil and f.player == true) or self._hostility >= NPC.hostileAt
+end
+
+-- Whether this character goes for `other`, an entity: the player, another character its faction
+-- is at war with, or one that has hurt it.
+function Npc:hates(other, context)
+	if other == nil then
+		return false
+	end
+	if context ~= nil and other == context:player() then
+		return self:hatesPlayer()
+	end
+	if self._grudges[other] then
+		return true
+	end
+	local sc < const > = other:getComponent(traktor.world.ScriptComponent)
+	if sc == nil or sc.faction == nil then
+		return false
+	end
+	self:_stats()
+	local f < const > = NPC.factions[self._faction]
+	return f ~= nil and f[sc:faction()] == true
+end
+
+-- Set the mood, and hold it moodHold seconds before it eases back to the character's own.
+function Npc:_setMood(mood)
+	self._mood = mood
+	self._moodTimer = NPC.moodHold
+end
+
+function Npc:_tickMood(deltaTime)
+	if self._moodTimer > 0.0 then
+		self._moodTimer = self._moodTimer - deltaTime
+		if self._moodTimer <= 0.0 then
+			self._mood = self._baseMood
+		end
+	end
+end
+
+-- ---- Being hurt ----
+
+-- Take `amount` of damage from `source` (the player's entity, another character, or nil for
+-- the world -- a blast, a ward). Called by Main:damage, which owns what happens next: returns
+-- true when this has killed it, and the Stage then kills it the one way anything dies.
+function Npc:takeDamage(amount, source, context)
+	if self._dead then
+		return false
+	end
+	self:_stats()
+	self._health = self._health - amount
+	if source ~= nil then
+		self:_hurtBy(source, context)
+	end
+	return self._health <= 0.0
+end
+
+-- What being hurt by `source` does to how this character feels about it. Overridden by the
+-- braindead, which has no feelings and simply goes for whoever it was.
+function Npc:_hurtBy(source, context)
+	if context ~= nil and source == context:player() then
+		self._hostility = math.min(1.0, self._hostility + NPC.hostilityOnHurt)
+	else
+		self._grudges[source] = true
+	end
+	self._provoked = source
+	self:_setMood(self._courage >= 0.5 and "angry" or "scared")
+end
+
+function Npc:healthFraction()
+	self:_stats()
+	return self._health / self._maxHealth
+end
+
+-- Take a shove. Called by Scripts/Weapons/Melee on the character the player has just swung the
+-- rifle butt at, with the direction to go -- which is out from the player, and so backwards,
+-- since anything close enough to be hit is facing the man it is trying to eat.
+--
+-- What the swing buys is room and a couple of seconds -- enough to finish a reload, or to get a
+-- relic out of a crowd -- and the whole cost of it is that those are seconds not spent shooting.
+-- The butt does a little damage as well (Config.melee.damage), but that is Melee's to hand over
+-- through the Stage, not this.
+--
+-- Shoving one that is already reeling simply restarts it, which is what a second swing
+-- ought to do; the limit on chaining that is the melee's own cooldown over in Main, which
+-- is the only place it belongs. Returns false for a corpse, so the caller can tell a swing
+-- that landed on something living from one that hit a body already on its way down.
+function Npc:hit(dirX, dirZ)
+	if self._dead then
+		return false
+	end
+
+	local len < const > = math.sqrt(dirX * dirX + dirZ * dirZ)
+	if len < 0.001 then
+		return false
+	end
+
+	self._hitX = dirX / len
+	self._hitZ = dirZ / len
+	self._hitTimer = HIT_STUN
+	self._pushTimer = HIT_PUSH_TIME
+	self._pushLeft = HIT_KNOCKBACK
+	return true
+end
+
+-- A hit that hurts without shoving: the reaction plays and the character stands it out where
+-- it is. Called by Main:damage for a blow at or over Config.npc.flinchDamage. A flinch on a
+-- character already reeling from a shove does not cut the shove short.
+function Npc:flinch()
+	if self._dead or self._hitTimer > 0.0 then
+		return
+	end
+	-- As long as the reaction runs, for a character whose graph has one (the horde's Hit state,
+	-- melee.stun long); a character without one is held only as long as it takes to register.
+	self._hitTimer = self._flinchTime or HIT_STUN
+	self._pushTimer = HIT_PUSH_TIME
+	self._pushLeft = 0.0
+end
+
+-- One frame of being shoved or flinching (see :hit, :flinch). Replaces everything the controller
+-- would normally do, and only for the first HIT_PUSH_TIME of the window -- the rest of it is the
+-- character finding its feet again, standing where the shove left it.
+function Npc:_stagger(deltaTime)
+	self._hitTimer = self._hitTimer - deltaTime
+
+	-- "hit" is a pulse rather than a state: SG - Zombie leaves its Hit state on its own
+	-- when the animation ends, and would walk straight back into it if the parameter were
+	-- still set -- a zombie reeling for ever off one swing. Held for the length of the
+	-- shove, which is many frames (so a graph that happens to be mid-blend on the frame the
+	-- swing landed still sees it) and well short of the two seconds the animation runs (so
+	-- it is long gone by the time the graph comes back to look).
+	--
+	-- "moving" and "attack" are pointedly left alone while it is held, and cleared only
+	-- after. The graph takes the first transition out of a state whose condition holds, in
+	-- the order they are listed, and every state's own exit -- Walk on !moving, Attack on
+	-- !attack -- is listed above its jump to Hit. So clearing them here would answer the
+	-- swing by walking out of Walk into Idle and only reaching the reaction a blend later,
+	-- with the zombie sliding backwards in its walk pose meanwhile. Left true, those exits
+	-- simply do not fire and the reaction wins outright.
+	--
+	-- They do have to be cleared eventually, and the frames after the shove are exactly
+	-- when: the graph is parked in Hit by then, where neither means anything, and if they
+	-- were still latched when it came back to Idle the zombie would walk or bite its way
+	-- out of the reaction rather than waiting for its controller.
+	--
+	-- (A zombie shoved while it is still standing up gets the two metres but no reaction:
+	-- there is no Hit transition out of the stand-up state, and interrupting a zombie
+	-- getting to its feet is not obviously worth having one.)
+	--
+	-- Timed rather than measured in metres, so a flinch -- which owes none -- holds the pulse
+	-- exactly as long as a shove does.
+	local pulsing < const > = self._pushTimer > 0.0
+	if self._pose ~= nil then
+		self._pose:setParameterValue("hit", pulsing)
+		if not pulsing then
+			self._pose:setParameterValue("moving", false)
+			self._pose:setParameterValue("attack", false)
+			if self._usesWork then
+				self._pose:setParameterValue("work", false)
+			end
+		end
+	end
+	if not pulsing then
+		return
+	end
+	if self._pushLeft <= 0.0 then
+		self._pushTimer = self._pushTimer - deltaTime
+		return
+	end
+
+	-- Eased out: a speed falling linearly to nothing over the time still left covers the
+	-- distance still owed when it starts at twice the average, which is all this is. So the
+	-- shove lands hard and the body coasts to a stop, instead of being carried off at a
+	-- constant rate and stopping dead.
+	--
+	-- Taken from what remains rather than from a curve fixed at the moment of the hit,
+	-- which is what makes the two metres two metres: sampling a fixed ramp once a frame
+	-- always undershoots it, and undershoots it by more the coarser the frames get. This
+	-- form spends whatever the last frame left over on the next one, so the distance is
+	-- exact and does not depend on the frame rate.
+	local speed = 2.0 * self._pushLeft / self._pushTimer
+
+	-- ...and never more than the metres still owed, which is also what holds the last frame
+	-- -- where the time left goes to nothing and the expression above runs away with it --
+	-- to a step rather than a launch.
+	local step = speed * deltaTime
+	if step > self._pushLeft then
+		step = self._pushLeft
+		speed = step / deltaTime
+	end
+	self._pushLeft = self._pushLeft - step
+	self._pushTimer = self._pushTimer - deltaTime
+
+	-- maxVelocity is the controller's clamp on the impulse below -- not the impulse itself --
+	-- so it has to be raised to the shove's speed or the zombie would be knocked back at
+	-- walking pace and travel a quarter of the distance. Nothing has to put it back: the
+	-- normal path sets it every frame, so it repairs itself on recovery.
+	--
+	-- Physics owns the rest. The shove is a velocity, not a teleport, so a zombie put through
+	-- a tree stops at the tree with its metres unspent -- which is the right answer, and one
+	-- no amount of arithmetic here could have got to.
+	--
+	-- ...and the mesh owns the edge of it (see :_onMesh): a zombie shoved towards a cliff
+	-- or up against a rock face is carried along it rather than up it.
+	self._character.maxVelocity = speed
+	local vx < const >, vz < const > = self:_onMesh(self.owner.transform.translation, self._hitX * speed, self._hitZ * speed)
+	self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
+end
+
+-- Drive the character's animation graph into its "dead" rag doll state by setting the
+-- "dead" parameter on its pose controller (the graph handles the transition).
+function Npc:_enterRagDoll()
+	local pose = self._pose
+	if pose == nil then
+		local skeleton = self.owner:getComponent(traktor.animation.SkeletonComponent)
+		if skeleton ~= nil then
+			pose = skeleton.poseController
+		end
+	end
+	if pose ~= nil then
+		pose:setParameterValue("dead", true)
+		-- Stop biting, and stop reeling; update() returns early from now on, so either
+		-- would otherwise stay latched and fire straight into that state if the corpse
+		-- ever revived. Neither is load-bearing for the rag doll itself -- every state
+		-- reaches Dead ahead of Attack or Hit, including Hit, so a zombie shot mid-shove
+		-- goes down out of the reaction -- they are cleared because a parameter nobody
+		-- will ever set false again is a trap left lying for whoever adds the next state.
+		pose:setParameterValue("attack", false)
+		pose:setParameterValue("hit", false)
+	end
+
+	-- Hand the body over to the rag doll: disable the character controller so it
+	-- stops driving (and fighting over) the entity transform and removes its
+	-- collision capsule. Without this the controller keeps re-positioning the
+	-- entity for a frame or two after death, and because the rag doll pose is
+	-- expressed relative to that transform the limbs visibly pop before settling.
+	local character = self._character
+	if character == nil then
+		character = self.owner:getComponent(traktor.physics.AiCharacterComponent)
+	end
+	if character ~= nil then
+		character.enabled = false
+	end
+end
+
+-- The once-a-frame check every brain opens with: shot dead since last frame? Switch to the rag
+-- doll once and report true for ever after, so the caller stops all behaviour and the corpse is
+-- driven purely by physics (Main despawns it, or keeps it to be searched).
+function Npc:_checkDead(context)
+	if not self._dead and context._deadEnemies ~= nil and context._deadEnemies[self.owner] ~= nil then
+		self:_enterRagDoll()
+		self._dead = true
+	end
+	return self._dead
+end
+
+-- ---- Getting about ----
+
+-- Resolve and cache what walking needs. Returns false until all of it is there.
+function Npc:_resolve(context)
+	local world < const > = self.world
+	if self._character == nil then
+		self._character = self.owner:getComponent(traktor.physics.AiCharacterComponent)
+		if self._character ~= nil then
+			-- move() only feeds impulses, which the controller accumulates until this
+			-- clamp stops them - a couple of frames of walking - so maxVelocity, not the
+			-- impulse magnitude, is what the character actually travels at. Re-applied every
+			-- frame by the brains, to whatever pace they are going at.
+			self._character.maxVelocity = self._topSpeed or 3.0
+		end
+	end
+	if self._pose == nil then
+		local skeleton = self.owner:getComponent(traktor.animation.SkeletonComponent)
+		if skeleton ~= nil then
+			self._pose = skeleton.poseController
+		end
+	end
+	if self._navMesh == nil then
+		local navComponent = world:getComponent(traktor.ai.NavMeshComponent)
+		if navComponent ~= nil then
+			self._navMesh = navComponent:get()
+		end
+	end
+	if self._player == nil then
+		self._player = world:getEntity("Humanoid")
+	end
+	-- Which way the player is *looking* only exists on their character controller:
+	-- Main writes its aim yaw to headAngle every frame (the same value the first person
+	-- camera is built from), while the Humanoid's own transform carries the body. Cached
+	-- rather than looked up per frame, and allowed to stay nil -- a player that cannot be
+	-- asked is one to walk straight at, which is what a standalone controller with no such
+	-- player does.
+	if self._playerCharacter == nil and self._player ~= nil then
+		self._playerCharacter = self._player:getComponent(traktor.physics.CharacterComponent)
+	end
+	if self._character == nil or self._navMesh == nil or self._player == nil then
+		return false
+	end
+	if self._heading == nil then
+		self._heading = self._character.headAngle
+	end
+	return true
+end
+
+-- Adopt the async path result once it is ready (get() blocks on wait()). Clear the slot
+-- either way: a query that found no route also reports ready, and :_requestPath skips while
+-- a query is in flight, so a failed one parked here would stop this character from ever
+-- re-pathing again.
+function Npc:_collectPath()
+	if self._pathResult ~= nil and self._pathResult.ready then
+		local query = self._pathResult:get()
+		if query ~= nil then
+			self._pathQuery = query
+		end
+		self._pathResult = nil
+	end
+end
+
+-- Whether a new path may be asked for now. Never let path queries stack up: each
+-- createMoveQuery posts a job that allocates its own 2048-node Detour query and runs a full
+-- A*, so with a hundred characters asking twice a second, issuing another while the previous
+-- is still in flight lets the job queue grow faster than the workers drain it -- and the
+-- backlog only ever gets worse.
+function Npc:_canPath()
+	return self._pathResult == nil
+end
+
+-- Ask for a route from `from` to `to`, a point already on the mesh.
+function Npc:_requestPath(from, to)
+	if to ~= nil and self._pathResult == nil then
+		self._pathResult = self._navMesh:createMoveQuery(from, to)
+	end
+end
+
+-- Snap a point onto the ground beneath it. findClosestPointXZ ignores height, so it still
+-- resolves to the terrain when the point is on a roof or up a tower -- where a height-limited
+-- search failed or snapped to a roof polygon off to the side. Searched from the character's
+-- own ground level, so a genuinely stacked surface resolves to the reachable one.
+function Npc:_ground(x, z, fromY)
+	return self._navMesh:findClosestPointXZ(Vector4(x, fromY, z, 1.0), 4.0)
+end
+
+-- A random reachable nav point within `radius` of (x, z), or nil -- see EnemyController's
+-- :_wanderPoint for why the w component is the test of success.
+function Npc:_randomPoint(x, y, z, radius)
+	local point = self._navMesh:findRandomPoint(Vector4(x, y, z, 1.0), radius)
+	if point ~= nil and point.w >= 0.5 then
+		return point
+	end
+	return nil
+end
+
+-- The unit direction towards the next corner of the route being followed, or zero when there
+-- is no route or it has been walked.
+function Npc:_steer(pos)
+	if self._pathQuery ~= nil then
+		local moveTo = self._pathQuery:update(pos, 0.5)
+		if moveTo ~= nil then
+			local dx = moveTo.x - pos.x
+			local dz = moveTo.z - pos.z
+			local len = math.sqrt(dx * dx + dz * dz)
+			if len > 0.01 then
+				return dx / len, dz / len
+			end
+		end
+	end
+	return 0.0, 0.0
+end
+
+-- Forget the route being followed, so a character that has arrived stands still rather than
+-- walking on to the end of a route it no longer wants.
+function Npc:_dropPath()
+	self._pathQuery = nil
+end
+
+-- The part of the route not yet walked: from the feet to the corner it is steering for, then
+-- corner to corner to the end, with a small dot on each corner. Only the route being
+-- *followed* -- a query still in flight is not drawn until it is adopted, which is the moment
+-- it starts to matter.
+function Npc:_drawPath(dbg, pos, colour)
+	if dbg == nil or self._pathQuery == nil then
+		return
+	end
+	local lift < const > = Vector4(0.0, DEBUG_PATH_LIFT, 0.0, 0.0)
+	local count < const > = self._pathQuery:getSteerPathCount()
+	local from = pos + lift
+	for i = self._pathQuery:getSteerIndex(), count - 1 do
+		local to < const > = self._pathQuery:getSteerPathPosition(i) + lift
+		dbg:line(from, to, DEBUG_PATH_WIDTH, colour)
+		dbg:point(to, DEBUG_PATH_NODE_SIZE, colour)
+		from = to
+	end
+end
+
+-- Keep a step on the nav mesh. Takes the velocity about to be handed to the character and
+-- returns the one that stays on the mesh: the same, out in the open; slid along the edge
+-- where it would have crossed it; and bent back on where the character has already strayed.
+--
+-- Nothing else in a controller knows where the mesh ends. The path does, but what is
+-- walked is the path *blended* -- with the push away from every character nearby, with a
+-- heading that turns at a limited rate and so swings wide of every corner the path cuts
+-- tight -- and the character controller under it has no idea of a slope at all: it steps
+-- up whatever is in front of it, a stair at a time. So a zombie shouldered off the path or
+-- arcing round a corner walked straight off the mesh and up the rock wall beside it, or
+-- into the back of a boulder the path had been taking it round.
+--
+-- Asked of the mesh rather than of physics because the mesh is the one place the answer is
+-- already worked out: it was built eroded by the agent radius, and with the slope and climb
+-- limits a character is meant to have, so "on the mesh" is exactly "somewhere it may stand".
+--
+-- Probed NAV_PROBE ahead along the step and scaled back to the step's own size, so a step
+-- into an edge comes back as the part of it along the edge -- shorter the more squarely it
+-- was walked into, which is how a body brushing a wall should move. Needs a route to ask
+-- through (the query carries the Detour query object); with none yet, or a character too far
+-- off for the mesh to find, the step goes through untouched.
+function Npc:_onMesh(pos, vx, vz)
+	local query < const > = self._pathQuery
+	local v < const > = math.sqrt(vx * vx + vz * vz)
+	if query == nil or v < 0.001 then
+		return vx, vz
+	end
+	local k < const > = NAV_PROBE / v
+	local p < const > = query:constrain(pos, Vector4(pos.x + vx * k, pos.y, pos.z + vz * k, 1.0))
+	if p == nil then
+		return vx, vz
+	end
+	local s < const > = v / NAV_PROBE
+	return (p.x - pos.x) * s, (p.z - pos.z) * s
+end
+
+-- Walk one frame: (dirX, dirZ) is where the route says to go, `speed` how fast. Blends in the
+-- push away from everyone nearby, keeps out of the player, turns at a limited rate and takes
+-- the step along the facing. Returns whether the character actually moved this frame, or nil
+-- while it is still being held by _spawnDelay -- in which case the caller must leave the
+-- animation graph alone as well.
+--
+-- `face`, when given, is a point to face instead of the steering once it is within
+-- `faceRange` -- the target being attacked, the player being talked to. `engaged` is the
+-- character being fought, if it is not the player: it gets the player's small berth rather
+-- than the two and a half metres every other character gets, or nothing could ever reach
+-- anything it was fighting.
+function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, engaged, deltaTime)
+	local world < const > = self.world
+
+	-- Collision avoidance: accumulate a push away from nearby characters (both lists) and the
+	-- player. This character is in one of the lists too, but its own delta is zero.
+	local sepX, sepZ = 0.0, 0.0
+	local function avoid(px, pz, radius)
+		local ax = pos.x - px
+		local az = pos.z - pz
+		local d = math.sqrt(ax * ax + az * az)
+		if d > 0.001 and d < radius then
+			local w = (radius - d) / radius
+			sepX = sepX + (ax / d) * w
+			sepZ = sepZ + (az / d) * w
+		end
+	end
+
+	for _, list in ipairs(LISTS) do
+		local near < const > = world:getEntitiesWithinRange(list, pos, 4)
+		for i = 0, near.size - 1 do
+			local other = near:get(i)
+			local p = other.transform.translation
+			avoid(p.x, p.z, other == engaged and self._playerSpace or self._avoidRadius)
+		end
+	end
+
+	-- Keep out of the player, but only just -- see _playerSpace. Giving the player the
+	-- same berth as another zombie is what used to hold the horde at arm's length: the
+	-- push started two and a half metres out and had beaten the approach by 1.25 m, so
+	-- they never closed to their own biting range.
+	avoid(playerPos.x, playerPos.z, self._playerSpace)
+
+	-- Blend separation from other agents into the path direction, then renormalise to
+	-- a unit heading.
+	targetX = targetX + sepX * self._separation
+	targetZ = targetZ + sepZ * self._separation
+	local tl = math.sqrt(targetX * targetX + targetZ * targetZ)
+	if tl > 0.001 then
+		targetX = targetX / tl
+		targetZ = targetZ / tl
+	else
+		targetX = 0.0
+		targetZ = 0.0
+	end
+
+	-- ---- The player's personal space is a floor, not a push ----
+	--
+	-- Everything above this point is a blend, and a blend can be outvoted. The push out of
+	-- the player rises to `separation` at the player's own position and stops there, while
+	-- every zombie in the rank behind is pushing this one forward with as much again --
+	-- three of them and the sum points at the player. So the horde used to press its front
+	-- rank *through* the man it was eating, and the camera, which sits at his eye, ended up
+	-- inside a chest: the attack animation alone swings the head 0.31 m forward of the
+	-- zombie's own origin, so it did not take much crowding to put a skull on the near plane.
+	--
+	-- Three things hold the line now, at three different distances, and they are worth
+	-- keeping straight:
+	--   * PERSONAL_SPACE (0.95 m, half of _playerSpace, which is where that push already
+	--     comes to rest) is where a zombie *chooses* to stand. It is what keeps the lunge of
+	--     the attack animation out of the camera, and it is enforced here, by steering.
+	--   * OVERLAP_SPACE (0.66 m) is where the two capsules touch, and physics holds it --
+	--     the player traces the Enemy collision group and every zombie traces Player, so
+	--     neither walks through the other however hard either tries.
+	--   * ...and an overlap that physics never saw made -- a spawn on top of the player, a
+	--     controller coming back from a rag doll -- is undone by the step itself, further
+	--     down. That is the one case a sweep cannot fix, since a character that starts
+	--     inside something has nowhere legal to sweep to.
+	--
+	-- This block is the first of the three. Inside PERSONAL_SPACE the inward part of the
+	-- steering is removed outright, so no sum of pushes can aim a zombie further in; what is
+	-- left is the tangential part, and a crowded zombie therefore slides round the player
+	-- looking for a gap rather than climbing into them, which is also the better thing to
+	-- watch. `depth` is the third case, measured against the tighter line and kept for the
+	-- step, along with the way out.
+	--
+	-- Costs nothing in the ordinary case, and applies in every state: a zombie that has not
+	-- even noticed the player has no more business standing inside them than one eating them
+	-- has.
+	local depth = 0.0
+	local outX, outZ = 0.0, 0.0
+	do
+		local ox < const > = pos.x - playerPos.x
+		local oz < const > = pos.z - playerPos.z
+		local od < const > = math.sqrt(ox * ox + oz * oz)
+		if od <= 0.001 then
+			-- Dead centre, where there is no "out of" to speak of: leave along the way it is
+			-- already facing. Any direction would do -- what matters is that there *is* one,
+			-- since this is the one arrangement that has no radial escape and so the one that
+			-- would weld a zombie and a player together for good.
+			depth = OVERLAP_SPACE
+			outX, outZ = math.sin(self._heading), math.cos(self._heading)
+		elseif od < PERSONAL_SPACE then
+			outX, outZ = ox / od, oz / od
+			if od < OVERLAP_SPACE then
+				depth = OVERLAP_SPACE - od
+			end
+
+			local inward < const > = -(targetX * outX + targetZ * outZ)
+			if inward > 0.0 then
+				targetX = targetX + outX * inward
+				targetZ = targetZ + outZ * inward
+				local dl < const > = math.sqrt(targetX * targetX + targetZ * targetZ)
+				if dl > 0.001 then
+					targetX = targetX / dl
+					targetZ = targetZ / dl
+				else
+					tl = 0.0
+				end
+			end
+		end
+	end
+
+	-- What to face. Normally the way it is steering -- but a character within reach of what
+	-- it is after faces that, whatever the steering says.
+	--
+	-- This is where zombies used to be found looking away from the man they were eating. The
+	-- steered direction is the path blended with the push away from everything nearby,
+	-- the player included; at contact that push is the larger term, so the sum pointed
+	-- backwards, the facing followed it, and -- since the step below is taken along the
+	-- facing -- the zombie turned round and walked off, only to turn back the moment it
+	-- was clear again. A horde shuffling to and fro at arm's length with its back to you.
+	--
+	-- Facing the target fixes both halves at once. It looks the right way, and the align
+	-- gate below turns a backwards push into "stop advancing" rather than "walk away",
+	-- since the step is scaled by how well the facing agrees with the steering: pressed
+	-- right up against the player it holds still and claws instead of retreating.
+	--
+	-- Deliberately kept to faceRange, and to a character that is actually after something,
+	-- precisely because the step follows the facing: over any real distance the steering has
+	-- to be what drives it, since that is what carries it around rocks and boulders instead
+	-- of straight into them.
+	local faceX, faceZ = targetX, targetZ
+	local facing = false
+	if face ~= nil and (face - pos).length < faceRange then
+		local ax < const > = face.x - pos.x
+		local az < const > = face.z - pos.z
+		local al < const > = math.sqrt(ax * ax + az * az)
+		if al > 0.001 then
+			faceX, faceZ = ax / al, az / al
+			facing = true
+		end
+	end
+	local fl < const > = math.sqrt(faceX * faceX + faceZ * faceZ)
+
+	-- Rotate facing toward the desired direction at a limited angular rate (shortest
+	-- way around), so turns - including reversals - happen gradually, never instantly.
+	--
+	-- Two rates, picked by which of the two facings above won. The steering one is held down
+	-- to what the walk cycle can sell: the Walks state plays its clip out of ground distance
+	-- travelled, so a body that turns faster than it advances is a frozen pose spinning on
+	-- its heels. Facing a target up close is not walking and has no cycle to outrun, so it
+	-- keeps the faster rate -- slow that one down and a strafing player walks around behind a
+	-- zombie that is already on top of them.
+	if fl > 0.001 then
+		local desired = (math.atan2 or math.atan)(faceX, faceZ)
+		local delta = desired - self._heading
+		while delta > math.pi do delta = delta - 2.0 * math.pi end
+		while delta < -math.pi do delta = delta + 2.0 * math.pi end
+		local maxStep = (facing and self._faceTurnRate or self._turnRate) * deltaTime
+		if delta > maxStep then delta = maxStep end
+		if delta < -maxStep then delta = -maxStep end
+		self._heading = self._heading + delta
+	end
+
+	-- Move forward along the current facing, scaled by how well it points at the target --
+	-- with a floor under that scale (see the move block below), so the character turns toward
+	-- a target behind it as it walks rather than stopping to pivot.
+	local fx = math.sin(self._heading)
+	local fz = math.cos(self._heading)
+	self._character.headAngle = self._heading
+
+	-- Freshly spawned: keep turning toward the target but take no step, and do not
+	-- set "moving" yet, so the animation graph is left in its stand-up state.
+	if self._spawnDelay > 0.0 then
+		self._spawnDelay = self._spawnDelay - deltaTime
+		return nil
+	end
+
+	local moving = false
+	if depth > 0.0 then
+		-- Sharing a space with the player: get out of it, before anything else this frame
+		-- (see the personal space block above). Nothing walked into this -- the two capsules
+		-- cannot be driven through each other any more -- so this is the leftover case:
+		-- something *arrived* overlapped, and a sweep started inside another body has no
+		-- legal move to make, which is a zombie welded to the player and, worse, a player
+		-- who cannot walk away from one.
+		--
+		-- Straight out, and along that rather than along the facing -- the one place in this
+		-- controller where the step leaves the facing, and it has to, since the facing is the
+		-- player and the whole point is to go the other way. So the zombie keeps its eyes on
+		-- the man it is clawing at and gives ground, which is what being pushed off someone
+		-- looks like.
+		--
+		-- Radially rather than along the steering, too, because the steering is a blend and
+		-- being squeezed is exactly when the crowd's half of that blend is largest: a zombie
+		-- pressed between the player and the rank behind it would leave along a mostly
+		-- sideways sum at a fraction of the speed asked for here. Out of the player is the
+		-- one direction that is always worth the whole of it.
+		--
+		-- maxVelocity has to come up with it, exactly as in :_stagger -- it is the clamp the
+		-- impulse below accumulates against, so leaving it at walking pace would cap the
+		-- recovery at walking pace. The brains rewrite it on the next frame, so there is
+		-- nothing to restore.
+		local back = depth * PUSH_OUT_GAIN
+		if back > PUSH_OUT_MAX then
+			back = PUSH_OUT_MAX
+		end
+		if back > speed then
+			self._character.maxVelocity = back
+		end
+		local vx < const >, vz < const > = self:_onMesh(pos, outX * back, outZ * back)
+		self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
+		moving = true
+	elseif tl > 0.001 then
+		local align = fx * targetX + fz * targetZ
+
+		-- Floor how far the alignment is allowed to throttle the step, so a turning character
+		-- always has some ground going by. Without it the cosine falls to nothing for anything
+		-- much off the nose, and the zombie stopped dead to rotate -- which, because the walk
+		-- clip is played out of distance travelled, froze the legs mid-stride and turned the
+		-- whole manoeuvre into a statue pivoting on its heels. With the floor the same turn is
+		-- walked as an arc, and the legs keep cycling through it.
+		--
+		-- Not applied when the facing is a target rather than the steering. Down there a low
+		-- alignment *is* the crowd (or the personal-space push) shouldering the zombie off the
+		-- man it is clawing at, and the gate falling to zero is exactly right: it holds still
+		-- and claws instead of retreating. A floor would march it back in.
+		if not facing and align < TURN_CREEP then
+			align = TURN_CREEP
+		end
+
+		-- Taken along the facing, then kept on the mesh (see :_onMesh) -- the one point where
+		-- what is walked can leave the facing, by sliding along an edge it was about to cross.
+		-- A step that comes back as next to nothing is a character pressed square into the
+		-- edge, and that is standing still, not walking: "moving" follows what is left of it.
+		if align > 0.05 then
+			local step < const > = speed * align
+			local vx < const >, vz < const > = self:_onMesh(pos, fx * step, fz * step)
+			self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
+			moving = vx * vx + vz * vz > (step * 0.2) * (step * 0.2)
+		end
+	end
+	return moving
+end
+
+-- ---- Seeing ----
+
+-- A clear line from this character's eye to the chest of something standing at `to`. Against
+-- the static world only: other characters are not cover (see Scripts/Spawner for what treating
+-- them as cover once did). The target's own capsule sits at the end of the ray, so a hit well
+-- before that means a wall blocks the view.
+function Npc:_sees(context, from, to)
+	local pm < const > = context.environment.physics.physicsManager
+	local e = from + Vector4(0.0, 1.6, 0.0)
+	local t = to + Vector4(0.0, 1.2, 0.0)
+	local r = t - e
+	local rl = r.length
+	if rl <= 0.01 then
+		return true
+	end
+	local hit = pm:queryRay(e, r / rl, rl, physics.QueryFilter(COLLISION_DEFAULT), true)
+	return hit == nil or hit.distance >= rl - 0.8
+end
+
+-- Whether `e` is a character still standing.
+local function alive(context, e)
+	if context:isEnemyDead(e) then
+		return false
+	end
+	local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+	return sc ~= nil and sc.faction ~= nil and not sc:isDead()
+end
+
+-- Whether `e` -- a character or the player -- is still worth going for (or running from).
+function Npc:_standing(context, e)
+	if e == nil then
+		return false
+	end
+	if e == context:player() then
+		return not context._gameOver
+	end
+	return alive(context, e)
+end
+
+-- How much of a threat `other` -- the player or a character -- is to this one, toward its
+-- courage (Config.npc.threatPer, or its faction's own threatWeight: a zombie counts for less).
+function Npc:_threatOf(other, context)
+	if other ~= nil and other ~= context:player() then
+		local sc < const > = other:getComponent(traktor.world.ScriptComponent)
+		local w < const > = (sc ~= nil and sc.faction ~= nil) and NPC.threatWeight[sc:faction()] or nil
+		if w ~= nil then
+			return w
+		end
+	end
+	return NPC.threatPer
+end
+
+-- The nearest living character in `lists` within `range` that this one hates, whether it can be
+-- seen or not, and how much of a threat the ones within `countRange` (default `range`) add up
+-- to -- the ones close enough to be a threat rather than merely about (see :_threatOf). One ray,
+-- for the nearest only, is the caller's to spend (:_sees) -- this is called a few times a second
+-- per character and has to stay cheap.
+function Npc:_nearestHated(context, pos, range, lists, countRange)
+	local best, bestD, count = nil, range, 0
+	local near2 < const > = (countRange or range) * (countRange or range)
+	for _, list in ipairs(lists or LISTS) do
+		local near < const > = self.world:getEntitiesWithinRange(list, pos, range)
+		for i = 0, near.size - 1 do
+			local other < const > = near:get(i)
+			if other ~= self.owner and alive(context, other) and self:hates(other, context) then
+				local d < const > = (other.transform.translation - pos).length
+				if d * d < near2 then
+					count = count + self:_threatOf(other, context)
+				end
+				if d < bestD then
+					best, bestD = other, d
+				end
+			end
+		end
+	end
+	return best, bestD, count
+end
+
+-- ---- Walking a route ----
+
+-- The route this character was given, resolved through the Stage (Main:route) the first time it
+-- is asked for, or nil -- no `route` property, a name no Route answers to, or a route with no
+-- points. Joined at the waypoint nearest where the character stands, going forwards.
+function Npc:_route(context)
+	if self._routePoints ~= nil then
+		return self._routePoints
+	end
+	if self._routeName == nil or self._routeMissing or context.route == nil then
+		return nil
+	end
+	-- Not yet: the Stage collects the routes only once the world has been through an update
+	-- (Main:resolve), and the characters update before that. Asking then is not a miss.
+	if context._routes == nil then
+		return nil
+	end
+	local route < const > = context:route(self._routeName)
+	if route == nil or #route.points == 0 then
+		print('Npc: no route named "' .. self._routeName .. '"')
+		self._routeMissing = true
+		return nil
+	end
+	self._routePoints = route.points
+	self._routeLoop = route.loop
+	self._routePause = route.pause
+	self._routeDir = 1
+	self._routeWait = 0.0
+
+	local pos < const > = self.owner.transform.translation
+	local best, bestD = 1, math.huge
+	for i, p in ipairs(route.points) do
+		local d < const > = (p - pos).length
+		if d < bestD then
+			best, bestD = i, d
+		end
+	end
+	self._routeIndex = best
+	return self._routePoints
+end
+
+-- The waypoint being walked to, and whether the character is standing at one waiting out its
+-- pause. Arriving within Config.npc.arrive starts the pause and moves on to the next point:
+-- round again for a loop, back the way it came at either end otherwise.
+function Npc:_routeStep(pos, deltaTime)
+	local points < const > = self._routePoints
+	if self._routeWait > 0.0 then
+		self._routeWait = self._routeWait - deltaTime
+		return points[self._routeIndex], true
+	end
+
+	local p < const > = points[self._routeIndex]
+	local dx < const > = p.x - pos.x
+	local dz < const > = p.z - pos.z
+	if dx * dx + dz * dz > NPC.arrive * NPC.arrive then
+		return p, false
+	end
+
+	local n < const > = #points
+	if n > 1 then
+		if self._routeLoop then
+			self._routeIndex = self._routeIndex % n + 1
+		else
+			local nxt = self._routeIndex + self._routeDir
+			if nxt < 1 or nxt > n then
+				self._routeDir = -self._routeDir
+				nxt = self._routeIndex + self._routeDir
+			end
+			self._routeIndex = nxt
+		end
+	end
+
+	-- Drawn per character around the route's own, so a pair sharing a route fall out of step
+	-- after the first stop instead of marching round it together for ever.
+	self._routeWait = self._routePause * (0.6 + math.random() * 0.8)
+	self:_dropPath()
+	self._repathTimer = 0.0
+	return points[self._routeIndex], self._routeWait > 0.0
+end
+
+-- ---- Fighting ----
+
+-- One frame of being in reach of `target`, an entity: the player is drained continuously, the
+-- way the horde always has been (so a villager's blows and a zombie's bite feel alike), and any
+-- other character takes a blow every _strikeInterval through the Stage.
+function Npc:_strike(context, target, deltaTime)
+	if target == context:player() then
+		context:hurtPlayer(self._strikeDamage / self._strikeInterval * deltaTime)
+		return
+	end
+	self._strikeTimer = self._strikeTimer - deltaTime
+	if self._strikeTimer > 0.0 then
+		return
+	end
+	self._strikeTimer = self._strikeInterval
+	local at < const > = (target.transform.translation + Vector4(0.0, 1.2, 0.0, 0.0)).xyz1
+	context:damage(target, self._strikeDamage, at, nil, false, self.owner)
+end
+]]></text>
+</object>

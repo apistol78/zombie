@@ -7,9 +7,9 @@ import(traktor)
 
 -- Melee
 --
--- The rifle butt: right mouse swings it. It kills nothing and costs no rounds -- it knocks
--- *every* zombie in the cone in front of you two metres back and leaves them reeling for a
--- couple of seconds (Scripts/EnemyController:hit owns both). What it is for is the moment the
+-- The rifle butt: right mouse swings it. It barely hurts and costs no rounds -- it knocks
+-- *every* character in the cone in front of you two metres back and leaves them reeling for a
+-- couple of seconds (Scripts/Npc/Npc:hit owns both), for Config.melee.damage each. What it is for is the moment the
 -- ammunition economy runs out: a dry rifle mid-reload with a crowd already on you used to be
 -- the end of it, and now there is one answer left that does not need ammunition.
 --
@@ -29,6 +29,9 @@ import(traktor)
 
 Melee = Melee or class("Melee", Weapon)
 
+-- Who a swing can catch: the horde, and the characters placed in the scene.
+local LISTS < const > = { "Enemy", "Npc" }
+
 function Melee:new(context)
 	Weapon.new(self, context)
 
@@ -37,6 +40,7 @@ function Melee:new(context)
 	self._range = Config.melee.range      -- how far in front the butt reaches (m)
 	self._radius = Config.melee.radius    -- ...and how far off the aim a zombie may be (m)
 	self._interval = Config.melee.interval -- minimum seconds between swings
+	self._damage = Config.melee.damage     -- what the butt costs whoever it lands on
 end
 
 function Melee:slot()
@@ -81,54 +85,74 @@ function Melee:attack()
 	-- clever about.
 	local playerPos < const > = player.transform.translation
 	local r2 < const > = self._radius * self._radius
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
+	local function swing(e)
+		if context:isEnemyDead(e) then
+			return
 		end
-		i = i + 1
-		if not context:isEnemyDead(e) then
-			local p < const > = e.transform.translation
-			local rel < const > = (p + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
-			local t < const > = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
-			if t > 0.0 and t < self._range then
-				local hx < const > = rel.x - dir.x * t
-				local hy < const > = rel.y - dir.y * t
-				local hz < const > = rel.z - dir.z * t
-				if hx * hx + hy * hy + hz * hz < r2 then
-					-- Which way this one goes: straight out from the player along the ground,
-					-- rather than along the aim. The two agree on a zombie square in front and
-					-- differ on one caught at the edge of the cone, where shoving along the aim
-					-- would slide it past the player's shoulder instead of off them -- and off
-					-- them is the entire point of the swing. Taken per zombie, so a swing
-					-- through a crowd fans it apart rather than driving the whole lot off along
-					-- one shared heading.
-					local ax, az = p.x - playerPos.x, p.z - playerPos.z
-					if ax * ax + az * az < 0.0001 then
-						ax, az = dir.x, dir.z   -- standing exactly on the player; shove along the aim
-					end
+		local p < const > = e.transform.translation
+		local rel < const > = (p + Vector4(0.0, 1.0, 0.0, 0.0)) - origin
+		local t < const > = rel.x * dir.x + rel.y * dir.y + rel.z * dir.z
+		if t <= 0.0 or t >= self._range then
+			return
+		end
+		local hx < const > = rel.x - dir.x * t
+		local hy < const > = rel.y - dir.y * t
+		local hz < const > = rel.z - dir.z * t
+		if hx * hx + hy * hy + hz * hz >= r2 then
+			return
+		end
 
-					-- Each zombie owns its own shove and reel, and refuses one if it is already
-					-- a corpse -- so the sound only plays for one that was standing.
-					--
-					-- "hit" is the same cue the rifle raises on a kill: something arriving on a
-					-- zombie, from where that zombie is. Raised per zombie rather than once for
-					-- the swing, which is what makes a sweep through three of them sound like
-					-- three impacts spread across the arc -- the bank draws its own pitch per
-					-- utterance, so they do not stack into one flat slap.
-					--
-					-- No blood with it: a rifle butt does not open anything, and the burst is
-					-- what a round looks like.
-					local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-					if sc ~= nil and sc:hit(ax, az) then
-						local fx < const > = e:getComponent(traktor.world.EventSetComponent)
-						if fx ~= nil then
-							fx:raise("hit")
-						end
-					end
-				end
+		-- Which way this one goes: straight out from the player along the ground,
+		-- rather than along the aim. The two agree on a zombie square in front and
+		-- differ on one caught at the edge of the cone, where shoving along the aim
+		-- would slide it past the player's shoulder instead of off them -- and off
+		-- them is the entire point of the swing. Taken per zombie, so a swing
+		-- through a crowd fans it apart rather than driving the whole lot off along
+		-- one shared heading.
+		local ax, az = p.x - playerPos.x, p.z - playerPos.z
+		if ax * ax + az * az < 0.0001 then
+			ax, az = dir.x, dir.z   -- standing exactly on the player; shove along the aim
+		end
+
+		-- Each character owns its own shove and reel, and refuses one if it is already
+		-- a corpse -- so the sound only plays for one that was standing.
+		--
+		-- "hit" is the same cue the rifle raises on a kill: something arriving on a
+		-- zombie, from where that zombie is. Raised per zombie rather than once for
+		-- the swing, which is what makes a sweep through three of them sound like
+		-- three impacts spread across the arc -- the bank draws its own pitch per
+		-- utterance, so they do not stack into one flat slap.
+		--
+		-- No blood with it: a rifle butt does not open anything, and the burst is
+		-- what a round looks like. Which is also why the damage is taken straight off the
+		-- character (Npc:takeDamage) rather than through Main:damage, which would open a
+		-- wound -- and only handed to the Stage when it is the blow that kills. It is what
+		-- makes a villager the player clubs take it personally.
+		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+		if sc == nil or sc.hit == nil or not sc:hit(ax, az) then
+			return
+		end
+		local fx < const > = e:getComponent(traktor.world.EventSetComponent)
+		if fx ~= nil then
+			fx:raise("hit")
+		end
+		if sc:takeDamage(self._damage, player, context) then
+			local al < const > = math.sqrt(ax * ax + az * az)
+			context:killEnemy(e, (p + Vector4(0.0, 1.0, 0.0, 0.0)).xyz1,
+				context:knockbackImpulse(Vector4(ax / al, 0.0, az / al, 0.0)))
+		end
+	end
+
+	-- The horde, and everyone else placed in the world.
+	for _, list in ipairs(LISTS) do
+		local i = 0
+		while true do
+			local e = world:getEntity(list, i)
+			if e == nil then
+				break
 			end
+			i = i + 1
+			swing(e)
 		end
 	end
 	return true

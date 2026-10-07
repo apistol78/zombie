@@ -79,15 +79,7 @@ function Chest:contents()
 		return list
 	end
 
-	local entries = {}
-	for entry in string.gmatch(spec, "[^,]+") do
-		local name < const >, n < const > = string.match(entry, "^%s*([%a_]+)%s*:?%s*(%d*)%s*$")
-		if name == nil then
-			print('Chest: cannot read "' .. entry .. '" in "' .. spec .. '"; left out.')
-		else
-			table.insert(entries, { name = string.lower(name), count = tonumber(n) })
-		end
-	end
+	local entries < const > = Items.parseList(spec, "Chest")
 
 	-- The older form: one kind, and its count in a property of its own.
 	if #entries == 1 and entries[1].count == nil then

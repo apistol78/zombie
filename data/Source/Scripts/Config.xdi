@@ -73,7 +73,14 @@ Config = {
 		-- however many stacks the player makes room for.
 		-- Long enough that *where* you choose to reload matters, which is the point of it.
 		reloadTime = 1.2,
-		fireInterval = 0.4      -- minimum seconds between shots
+		fireInterval = 0.4,     -- minimum seconds between shots
+
+		-- What a round does to what it hits (health, see npc.health below). A zombie takes two
+		-- in the body and one in the head: a hit counts as the head when it lands more than
+		-- headHeight above the character's feet, and does headMul times the damage.
+		damage = 60.0,
+		headMul = 3.0,
+		headHeight = 1.45
 	},
 
 	-- ---- The machine gun ----
@@ -129,7 +136,13 @@ Config = {
 		-- multiplied by a held trigger.
 		recoilKick = 0.012,
 		recoilMax = 0.055,
-		recoilDecay = 0.35
+		recoilDecay = 0.35,
+
+		-- Per round, and the same head rule as the rifle. Four in the body for a zombie -- a
+		-- third of a second of trigger -- and too little to make one flinch (npc.flinchDamage),
+		-- so a burst does not stun-lock the crowd it is meant to be cutting down.
+		damage = 25.0,
+		headMul = 3.0
 	},
 
 	-- ---- The rifle butt ----
@@ -160,7 +173,10 @@ Config = {
 		-- ...and how long it is out of the fight altogether. This is the length of the Hit
 		-- animation, a shade under it so the controller has the wheel again as the graph
 		-- blends back to Idle. Retune it with the animation, not on its own.
-		stun = 2.1
+		stun = 2.1,
+		-- ...and what the butt costs whoever it lands on. Little: the swing is for room, not
+		-- for killing, and it is what makes a villager the player shoves take it personally.
+		damage = 10.0
 	},
 
 	-- ---- Grenades ----
@@ -192,7 +208,11 @@ Config = {
 		-- It follows that a grenade thrown far or high can go off in mid-air.
 		fuse = 3.0,
 
-		blastRadius = 6.0,      -- everything standing inside this dies (m)
+		blastRadius = 6.0,      -- everything standing inside this is caught (m)
+		-- Damage at the centre, falling off exactly as the shove does (blastHalf): 250 at 2.2 m,
+		-- 100 -- a zombie's whole health -- at 4.4 m, and under 60 at the rim. So the middle
+		-- clears a crowd and the edge only staggers it.
+		blastDamage = 500.0,
 		-- Distance at which the blast has half the momentum it has at the centre. Well inside
 		-- blastRadius, so the middle is fatal in a way you can see and the rim is a shove.
 		blastHalf = 2.2,
@@ -475,7 +495,6 @@ Config = {
 		-- is a performance ceiling and not a knob. Overlapping events take the longer
 		-- duration and the bigger cap rather than adding up (see notify).
 		events = {
-			nightfall  = { duration = 20.0, cap = 8 },   -- the night starting
 			relicTaken = { duration = 30.0, cap = 12 },  -- committing to a relic run
 			wardLit    = { duration = 35.0, cap = 14 },  -- ...and cashing it in (on top of the hive's brood)
 			gateOpened = { duration = 25.0, cap = 12 },  -- the cemetery opening up
@@ -640,6 +659,127 @@ Config = {
 		helmet     = { stack = 1, armor = 0.35 },
 		key        = { stack = 5 },
 		relic      = { stack = 5 }
+	},
+
+	-- ---- Characters: what every Scripts/Npc shares ----
+	--
+	-- A placed character takes its numbers from its ScriptComponentData properties first, then
+	-- from its class here, then from npc.defaults -- so a scene only has to say what makes one
+	-- character different. Spawned zombies say nothing and are all "braindead".
+	npc = {
+		defaults = {
+			faction = "villager",
+			-- Two and a half zombies' worth: the living outlast what they fight. A villager can
+			-- take a dozen blows from a zombie (strikeDamage below) before going down.
+			health = 250.0,
+			age = 35,
+			courage = 0.5,      -- 0 runs from everything, 1 never runs
+			mood = "neutral",   -- neutral | happy | angry | scared
+			hostility = 0.0,    -- toward the player, 0..1; hostileAt and up attacks on sight
+			reach = 1.4,        -- how close a target has to be to be struck (m)
+			strikeDamage = 20.0,-- ...what a strike does to another character (five to fell a zombie)
+			strikeInterval = 1.1,
+			walkSpeed = 1.1,
+			runSpeed = 2.6
+		},
+		classes = {
+			wanderer = {},
+			merchant = { courage = 0.3 },
+			worker = { courage = 0.6, strikeDamage = 28.0 },  -- a smith's hammer, a woodcutter's axe
+			-- Zombies (and later animals). health is the horde's: two rifle rounds in the body.
+			braindead = { faction = "undead", courage = 1.0, health = 100.0, strikeDamage = 15.0 }
+		},
+
+		-- Who goes for whom. A character is hostile to another when its own faction lists the
+		-- other's; "player" is the player. Hostility toward the player is also personal
+		-- (`hostility` above), so a villager can come to hate the player on their own account.
+		factions = {
+			undead = { villager = true, bandit = true, player = true },
+			villager = { undead = true, bandit = true },
+			bandit = { villager = true, undead = true, player = true }
+		},
+		hostileAt = 0.5,
+
+		-- Being hurt by the player, and being near the shooting. A villager shot once has had
+		-- enough (0.6 takes them past hostileAt); one who only hears it is frightened, not angry.
+		hostilityOnHurt = 0.6,
+		hearRange = 25.0,
+
+		-- Running away. A character flees when its health fraction is under
+		-- (1 - courage) * fleeHealth, or when what it is facing outweighs its courage: each
+		-- hostile within threatRange counts threatPer -- or its faction's own weight in
+		-- threatWeight -- and the one being faced always counts. A zombie is a shambling, stupid
+		-- thing the living have learnt to stand up to, so it counts for half a bandit: a
+		-- courage-0.5 villager stands against four of them and runs from five, and even the 0.2
+		-- pedlar stands against one; against bandits or an angry player the same villager
+		-- stands against two. Only the close ones count -- with the horde spawning round the
+		-- player, counting everything within sight had the whole village running for the entire
+		-- night. It runs fleeLeg metres at a time away from the threat and stops once it has
+		-- gone calmTime seconds without seeing anything to run from.
+		fleeHealth = 0.8,
+		threatPer = 0.25,
+		threatWeight = { undead = 0.12 },
+		threatRange = 12.0,
+		fleeLeg = 8.0,
+		calmTime = 6.0,
+		-- How long a mood holds after whatever caused it, before easing back to the character's
+		-- own (s).
+		moodHold = 20.0,
+
+		sightRange = 22.0,      -- furthest a character notices another (m)
+		forgetTime = 6.0,       -- keep fighting this long after losing sight of the target (s)
+		chaseLeash = 30.0,      -- ...and give up once the target is this far from home (m)
+
+		-- Age: under youngAge and over oldAge a character is slower and, unless it says its own
+		-- courage, more easily frightened -- by up to the amounts below at 0 and 90.
+		youngAge = 14,
+		oldAge = 60,
+		agePace = 0.3,
+		ageCourage = 0.25,
+
+		-- A hit this hard or harder plays the reaction (Hit state) and holds the character still
+		-- for melee.stun; anything softer only bleeds. The rifle flinches, the machine gun
+		-- does not.
+		flinchDamage = 40.0,
+
+		-- Routes (Scripts/Npc/Route): how close counts as having reached a waypoint (m), and
+		-- how far a wanderer with no route strays from where it was placed.
+		arrive = 1.0,
+		strayRadius = 6.0,
+
+		-- Talking. How near the player has to stand, how long the character stops and faces
+		-- them afterwards (s), and the line said when the scene gives it none -- by mood.
+		talkRange = 2.6,
+		attendTime = 5.0,
+		-- ...and the player simply coming close: inside noticeRange a character going about its
+		-- day stops and faces them, and goes back to it once they are noticeSlack further out.
+		noticeRange = 3.0,
+		noticeSlack = 0.8,
+		lines = {
+			neutral = "WHAT DO YOU WANT?",
+			happy = "GOOD TO SEE A LIVING FACE.",
+			scared = "PLEASE, LEAVE ME BE.",
+			angry = "GET AWAY FROM ME."
+		},
+
+		-- How near a body has to be to be searched (m). A villager's body with something still on
+		-- it stays for good -- a corpse with a purse on it is a place, not an effect -- and is gone
+		-- the usual corpse.lifetime after it has been emptied.
+		lootRange = 2.2,
+
+		-- What a zombie has on it, rolled once when it rises (a placed one may say its own
+		-- `items` instead): each entry is carried with `chance`, `count` of `kind`. Searched off
+		-- the body with E like anyone's.
+		zombieLoot = {
+			{ kind = "rounds", count = 4, chance = 0.15 },
+			{ kind = "coin", count = 3, chance = 0.10 },
+			{ kind = "bread", count = 1, chance = 0.04 }
+		},
+		-- ...and how long a zombie's body with something on it stays to be searched (s), where an
+		-- empty one goes in corpse.lifetime. Not for good, as a villager's does: the horde never
+		-- ends, every body is a rag doll's worth of physics, and the Spawner counts the ones
+		-- still lying against how many may be up at once.
+		zombieLootLifetime = 30.0
 	},
 
 	-- ---- The sunrise, once the night is won ----

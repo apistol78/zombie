@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Route
+--
+-- A chain of waypoints for a character to walk (Scripts/Npc/Npc: the `route` property names
+-- one). The waypoints are the children of this entity's GroupComponent, walked in the order
+-- they are listed -- so a route is laid out and reordered in the editor like anything else in a
+-- group, and a waypoint is nothing but a placed entity with a transform. Nothing about a route
+-- is per character: any number of them may share one, each starting from the point nearest
+-- where it stands.
+--
+-- Properties (strings) on this entity's ScriptComponentData:
+--
+--   name    what characters ask for it by. Routes are found by the Stage (Main:route).
+--   loop    "true" to go round from the last point back to the first; otherwise the route
+--           is walked to the end and back again.
+--   pause   seconds stood at each point before walking on (default 0). Each character
+--           draws its own wait around this, so two sharing a route fall out of step.
+--
+-- Attach to an entity named "Route" -- the name is what Main collects them by, as for wards and
+-- chests. Reading it needs the world to have built this component's script object, which is
+-- why Main only asks once the world has been through an update (see Main:resolve).
+
+Route = Route or class("Route", traktor.world.ScriptComponent)
+
+function Route:_property(name)
+	local props < const > = self.properties
+	if props == nil then
+		return nil
+	end
+	local v < const > = props:getProperty(name)
+	if v == nil or v == "" then
+		return nil
+	end
+	return v
+end
+
+function Route:name()
+	return self:_property("name")
+end
+
+-- The route as plain data: { points = { Vector4, ... }, loop, pause }. Read once by the Stage
+-- and shared by everyone walking it -- the waypoints never move.
+function Route:describe()
+	local points = {}
+	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
+	if group ~= nil then
+		local children < const > = group.entities
+		for i = 0, children.size - 1 do
+			table.insert(points, children:get(i).transform.translation)
+		end
+	end
+	return {
+		points = points,
+		loop = self:_property("loop") == "true",
+		pause = tonumber(self:_property("pause") or "") or 0.0
+	}
+end
+
+function Route:update(context, totalTime, deltaTime)
+end
+]]></text>
+</object>

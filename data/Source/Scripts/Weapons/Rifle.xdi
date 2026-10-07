@@ -2,10 +2,10 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
 #using \{6E9AD100-0000-4000-8000-000000000010}
--- Scripts/EnemyController, for the class itself rather than for anything it does: the
--- rifle identifies what its ray hit by asking whether the struck entity's script component
--- is one (see Rifle:attack), and `isa` needs the class in scope to ask.
-#using \{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}
+-- Scripts/Npc/Npc, for the class itself rather than for anything it does: the rifle
+-- identifies what its ray hit by asking whether the struck entity's script component is one
+-- (see Rifle:attack), and `isa` needs the class in scope to ask.
+#using \{4E9C0000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -63,6 +63,8 @@ function Rifle:new(context)
 	self._reloadTime = Config.rifle.reloadTime  -- seconds to refill the magazine
 	self._interval = Config.rifle.fireInterval  -- minimum seconds between shots
 	self._range = Config.rifle.range            -- max shot distance (m)
+	self._damage = Config.rifle.damage          -- health a round takes, times headMul in the head
+	self._headMul = Config.rifle.headMul
 	self._reloadTimer = 0.0                     -- counts down to the magazine being refilled
 	self._flash = 0.0                           -- ...and this to the muzzle flash going out
 end
@@ -278,9 +280,10 @@ function Rifle:_topUp()
 	self:_pushAmmo()
 end
 
--- Fire: hitscan a ray out of the player's eye along the current aim, and mark whatever live
--- zombie it meets dead. Its EnemyController switches the body to rag doll; Main despawns
--- the corpse later.
+-- Fire: hitscan a ray out of the player's eye along the current aim, and hurt whatever live
+-- character it meets (Main:damage) -- two in the body or one in the head for a zombie. One
+-- that dies is switched to rag doll by its own brain (Npc:_checkDead); Main despawns the
+-- corpse later.
 function Rifle:attack()
 	local context < const > = self._context
 	if context:player() == nil then
@@ -388,9 +391,9 @@ function Rifle:attack()
 	-- guessing from a name.
 	local struck < const > = hit.body ~= nil and hit.body.owner or nil
 
-	-- A zombie is an entity whose script component is an EnemyController. Asked of the class
-	-- rather than of the entity's name, so it stays true for anything else that ever gets
-	-- one.
+	-- A character -- zombie or villager -- is an entity whose script component is a
+	-- Scripts/Npc/Npc. Asked of the class rather than of the entity's name, so it stays true
+	-- for anything else that ever gets one.
 	--
 	-- The player's own capsule is explicitly not a target: it is in the same collision group
 	-- as the horde and the ray starts inside it, so a stray hit on it would otherwise put a
@@ -398,7 +401,7 @@ function Rifle:attack()
 	local enemy = nil
 	if struck ~= nil and struck ~= context:player() and isa(struck, traktor.world.Entity) then
 		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and isa(sc, EnemyController) then
+		if sc ~= nil and isa(sc, Npc) then
 			enemy = struck
 		end
 	end
@@ -428,10 +431,15 @@ function Rifle:attack()
 		return true
 	end
 
-	-- Kill it where the round actually arrived, knocked back along the aim with a little
-	-- lift. The impact point is the ray's own hit position rather than a guess along the aim,
-	-- so the limb the impulse lands on is the limb that was struck.
-	context:killEnemy(enemy, hit.position.xyz1, context:knockbackImpulse(dir))
+	-- Hurt it where the round actually arrived -- in the head, enough to kill a zombie
+	-- outright (Main:roundDamage) -- and if that kills it, it is knocked back along the aim
+	-- with a little lift. The impact point is the ray's own hit position rather than a guess
+	-- along the aim, so the limb the impulse lands on is the limb that was struck.
+	local point < const > = hit.position.xyz1
+	context:damage(
+		enemy, context:roundDamage(enemy, point, self._damage, self._headMul),
+		point, context:knockbackImpulse(dir), false, context:player()
+	)
 	return true
 end
 

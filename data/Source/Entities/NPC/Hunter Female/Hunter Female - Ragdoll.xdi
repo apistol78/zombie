@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.animation.RagDollSkeletonAsset" version="1">
+	<root type="traktor.animation.RagDollBone" version="4">
+		<offset>-0.082105, 1.05826, 0.015542, 1</offset>
+		<rotation>-0.50021, 0.499789, -0.50021, 0.499789</rotation>
+		<length>0.164155</length>
+		<radius>0.1058</radius>
+		<linearDamping>0.2</linearDamping>
+		<angularDamping>0.2</angularDamping>
+		<influences>
+			<item>
+				<joint>Hips</joint>
+				<weight>1</weight>
+			</item>
+		</influences>
+		<children>
+			<item type="traktor.animation.RagDollBone" version="4">
+				<offset>-0.115816, -0.000098, -0.08205, 1</offset>
+				<rotation>-0.050232, -0.70532, -0.050233, 0.70532</rotation>
+				<length>0.332094</length>
+				<radius>0.125</radius>
+				<linearDamping>0.2</linearDamping>
+				<angularDamping>0.2</angularDamping>
+				<influences>
+					<item>
+						<joint>Spine</joint>
+						<weight>1</weight>
+					</item>
+					<item>
+						<joint>Spine1</joint>
+						<weight>1</weight>
+					</item>
+					<item>
+						<joint>Spine2</joint>
+						<weight>1</weight>
+					</item>
+				</influences>
+				<children>
+					<item type="traktor.animation.RagDollBone" version="4">
+						<offset>0, 0, 0, 1</offset>
+						<rotation>0.147308, 0, 0, 0.989091</rotation>
+						<length>0.191092</length>
+						<radius>0.0865</radius>
+						<linearDamping>0.4</linearDamping>
+						<angularDamping>0.6</angularDamping>
+						<influences>
+							<item>
+								<joint>Neck</joint>
+								<weight>1</weight>
+							</item>
+							<item>
+								<joint>Head</joint>
+								<weight>1</weight>
+							</item>
+						</influences>
+						<children/>
+						<constraint>
+							<type>Cone</type>
+							<swingAngle>0.523599</swingAngle>
+							<twistAngle>0.523599</twistAngle>
+							<minAngle>0</minAngle>
+							<maxAngle>0</maxAngle>
+							<hingeAxis>X</hingeAxis>
+						</constraint>
+					</item>
+					<item type="traktor.animation.RagDollBone" version="4">
+						<offset>-0.151524, 0.032501, -0.058698, 1</offset>
+						<rotation>0.496414, -0.505309, -0.495619, 0.502591</rotation>
+						<length>0.278399</length>
+						<radius>0.0529</radius>
+						<linearDamping>0.2</linearDamping>
+						<angularDamping>0.2</angularDamping>
+						<influences>
+							<item>
+								<joint>LeftArm</joint>
+								<weight>1</weight>
+							</item>
+						</influences>
+						<children>
+							<item type="traktor.animation.RagDollBone" version="4">
+								<offset>0, 0, 0, 1</offset>
+								<rotation>-0.0035, 0.005607, 0.004635, 0.999967</rotation>
+								<length>0.283351</length>
+								<radius>0.0462</radius>
+								<linearDamping>0.2</linearDamping>
+								<angularDamping>0.2</angularDamping>
+								<influences>
+									<item>
+										<joint>LeftForeArm</joint>
+										<weight>1</weight>
+									</item>
+								</influences>
+								<children/>
+								<constraint>
+									<type>Hinge</type>
+									<swingAngle>0</swingAngle>
+									<twistAngle>0</twistAngle>
+									<minAngle>0</minAngle>
+									<maxAngle>2.79253</maxAngle>
+									<hingeAxis>Y</hingeAxis>
+								</constraint>
+							</item>
+						</children>
+						<constraint>
+							<type>Cone</type>
+							<swingAngle>0.698132</swingAngle>
+							<twistAngle>0.698132</twistAngle>
+							<minAngle>0</minAngle>
+							<maxAngle>0</maxAngle>
+							<hingeAxis>X</hingeAxis>
+						</constraint>
+					</item>
+					<item type="traktor.animation.RagDollBone" version="4">
+						<offset>0.151638, 0.031907, -0.058985, 1</offset>
+						<rotation>0.497743, 0.502988, 0.495283, 0.503934</rotation>
+						<length>0.278415</length>
+						<radius>0.0529</radius>
+						<linearDamping>0.2</linearDamping>
+						<angularDamping>0.2</angularDamping>
+						<influences>
+							<item>
+								<joint>RightArm</joint>
+								<weight>1</weight>
+							</item>
+						</influences>
+						<children>
+							<item type="traktor.animation.RagDollBone" version="4">
+								<offset>0, 0, 0, 1</offset>
+								<rotation>-0.001103, 0.003573, -0.00561, 0.999977</rotation>
+								<length>0.283167</length>
+								<radius>0.0462</radius>
+								<linearDamping>0.2</linearDamping>
+								<angularDamping>0.2</angularDamping>
+								<influences>
+									<item>
+										<joint>RightForeArm</joint>
+										<weight>1</weight>
+									</item>
+								</influences>
+								<children/>
+								<constraint>
+									<type>Hinge</type>
+									<swingAngle>0</swingAngle>
+									<twistAngle>0</twistAngle>
+									<minAngle>0</minAngle>
+									<maxAngle>2.79253</maxAngle>
+									<hingeAxis>-Y</hingeAxis>
+								</constraint>
+							</item>
+						</children>
+						<constraint>
+							<type>Cone</type>
+							<swingAngle>0.698132</swingAngle>
+							<twistAngle>0.698132</twistAngle>
+							<minAngle>0</minAngle>
+							<maxAngle>0</maxAngle>
+							<hingeAxis>X</hingeAxis>
+						</constraint>
+					</item>
+				</children>
+				<constraint>
+					<type>Cone</type>
+					<swingAngle>0.436332</swingAngle>
+					<twistAngle>0.349066</twistAngle>
+					<minAngle>0</minAngle>
+					<maxAngle>0</maxAngle>
+					<hingeAxis>X</hingeAxis>
+				</constraint>
+			</item>
+			<item type="traktor.animation.RagDollBone" version="4">
+				<offset>0.083471, 0.016065, -0.164155, 1</offset>
+				<rotation>0.005144, 0.707088, -0.00647, 0.707077</rotation>
+				<length>0.443622</length>
+				<radius>0.0721</radius>
+				<linearDamping>0.2</linearDamping>
+				<angularDamping>0.2</angularDamping>
+				<influences>
+					<item>
+						<joint>LeftUpLeg</joint>
+						<weight>1</weight>
+					</item>
+				</influences>
+				<children>
+					<item type="traktor.animation.RagDollBone" version="4">
+						<offset>0, 0, 0, 1</offset>
+						<rotation>-0.047173, 0.000003, 0.001937, 0.998885</rotation>
+						<length>0.445547</length>
+						<radius>0.0577</radius>
+						<linearDamping>0.2</linearDamping>
+						<angularDamping>0.2</angularDamping>
+						<influences>
+							<item>
+								<joint>LeftLeg</joint>
+								<weight>1</weight>
+							</item>
+						</influences>
+						<children/>
+						<constraint>
+							<type>Hinge</type>
+							<swingAngle>0</swingAngle>
+							<twistAngle>0</twistAngle>
+							<minAngle>0</minAngle>
+							<maxAngle>1.99253</maxAngle>
+							<hingeAxis>-X</hingeAxis>
+						</constraint>
+					</item>
+				</children>
+				<constraint>
+					<type>Cone</type>
+					<swingAngle>0.6472</swingAngle>
+					<twistAngle>0.523599</twistAngle>
+					<minAngle>0</minAngle>
+					<maxAngle>0</maxAngle>
+					<hingeAxis>X</hingeAxis>
+				</constraint>
+			</item>
+			<item type="traktor.animation.RagDollBone" version="4">
+				<offset>0.083537, 0.016067, 0, 1</offset>
+				<rotation>0.006323, 0.707079, -0.004879, 0.70709</rotation>
+				<length>0.443798</length>
+				<radius>0.0721</radius>
+				<linearDamping>0.2</linearDamping>
+				<angularDamping>0.2</angularDamping>
+				<influences>
+					<item>
+						<joint>RightUpLeg</joint>
+						<weight>1</weight>
+					</item>
+				</influences>
+				<children>
+					<item type="traktor.animation.RagDollBone" version="4">
+						<offset>0, 0, 0, 1</offset>
+						<rotation>-0.046026, 0.000014, -0.00174, 0.998939</rotation>
+						<length>0.445348</length>
+						<radius>0.0577</radius>
+						<linearDamping>0.2</linearDamping>
+						<angularDamping>0.2</angularDamping>
+						<influences>
+							<item>
+								<joint>RightLeg</joint>
+								<weight>1</weight>
+							</item>
+						</influences>
+						<children/>
+						<constraint>
+							<type>Hinge</type>
+							<swingAngle>0</swingAngle>
+							<twistAngle>0</twistAngle>
+							<minAngle>0</minAngle>
+							<maxAngle>1.99253</maxAngle>
+							<hingeAxis>-X</hingeAxis>
+						</constraint>
+					</item>
+				</children>
+				<constraint>
+					<type>Cone</type>
+					<swingAngle>0.6472</swingAngle>
+					<twistAngle>0.523599</twistAngle>
+					<minAngle>0</minAngle>
+					<maxAngle>0</maxAngle>
+					<hingeAxis>X</hingeAxis>
+				</constraint>
+			</item>
+		</children>
+		<constraint>
+			<type>Free</type>
+			<swingAngle>0</swingAngle>
+			<twistAngle>0</twistAngle>
+			<minAngle>0</minAngle>
+			<maxAngle>0</maxAngle>
+			<hingeAxis>X</hingeAxis>
+		</constraint>
+	</root>
+	<rootOffset>0, 0, 0, 1</rootOffset>
+	<collisionGroup>
+		<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+	</collisionGroup>
+	<collisionMask>
+		<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+		<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+	</collisionMask>
+</object>

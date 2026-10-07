@@ -48,6 +48,11 @@
 -- way the main menu's do.
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
 
+-- Scripts/Npc/Npc, what every character -- zombie or villager -- is made of. The weapons ask
+-- whether what they hit is one (isa Npc), and everything that hurts one goes through damage.
+#using \{4E9C0000-0000-4000-8000-000000000001}
+#using \{4E9C0000-0000-4000-8000-000000000004}
+
 import(traktor)
 
 -- Main
@@ -416,6 +421,8 @@ function Main:new(params, environment)
 	self._hurtRange = Config.player.hurtRange   -- enemies within this distance (m) deal damage
 	self._enemyDps = Config.player.enemyDps   -- health drained per second per touching enemy
 	self._biteTimer = 0.0   -- re-trigger countdown for the blood splatter while eaten
+	self._incomingDamage = 0.0 -- dealt by the characters since the last update (hurtPlayer)
+	self._bitten = 0.0      -- ...and how much longer the player counts as being eaten (s)
 	self._godMode = false   -- G: skip contact damage entirely (zombies still bite, visibly)
 	-- H: every weapon's ammunition refills itself. Kept here only so the label can read it
 	-- back and so the toggle has something to flip -- what it *means* is each weapon's own
@@ -540,9 +547,8 @@ function Main:new(params, environment)
 	-- The night's tempo, owned here the way the loadout is: the event sites in
 	-- _interact and _lightWard poke it (notify), update ticks it below the freeze
 	-- returns, and the Spawner reads its verdict off this stage as _spawnDrive --
-	-- which its constructor publishes. Constructing it also fires the night's first
-	-- event, nightfall: a small opening surge, so the forest is not standing empty
-	-- until the player first touches something.
+	-- which its constructor publishes. The night opens in the lull, a trickle, as if
+	-- the first wave had already been fought off (see SpawnOrchestrator:new).
 	self._orchestrator = SpawnOrchestrator(self)
 
 	-- The hive cutscene: the night holds its breath while one opens. See
@@ -697,6 +703,13 @@ function Main:new(params, environment)
 	self._pickupKeyOf = nil
 	self._dropped = {}
 
+	-- The characters placed in this world (Scripts/Npc/Npc, entities named "Npc"), by where each
+	-- was first found -- the same naming the pickups use, for the same reason -- and the routes
+	-- they walk, by name. See _collectNpcs and route.
+	self._npcs = nil
+	self._npcKeyOf = nil
+	self._routes = nil
+
 	-- Arriving from another stage: the player as they left it...
 	if carry ~= nil and carry.player ~= nil then
 		local p < const > = carry.player
@@ -729,6 +742,7 @@ function Main:new(params, environment)
 		self._pulledLeverIndex = here.pulledLevers or {}
 		self._pickupState = here.pickups
 		self._droppedState = here.dropped
+		self._npcState = here.npcs
 	end
 
 	environment.input.inputSystem:setExclusive(true)
@@ -817,9 +831,10 @@ function Main:_setInventoryOpen(open)
 end
 
 -- Put up the window for chest `index` (the chest's own `notice` line under its title), or with
--- nil take it down. Only the player takes it down -- E, Escape, the CLOSE button, or Tab, which
+-- nil take it down. `index` is anything _chestContents is keyed by -- a chest's number, or a
+-- body's "npc:<key>" -- and `title` names what is being looked into when it is not a chest. Only the player takes it down -- E, Escape, the CLOSE button, or Tab, which
 -- goes on to the pack -- even once the chest is empty.
-function Main:_setChestOpen(index, notice)
+function Main:_setChestOpen(index, notice, title)
 	if index == self._chestOpen then
 		return
 	end
@@ -830,7 +845,7 @@ function Main:_setChestOpen(index, notice)
 	self:_holdForPanel(index ~= nil)
 	if index ~= nil then
 		self._chestDialog:show()
-		self._chestView:showChest(index, notice)
+		self._chestView:showChest(index, notice, title)
 	else
 		self._chestDialog:hide()
 	end
@@ -1120,10 +1135,11 @@ function Main:_saveWorld()
 		awakeHives = self._awakeHiveIndex,
 		unlockedGates = self._unlockedGateIndex,
 		openedChests = self._openedChestIndex,
-		chestContents = self._chestContents,
+		chestContents = self:_savedContents(),
 		pulledLevers = self._pulledLeverIndex,
 		pickups = pickups,
-		dropped = dropped
+		dropped = dropped,
+		npcs = self:_saveNpcs()
 	}
 end
 
@@ -1306,6 +1322,8 @@ function Main:resolve()
 	if self._pickups == nil then
 		self:_collectPickups(world)
 	end
+	-- The routes the characters walk, and the characters themselves (Scripts/Npc/Characters).
+	self:_resolveCharacters(world)
 	if self._humanoid == nil then
 		self._humanoid = world:getEntity("Humanoid")
 	end
@@ -1783,10 +1801,11 @@ function Main:_showKept(entity, visible)
 	end
 end
 
--- Mark one zombie dead: blood burst at the impact point, hand it over to its
--- EnemyController (which polls _deadEnemies and switches the body to rag doll), queue
--- the knockback for the frame its rag doll controller goes active, and tally the kill.
--- Shared by the weapon and the kill-all shortcut so a zombie only ever dies one way.
+-- Mark one character dead: blood burst at the impact point, hand it over to its brain
+-- (Scripts/Npc/Npc:_checkDead polls _deadEnemies and switches the body to rag doll), queue
+-- the knockback for the frame its rag doll controller goes active, and settle what it leaves
+-- behind (_afterDeath: the kill tally, a zombie's drop, a villager's searchable body).
+-- Shared by damage, the wards and the kill-all shortcut so a character only ever dies one way.
 -- Returns false if it was already dead, so a second trigger cannot double-count it.
 --
 -- `whole` picks how the rag doll takes the impulse, and the two are genuinely different
@@ -1803,9 +1822,12 @@ function Main:killEnemy(enemy, point, impulse, whole)
 	self:_woundEnemy(enemy, point)
 	self._deadEnemies[enemy] = self._corpseLifetime
 	self:_queueImpulse(enemy, point, impulse, whole)
-	self._kills = self._kills + 1
+	self:_afterDeath(enemy)
 	return true
 end
+
+-- Everything else about the characters -- damage, hurtPlayer, the routes, what a death leaves
+-- behind and the characters' books -- is in Scripts/Npc/Characters, which adds it to this class.
 
 -- Open a wound where something arrived on a zombie, rather than at the zombie's origin.
 --
@@ -1873,7 +1895,8 @@ function Main:shoveCorpse(enemy, point, impulse, whole)
 		return false
 	end
 	self:_woundEnemy(enemy, point)
-	self._deadEnemies[enemy] = self._corpseLifetime
+	-- Wound back, never cut short: a zombie's body with something on it lies longer (_afterDeath).
+	self._deadEnemies[enemy] = math.max(self._deadEnemies[enemy], self._corpseLifetime)
 	self:_queueImpulse(enemy, point, impulse, whole)
 	return true
 end
@@ -3058,6 +3081,17 @@ function Main:_whatWouldE()
 		return "take", item
 	end
 
+	-- A body with something on it, and someone to talk to (Scripts/Npc). Above the fixtures:
+	-- both are people, and a villager standing by a chest is the one being spoken to.
+	local body < const > = self:_nearestBody(Config.npc.lootRange)
+	if body ~= nil then
+		return "search", body
+	end
+	local talker < const > = self:_nearestTalker(Config.npc.talkRange)
+	if talker ~= nil then
+		return "talk", talker
+	end
+
 	local inv < const > = self._inventory
 	local ward < const > = self:_nearestUnlitWard(Config.relic.wardRange)
 	if ward ~= nil and inv:equipped("hand") == "relic" then
@@ -3114,6 +3148,12 @@ function Main:_interact()
 		self:_pullLever(target)
 	elseif verb == "exit" then
 		target:take(self)
+	elseif verb == "search" then
+		local _, rec < const > = self:_nearestBody(Config.npc.lootRange)
+		local name < const > = rec ~= nil and rec.sc:displayName() or nil
+		self:_setChestOpen(target, name ~= nil and ("WHAT " .. name .. " CARRIED") or nil, "BODY")
+	elseif verb == "talk" then
+		self:_talkTo(target)   -- Scripts/Npc/Characters
 	elseif verb == "needRelic" then
 		self:_feed("EQUIP A RELIC TO LIGHT THE WARD   TAB")
 	end
@@ -3138,6 +3178,11 @@ function Main:_updateHudText(dt)
 			prompt = "E   PULL THE LEVER"
 		elseif verb == "exit" then
 			prompt = "E   " .. target:prompt()
+		elseif verb == "search" then
+			prompt = "E   SEARCH THE BODY"
+		elseif verb == "talk" then
+			local name < const > = target.sc:displayName()
+			prompt = "E   TALK" .. (name ~= nil and (" TO " .. name) or "")
 		elseif verb == "needRelic" then
 			-- A relic in the pack is not one in hand: the line says how to get it there.
 			prompt = "TAB   EQUIP A RELIC TO LIGHT THE WARD"
@@ -3524,87 +3569,9 @@ function Main:update(info)
 	-- that notices the player standing on it and puts what it is -- named in the
 	-- component's properties -- into the pack (giveItem).
 
-	-- Enemy contact damage: every enemy within hurt range drains health, and
-	-- multiple enemies stack. Reaching zero ends the game and shows the banner.
-	-- God mode (G) skips the whole thing -- the scan's only output is the drain, so
-	-- there is nothing to compute. Zombies still crowd and still play their bite
-	-- animation, which EnemyController drives off context._hurtRange independently.
-	if self._humanoid ~= nil and not self._godMode then
-		local world = self.world.world
-		if world ~= nil then
-			local pp = self._humanoid.transform.translation
-			local dps = 0.0
-			local i = 0
-			while true do
-				local e = world:getEntity("Enemy", i)
-				if e == nil then
-					break
-				end
-				-- Dead (ragdolling) zombies no longer bite.
-				if self._deadEnemies[e] == nil then
-					local ep = e.transform.translation
-					local d = ep - pp
-					-- Compare a distance against a distance: _hurtRange is in metres, so
-					-- squaring it here would silently scale the bite range by _hurtRange
-					-- for any value other than 1. Both operands are translations (w = 1),
-					-- so d.w is 0 and length is the plain origin-to-origin distance across
-					-- all three axes -- the same measure EnemyController reads back off
-					-- context._hurtRange to decide when to play its attack animation.
-					if d.length < self._hurtRange then
-						dps = dps + self._enemyDps
-					end
-				end
-				i = i + 1
-			end
-			if dps > 0.0 then
-				-- Whatever armour is worn takes its share of every bite (Config.items).
-				self._health = self._health - dps * (1.0 - self:armor()) * dt
-				-- Spurt blood while being eaten: raise the Humanoid's "blood" event on a
-				-- timer, each raise spawning a short blood-splatter effect at the player.
-				-- "hurt" rides the same timer -- the player's own voice, and the only
-				-- warning that the thing behind you has reached you.
-				--
-				-- Placed at chest height by hand. Nothing is traced for a bite -- it lands
-				-- somewhere on a body the camera is inside -- so this is simply the middle of
-				-- the player, and it has to be said here now that the effect no longer carries
-				-- a lift of its own (see killEnemy).
-				if self._bloodEvents ~= nil then
-					self._biteTimer = self._biteTimer - dt
-					if self._biteTimer <= 0.0 then
-						self._bloodEvents:raise("blood", Transform(Vector4(0.0, 1.05, 0.0, 0.0), Quaternion.identity))
-						self._bloodEvents:raise("hurt")
-						self._biteTimer = 0.3
-					end
-				end
-				if self._health <= 0.0 then
-					self._health = 0.0
-					self._gameOver = true
-					-- Cut back from any hive being watched, and abandon one still
-					-- counting down to open. The armed case is the one that really
-					-- matters now the wake is delayed: dying in that window is entirely
-					-- possible, since those frames are played rather than frozen, and a
-					-- hive must not open into a Game Over menu.
-					self:_endCutscene()
-					-- Nothing to let go of: what the player carries is in the pack, and
-					-- a relic held in hand stays in front of the camera it was posed
-					-- against, which is where the Game Over menu is being looked at from.
-					--
-					-- Take the HUD off screen, as the pause menu does -- the dialogs
-					-- are panes now, and a health bar reading zero behind one is not
-					-- what the moment is about. One way only: dying ends this stage,
-					-- and Restart builds a new one.
-					self:_showHud(false)
-					-- Show the Game Over menu and free the mouse cursor so its
-					-- buttons are clickable (as the pause menu does).
-					self:_showGameOver()
-					self.environment.input.inputSystem:setExclusive(false)
-					self.environment.render.renderView:showCursor()
-				end
-			else
-				self._biteTimer = 0.0   -- reset so the next bite spurts immediately
-			end
-		end
-	end
+	-- Damage taken: what the characters on the player dealt since the last update
+	-- (Scripts/Npc/Characters).
+	self:_applyDamage(dt)
 
 	-- Hand out every booked impulse the moment the zombie's rag doll controller becomes active:
 	-- the knockback of the shot that killed it, and anything that has hit the body since.
@@ -3645,12 +3612,17 @@ function Main:update(info)
 	-- seconds would spend deleting them one by one in plain sight. The bodies are the
 	-- payoff, so they stay for it -- the stage is being torn down at the end of this
 	-- either way.
+	--
+	-- ...and except for a body with something still on it to be searched (_hasLoot), whose
+	-- clock is held until it has been emptied: it is a place now, not an effect.
 	do
 		local world = self.world.world
 		local remove = {}
 		local decay < const > = self._nightOver and 0.0 or dt
 		for e, life in pairs(self._deadEnemies) do
-			life = life - decay
+			if not self:_hasLoot(e) then
+				life = life - decay
+			end
 			if life <= 0.0 then
 				table.insert(remove, e)
 			else
@@ -3661,6 +3633,7 @@ function Main:update(info)
 			local corpse = remove[k]
 			self._deadEnemies[corpse] = nil
 			self._pendingImpulse[corpse] = nil
+			self:_forgetBody(corpse)   -- Scripts/Npc/Characters
 			if world ~= nil then
 				world:removeEntity(corpse)
 				-- removeEntity only detaches the entity from the world; it does NOT tear
@@ -3682,6 +3655,7 @@ end
 function Main:postUpdate(info)
 	-- The world has updated at least once: every component's script object exists. See resolve.
 	self._worldUpdated = true
+	self:_updateNameTags(info.simulationDeltaTime)   -- Scripts/Npc/Characters
 
 	if self._gameOver or self._paused then
 		return
@@ -3817,6 +3791,11 @@ function Main:reload()
 	self._pickups = nil
 	self._pickupKeyOf = nil
 	self._dropped = {}
+	-- ...and the characters' and routes' books likewise; a character keeps its name on itself
+	-- (Npc _home), and what is left on a body is plain data in _chestContents.
+	self._npcs = nil
+	self._npcKeyOf = nil
+	self._routes = nil
 end
 
 ]]></text>

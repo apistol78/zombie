@@ -51,6 +51,9 @@ local COLLISION_DEFAULT < const > = 0x00000001
 -- what is in it -- terrain, gravestones, walls.
 local QUERY_DYNAMIC < const > = 2
 
+-- Who a blast catches: the horde, and the characters placed in the scene.
+local LISTS < const > = { "Enemy", "Npc" }
+
 function Grenades:new(context)
 	Weapon.new(self, context)
 
@@ -66,7 +69,8 @@ function Grenades:new(context)
 	-- where it lands, not from when it stops rolling -- so a grenade thrown far or high can
 	-- go off in mid-air.
 	self._fuse = Config.grenade.fuse                  -- seconds from the throw to the bang
-	self._blastRadius = Config.grenade.blastRadius    -- everything standing inside this dies (m)
+	self._blastRadius = Config.grenade.blastRadius    -- everything standing inside this is caught (m)
+	self._blastDamage = Config.grenade.blastDamage    -- damage at the centre, falling off as the shove does
 	self._blastHalf = Config.grenade.blastHalf        -- ...where the blast has half its centre momentum
 	self._blastImpulse = Config.grenade.blastImpulse  -- momentum handed to a body at the centre
 	self._blastLift = Config.grenade.blastLift        -- ...plus this much straight up
@@ -263,9 +267,9 @@ function Grenades:update(dt)
 	end
 end
 
--- Go off: everything standing inside _blastRadius dies, thrown by a blast that falls off
--- with distance. Not damage -- there is no health on a zombie -- so this is the same one-way
--- door the rifle uses, just applied to a crowd at once.
+-- Go off: everything standing inside _blastRadius is hurt by a blast that falls off with
+-- distance (Main:damage) -- fatal for a zombie within four metres or so of it, a stagger at the
+-- rim -- and whatever it kills is thrown by the same falloff.
 function Grenades:_explode(g)
 	local context < const > = self._context
 	local world = context.world ~= nil and context.world.world or nil
@@ -312,18 +316,26 @@ function Grenades:_explode(g)
 	-- Plain distance rather than the usual squared-distance trick: Vector4 exposes `length` to
 	-- script but not `length2`, and one square root per zombie per explosion is not worth
 	-- unpacking the components by hand to avoid.
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
-		if not context:isEnemyDead(e) then
-			local p < const > = e.transform.translation
-			if (p - centre).length < self._blastRadius then
-				local chest < const > = p + CHEST
-				context:killEnemy(e, chest, self:_blastShove(centre, chest), true)
+	--
+	-- The horde and the characters placed in the scene alike: a blast does not ask whose side
+	-- anyone is on. Who threw it does count, though -- a villager caught in it knows who to blame.
+	for _, list in ipairs(LISTS) do
+		local i = 0
+		while true do
+			local e = world:getEntity(list, i)
+			if e == nil then
+				break
+			end
+			i = i + 1
+			if not context:isEnemyDead(e) then
+				local p < const > = e.transform.translation
+				local d < const > = (p - centre).length
+				if d < self._blastRadius then
+					local chest < const > = p + CHEST
+					local k < const > = d / self._blastHalf
+					context:damage(e, self._blastDamage / (1.0 + k * k), chest,
+						self:_blastShove(centre, chest), true, context:player())
+				end
 			end
 		end
 	end

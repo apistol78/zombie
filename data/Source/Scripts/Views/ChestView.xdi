@@ -95,9 +95,9 @@ function ChestView:new(parent, context)
 		end
 	end
 
-	local title < const > = Static(self, "CHEST")
-	title:setTextSize(34)
-	title:setTextColor(C_TITLE)
+	self._title = Static(self, "CHEST")
+	self._title:setTextSize(34)
+	self._title:setTextColor(C_TITLE)
 
 	-- The chest's own line, if the level gave it one.
 	self._notice = Static(self, "AN IRON KEY, GREEN WITH DAMP, LYING IN STRAW")
@@ -157,11 +157,15 @@ function ChestView:setOnClose(fn)
 end
 
 -- Look into chest `index`. Called by the host after the dialog has been shown, so the labels
--- are re-placed in cells the layout has already given them.
-function ChestView:showChest(index, notice)
+-- are re-placed in cells the layout has already given them. `title` is for a container that is
+-- not a chest -- a body being searched, a villager's pack -- and defaults to "CHEST"; such a
+-- container, emptied, says there is nothing left rather than calling itself a chest.
+function ChestView:showChest(index, notice, title)
 	self._index = index
 	self._selected = 1
 	self._lastClick = nil
+	self._empty = (title == nil) and "THE CHEST IS EMPTY" or "NOTHING LEFT"
+	setText(self._title, title or "CHEST")
 	setText(self._notice, notice or "")
 	setText(self._message, "")
 	self:refresh()
@@ -198,7 +202,7 @@ function ChestView:refresh()
 		setText(self._name, describe(entry))
 		setText(self._info, (def ~= nil and def.info) or "")
 	else
-		setText(self._name, (#left == 0) and "THE CHEST IS EMPTY" or "")
+		setText(self._name, (#left == 0) and (self._empty or "THE CHEST IS EMPTY") or "")
 		setText(self._info, "")
 	end
 	self._takeButton:setEnable(entry ~= nil)

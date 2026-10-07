@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
+
+import(traktor)
+
+-- Characters: the part of Scripts/Main that deals with the characters in the world
+-- (Scripts/Npc/Npc) -- hurting them, what they deal the player, the routes they walk, what a
+-- death leaves behind, and the books that lay them out again for a world the player comes back
+-- to. Methods on the Main stage class, kept in a script of their own because Main is already
+-- as large as one script can be: the script pipeline serializes the text on the stack, and a
+-- few more kilobytes of Main took the editor down.
+--
+-- Defines the class if Main has not yet -- this is #using'd by Main, so it is loaded first --
+-- and Main's own `Main = Main or class(...)` then carries on with the same table.
+
+Main = Main or class("Main", Stage)
+
+-- The same two as Main's own (see there): a Transform as plain data, for the books.
+local function plainTransform(t)
+	local p < const > = t.translation
+	local e < const > = t.rotation.eulerAngles
+	return { p.x, p.y, p.z, e.x, e.y, e.z }
+end
+
+local function fromPlainTransform(a)
+	return Transform(Vector4(a[1], a[2], a[3], 1.0), Quaternion.fromEulerAngles(a[4], a[5], a[6]))
+end
+
+-- Hurt a character: `amount` of its health, from `source` (the player's entity, another
+-- character, or nil for the world -- a blast). Everything that hurts rather than simply kills
+-- comes through here -- the rounds, the butt, a grenade, one character's blows at another --
+-- and dies through killEnemy once the health is gone, so there is still exactly one door.
+--
+-- A hit that does not kill opens a wound where it landed, and one at or over
+-- Config.npc.flinchDamage plays the reaction (Npc:flinch). `impulse` is what the rag doll is
+-- thrown with if this is the blow that kills; a blow from a character passes none, and is then
+-- given a half-strength shove away from whoever struck it.
+--
+-- Something with no health to take -- a component whose script object has not been built yet,
+-- in the frame it was spawned -- dies to anything, as everything did before there was health.
+-- Returns whether this killed it.
+function Main:damage(entity, amount, point, impulse, whole, source)
+	if entity == nil or self._deadEnemies[entity] ~= nil then
+		return false
+	end
+	if impulse == nil then
+		local from < const > = (source ~= nil) and source.transform.translation or point
+		local d < const > = entity.transform.translation - from
+		local len < const > = math.sqrt(d.x * d.x + d.z * d.z)
+		local dir < const > = (len > 0.001) and Vector4(d.x / len, 0.0, d.z / len, 0.0) or Vector4(0.0, 0.0, 1.0, 0.0)
+		impulse = self:knockbackImpulse(dir) * 0.5
+	end
+	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
+	if sc == nil or sc.takeDamage == nil or sc:takeDamage(amount, source, self) then
+		return self:killEnemy(entity, point, impulse, whole)
+	end
+	self:_woundEnemy(entity, point)
+	if amount >= Config.npc.flinchDamage then
+		sc:flinch()
+	end
+	return false
+end
+
+-- What a round does to `entity`, struck at `point`: `base`, or `headMul` times it when it
+-- landed above Config.rifle.headHeight off the character's feet. A character's origin is at
+-- its feet, so the height is simply how far up the body the round went.
+function Main:roundDamage(entity, point, base, headMul)
+	if point.y - entity.transform.translation.y > Config.rifle.headHeight then
+		return base * headMul
+	end
+	return base
+end
+
+-- Damage dealt to the player by a character on them: a zombie's bite, a stretch of it per
+-- frame, or a villager's blow. Banked here and taken off the health in update, where the
+-- armour, the blood and the end of the night are. God mode refuses it at the door.
+function Main:hurtPlayer(amount)
+	if self._godMode or self._gameOver then
+		return
+	end
+	self._incomingDamage = self._incomingDamage + amount
+end
+
+-- The route named `name` as { points, loop, pause } (Scripts/Npc/Route), or nil. Asked by the
+-- characters that walk one.
+function Main:route(name)
+	return (self._routes ~= nil) and self._routes[name] or nil
+end
+
+-- What a death leaves behind. Whatever anyone carried becomes the contents of their body,
+-- searched with E through the chest window (_nearestBody, Main:_interact).
+--
+-- A zombie counts towards the night's tally, and its body -- if it had anything on it -- is a
+-- container of its own, "zombie:<n>", that lasts only as long as the body: zombieLootLifetime
+-- instead of the usual few seconds, and it goes with the body when that is cleared away
+-- (_forgetBody). Not at dawn, where the light drops the whole horde at once and the night is over.
+--
+-- Anyone else is not a kill worth counting; their body stays until it is empty (see _npcBox).
+function Main:_afterDeath(enemy)
+	local sc < const > = enemy:getComponent(traktor.world.ScriptComponent)
+	if sc == nil or sc.faction == nil or sc:faction() == "undead" then
+		self._kills = self._kills + 1
+		if sc ~= nil and sc.loot ~= nil and not self._nightOver then
+			local carried < const > = sc:loot()
+			if #carried > 0 then
+				self._zombieBoxes = (self._zombieBoxes or 0) + 1
+				local box < const > = "zombie:" .. tostring(self._zombieBoxes)
+				local list = {}
+				for _, entry in ipairs(carried) do
+					table.insert(list, { kind = entry.kind, count = entry.count })
+				end
+				self._chestContents[box] = list
+				sc._boxKey = box
+				self._deadEnemies[enemy] = math.max(self._deadEnemies[enemy], Config.npc.zombieLootLifetime)
+			end
+		end
+		return
+	end
+
+	local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[enemy] or nil
+	if key == nil then
+		return
+	end
+	local rec < const > = self._npcs[key]
+	rec.dead = true
+	rec.at = plainTransform(enemy.transform)
+	self:_npcBox(rec)
+end
+
+-- What a character carries, as the container the chest window shows: _chestContents["npc:<key>"],
+-- a { kind, count } list taken over from the character's `items` (Npc:loot) the first time
+-- anyone looks -- the player asking, or the character dying. From then on it is the one record
+-- of what they have, so what the player took from a living villager is not on their body
+-- later, and it is saved with the chests. Returns the container's key.
+function Main:_npcBox(rec)
+	local box < const > = "npc:" .. rec.key
+	if self._chestContents[box] == nil then
+		local list = {}
+		for _, entry in ipairs(rec.sc:loot()) do
+			table.insert(list, { kind = entry.kind, count = entry.count })
+		end
+		self._chestContents[box] = list
+	end
+	return box
+end
+
+-- E at a living character who will talk (see _nearestTalker): they say their line and turn to
+-- face the player (Human:talk), and what they carry comes up in the chest window for the player
+-- to take from -- freely, for now; there is no buying yet. Their line goes under the window's
+-- title, and someone with nothing on them says so instead of opening an empty window.
+function Main:_talkTo(rec)
+	local sc < const > = rec.sc
+	local line < const > = sc:talk(self)
+	local name < const > = sc:displayName()
+	local said < const > = (name ~= nil) and (name .. ":   " .. line) or line
+	local box < const > = self:_npcBox(rec)
+	local left < const > = self._chestContents[box]
+	if #left == 0 then
+		self:_showNotice(said)
+		self:_feed((name ~= nil) and (name .. " HAS NOTHING TO GIVE") or "THEY HAVE NOTHING TO GIVE")
+		return
+	end
+	-- The window's title is their name already, so the line goes under it on its own.
+	self:_setChestOpen(box, line, name or "STRANGER")
+end
+
+-- The container a body's contents are kept in -- a placed character's "npc:<key>", a zombie's
+-- "zombie:<n>" -- or nil for a body that never had anything on it.
+function Main:_boxOf(entity)
+	local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[entity] or nil
+	if key ~= nil then
+		return "npc:" .. key
+	end
+	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
+	return (sc ~= nil) and sc._boxKey or nil
+end
+
+-- A body being cleared away (Main:update's corpse pass, just before the entity goes). A placed
+-- character is remembered as gone, so it is not laid out again (_restoreNpcs); a zombie's
+-- container goes with it, whatever is left in it.
+function Main:_forgetBody(corpse)
+	local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[corpse] or nil
+	if key ~= nil then
+		self._npcs[key].gone = true
+		self._npcKeyOf[corpse] = nil
+		return
+	end
+	local box < const > = self:_boxOf(corpse)
+	if box ~= nil then
+		self._chestContents[box] = nil
+	end
+end
+
+-- What is kept of the containers in a save: everything but the zombies', which belong to bodies
+-- that are not saved and would only be left behind as lists nothing can ever open again.
+function Main:_savedContents()
+	local out = {}
+	for box, list in pairs(self._chestContents) do
+		if type(box) ~= "string" or string.sub(box, 1, 7) ~= "zombie:" then
+			out[box] = list
+		end
+	end
+	return out
+end
+
+-- Whether a placed character's `corpse` still has something on it to be searched for, which
+-- holds it in the world. A zombie's body is not held (see _afterDeath).
+function Main:_hasLoot(corpse)
+	local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[corpse] or nil
+	if key == nil then
+		return false
+	end
+	local left < const > = self._chestContents["npc:" .. key]
+	return left ~= nil and #left > 0
+end
+
+-- ---- The characters' books ----
+--
+-- The same promise the pickups make: a world left for another stage and come back to is laid
+-- out as it was. Every placed character is named by where it was first found (kept on its
+-- component as _home), and what is remembered of it is whether it is dead -- and where it fell,
+-- if there is still something on the body -- or else how it feels: its health, its mood and
+-- what it thinks of the player.
+
+function Main:_collectNpcs(world)
+	self._npcs = {}
+	self._npcKeyOf = {}
+	local i = 0
+	while true do
+		local e < const > = world:getEntity("Npc", i)
+		if e == nil then
+			break
+		end
+		i = i + 1
+		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and sc.faction ~= nil then
+			local key = sc._home
+			if key == nil then
+				local p < const > = e.transform.translation
+				key = string.format("npc@%.2f,%.2f,%.2f", p.x, p.y, p.z)
+				while self._npcs[key] ~= nil do
+					key = key .. "'"
+				end
+				sc._home = key
+			end
+			self._npcs[key] = { key = key, entity = e, sc = sc, dead = self._deadEnemies[e] ~= nil }
+			self._npcKeyOf[e] = key
+		end
+	end
+
+	if self._npcState ~= nil then
+		self:_restoreNpcs(world, self._npcState)
+		self._npcState = nil
+	end
+end
+
+-- Lay the characters out as the player left them (see _saveNpcs). A body with something still on
+-- it is put back where it fell and let drop there -- the rag doll takes it from standing, which is
+-- the price of not keeping a pose -- and one that was emptied is not put back at all.
+function Main:_restoreNpcs(world, saved)
+	for key, s in pairs(saved) do
+		local rec < const > = self._npcs[key]
+		if rec ~= nil then
+			if s.dead then
+				rec.dead = true
+				local left < const > = self._chestContents["npc:" .. key]
+				if left ~= nil and #left > 0 and s.at ~= nil then
+					rec.at = s.at
+					rec.entity.transform = fromPlainTransform(s.at)
+					self._deadEnemies[rec.entity] = self._corpseLifetime
+				else
+					rec.gone = true
+					self._npcKeyOf[rec.entity] = nil
+					world:removeEntity(rec.entity)
+					rec.entity:destroy()
+				end
+			elseif rec.sc.restore ~= nil then
+				rec.sc:restore(s)
+			end
+		end
+	end
+end
+
+function Main:_saveNpcs()
+	local out = {}
+	for key, rec in pairs(self._npcs or {}) do
+		if rec.gone then
+			out[key] = { dead = true }
+		elseif rec.dead then
+			out[key] = { dead = true, at = rec.at }
+		elseif rec.sc.snapshot ~= nil then
+			out[key] = rec.sc:snapshot()
+		end
+	end
+	return out
+end
+
+-- The nearest body with something left on it within `maxDist` -- a villager's or a zombie's --
+-- as its container key and a record with its `sc` (whose name, if any, the window shows).
+-- Measured to where it fell (the entity stays there; the rag doll lies about it).
+function Main:_nearestBody(maxDist)
+	if self._humanoid == nil then
+		return nil, nil
+	end
+	local pp < const > = self._humanoid.transform.translation
+	local best, bestRec, bestD = nil, nil, maxDist * maxDist
+	for e, _ in pairs(self._deadEnemies) do
+		local box < const > = self:_boxOf(e)
+		local left < const > = (box ~= nil) and self._chestContents[box] or nil
+		if left ~= nil and #left > 0 then
+			local p < const > = e.transform.translation
+			local dx < const >, dz < const > = p.x - pp.x, p.z - pp.z
+			local d < const > = dx * dx + dz * dz
+			if d < bestD then
+				local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[e] or nil
+				local rec = (key ~= nil) and self._npcs[key] or nil
+				if rec == nil then
+					rec = { entity = e, sc = e:getComponent(traktor.world.ScriptComponent) }
+				end
+				best, bestRec, bestD = box, rec, d
+			end
+		end
+	end
+	return best, bestRec
+end
+
+-- The nearest character that will talk, within `maxDist` and roughly where the player is
+-- looking -- a crowd of villagers answers to the one being faced, not the one behind.
+function Main:_nearestTalker(maxDist)
+	if self._npcs == nil or self._humanoid == nil then
+		return nil
+	end
+	local pp < const > = self._humanoid.transform.translation
+	local aim < const > = self:aimDirection()
+	local best, bestD = nil, maxDist * maxDist
+	for _, rec in pairs(self._npcs) do
+		if not rec.gone and not rec.dead and rec.sc.canTalk ~= nil and rec.sc:canTalk(self) then
+			local p < const > = rec.entity.transform.translation
+			local dx < const >, dz < const > = p.x - pp.x, p.z - pp.z
+			local d < const > = dx * dx + dz * dz
+			if d < bestD and d > 0.0001 then
+				local inv < const > = 1.0 / math.sqrt(d)
+				if (dx * aim.x + dz * aim.z) * inv > 0.5 then
+					best, bestD = rec, d
+				end
+			end
+		end
+	end
+	return best
+end
+-- Take what the characters dealt the player since the last update (hurtPlayer) off their
+-- health. Called once per update by Main:update.
+function Main:_applyDamage(dt)
+	-- Damage taken: whatever the characters on the player dealt since the last update
+	-- (hurtPlayer) -- a zombie's bite drained at Config.player.enemyDps while it is within
+	-- hurtRange, a villager's or a bandit's blows -- and several stack. Reaching zero ends the
+	-- game and shows the banner. God mode (G) is checked where it is dealt, so nothing arrives
+	-- here; the zombies still crowd and still play their bite animation.
+	--
+	-- Dealt by the attackers rather than worked out here from who is standing where, because
+	-- only the attacker knows whether it is attacking: a villager standing next to the player
+	-- talking to them is not a zombie.
+	--
+	-- The characters update once a frame and this once per simulation step, so a frame's worth
+	-- of bites can arrive on one step and none on the next. _bitten holds "being eaten" over
+	-- those gaps, so the blood keeps its own rhythm instead of resetting every other step.
+	if self._humanoid ~= nil then
+		local amount < const > = self._incomingDamage
+		self._incomingDamage = 0.0
+		if amount > 0.0 then
+			self._bitten = 0.25
+			-- Whatever armour is worn takes its share of every bite (Config.items).
+			self._health = self._health - amount * (1.0 - self:armor())
+		end
+		if self._bitten > 0.0 then
+			self._bitten = self._bitten - dt
+			-- Spurt blood while being eaten: raise the Humanoid's "blood" event on a
+			-- timer, each raise spawning a short blood-splatter effect at the player.
+			-- "hurt" rides the same timer -- the player's own voice, and the only
+			-- warning that the thing behind you has reached you.
+			--
+			-- Placed at chest height by hand. Nothing is traced for a bite -- it lands
+			-- somewhere on a body the camera is inside -- so this is simply the middle of
+			-- the player, and it has to be said here now that the effect no longer carries
+			-- a lift of its own (see killEnemy).
+			if self._bloodEvents ~= nil then
+				self._biteTimer = self._biteTimer - dt
+				if self._biteTimer <= 0.0 then
+					self._bloodEvents:raise("blood", Transform(Vector4(0.0, 1.05, 0.0, 0.0), Quaternion.identity))
+					self._bloodEvents:raise("hurt")
+					self._biteTimer = 0.3
+				end
+			end
+			if self._health <= 0.0 then
+				self._health = 0.0
+				self._gameOver = true
+				-- Cut back from any hive being watched, and abandon one still
+				-- counting down to open. The armed case is the one that really
+				-- matters now the wake is delayed: dying in that window is entirely
+				-- possible, since those frames are played rather than frozen, and a
+				-- hive must not open into a Game Over menu.
+				self:_endCutscene()
+				-- Nothing to let go of: what the player carries is in the pack, and
+				-- a relic held in hand stays in front of the camera it was posed
+				-- against, which is where the Game Over menu is being looked at from.
+				--
+				-- Take the HUD off screen, as the pause menu does -- the dialogs
+				-- are panes now, and a health bar reading zero behind one is not
+				-- what the moment is about. One way only: dying ends this stage,
+				-- and Restart builds a new one.
+				self:_showHud(false)
+				-- Show the Game Over menu and free the mouse cursor so its
+				-- buttons are clickable (as the pause menu does).
+				self:_showGameOver()
+				self.environment.input.inputSystem:setExclusive(false)
+				self.environment.render.renderView:showCursor()
+			end
+		else
+			self._biteTimer = 0.0   -- reset so the next bite spurts immediately
+		end
+	end
+end
+
+-- Collect the routes the characters walk, and the characters themselves -- laid out again as
+-- the player left them, for a world they have been in before (see _collectNpcs). Called every
+-- frame from Main:resolve; does nothing once both are collected.
+function Main:_resolveCharacters(world)
+	if self._routes == nil then
+		self._routes = {}
+		local i = 0
+		while true do
+			local e < const > = world:getEntity("Route", i)
+			if e == nil then
+				break
+			end
+			i = i + 1
+			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+			if sc ~= nil and sc.describe ~= nil and sc:name() ~= nil then
+				self._routes[sc:name()] = sc:describe()
+			end
+		end
+	end
+	if self._npcs == nil then
+		self:_collectNpcs(world)
+	end
+end
+
+-- ---- Name tags ----
+--
+-- A character with a name (the scene's `name` property -- zombies have none) wears it over
+-- its head while it is near enough to matter and in plain view: a pale line of text that
+-- follows it about the screen, turned red once it means the player harm. Not a health bar,
+-- not a marker through walls -- only what the player would know looking at someone close by
+-- in the dark: who it is, and whether it is coming for them.
+--
+-- The labels are children of the HUD container, so they go wherever the HUD goes -- hidden
+-- under the pause menu and the pack, drawn beneath every dialog -- and are made the first time
+-- each character is seen, one per character, kept by its book key.
+--
+-- Placed through WorldLayer:worldToScreen, called from postUpdate. That projects with the view
+-- the last frame was rendered with, so a tag may trail its head by a frame while the player
+-- turns; if that shows, the fix is to project from this frame's eye and aim instead.
+
+local TAG_HEIGHT < const > = 2.15      -- above the feet: just over the head (m)
+local TAG_RANGE < const > = 14.0       -- furthest a tag is shown (m)...
+local TAG_FADE < const > = 4.0         -- ...fading out over the last of it (m)
+local TAG_NEAR < const > = 0.5         -- nothing closer to the eye than this is tagged (m)
+local TAG_SIZE < const > = 17
+local TAG_SIGHT_EVERY < const > = 0.2  -- how often each tag re-checks the line of sight (s)
+
+-- Dim on purpose: Spark draws text far brighter than its value says (0.7 reads as white).
+local C_TAG < const > = Color4f(0.6, 0.58, 0.53, 1.0)
+local C_TAG_HOSTILE < const > = Color4f(0.72, 0.24, 0.18, 1.0)
+
+function Main:_hideNameTags()
+	for _, tag in pairs(self._nameTags or {}) do
+		if tag.shown then
+			tag.shown = false
+			tag.widget:setVisible(false)
+		end
+	end
+end
+
+function Main:_updateNameTags(dt)
+	if self._gameOver or self._paused or self._nightOver or self._dawnPlaying or self._cutscene ~= nil
+		or self._npcs == nil or self._humanoid == nil or self._camera == nil then
+		self:_hideNameTags()
+		return
+	end
+
+	local frame < const > = self._frame:getPlacement()
+	if frame.width <= 0 or frame.height <= 0 then
+		return
+	end
+	local hud < const > = self._hud:getPlacement()
+	local eye < const > = self:eye()
+	local pm < const > = self.environment.physics.physicsManager
+
+	local tags = self._nameTags
+	if tags == nil then
+		tags = {}
+		self._nameTags = tags
+	end
+
+	for key, rec in pairs(self._npcs) do
+		local tag = tags[key]
+		local name < const > = (not rec.gone and not rec.dead) and rec.sc:displayName() or nil
+		local alpha = 0.0
+		local sx, sy = 0.0, 0.0
+		if name ~= nil then
+			-- A point, not a direction: an entity's translation comes back with w = 0, and
+			-- projected as it is the camera's own position never enters into it.
+			local head < const > = (rec.entity.transform.translation + Vector4(0.0, TAG_HEIGHT, 0.0, 0.0)).xyz1
+			local dist < const > = (head - eye).length
+			-- worldToScreen answers nil for a point behind the camera, and otherwise the
+			-- normalised device position: -1..1 across, and up the screen.
+			local ndc < const > = (dist < TAG_RANGE and dist > TAG_NEAR) and self.world:worldToScreen(head) or nil
+			if ndc ~= nil and math.abs(ndc.x) < 1.1 and math.abs(ndc.y) < 1.1 then
+				sx = (ndc.x * 0.5 + 0.5) * frame.width
+				sy = (0.5 - ndc.y * 0.5) * frame.height
+				alpha = math.min(1.0, (TAG_RANGE - dist) / TAG_FADE)
+
+				-- In plain view: the static world only, so another character never hides a
+				-- name but a wall or a gravestone does. A ray per tag a few times a second.
+				if tag == nil then
+					tag = { sight = 0.0, clear = false }
+					tags[key] = tag
+				end
+				tag.sight = tag.sight - dt
+				if tag.sight <= 0.0 and pm ~= nil then
+					tag.sight = TAG_SIGHT_EVERY
+					local hit < const > = pm:queryRay(eye, (head - eye) / dist, dist, traktor.physics.QueryFilter(0x00000001), true)
+					tag.clear = hit == nil or hit.distance >= dist - 0.3
+				end
+				if not tag.clear then
+					alpha = 0.0
+				end
+			end
+		end
+
+		if alpha > 0.0 then
+			if tag.widget == nil then
+				tag.widget = Static(self._hud, "")
+				tag.widget.__layout = ILayout.FLOAT
+				tag.widget:setTextSize(TAG_SIZE)
+			end
+			if tag.text ~= name then
+				tag.text = name
+				tag.widget:setText(name)
+				tag.size = tag.widget:getPreferredSize()
+			end
+			local c < const > = rec.sc:hatesPlayer() and C_TAG_HOSTILE or C_TAG
+			tag.widget:setTextColor(Color4f(c.red, c.green, c.blue, alpha))
+			-- Centred over the head, its baseline just above the point; in the HUD's own
+			-- coordinates, which start at its margin rather than the corner of the screen.
+			tag.widget:place(sx - hud.x - tag.size.width * 0.5, sy - hud.y - tag.size.height, tag.size.width, tag.size.height)
+			if not tag.shown then
+				tag.shown = true
+				tag.widget:setVisible(true)
+			end
+		elseif tag ~= nil and tag.shown then
+			tag.shown = false
+			tag.widget:setVisible(false)
+		end
+	end
+end
+
+]]></text>
+</object>

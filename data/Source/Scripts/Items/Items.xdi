@@ -149,6 +149,27 @@ item("relic", {
 	keep = true
 })
 
+-- Read a list of kinds as a level designer writes one -- "rounds:24, bread, grenade:2" -- into
+-- { { name, count }, ... } in the order written: the name lower cased and not yet checked against
+-- the catalogue, the count nil where none was given. `who` names the property's owner in the
+-- warning for an entry that cannot be read, which is left out. Scripts/Chest and Scripts/Npc/Npc
+-- both hold their contents in this form; what a name means is theirs to decide.
+function Items.parseList(spec, who)
+	local entries = {}
+	if spec == nil then
+		return entries
+	end
+	for entry in string.gmatch(spec, "[^,]+") do
+		local name < const >, n < const > = string.match(entry, "^%s*([%a_]+)%s*:?%s*(%d*)%s*$")
+		if name == nil then
+			print(who .. ': cannot read "' .. entry .. '" in "' .. spec .. '"; left out.')
+		else
+			table.insert(entries, { name = string.lower(name), count = tonumber(n) })
+		end
+	end
+	return entries
+end
+
 -- What a count of `kind` is called: "RIFLE", "12 ROUNDS", "A RELIC". Unknown kinds answer with
 -- the kind itself, upper cased, rather than nothing -- a typo in a chest's property should still
 -- say what it was.

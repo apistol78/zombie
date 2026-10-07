@@ -1,0 +1,462 @@
+--[[
+ Convert a Mixamo download (zip or folder of .fbx files) into .blend files.
+
+ Usage:
+   Traktor.Run.App scripts/mixamo2blend.run <input.zip|input folder> <output folder> (options)
+
+ Options:
+   --name=<name>          Character name used for output files (default skin file name).
+   --skin=<file.fbx>      Which fbx is the skin (default largest fbx).
+   --textures=<folder>    Where embedded textures are written (default output folder).
+   --packed-size=<n>      Size of textures kept packed inside the .blend (default 64).
+   --blender=<exe>        Blender executable (default from PATH, .blend association or Program Files).
+   --keep-temp            Keep extracted files and generated python script.
+
+ Outputs:
+   <name>.blend                  Skin with skeleton; embedded textures shrunk to packed-size.
+   <name> - <Animation>.blend    Skeleton and one action per animation fbx.
+   <texture files>               Full size textures extracted from the skin fbx.
+
+ Everything is rotated 180 degrees around the up axis (Blender Z, engine Y) and all object
+ transforms are frozen (identity), with bone translation keys rescaled to match.
+]]
+import(traktor)
+import(traktor.compress)
+import(traktor.run)
+
+-- Blender side of the conversion; written to a temporary file and run headless once per fbx.
+local PYTHON = [==[
+import bpy
+import math
+import os
+import sys
+import traceback
+from mathutils import Matrix
+
+# Arguments after "--": <mode: skin|anim> <input.fbx> <output.blend> <texture dir> <action name> <packed size> <log file>
+argv = sys.argv[sys.argv.index("--") + 1:]
+mode, input_fbx, output_blend, texture_dir, action_name, packed_size, log_file = argv
+packed_size = int(packed_size)
+
+# Messages go to a log file which the run script echoes; piped stdout lines aren't reliable.
+def log(*args):
+	with open(log_file, "a", encoding="utf-8") as f:
+		f.write(" ".join(str(a) for a in args) + "\n")
+
+def excepthook(type, value, tb):
+	log("ERROR:", "".join(traceback.format_exception(type, value, tb)).rstrip())
+	sys.__excepthook__(type, value, tb)
+
+sys.excepthook = excepthook
+
+def fail(message):
+	log("ERROR:", message)
+	sys.exit(1)
+
+def action_fcurves(action):
+	# Blender 4.4+ stores f-curves in layered actions; the flat list only exists in older versions.
+	if hasattr(action, "layers") and len(action.layers) > 0:
+		for layer in action.layers:
+			for strip in layer.strips:
+				for channelbag in strip.channelbags:
+					yield from channelbag.fcurves
+	elif hasattr(action, "fcurves"):
+		yield from action.fcurves
+
+def sample_bone_heads(armature, frames):
+	scene = bpy.context.scene
+	samples = []
+	for frame in frames:
+		scene.frame_set(frame)
+		for pb in armature.pose.bones:
+			samples.append((armature.matrix_world @ pb.head).copy())
+	return samples
+
+def sample_mesh_vertices(meshes, frame):
+	bpy.context.scene.frame_set(frame)
+	depsgraph = bpy.context.evaluated_depsgraph_get()
+	samples = []
+	for mesh in meshes:
+		evaluated = mesh.evaluated_get(depsgraph)
+		data = evaluated.to_mesh()
+		step = max(1, len(data.vertices) // 64)
+		samples += [(evaluated.matrix_world @ data.vertices[i].co).copy() for i in range(0, len(data.vertices), step)]
+		evaluated.to_mesh_clear()
+	return samples
+
+def export_textures():
+	# Write each embedded image as a separate file, then shrink the copy packed in the .blend.
+	# The image path points at the written file so the map name stays the texture file name.
+	written = set()
+	for image in list(bpy.data.images):
+		if image.packed_file is None or image.source != 'FILE':
+			continue
+
+		file_name = os.path.basename(image.filepath.replace("\\", "/")) or (image.name + "." + image.file_format.lower())
+		target = os.path.join(texture_dir, file_name)
+
+		if file_name not in written:
+			with open(target, "wb") as f:
+				f.write(image.packed_file.data)
+			written.add(file_name)
+			log("Texture", file_name, "%dx%d" % (image.size[0], image.size[1]))
+
+		image.name = file_name
+		image.filepath = target
+		if image.size[0] > packed_size or image.size[1] > packed_size:
+			image.scale(packed_size, packed_size)
+		image.pack()
+
+# Start from an empty scene.
+bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True)
+
+try:
+	bpy.ops.import_scene.fbx(filepath=input_fbx)
+except Exception as e:
+	fail("Unable to import \"%s\"; %s" % (input_fbx, e))
+
+armatures = [o for o in bpy.data.objects if o.type == 'ARMATURE']
+if len(armatures) != 1:
+	fail("Expected exactly one armature in \"%s\", found %d." % (input_fbx, len(armatures)))
+armature = armatures[0]
+
+# Animation files only keep the skeleton.
+if mode == "anim":
+	for o in list(bpy.data.objects):
+		if o != armature:
+			bpy.data.objects.remove(o, do_unlink=True)
+
+meshes = [o for o in bpy.data.objects if o.type == 'MESH']
+if mode == "skin" and not meshes:
+	fail("Skin \"%s\" contains no meshes." % input_fbx)
+
+# Exactly one action, named after the animation, spanning the scene range.
+action = armature.animation_data.action if armature.animation_data else None
+for a in list(bpy.data.actions):
+	if a != action:
+		bpy.data.actions.remove(a)
+if mode == "anim" and action is None:
+	fail("Animation \"%s\" contains no action." % input_fbx)
+
+scene = bpy.context.scene
+if action:
+	action.name = action_name
+	scene.frame_start = int(math.floor(action.frame_range[0]))
+	scene.frame_end = int(math.ceil(action.frame_range[1]))
+frames = sorted({ scene.frame_start, (scene.frame_start + scene.frame_end) // 2, scene.frame_end })
+
+# Rotate 180 degrees around the up axis; Blender's Z is the engine's Y.
+rotation = Matrix.Rotation(math.pi, 4, 'Z')
+expected_bones = [rotation @ p for p in sample_bone_heads(armature, frames)]
+expected_vertices = [rotation @ p for p in sample_mesh_vertices(meshes, scene.frame_start)]
+
+scale = armature.matrix_world.to_scale()
+if abs(scale.x - scale.y) > 1e-6 or abs(scale.x - scale.z) > 1e-6:
+	fail("Non-uniform armature scale %s is not supported." % tuple(scale))
+
+for o in bpy.data.objects:
+	if o.parent is None:
+		o.matrix_world = rotation @ o.matrix_world
+
+# Freeze transforms on everything; parents are applied before their children.
+bpy.ops.object.select_all(action='DESELECT')
+for o in bpy.data.objects:
+	o.hide_set(False)
+	o.select_set(True)
+bpy.context.view_layer.objects.active = armature
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+# Bone translation keys are in the (now scaled) rest space of each bone.
+if action:
+	for fc in action_fcurves(action):
+		if fc.data_path.endswith(".location"):
+			for kp in fc.keyframe_points:
+				kp.co.y *= scale.x
+				kp.handle_left.y *= scale.x
+				kp.handle_right.y *= scale.x
+			fc.update()
+
+# Verify the result matches the rotated original.
+error_bones = max((a - b).length for a, b in zip(sample_bone_heads(armature, frames), expected_bones))
+error_vertices = max([(a - b).length for a, b in zip(sample_mesh_vertices(meshes, scene.frame_start), expected_vertices)] or [0.0])
+log("Verified; max bone error %.6f, max vertex error %.6f" % (error_bones, error_vertices))
+if error_bones > 1e-3 or error_vertices > 1e-3:
+	fail("Transformed result deviates from the rotated original.")
+
+for o in bpy.data.objects:
+	if any(abs(v) > 1e-6 for v in o.location) or any(abs(v) > 1e-6 for v in o.rotation_euler) or any(abs(v - 1.0) > 1e-6 for v in o.scale):
+		fail("Transform of \"%s\" not frozen." % o.name)
+
+scene.frame_set(scene.frame_start)
+
+if mode == "skin":
+	export_textures()
+
+bpy.data.orphans_purge(do_recursive=True)
+bpy.ops.wm.save_as_mainfile(filepath=output_blend, compress=True, relative_remap=True)
+log("Saved", output_blend)
+]==]
+
+
+local function option(name, default)
+	if run.commandLine:hasOption(name) then
+		return run.commandLine:getOption(name):getString()
+	else
+		return default
+	end
+end
+
+local function titleCase(s)
+	return (s:gsub("(%a)([%w']*)", function(a, b) return a:upper() .. b end))
+end
+
+local function quote(s)
+	return "\"" .. s .. "\""
+end
+
+local function versionKey(name)
+	local major, minor = name:match("(%d+)%.(%d+)")
+	return (tonumber(major) or 0) * 1000 + (tonumber(minor) or 0)
+end
+
+-- Locate system installed Blender; same order as the engine's blend importer, then Program Files.
+local function findBlender()
+	local explicit = option("blender", os:getEnvironment("BLENDER"))
+	if explicit ~= "" then
+		return explicit
+	end
+
+	local onPath = os:whereIs("blender")
+	if onPath ~= nil then
+		return onPath.pathNameOS
+	end
+
+	local associated = os:getAssociatedExecutable("blend")
+	if associated ~= nil then
+		if associated.fileName:lower() == "blender-launcher.exe" then
+			return associated.pathOnlyOS .. "/blender.exe"
+		end
+		return associated.pathNameOS
+	end
+
+	local best, bestKey = nil, -1
+	local installs = fileSystem:find("C:/Program Files/Blender Foundation/*")
+	for i = 0, installs.size - 1 do
+		local f = installs:get(i)
+		local exe = f.path.pathName .. "/blender.exe"
+		if f.directory and versionKey(f.path.fileName) > bestKey and fileSystem:exist(Path(exe)) then
+			best, bestKey = exe, versionKey(f.path.fileName)
+		end
+	end
+	return best
+end
+
+-- Collect all .fbx files in a volume (native folder or zip), recursively.
+local function collectFbx(volume, path, out)
+	local files = volume:find(path .. "/*")
+	for i = 0, files.size - 1 do
+		local f = files:get(i)
+		local fileName = f.path.fileName
+		if f.directory then
+			if fileName ~= "." and fileName ~= ".." then
+				collectFbx(volume, f.path.pathName, out)
+			end
+		elseif f.path.extension:lower() == "fbx" then
+			out[#out + 1] = { path = f.path, size = f.size, name = f.path.fileNameNoExtension }
+		end
+	end
+	return out
+end
+
+local function writeText(fileName, text)
+	local file = fileSystem:open(Path(fileName), File.FmWrite)
+	if file == nil then
+		return false
+	end
+	local so = StreamOutput(file, Utf8Encoding())
+	so:print(text)
+	file:close()
+	return true
+end
+
+local function readLines(fileName)
+	local lines = {}
+	local file = fileSystem:open(Path(fileName), File.FmRead)
+	if file ~= nil then
+		local reader = StringReader(file, Utf8Encoding())
+		local line = reader:readLine()
+		while line ~= nil do
+			lines[#lines + 1] = line
+			line = reader:readLine()
+		end
+		file:close()
+	end
+	return lines
+end
+
+local function extract(zip, source, target)
+	local input = zip:open(source, File.FmRead)
+	if input == nil then
+		return false
+	end
+	local output = fileSystem:open(Path(target), File.FmWrite)
+	if output == nil then
+		input:close()
+		return false
+	end
+	local ok = StreamCopy(output, input):execute()
+	output:close()
+	input:close()
+	return ok
+end
+
+function main(args)
+	if args.size < 2 then
+		stdout:printLn("Usage: Traktor.Run.App mixamo2blend.run <input.zip|input folder> <output folder> (--name=<name>) (--skin=<file.fbx>) (--textures=<folder>) (--packed-size=64) (--blender=<exe>) (--keep-temp)")
+		return 1
+	end
+
+	local input = fileSystem:getAbsolutePath(Path(args:get(0)))
+	local outputPath = fileSystem:getAbsolutePath(Path(args:get(1))).pathName
+	local texturePath = fileSystem:getAbsolutePath(Path(option("textures", outputPath))).pathName
+	local packedSize = tonumber(option("packed-size", "64"))
+	local keepTemp = run.commandLine:hasOption("keep-temp")
+
+	local blender = findBlender()
+	if blender == nil then
+		stderr:printLn("Unable to find Blender; use --blender=<exe> or set BLENDER.")
+		return 1
+	end
+	stdout:printLn("Using Blender \"" .. blender .. "\".")
+
+	local tempPath = os.writableFolderPath .. "/Traktor/Mixamo2Blend"
+	fileSystem:makeAllDirectories(Path(tempPath))
+	fileSystem:makeAllDirectories(Path(outputPath))
+	fileSystem:makeAllDirectories(Path(texturePath))
+
+	local temporaries = {}
+
+	-- Gather fbx files; extract them from the zip into the temporary folder.
+	local fbxs
+	local inputFile = fileSystem:get(input)
+	if inputFile == nil then
+		stderr:printLn("Input \"" .. input.pathName .. "\" not found.")
+		return 1
+	elseif inputFile.directory then
+		fbxs = collectFbx(fileSystem, input.pathName, {})
+		for _, fbx in ipairs(fbxs) do
+			fbx.file = fbx.path.pathName
+		end
+	else
+		local zipStream = fileSystem:open(input, File.FmRead)
+		if zipStream == nil then
+			stderr:printLn("Unable to open \"" .. input.pathName .. "\".")
+			return 1
+		end
+		local zip = ZipVolume(zipStream)
+		fbxs = collectFbx(zip, "zip:", {})
+		for i, fbx in ipairs(fbxs) do
+			fbx.file = tempPath .. "/" .. i .. "_" .. fbx.path.fileName
+			if not extract(zip, fbx.path, fbx.file) then
+				stderr:printLn("Unable to extract \"" .. fbx.path.pathName .. "\".")
+				return 1
+			end
+			temporaries[#temporaries + 1] = fbx.file
+		end
+		zipStream:close()
+	end
+
+	if #fbxs == 0 then
+		stderr:printLn("No fbx files found in \"" .. input.pathName .. "\".")
+		return 1
+	end
+
+	-- Skin is either explicitly named or the largest file (it carries the meshes and embedded textures).
+	local skinName = option("skin", "")
+	local skin = nil
+	for _, fbx in ipairs(fbxs) do
+		if skinName ~= "" then
+			if fbx.path.fileName:lower() == skinName:lower() or fbx.name:lower() == skinName:lower() then
+				skin = fbx
+			end
+		elseif skin == nil or fbx.size > skin.size then
+			skin = fbx
+		end
+	end
+	if skin == nil then
+		stderr:printLn("Skin \"" .. skinName .. "\" not found.")
+		return 1
+	end
+
+	local name = option("name", skin.name)
+
+	local script = tempPath .. "/convert.py"
+	if not writeText(script, PYTHON) then
+		stderr:printLn("Unable to write \"" .. script .. "\".")
+		return 1
+	end
+	temporaries[#temporaries + 1] = script
+
+	-- Skin first, then animations in name order.
+	local jobs = { { fbx = skin, mode = "skin", output = name .. ".blend", action = "T-Pose" } }
+	table.sort(fbxs, function(a, b) return a.name:lower() < b.name:lower() end)
+	for _, fbx in ipairs(fbxs) do
+		if fbx ~= skin then
+			local animation = titleCase(fbx.name)
+			jobs[#jobs + 1] = { fbx = fbx, mode = "anim", output = name .. " - " .. animation .. ".blend", action = animation }
+		end
+	end
+
+	local logFile = tempPath .. "/convert.log"
+	temporaries[#temporaries + 1] = logFile
+
+	local failed = 0
+	for _, job in ipairs(jobs) do
+		stdout:printLn(job.fbx.path.fileName .. " -> " .. job.output)
+
+		local command =
+			quote(blender) ..
+			" -b --factory-startup --python-exit-code 1 --python " .. quote(script) ..
+			" -- " .. job.mode ..
+			" " .. quote(job.fbx.file) ..
+			" " .. quote(outputPath .. "/" .. job.output) ..
+			" " .. quote(texturePath) ..
+			" " .. quote(job.action) ..
+			" " .. packedSize ..
+			" " .. quote(logFile)
+
+		fileSystem:remove(Path(logFile))
+		local exitCode = run:execute(command, "(null)")
+
+		local lines = readLines(logFile)
+		for _, line in ipairs(lines) do
+			stdout:printLn("    " .. line)
+		end
+		if exitCode ~= 0 then
+			-- Nothing logged by the script means Blender itself failed; show its output.
+			if #lines == 0 then
+				stderr:printLn(run.stdOut)
+				stderr:printLn(run.stdErr)
+			end
+			stderr:printLn("    Failed; Blender exit code " .. exitCode .. ".")
+			failed = failed + 1
+		end
+	end
+
+	if not keepTemp then
+		for _, temporary in ipairs(temporaries) do
+			fileSystem:remove(Path(temporary))
+		end
+		fileSystem:removeDirectory(Path(tempPath))
+	else
+		stdout:printLn("Temporary files kept in \"" .. tempPath .. "\".")
+	end
+
+	if failed > 0 then
+		stderr:printLn(failed .. " of " .. #jobs .. " conversion(s) failed.")
+		return 1
+	end
+
+	stdout:printLn("Converted " .. #jobs .. " file(s) into \"" .. outputPath .. "\".")
+	return 0
+end

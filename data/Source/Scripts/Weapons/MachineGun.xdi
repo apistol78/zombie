@@ -3,10 +3,10 @@
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{6E9AD100-0000-4000-8000-000000000010}
--- Scripts/EnemyController, for the class itself rather than for anything it does: a round
+-- Scripts/Npc/Npc, for the class itself rather than for anything it does: a round
 -- identifies what it hit by asking whether the struck entity's script component is one (see
 -- :_fireRound), and `isa` needs the class in scope to ask.
-#using \{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}
+#using \{4E9C0000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -69,6 +69,8 @@ function MachineGun:new(context)
 	self._reloadTime = Config.machinegun.reloadTime
 	self._interval = Config.machinegun.fireInterval
 	self._range = Config.machinegun.range
+	self._damage = Config.machinegun.damage
+	self._headMul = Config.machinegun.headMul
 	self._reloadTimer = 0.0
 
 	-- The cone. _spread is live state, in radians as a half-angle about the aim: opened by every
@@ -447,7 +449,7 @@ function MachineGun:_fireRound(context)
 	local enemy = nil
 	if struck ~= nil and struck ~= context:player() and isa(struck, traktor.world.Entity) then
 		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and isa(sc, EnemyController) then
+		if sc ~= nil and isa(sc, Npc) then
 			enemy = struck
 		end
 	end
@@ -466,7 +468,11 @@ function MachineGun:_fireRound(context)
 		return
 	end
 
-	context:killEnemy(enemy, hit.position.xyz1, context:knockbackImpulse(dir))
+	local point < const > = hit.position.xyz1
+	context:damage(
+		enemy, context:roundDamage(enemy, point, self._damage, self._headMul),
+		point, context:knockbackImpulse(dir), false, context:player()
+	)
 end
 
 -- The view model: held lower and further out than the rifle, and shaking under fire.

@@ -278,10 +278,17 @@ Config = {
 		-- cycle can sell and a turn taken on the spot does not. The Walks state plays its clip
 		-- out of ground distance travelled (TimeFromLocomotion), so a zombie that rotates
 		-- faster than it advances is a frozen pose spinning on its heels -- which is what 2.0
-		-- everywhere looked like. At 1.2 a foot 0.15 m off the axis sweeps 0.18 m/s sideways
-		-- against the ~0.4 m/s of chase the creep below guarantees forward, and the slide
-		-- stays well under the stride.
-		turnRate = 1.2,         -- max turn speed while steering (rad/s)
+		-- everywhere looked like.
+		--
+		-- The turning radius while steering is roughly speed / turnRate, so this is the one
+		-- number that decides how wide a corner or a Route waypoint gets cut. 1.2 (a foot
+		-- 0.15 m off the axis sweeping 0.18 m/s sideways against the ~0.4 m/s of forward creep
+		-- below) rounded a turn three times wider than looks right once routes were walked at
+		-- any real speed -- raised to 3.6 to bring the radius down to a third of that. Watch
+		-- the walk cycle for foot-sliding on a tight turn at this rate: the sideways sweep is
+		-- now ~0.54 m/s, over what 1.2 was tuned to stay under, and turnCreep below is the
+		-- knob to raise first if it shows.
+		turnRate = 3.6,         -- max turn speed while steering (rad/s)
 		-- Close quarters is the exception. A zombie clawing at the player is not walking, so
 		-- there is no cycle to outrun, and the tracking is gameplay rather than decoration:
 		-- below about this a strafing player simply walks around behind something already on
@@ -731,6 +738,14 @@ Config = {
 		-- does not.
 		flinchDamage = 40.0,
 
+		-- Healing. Slow, and only once a character has gone regenDelay without taking a fresh
+		-- hit -- one still being bitten does not shrug it off mid-fight; this is what happens
+		-- once it has got clear and had a few seconds' peace. Gated in Npc:_tickRegen by faction
+		-- rather than class, so it is "undead do not heal" rather than "zombies do not heal" --
+		-- anything else ever put on that side of factions.undead is covered for free.
+		regenDelay = 8.0,    -- seconds since the last hit before regeneration starts
+		regenRate = 4.0,     -- health recovered per second once it does
+
 		-- Routes (Scripts/Npc/Route): how close counts as having reached a waypoint (m), and
 		-- how far a wanderer with no route strays from where it was placed.
 		arrive = 1.0,
@@ -741,9 +756,15 @@ Config = {
 		talkRange = 2.6,
 		attendTime = 5.0,
 		-- ...and the player simply coming close: inside noticeRange a character going about its
-		-- day stops and faces them, and goes back to it once they are noticeSlack further out.
+		-- day stops and faces them, and goes back to it once they are noticeSlack further out
+		-- -- or once noticeTime has been stood there, whichever comes first. Without that cap a
+		-- player who simply stays put nearby (routine, after fighting off something together, the
+		-- player is often standing right next to it) held a wanderer frozen off its route for
+		-- good, since distance alone never stopped being true. Short, because this is a glance in
+		-- passing rather than Human:talk's conversation (attendTime).
 		noticeRange = 3.0,
 		noticeSlack = 0.8,
+		noticeTime = 4.0,
 		lines = {
 			neutral = "WHAT DO YOU WANT?",
 			happy = "GOOD TO SEE A LIVING FACE.",

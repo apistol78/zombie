@@ -3218,6 +3218,11 @@ end
 function Main:update(info)
 	self:resolve()
 
+	-- Every Route laid out in the scene, for as long as the debug layer is up (Characters:
+	-- _drawRoutes). Above every early-return below, so a route stays visible through a pause
+	-- or after the night is won -- exactly when stopping to look one over matters most.
+	self:_drawRoutes()
+
 	-- Simulation delta, not frame delta: with a physics manager present the engine
 	-- calls update() once per fixed simulation step (see Runtime/Impl/Application.cpp),
 	-- so ticking timers with frameDeltaTime makes them run slow at high frame rates

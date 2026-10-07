@@ -23,7 +23,8 @@ import(traktor)
 --   * Getting about -- the nav mesh path queries, keeping a step on the mesh, the push away
 --     from everyone nearby, the player's personal space and the limited turn rate (:_drive).
 --     Moved here out of EnemyController line for line, so the horde walks exactly as it did.
---   * Being hurt -- health, the shove and the flinch, the rag doll. Damage itself arrives
+--   * Being hurt -- health, the shove and the flinch, the rag doll -- and healing back up
+--     over time once left alone (:_tickRegen), unless it is undead. Damage itself arrives
 --     through the Stage (Main:damage), which owns the kill.
 --   * Seeing -- a line of sight to anything, and the nearest character it hates.
 --   * What it carries -- a list of { kind, count } off its `items` property, the same form a
@@ -129,6 +130,8 @@ function Npc:new()
 
 	self._strikeTimer = 0.0   -- until the next blow at another character may land (s)
 	self._grudges = {}        -- characters that have hurt this one: fought whatever the factions say
+
+	self._hurtAgo = 0.0       -- seconds since the last hit taken; see _tickRegen
 end
 
 -- ---- Who it is ----
@@ -345,10 +348,31 @@ function Npc:takeDamage(amount, source, context)
 	end
 	self:_stats()
 	self._health = self._health - amount
+	self._hurtAgo = 0.0
 	if source ~= nil then
 		self:_hurtBy(source, context)
 	end
 	return self._health <= 0.0
+end
+
+-- Heal back up over time, once left alone long enough: self-repair for a villager that has
+-- got clear of whatever was biting it, not a mid-fight shrug-off -- see Config.npc.regenDelay,
+-- which takeDamage's reset of _hurtAgo keeps from ever running while the hits keep landing.
+-- The undead do not do this at all, which is why the gate is the faction rather than the
+-- class: anything else ever put on that side of Config.npc.factions.undead is covered too,
+-- with no second place to remember to exclude it.
+--
+-- Called once a frame by whichever subclass wants it (Human does; EnemyController does not,
+-- since every braindead character is undead and would no-op here anyway).
+function Npc:_tickRegen(deltaTime)
+	self:_stats()
+	if self._dead or self._faction == "undead" or self._health >= self._maxHealth then
+		return
+	end
+	self._hurtAgo = self._hurtAgo + deltaTime
+	if self._hurtAgo >= NPC.regenDelay then
+		self._health = math.min(self._maxHealth, self._health + NPC.regenRate * deltaTime)
+	end
 end
 
 -- What being hurt by `source` does to how this character feels about it. Overridden by the

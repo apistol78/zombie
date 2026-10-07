@@ -52,6 +52,13 @@ local DEBUG_C_FLEE < const > = Color4f(1.0, 0.90, 0.10, 1.0)
 -- The timid run from a shot alone; braver ones only take fright at it.
 local SHOT_FLEE_COURAGE < const > = 0.35
 
+-- How square the player has to be looking at a character to count as noticing them (see
+-- _lookedAt): the cosine of the half-angle of that cone, so 0.75 is about 41 degrees either
+-- side -- closer to "actually looking at them" than "somewhere in front of the player". Was
+-- 0.4 (a touch over 60 degrees either side), which caught anyone merely facing their general
+-- direction.
+local NOTICE_FOV < const > = 0.75
+
 function Human:new()
 	Npc.new(self)
 	self._class = "wanderer"
@@ -67,6 +74,8 @@ function Human:new()
 	self._fleeFrom = nil        -- where the threat FLEE is running from was last seen (Vector4)
 	self._calmTimer = 0.0       -- FLEE ends once this has run out well clear of the threat (s)
 	self._attend = 0.0          -- facing the player after being talked to (s)
+	self._noticeTimer = 0.0     -- how long _noticing has held so far (s); see _routine
+	self._noticeTired = false   -- noticeTime ran out; ignored again until the player backs off
 	self._heardShot = nil       -- the last shot's sequence number, as the horde keeps it
 	self._wanderWait = 0.0      -- an aimless wanderer's pause between legs (s)
 	self._wanderTarget = nil
@@ -183,16 +192,52 @@ end
 
 -- ---- Each state's destination ----
 
+-- Whether the player is roughly facing this character, as opposed to merely close to them.
+-- Proximity alone used to be the whole of noticeRange's test, which caught a player who was
+-- simply standing nearby without looking -- routine right after the two of them have just
+-- fought off the same zombie together, with the player's back turned looting the body -- and
+-- held a wanderer frozen facing them instead of getting back to its route. Pure distance has
+-- no way to tell "being looked at" from "merely standing near", so this is read alongside it.
+function Human:_lookedAt(context, pos, pdist)
+	if pdist < 0.0001 then
+		return true
+	end
+	local pp < const > = self._player.transform.translation
+	local aim < const > = context:aimDirection()
+	return (pos.x - pp.x) * aim.x + (pos.z - pp.z) * aim.z > pdist * NOTICE_FOV
+end
+
 -- Where ROUTINE is walking to this frame, or nil to stand. Issues path queries as it goes.
 --
--- Someone who has just been spoken to, or who has the player standing close by, stops whatever
--- they were doing and faces them (see update). Only in ROUTINE: a villager running from a zombie
--- does not stop to look at anyone, and one fighting is already facing what it is fighting.
+-- Someone who has just been spoken to, or who has the player standing close by and looking at
+-- them, stops whatever they were doing and faces them (see update). Only in ROUTINE: a villager
+-- running from a zombie does not stop to look at anyone, and one fighting is already facing
+-- what it is fighting.
 -- Entered at noticeRange and let go a little further out, so a player standing on the line
 -- does not have them stopping and starting.
 function Human:_routine(context, pos, pdist, deltaTime)
 	local near < const > = NPC.noticeRange + (self._noticing and NPC.noticeSlack or 0.0)
-	self._noticing = pdist < near and not self:hatesPlayer()
+	local inRange < const > = pdist < near and self:_lookedAt(context, pos, pdist)
+	if not inRange then
+		-- Actually stepped back out, not just timed out while still standing there: forget
+		-- the stand, so coming close again later is a fresh notice rather than an instant
+		-- re-trigger of one noticeTime just ended.
+		self._noticeTimer = 0.0
+		self._noticeTired = false
+	end
+	self._noticing = inRange and not self._noticeTired and not self:hatesPlayer()
+	if self._noticing then
+		-- Capped, or a player who simply stays put nearby -- routine right after the two of
+		-- them have just fought off the same thing together -- held this frozen off its route
+		-- for good: distance alone never stopped being true. _noticeTired latches until the
+		-- player actually backs out past the slack above, so holding ground does not start
+		-- the glance over again the very next frame.
+		self._noticeTimer = self._noticeTimer + deltaTime
+		if self._noticeTimer >= NPC.noticeTime then
+			self._noticeTired = true
+			self._noticing = false
+		end
+	end
 	if self._attend > 0.0 or self._noticing then
 		self._attend = math.max(0.0, self._attend - deltaTime)
 		self:_dropPath()
@@ -329,6 +374,7 @@ function Human:update(context, totalTime, deltaTime)
 	local pdist < const > = (playerPos - pos).length
 
 	self:_tickMood(deltaTime)
+	self:_tickRegen(deltaTime)
 
 	if self._target ~= nil and not self:_standing(context, self._target) then
 		self._target = nil

@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.ai.NavMeshAsset">
+<object type="traktor.ai.NavMeshAsset" version="1">
 	<source>{D85F5CD7-2EA4-461B-A95C-4D7C9421F752}</source>
-	<cellSize>0.25</cellSize>
+	<cellSize>0.2</cellSize>
 	<cellHeight>0.01</cellHeight>
-	<agentSlope>45</agentSlope>
-	<agentHeight>2</agentHeight>
+	<agentSlope>40</agentSlope>
+	<agentHeight>1.5</agentHeight>
 	<agentClimb>0.7</agentClimb>
-	<agentRadius>0.35</agentRadius>
+	<agentRadius>0.36</agentRadius>
 	<maxEdgeLength>10</maxEdgeLength>
 	<maxSimplificationError>1.3</maxSimplificationError>
 	<minRegionSize>5</minRegionSize>
 	<mergeRegionSize>2</mergeRegionSize>
 	<detailSampleDistance>4</detailSampleDistance>
 	<detailSampleMaxError>1</detailSampleMaxError>
+	<tileSize>128</tileSize>
 </object>

@@ -19,6 +19,15 @@ import(traktor)
 
 Main = Main or class("Main", Stage)
 
+-- Route debug drawing (see _drawRoutes): lifted off the ground only so it does not z-fight the
+-- terrain, the same reason Npc's own path drawing lifts (Npc:_drawPath). Kept visually distinct
+-- from every colour EnemyController, Human and Npc draw their own dots and paths in, since a
+-- route and the path a character is currently walking along it can be on screen together.
+local ROUTE_DEBUG_LIFT < const > = 0.08
+local ROUTE_DEBUG_WIDTH < const > = 1.5
+local ROUTE_DEBUG_NODE_SIZE < const > = 4.0
+local ROUTE_DEBUG_COLOUR < const > = Color4f(0.65, 0.30, 0.95, 1.0)
+
 -- The same two as Main's own (see there): a Transform as plain data, for the books.
 local function plainTransform(t)
 	local p < const > = t.translation
@@ -89,6 +98,39 @@ end
 -- characters that walk one.
 function Main:route(name)
 	return (self._routes ~= nil) and self._routes[name] or nil
+end
+
+-- Every Route laid out in the scene (Scripts/Npc/Route), drawn whole -- not just the stretch
+-- of it a character happens to be walking, which is Npc:_drawPath's job and stays nothing but
+-- the next few corners. Only while the debug layer is up (self.debug, nil otherwise -- see the
+-- comment on context.debug in Scripts/EnemyController); _routes is only ever read here, never
+-- written. Called once a frame by Main:update, above its early-returns, so a route stays on
+-- screen through a pause or after the night is won.
+function Main:_drawRoutes()
+	local dbg < const > = self.debug
+	if dbg == nil or self._routes == nil then
+		return
+	end
+	local lift < const > = Vector4(0.0, ROUTE_DEBUG_LIFT, 0.0, 0.0)
+	for _, route in pairs(self._routes) do
+		local points < const > = route.points
+		local n < const > = #points
+		if n > 0 then
+			dbg:point(points[1] + lift, ROUTE_DEBUG_NODE_SIZE, ROUTE_DEBUG_COLOUR)
+		end
+		for i = 2, n do
+			local from < const > = points[i - 1] + lift
+			local to < const > = points[i] + lift
+			dbg:line(from, to, ROUTE_DEBUG_WIDTH, ROUTE_DEBUG_COLOUR)
+			dbg:point(to, ROUTE_DEBUG_NODE_SIZE, ROUTE_DEBUG_COLOUR)
+		end
+		-- Closing the loop is only worth drawing past two points -- with just two, walking
+		-- it back and forth (the non-loop case) already covers the same ground, so the one
+		-- segment above is the whole route either way.
+		if route.loop and n > 2 then
+			dbg:line(points[n] + lift, points[1] + lift, ROUTE_DEBUG_WIDTH, ROUTE_DEBUG_COLOUR)
+		end
+	end
 end
 
 -- What a death leaves behind. Whatever anyone carried becomes the contents of their body,

@@ -5,7 +5,7 @@
 			<name>Idle</name>
 			<position>
 				<first>472</first>
-				<second>395</second>
+				<second>398</second>
 			</position>
 			<animations>
 				<item>{CCAFA47D-71BC-4664-B1D0-FC9BFC99F1F1}</item>
@@ -30,7 +30,7 @@
 			<name>Dead</name>
 			<position>
 				<first>472</first>
-				<second>317</second>
+				<second>319</second>
 			</position>
 			<poseController type="traktor.animation.RagDollPoseControllerData" version="8">
 				<skeleton>{E4DB43A0-E0D9-4867-8D51-7B5C487EE745}</skeleton>
@@ -40,8 +40,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>A - Zombie - Stand Up</name>
 			<position>
-				<first>-188</first>
-				<second>184</second>
+				<first>-114</first>
+				<second>226</second>
 			</position>
 			<animations>
 				<item>{970D2CBE-DFE4-4481-90D4-3048BFEBC0F7}</item>
@@ -53,7 +53,7 @@
 			<name>Attack</name>
 			<position>
 				<first>472</first>
-				<second>239</second>
+				<second>240</second>
 			</position>
 			<animations>
 				<item>{BCF38385-E8AE-4905-ADA4-4336FE302E4E}</item>
@@ -62,10 +62,10 @@
 			<transformTime/>
 		</item>
 		<item type="traktor.animation.StateNodeAnimation" version="2">
-			<name>A - Zombie - Hit</name>
+			<name>Hit</name>
 			<position>
-				<first>230</first>
-				<second>445</second>
+				<first>472</first>
+				<second>477</second>
 			</position>
 			<animations>
 				<item>{BFDD0AB8-4F71-4688-93D0-6CD356E4D4B5}</item>
@@ -76,19 +76,12 @@
 		<item type="traktor.animation.StateNodeAny">
 			<name>Any</name>
 			<position>
-				<first>-147</first>
-				<second>330</second>
+				<first>-73</first>
+				<second>372</second>
 			</position>
 		</item>
 	</states>
 	<transitions>
-		<item type="traktor.animation.StateTransition">
-			<from ref="/object/states/item[6]"/>
-			<to ref="/object/states/item"/>
-			<duration>0.2</duration>
-			<moment>Immediately</moment>
-			<condition>idle</condition>
-		</item>
 		<item type="traktor.animation.StateTransition">
 			<from ref="/object/states/item[6]"/>
 			<to ref="/object/states/item[1]"/>
@@ -120,14 +113,14 @@
 		<item type="traktor.animation.StateTransition">
 			<from ref="/object/states/item[3]"/>
 			<to ref="/object/states/item"/>
-			<duration>0.5</duration>
+			<duration>0</duration>
 			<moment>End</moment>
 			<condition/>
 		</item>
 		<item type="traktor.animation.StateTransition">
-			<from ref="/object/states/item[5]"/>
+			<from ref="/object/states/item[6]"/>
 			<to ref="/object/states/item"/>
-			<duration>0.2</duration>
+			<duration>0</duration>
 			<moment>End</moment>
 			<condition/>
 		</item>

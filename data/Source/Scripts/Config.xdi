@@ -723,6 +723,10 @@ Config = {
 		moodHold = 20.0,
 
 		sightRange = 22.0,      -- furthest a character notices another (m)
+		-- Nearest a foe has to come before a character goes for it (m). Seen further out it is
+		-- only weighed for running away; at sightRange the village charged off across the
+		-- fields at every zombie that spawned. Whoever has just hurt it is gone for at any range.
+		engageRange = 10.0,
 		forgetTime = 6.0,       -- keep fighting this long after losing sight of the target (s)
 		chaseLeash = 30.0,      -- ...and give up once the target is this far from home (m)
 
@@ -755,6 +759,23 @@ Config = {
 		gaitStart = 0.25,
 		gaitStop = 0.10,
 		gaitSmooth = 8.0,       -- how hard the measured speed is eased (1/s)
+		-- ...and how hard once the brain has stopped asking for a step. The body stops dead
+		-- (velocityDamping 1), so easing at gaitSmooth left it standing in a frozen Walk for
+		-- half a second before Idle came in; this lets go in a few frames while still riding
+		-- out a single frame the step drops out.
+		gaitSmoothStop = 30.0,
+
+		-- Turning on the spot (Scripts/Npc/Human, with the Hunters' turn clips). A character
+		-- standing still that has to face more than turnMin away (rad, ~45 deg) steps round with a
+		-- turn clip instead of pivoting on its heels -- the half-turn one from turn180At (~135 deg).
+		-- The clip's turn and step come back from the skeleton as root motion and move the
+		-- character exactly as the clip does (Npc:_applyRootMotion); `turns` is only how long to
+		-- hold each clip's flag (s, per clip, as the clips were measured), let go turnRelease
+		-- before the end so the graph blends back to Idle rather than starting the clip over.
+		turnMin = 0.8,
+		turn180At = 2.36,
+		turnRelease = 0.15,
+		turns = { turnLeft90 = 0.90, turnLeft180 = 1.55, turnRight90 = 0.93, turnRight180 = 1.63 },
 
 		-- Routes (Scripts/Npc/Route): how close counts as having reached a waypoint (m), and
 		-- how far a wanderer with no route strays from where it was placed.

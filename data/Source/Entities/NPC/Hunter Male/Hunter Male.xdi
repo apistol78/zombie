@@ -70,6 +70,14 @@
 			<maxTilt>30</maxTilt>
 			<cullDistance>10</cullDistance>
 		</item>
+		<item type="traktor.animation.LookAtComponentData" version="1">
+			<joint>Neck</joint>
+			<eyeOffset>0, 0.14, 0.1, 0</eyeOffset>
+			<maxYaw>70</maxYaw>
+			<maxPitch>35</maxPitch>
+			<smoothTime>0.15</smoothTime>
+			<cullDistance>20</cullDistance>
+		</item>
 		<item type="traktor.physics.AiCharacterComponentData">
 			<collisionGroup>
 				<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>

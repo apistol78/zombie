@@ -109,7 +109,9 @@ end
 -- ---- Deciding ----
 
 -- Fight or flee from `foe`, at `dist`, with `count` hostiles about. See the top of the file.
-function Human:_face(foe, dist, threat, context)
+-- A fight is only started inside engageRange, unless `provoked` (it has just hurt us) or it is
+-- already the one being fought; further out a foe can frighten but not draw a charge.
+function Human:_face(foe, dist, threat, context, provoked)
 	-- The one being faced counts whatever its distance: `threat` is only the ones close by, and
 	-- a timid pedlar does not square up to a bandit because he is still twenty metres off.
 	threat = math.max(threat, self:_threatOf(foe, context))
@@ -125,7 +127,11 @@ function Human:_face(foe, dist, threat, context)
 		self._fleeFrom = foe.transform.translation
 		self._calmTimer = NPC.calmTime
 	else
-		if self._state ~= "fight" or self._target ~= foe then
+		local fighting < const > = self._state == "fight" and self._target == foe
+		if not fighting and not provoked and dist > NPC.engageRange then
+			return
+		end
+		if not fighting then
 			self:_setMood("angry")
 			self._repathTimer = 0.0
 		end
@@ -160,10 +166,11 @@ function Human:_perceive(context, pos, playerPos, pdist)
 	end
 
 	if foe ~= nil then
-		self:_face(foe, foeDist, threat, context)
-	elseif self._state == "fight" and self._target ~= nil
+		self:_face(foe, foeDist, threat, context, foe == provoked)
+	end
+	if self._state == "fight" and self._target ~= nil and self._target ~= foe
 		and self:_sees(context, pos, self._target.transform.translation) then
-		-- Nothing new, but the one it is already after is still in view.
+		-- Nothing new it went for, but the one it is already after is still in view.
 		self._seenTimer = NPC.forgetTime
 	end
 
@@ -341,6 +348,64 @@ function Human:_fleeGoal(pos)
 	return self:_randomPoint(x, pos.y, z, 3.0) or self:_ground(x, z, pos.y)
 end
 
+-- Into -pi..pi.
+local function wrap(a)
+	return (a + math.pi) % (math.pi * 2.0) - math.pi
+end
+
+-- A character standing still that has to face a long way round steps round with one of the
+-- turn clips rather than pivoting on its heels (Config.npc turnMin, turn180At, turns). Only in
+-- ROUTINE, standing (no `goal`) with something to face within `faceRange` -- the player who has
+-- come close or spoken to it, the way its post faces -- and only once it has actually stopped;
+-- anything smaller is left to Npc:_drive's turn rate, which reads fine for a small correction.
+--
+-- The clip's own turn and step are taken out of it on import and handed back as root motion
+-- (Npc:_applyRootMotion, every frame), so the heading turns exactly as the clip turns, when it
+-- turns, and the feet stay where it plants them -- this only picks the clip and holds it. It ends
+-- facing about where it had to (the clips turn ~90/~175 degrees, not exactly the gap), and the
+-- little that is left over is Npc:_drive's to finish. Nothing else is done while it runs -- no
+-- steering, no crowd -- and anything more pressing (a fight, a flight, somewhere to go) drops it.
+-- Returns whether a turn is running, in which case the frame is the turn's.
+function Human:_turnOnTheSpot(pos, goal, face, faceRange, deltaTime)
+	if self._turn ~= nil and (self._state ~= "routine" or goal ~= nil) then
+		self._turn = nil
+	end
+
+	if self._turn == nil then
+		if self._state ~= "routine" or goal ~= nil or face == nil or self._gaitMoving
+			or (face - pos).length >= faceRange then
+			return false
+		end
+		local desired < const > = (math.atan2 or math.atan)(face.x - pos.x, face.z - pos.z)
+		local delta < const > = wrap(desired - self._heading)
+		if math.abs(delta) < NPC.turnMin then
+			return false
+		end
+		-- Heading grows to the right (facing is sin/cos of it, x right and z ahead).
+		local clip < const > = (delta < 0.0 and "turnLeft" or "turnRight") .. (math.abs(delta) >= NPC.turn180At and "180" or "90")
+		self._turn = { flag = clip, t = 0.0, duration = NPC.turns[clip] }
+	end
+
+	local turn < const > = self._turn
+	turn.t = turn.t + deltaTime
+
+	-- The clip's own little step (root motion) is not walking: the gait is held at a standstill
+	-- through the turn, or it reads the step as a pace and Walk flashes in as the turn ends.
+	-- Show the clip until just before it ends.
+	self._gaitPos = pos
+	self._gaitSpeed = 0.0
+	self._gaitMoving = false
+	if self._pose ~= nil then
+		self:_poseState((turn.t < turn.duration - NPC.turnRelease) and turn.flag or "idle")
+		self._pose:setParameterValue("work", false)
+	end
+
+	if turn.t >= turn.duration then
+		self._turn = nil
+	end
+	return true
+end
+
 function Human:update(context, totalTime, deltaTime)
 	local me < const > = self.owner
 	if context == nil or me == nil or self.world == nil then
@@ -374,6 +439,9 @@ function Human:update(context, totalTime, deltaTime)
 	local pdist < const > = (playerPos - pos).length
 
 	self:_tickMood(deltaTime)
+
+	-- Whatever the animation has turned and stepped since the last frame (the turn clips).
+	self:_applyRootMotion(deltaTime)
 	self:_tickRegen(deltaTime)
 
 	if self._target ~= nil and not self:_standing(context, self._target) then
@@ -419,6 +487,18 @@ function Human:update(context, totalTime, deltaTime)
 		end
 	end
 
+	-- ---- Where it looks ----
+	--
+	-- At whatever it is fighting; nowhere in particular while running for its life (the run's
+	-- own head carriage); otherwise it keeps an eye on the player.
+	if self._state == "flee" then
+		self:_lookAtEntity(context, nil)
+	elseif self._state == "fight" and self._target ~= nil then
+		self:_lookAtEntity(context, self._target)
+	else
+		self:_lookAtEntity(context, self._player)
+	end
+
 	-- ---- Debug: what is this one doing? ----
 	local dbg < const > = context.debug
 	local colour < const > = (self._state == "fight" and DEBUG_C_FIGHT)
@@ -429,8 +509,9 @@ function Human:update(context, totalTime, deltaTime)
 		dbg:point(pos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, colour)
 	end
 
-	-- Shoved or flinching: the reel replaces everything below (Npc:_stagger).
+	-- Shoved or flinching: the reel replaces everything below (Npc:_stagger), a turn included.
 	if self._hitTimer > 0.0 then
+		self._turn = nil
 		self:_stagger(deltaTime)
 		return
 	end
@@ -478,6 +559,11 @@ function Human:update(context, totalTime, deltaTime)
 		end
 	end
 
+	-- ---- Turning on the spot ----
+	if self:_turnOnTheSpot(pos, goal, face, faceRange, deltaTime) then
+		return
+	end
+
 	local targetX, targetZ = 0.0, 0.0
 	if goal ~= nil then
 		targetX, targetZ = self:_steer(pos)
@@ -490,7 +576,7 @@ function Human:update(context, totalTime, deltaTime)
 	-- a stroll and a run is a run (Npc:_drive raises it itself for a push out of the player).
 	self._character.maxVelocity = speed
 
-	self:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, target ~= self._player and target or nil, deltaTime)
+	local driving < const > = self:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, target ~= self._player and target or nil, deltaTime)
 
 	-- ---- Striking ----
 	local striking = false
@@ -502,7 +588,7 @@ function Human:update(context, totalTime, deltaTime)
 	if self._pose ~= nil then
 		-- Walking as the graph sees it is how fast the body is really going (Npc:_gait), not
 		-- whether this frame's step happened to clear a threshold.
-		local walking < const > = self:_gait(pos, deltaTime)
+		local walking < const > = self:_gait(pos, deltaTime, driving)
 		-- No "attack": the Hunters' graphs have no Attack state, and asking for one would leave
 		-- them frozen in whatever they were last showing while they strike.
 		self:_poseState(walking and (speed > self._walkSpeed and "running" or "walk") or "idle")

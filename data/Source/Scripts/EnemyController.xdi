@@ -800,7 +800,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 	if self._pose ~= nil then
 		-- Walking as the graph sees it is how fast the body is really going (Npc:_gait), so a
 		-- zombie shuffling slowly round the player does not flick between Walks and Idle.
-		local walking < const > = self:_gait(enemyPos, deltaTime)
+		local walking < const > = self:_gait(enemyPos, deltaTime, moving)
 		self:_poseState((biting or striking) and "attack" or (walking and "walk" or "idle"))
 	end
 

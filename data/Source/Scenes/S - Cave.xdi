@@ -1915,7 +1915,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>grenade, rounds:12</value>
+													<value>grenade, rounds:30</value>
 												</second>
 											</item>
 											<item>
@@ -1951,7 +1951,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>grenade, flask</value>
+													<value>grenade, flask, rounds:24</value>
 												</second>
 											</item>
 											<item>
@@ -1987,7 +1987,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>grenade:2, coin:8</value>
+													<value>grenade:2, coin:8, rounds:24</value>
 												</second>
 											</item>
 											<item>
@@ -2023,7 +2023,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>machinegun, rounds:45</value>
+													<value>machinegun, rounds:60</value>
 												</second>
 											</item>
 											<item>
@@ -2059,7 +2059,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>grenade, bread, rounds:12</value>
+													<value>grenade, bread, rounds:36</value>
 												</second>
 											</item>
 											<item>
@@ -2104,6 +2104,402 @@
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{73789B40-952E-4BB2-AE0D-BD9E2A808CFC}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>46, -0.16, -5, 0</translation>
+								<rotation>0, -0.422618, 0, 0.906308</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:30, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A HUNTER&apos;S CACHE, STILL DRY</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{872DB618-4D57-41FB-A24E-D163AFC58AC6}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>56.5, -0.55, 15, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:24, grenade</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>ROUNDS IN WAXED PAPER</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9AA16AC0-277C-49F4-9299-1694B5C2D9C7}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>62.5, -4.15, -39.2, 0</translation>
+								<rotation>0, -0.980785, 0, 0.19509</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:36, flask</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>SOMEONE MEANT TO COME BACK FOR THIS</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D09F6AF4-6171-4B0D-AECF-4F47ED1E387E}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>99.5, -0.01, -1, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:30, grenade</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>ROUNDS IN WAXED PAPER</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6F246A2A-3213-47F9-B276-D4B888ED00E5}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>88.8, -0.12, -29.3, 0</translation>
+								<rotation>0, -0.83147, 0, 0.55557</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:24, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A HUNTER&apos;S CACHE, STILL DRY</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C2DFE656-59FA-448B-9022-366B08E4604D}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>140, -16.03, 2.5, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:45, grenade:2</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>WHOEVER FELL HERE CAME ARMED</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{72A2B377-3648-47DD-9CA7-5C7844FBA63B}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>136.9, -16.12, -21.3, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:36, flask</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>SOMEONE MEANT TO COME BACK FOR THIS</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{28DD5288-943C-4540-84A7-EF7F79851A6E}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>173.5, -0.02, -15.5, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:36, grenade</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A BANDOLIER, HALF FULL</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{EC253875-6333-4DB4-BFB1-70CEC909AE85}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>184, -0.38, -15, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:45, flask</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A SOLDIER&apos;S CACHE, NEVER OPENED</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{AF93A1FD-F268-47D0-8998-CF55C3743D80}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>200, -0.38, 1, 0</translation>
+								<rotation>0, 1, 0, 0</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:45, grenade:2</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A SOLDIER&apos;S CACHE, NEVER OPENED</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{631FC35C-040B-49E1-A5B8-BA22301598CA}</id>
+							<name>Chest</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>121, -0.41, 23.5, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{C4E57000-0000-4000-8000-000000000001}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>item</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:30, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>notice</first>
+												<second type="traktor.PropertyString">
+													<value>A BANDOLIER, HALF FULL</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
 						</item>
 					</entityData>
 				</item>
@@ -3863,7 +4259,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>key, coin:5</value>
+													<value>key, coin:5, rounds:12</value>
 												</second>
 											</item>
 											<item>
@@ -3899,7 +4295,7 @@
 											<item>
 												<first>item</first>
 												<second type="traktor.PropertyString">
-													<value>key, flask</value>
+													<value>key, flask, rounds:18</value>
 												</second>
 											</item>
 											<item>

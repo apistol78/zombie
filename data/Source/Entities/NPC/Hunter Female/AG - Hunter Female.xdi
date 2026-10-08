@@ -57,6 +57,54 @@
 				<second>210</second>
 			</position>
 		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Turn Left 90</name>
+			<position>
+				<first>700</first>
+				<second>40</second>
+			</position>
+			<animations>
+				<item>{4E9C0000-0000-4000-8000-0000000000A1}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Turn Left 180</name>
+			<position>
+				<first>700</first>
+				<second>140</second>
+			</position>
+			<animations>
+				<item>{4E9C0000-0000-4000-8000-0000000000A2}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Turn Right 90</name>
+			<position>
+				<first>700</first>
+				<second>240</second>
+			</position>
+			<animations>
+				<item>{4E9C0000-0000-4000-8000-0000000000A3}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Turn Right 180</name>
+			<position>
+				<first>700</first>
+				<second>340</second>
+			</position>
+			<animations>
+				<item>{4E9C0000-0000-4000-8000-0000000000A4}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
 	</states>
 	<transitions>
 		<item type="traktor.animation.StateTransition">
@@ -86,6 +134,34 @@
 			<duration>0.1</duration>
 			<moment>Immediately</moment>
 			<condition>dead</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>turnLeft90</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[6]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>turnLeft180</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[7]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>turnRight90</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[8]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>turnRight180</condition>
 		</item>
 	</transitions>
 	<rootState ref="/object/states/item"/>

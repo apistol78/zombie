@@ -96,7 +96,10 @@ local DEBUG_PATH_NODE_SIZE < const > = 3.0
 
 -- The animation states every character's graph is driven into (see :_poseState); "dead" is
 -- separate, set once and never cleared.
-local POSE_STATES < const > = { "idle", "walk", "running", "attack", "hit" }
+local POSE_STATES < const > = {
+	"idle", "walk", "running", "attack", "hit",
+	"turnLeft90", "turnLeft180", "turnRight90", "turnRight180"
+}
 
 -- The two lists every character is found in: the horde, which the Spawner, the wards and the
 -- dawn count as "the zombies", and everyone placed in the scene.
@@ -552,6 +555,11 @@ function Npc:_enterRagDoll()
 	if character ~= nil then
 		character.enabled = false
 	end
+
+	-- A corpse stops looking; the head goes back to the animation (the rag doll).
+	if self._lookAt then
+		self._lookAt.enable = false
+	end
 end
 
 -- The once-a-frame check every brain opens with: shot dead since last frame? Switch to the rag
@@ -563,6 +571,39 @@ function Npc:_checkDead(context)
 		self._dead = true
 	end
 	return self._dead
+end
+
+-- Turn the head to `target` (an entity), through the entity's LookAtComponent (the engine turns
+-- the "Neck" joint after the pose is evaluated, within the neck's limits, and eases it there);
+-- nil lets the head go back to the animation. The player is looked in the eye, anyone else in
+-- the face: their animated "Head" joint, so a zombie lurching or bent over a strike is followed
+-- down, or a head's height above their feet if they have none. A character without a
+-- LookAtComponent -- the horde -- just doesn't.
+local LOOK_HEAD_RISE < const > = Vector4(0.0, 0.1, 0.0, 0.0)   -- the "Head" joint is at the base of the skull
+local LOOK_HEAD_HEIGHT < const > = Vector4(0.0, 1.6, 0.0, 0.0)
+
+function Npc:_lookAtEntity(context, target)
+	local lookAt < const > = self._lookAt
+	if not lookAt then
+		return
+	end
+	if target == nil then
+		lookAt.enable = false
+		return
+	end
+	if target == self._player and context.eye ~= nil then
+		lookAt.target = context:eye()
+	else
+		local skeleton < const > = target:getComponent(traktor.animation.SkeletonComponent)
+		local head < const > = skeleton ~= nil and skeleton:getPoseTransform("Head") or nil
+		if head ~= nil and head.translation.xyz0.length > 0.0 then
+			-- An unknown joint comes back as the identity, at the feet.
+			lookAt.target = target.transform:transform(head.translation.xyz1) + LOOK_HEAD_RISE
+		else
+			lookAt.target = (target.transform.translation + LOOK_HEAD_HEIGHT).xyz1
+		end
+	end
+	lookAt.enable = true
 end
 
 -- ---- Getting about ----
@@ -585,6 +626,10 @@ function Npc:_resolve(context)
 		if skeleton ~= nil then
 			self._pose = skeleton.poseController
 		end
+	end
+	if self._lookAt == nil then
+		-- false when there is none, so the horde does not ask again every frame.
+		self._lookAt = self.owner:getComponent(traktor.animation.LookAtComponent) or false
 	end
 	if self._navMesh == nil then
 		local navComponent = world:getComponent(traktor.ai.NavMeshComponent)
@@ -1015,13 +1060,59 @@ function Npc:_poseState(state)
 	end
 end
 
+-- Give the character the root motion its animation has played since the last frame: the motion
+-- taken out of a clip on import (AnimationAsset removeRotation -- the Hunters' turns), handed back
+-- by the skeleton as it plays, blended as the clip is. The heading turns by its turn, and the body
+-- is stepped by its travel through the character controller, so a wall or the edge of the mesh
+-- still has its say. That is what keeps the feet where the clip plants them: the character is
+-- moved by exactly what the clip moved, when the clip moved it.
+--
+-- The travel is in the character's own frame at the start of the delta, so it is turned into the
+-- world with the heading from before this delta's own turn. Clips timed by the character's own
+-- movement (Walk, Run) give none; the rest give back what was taken out of them on import.
+--
+-- The step *replaces* the controller's horizontal velocity rather than being added to it: move()
+-- is an impulse onto a velocity the controller keeps from frame to frame, so piling one frame's
+-- step onto the last had the body sliding at its clamp (the walk pace) through the whole turn.
+function Npc:_applyRootMotion(deltaTime)
+	local skeleton = self._skeleton
+	if skeleton == nil then
+		skeleton = self.owner:getComponent(traktor.animation.SkeletonComponent)
+		self._skeleton = skeleton
+	end
+	if skeleton == nil or skeleton.consumeRootMotion == nil or self._character == nil then
+		return
+	end
+	local delta < const > = skeleton:consumeRootMotion()
+	local turn < const > = delta.rotation.eulerAngles.x
+	local travel < const > = delta.translation
+	if math.abs(turn) < 0.00001 and travel.x * travel.x + travel.z * travel.z < 0.0000001 then
+		return
+	end
+
+	local h < const > = self._heading
+	if deltaTime > 0.0 then
+		local c < const >, s < const > = math.cos(h), math.sin(h)
+		local vx < const > = (travel.x * c + travel.z * s) / deltaTime
+		local vz < const > = (-travel.x * s + travel.z * c) / deltaTime
+		local velocity < const > = self._character.velocity
+		self._character.velocity = Vector4(0.0, velocity.y, 0.0, 0.0)
+		self._character.maxVelocity = math.max(self._character.maxVelocity, math.sqrt(vx * vx + vz * vz))
+		self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
+	end
+	self._heading = h + turn
+	self._character.headAngle = self._heading
+end
+
 -- Whether to show this character walking: the animation graph's "moving", from how fast it is
 -- actually covering the ground rather than from what :_drive asked of it this frame. Measured
 -- between this frame's position and the last one's -- one frame behind, since the controller
 -- moves the body after the script has run -- eased (Config.npc.gaitSmooth), and with a gap
 -- between starting and stopping (gaitStart, gaitStop), so a character going slowly picks one and
--- keeps it rather than flicking between Walk and Idle. Call once a frame, after :_drive.
-function Npc:_gait(pos, deltaTime)
+-- keeps it rather than flicking between Walk and Idle. Call once a frame, after :_drive, with
+-- what it returned: once it has stopped asking for a step the easing is much quicker
+-- (gaitSmoothStop), since the body has already stopped and Walk would only stand there frozen.
+function Npc:_gait(pos, deltaTime, driving)
 	local last < const > = self._gaitPos
 	self._gaitPos = pos
 	if last == nil or deltaTime <= 0.0 then
@@ -1030,7 +1121,7 @@ function Npc:_gait(pos, deltaTime)
 	local dx < const > = pos.x - last.x
 	local dz < const > = pos.z - last.z
 	local v < const > = math.sqrt(dx * dx + dz * dz) / deltaTime
-	local k < const > = math.min(1.0, deltaTime * NPC.gaitSmooth)
+	local k < const > = math.min(1.0, deltaTime * (driving and NPC.gaitSmooth or NPC.gaitSmoothStop))
 	local speed < const > = (self._gaitSpeed or 0.0) + (v - (self._gaitSpeed or 0.0)) * k
 	self._gaitSpeed = speed
 	if self._gaitMoving then

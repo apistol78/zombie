@@ -21695,6 +21695,126 @@
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8925DE52-8FA8-2F47-B5CF-9319E597E4FE}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-78.454903, 24.874739, 63.585205, 0</translation>
+								<rotation>0, 0.932039, 0, 0.362358</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.7</value>
+												</second>
+											</item>
+											<item>
+												<first>faction</first>
+												<second type="traktor.PropertyString">
+													<value>bandit</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>250</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>coin:12, grenade</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>A CUTTHROAT</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5464940D-66DD-C942-BF5B-19F939382174}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-103.630791, 24.874739, 108.580727, 0</translation>
+								<rotation>0, 0.932039, 0, 0.362358</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.7</value>
+												</second>
+											</item>
+											<item>
+												<first>faction</first>
+												<second type="traktor.PropertyString">
+													<value>bandit</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>250</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>coin:12, grenade</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>A CUTTHROAT</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
 							<id>{4CAF3107-2CC2-4558-8415-250D9242FA03}</id>
 							<name>Npc</name>
 							<state>
@@ -22221,6 +22341,592 @@
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{70338D63-B4E4-1846-A88E-A27486FA25AD}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-29.945639, 23.55439, 67.745079, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>age</first>
+												<second type="traktor.PropertyString">
+													<value>34</value>
+												</second>
+											</item>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.9</value>
+												</second>
+											</item>
+											<item>
+												<first>greeting</first>
+												<second type="traktor.PropertyString">
+													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>300</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:8, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>THE HUNTSMAN</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{57D3CAFA-491B-EF4C-BB4C-05094FC883ED}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-45.343807, 24.39258, 96.330498, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>age</first>
+												<second type="traktor.PropertyString">
+													<value>34</value>
+												</second>
+											</item>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.9</value>
+												</second>
+											</item>
+											<item>
+												<first>greeting</first>
+												<second type="traktor.PropertyString">
+													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>300</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:8, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>THE HUNTSMAN</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{743C4CDC-B113-5C4A-BCA5-917AA604C141}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>16.594074, 24.39258, 91.010811, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>age</first>
+												<second type="traktor.PropertyString">
+													<value>34</value>
+												</second>
+											</item>
+											<item>
+												<first>class</first>
+												<second type="traktor.PropertyString">
+													<value>wanderer</value>
+												</second>
+											</item>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyString">
+													<value>0.9</value>
+												</second>
+											</item>
+											<item>
+												<first>greeting</first>
+												<second type="traktor.PropertyString">
+													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
+												</second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyString">
+													<value>300</value>
+												</second>
+											</item>
+											<item>
+												<first>items</first>
+												<second type="traktor.PropertyString">
+													<value>rounds:8, bread</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>THE HUNTSMAN</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+							</components>
+							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</id>
+							<name>Route</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>0, 0, 0, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000003}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>loop</first>
+												<second type="traktor.PropertyString">
+													<value>false</value>
+												</second>
+											</item>
+											<item>
+												<first>name</first>
+												<second type="traktor.PropertyString">
+													<value>woodpath</value>
+												</second>
+											</item>
+											<item>
+												<first>pause</first>
+												<second type="traktor.PropertyString">
+													<value>4.0</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.world.GroupComponentData">
+									<entityData>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{1A2B6D4F-8D79-5442-BE0D-337BB5559E76}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-18.7356, 23.335005, 38.04438, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{337C6FC4-B605-014D-A4DC-49F664FFD3C2}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-35.657444, 23.335005, 49.613075, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{A8F7861A-E5DA-344E-A527-BBC12E4BEB73}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-35.317375, 23.335005, 77.790306, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{99E95A0D-9F3E-D144-AC3E-3E4BBB55FE42}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-63.087048, 23.335005, 75.85508, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{07B17977-02AD-5643-A416-083D43787B2B}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-91.102257, 23.335005, 20.844585, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{36145782-0BDD-C44D-BB71-35EFF1155DEE}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-86.101234, 23.335005, 58.53624, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{B2F12F5E-8E05-A247-875F-4D184499D5D9}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-106.499992, 23.335005, 108.385368, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{26C8C3CF-18DE-454B-B8C5-E87ADC8A7439}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-79.92794, 23.335005, 67.179688, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{98D0B969-A0F6-304F-B939-8863C4FB5DE8}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-64.17215, 23.335005, 99.972519, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{7A17B2A9-0269-7A45-B01C-ED7350503BD0}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>6.085594, 23.335005, 123.328209, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{90BBFB50-C0EE-5C42-89C1-491C14FC3634}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>21.707119, 31.163706, 97.497604, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{A9706AC0-01F2-3B43-9239-B7F27D0801FB}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>17.936956, 31.163706, 72.459213, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{A228DC3A-E288-FB47-BD24-AB1393D05D7B}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>23.203987, 31.163706, 59.561081, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{CBC75A40-9633-ED49-8CBA-B4D6C15A524F}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>36.029934, 31.163706, 58.469967, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{4F82C00C-F763-9649-AC7D-1E5010468EEB}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>18.316093, 25.936047, 55.399433, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{5BA3F053-30F8-A843-9B98-20F453A57417}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>18.450993, 25.936047, 36.162376, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{845216A9-5D3D-984B-AC27-5B1027760BF9}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>25.191124, 25.936047, 27.271914, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{B99152C0-8744-D64D-A326-A8AFF2A6C2B9}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>12.971916, 25.936047, 15.204394, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{A8C96A97-C9B2-FC47-9387-6024F8CBF482}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-5.356684, 25.936047, 12.180183, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{85F0AE10-246F-404D-B6F9-46A643CE924F}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-12.622508, 25.936047, -10.467649, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{1C71C039-F6A8-3A45-9329-15B7555714F5}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-32.06168, 25.936047, -3.325491, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{625CC46C-C829-A747-9355-71CCC2A4267B}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>-19.77289, 25.936047, 19.434647, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{81598386-6BA8-394A-BE01-F0F98B02FD58}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>3.550562, 25.936047, 23.55958, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+										<item type="traktor.world.EntityData" version="2">
+											<id>{4319828D-61F3-D649-BABB-F761A985A22D}</id>
+											<name>Waypoint 1</name>
+											<state>
+												<visible>true</visible>
+												<dynamic>false</dynamic>
+												<locked>false</locked>
+											</state>
+											<transform>
+												<translation>0.196682, 25.936047, 48.733135, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</transform>
+											<components/>
+										</item>
+									</entityData>
+								</item>
+								<item type="traktor.scene.MarkerEntityComponentData" version="3">
+									<texture>{7C131FAD-E194-0645-BAC7-36359A1C8B34}</texture>
+									<mode>ChildrenConnected</mode>
+									<offset>1</offset>
+									<size>0.5</size>
+									<alpha>0.6</alpha>
+								</item>
+							</components>
 						</item>
 					</entityData>
 				</item>

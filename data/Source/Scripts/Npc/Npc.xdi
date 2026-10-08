@@ -94,6 +94,10 @@ local DEBUG_PATH_LIFT < const > = 0.15
 local DEBUG_PATH_WIDTH < const > = 2.0
 local DEBUG_PATH_NODE_SIZE < const > = 3.0
 
+-- The animation states every character's graph is driven into (see :_poseState); "dead" is
+-- separate, set once and never cleared.
+local POSE_STATES < const > = { "idle", "walk", "running", "attack", "hit" }
+
 -- The two lists every character is found in: the horde, which the Spawner, the wards and the
 -- dawn count as "the zombies", and everyone placed in the scene.
 local LISTS < const > = { "Enemy", "Npc" }
@@ -443,41 +447,31 @@ end
 function Npc:_stagger(deltaTime)
 	self._hitTimer = self._hitTimer - deltaTime
 
-	-- "hit" is a pulse rather than a state: SG - Zombie leaves its Hit state on its own
-	-- when the animation ends, and would walk straight back into it if the parameter were
-	-- still set -- a zombie reeling for ever off one swing. Held for the length of the
-	-- shove, which is many frames (so a graph that happens to be mid-blend on the frame the
-	-- swing landed still sees it) and well short of the two seconds the animation runs (so
-	-- it is long gone by the time the graph comes back to look).
+	-- "hit" is a pulse rather than a state: the graph's Hit state plays its reaction out and
+	-- hands back to Idle when the animation ends, and would be re-entered if the parameter
+	-- were still up. Held for the length of the shove, which is many frames (so a graph that
+	-- happens to be mid-blend on the frame the swing landed still sees it) and well short of
+	-- the two seconds the animation runs.
 	--
-	-- "moving" and "attack" are pointedly left alone while it is held, and cleared only
-	-- after. The graph takes the first transition out of a state whose condition holds, in
-	-- the order they are listed, and every state's own exit -- Walk on !moving, Attack on
-	-- !attack -- is listed above its jump to Hit. So clearing them here would answer the
-	-- swing by walking out of Walk into Idle and only reaching the reaction a blend later,
-	-- with the zombie sliding backwards in its walk pose meanwhile. Left true, those exits
-	-- simply do not fire and the reaction wins outright.
-	--
-	-- They do have to be cleared eventually, and the frames after the shove are exactly
-	-- when: the graph is parked in Hit by then, where neither means anything, and if they
-	-- were still latched when it came back to Idle the zombie would walk or bite its way
-	-- out of the reaction rather than waiting for its controller.
-	--
-	-- (A zombie shoved while it is still standing up gets the two metres but no reaction:
-	-- there is no Hit transition out of the stand-up state, and interrupting a zombie
-	-- getting to its feet is not obviously worth having one.)
+	-- While it is held it is the only state asked for (:_poseState), so nothing else competes
+	-- with the jump into Hit; after it, none is, so nothing cuts the reaction short either --
+	-- the graph finishes it and comes back to Idle on its own, and the controller takes over
+	-- again when the reel is done. A character whose graph has no Hit state (the Hunters)
+	-- simply holds whatever it was showing.
 	--
 	-- Timed rather than measured in metres, so a flinch -- which owes none -- holds the pulse
 	-- exactly as long as a shove does.
+	-- Whatever the gait had measured belongs to before the blow, and the shove's own metres are
+	-- not walking: start it over from rest once the character is back on its feet (:_gait).
+	self._gaitPos = nil
+	self._gaitSpeed = 0.0
+	self._gaitMoving = false
+
 	local pulsing < const > = self._pushTimer > 0.0
 	if self._pose ~= nil then
-		self._pose:setParameterValue("hit", pulsing)
-		if not pulsing then
-			self._pose:setParameterValue("moving", false)
-			self._pose:setParameterValue("attack", false)
-			if self._usesWork then
-				self._pose:setParameterValue("work", false)
-			end
+		self:_poseState(pulsing and "hit" or nil)
+		if self._usesWork then
+			self._pose:setParameterValue("work", false)
 		end
 	end
 	if not pulsing then
@@ -538,15 +532,12 @@ function Npc:_enterRagDoll()
 		end
 	end
 	if pose ~= nil then
+		self._pose = pose
 		pose:setParameterValue("dead", true)
-		-- Stop biting, and stop reeling; update() returns early from now on, so either
-		-- would otherwise stay latched and fire straight into that state if the corpse
-		-- ever revived. Neither is load-bearing for the rag doll itself -- every state
-		-- reaches Dead ahead of Attack or Hit, including Hit, so a zombie shot mid-shove
-		-- goes down out of the reaction -- they are cleared because a parameter nobody
-		-- will ever set false again is a trap left lying for whoever adds the next state.
-		pose:setParameterValue("attack", false)
-		pose:setParameterValue("hit", false)
+		-- ...and every other state let go of. update() returns early from now on, and in a graph
+		-- run from an Any node any state parameter still up would be a way straight back out of
+		-- Dead (see :_poseState).
+		self:_poseState(nil)
 	end
 
 	-- Hand the body over to the rag doll: disable the character controller so it
@@ -1002,6 +993,52 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 		end
 	end
 	return moving
+end
+
+-- Put the animation graph in `state`: one of POSE_STATES, or nil for none of them. Every
+-- character's graph -- the horde's, the Hunter Female's and Male's -- is run from an Any node with
+-- one transition per state, each on a parameter of the same name, so this sets exactly that one
+-- and clears the rest. They have to be exclusive: when several transitions out of a state hold at
+-- once the graph picks one of them at random, so "walk" must never still be true while "attack"
+-- is. A graph without a state simply never answers its parameter (the Hunters have no Attack).
+--
+-- nil, none of them, is how the graph is left to finish something on its own: the stand-up a
+-- zombie rises with, the Hit reaction after its pulse, both of which hand back to Idle when their
+-- animation ends -- an Any transition would cut either short the moment its parameter came up.
+function Npc:_poseState(state)
+	local pose < const > = self._pose
+	if pose == nil then
+		return
+	end
+	for _, flag in ipairs(POSE_STATES) do
+		pose:setParameterValue(flag, flag == state)
+	end
+end
+
+-- Whether to show this character walking: the animation graph's "moving", from how fast it is
+-- actually covering the ground rather than from what :_drive asked of it this frame. Measured
+-- between this frame's position and the last one's -- one frame behind, since the controller
+-- moves the body after the script has run -- eased (Config.npc.gaitSmooth), and with a gap
+-- between starting and stopping (gaitStart, gaitStop), so a character going slowly picks one and
+-- keeps it rather than flicking between Walk and Idle. Call once a frame, after :_drive.
+function Npc:_gait(pos, deltaTime)
+	local last < const > = self._gaitPos
+	self._gaitPos = pos
+	if last == nil or deltaTime <= 0.0 then
+		return self._gaitMoving == true
+	end
+	local dx < const > = pos.x - last.x
+	local dz < const > = pos.z - last.z
+	local v < const > = math.sqrt(dx * dx + dz * dz) / deltaTime
+	local k < const > = math.min(1.0, deltaTime * NPC.gaitSmooth)
+	local speed < const > = (self._gaitSpeed or 0.0) + (v - (self._gaitSpeed or 0.0)) * k
+	self._gaitSpeed = speed
+	if self._gaitMoving then
+		self._gaitMoving = speed > NPC.gaitStop
+	else
+		self._gaitMoving = speed > NPC.gaitStart
+	end
+	return self._gaitMoving
 end
 
 -- ---- Seeing ----

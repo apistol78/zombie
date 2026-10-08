@@ -798,8 +798,10 @@ function EnemyController:update(context, totalTime, deltaTime)
 	end
 
 	if self._pose ~= nil then
-		self._pose:setParameterValue("moving", moving)
-		self._pose:setParameterValue("attack", biting or striking)
+		-- Walking as the graph sees it is how fast the body is really going (Npc:_gait), so a
+		-- zombie shuffling slowly round the player does not flick between Walks and Idle.
+		local walking < const > = self:_gait(enemyPos, deltaTime)
+		self:_poseState((biting or striking) and "attack" or (walking and "walk" or "idle"))
 	end
 
 	self:_voice(context, deltaTime, pdist)

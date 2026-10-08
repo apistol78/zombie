@@ -746,6 +746,16 @@ Config = {
 		regenDelay = 8.0,    -- seconds since the last hit before regeneration starts
 		regenRate = 4.0,     -- health recovered per second once it does
 
+		-- Walk or stand, for the animation graph's "moving" (Npc:_gait). Decided from how fast the
+		-- character is actually going over the ground, eased over a few frames, and with a gap
+		-- between the two thresholds: start walking above gaitStart, stop below gaitStop (m/s).
+		-- Read off each frame's step instead, a character creeping along -- turning on the spot,
+		-- shouldered by the crowd, arriving -- sat on the line and flicked between Walk and Idle
+		-- every few frames.
+		gaitStart = 0.25,
+		gaitStop = 0.10,
+		gaitSmooth = 8.0,       -- how hard the measured speed is eased (1/s)
+
 		-- Routes (Scripts/Npc/Route): how close counts as having reached a waypoint (m), and
 		-- how far a wanderer with no route strays from where it was placed.
 		arrive = 1.0,
@@ -753,7 +763,7 @@ Config = {
 
 		-- Talking. How near the player has to stand, how long the character stops and faces
 		-- them afterwards (s), and the line said when the scene gives it none -- by mood.
-		talkRange = 2.6,
+		talkRange = 1.8,
 		attendTime = 5.0,
 		-- ...and the player simply coming close: inside noticeRange a character going about its
 		-- day stops and faces them, and goes back to it once they are noticeSlack further out
@@ -761,9 +771,10 @@ Config = {
 		-- player who simply stays put nearby (routine, after fighting off something together, the
 		-- player is often standing right next to it) held a wanderer frozen off its route for
 		-- good, since distance alone never stopped being true. Short, because this is a glance in
-		-- passing rather than Human:talk's conversation (attendTime).
-		noticeRange = 3.0,
-		noticeSlack = 0.8,
+		-- passing rather than Human:talk's conversation (attendTime). Kept a little outside
+		-- talkRange, so whoever E would talk to is already facing the player.
+		noticeRange = 2.0,
+		noticeSlack = 0.5,
 		noticeTime = 4.0,
 		lines = {
 			neutral = "WHAT DO YOU WANT?",

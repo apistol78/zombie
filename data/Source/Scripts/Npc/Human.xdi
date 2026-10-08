@@ -490,7 +490,7 @@ function Human:update(context, totalTime, deltaTime)
 	-- a stroll and a run is a run (Npc:_drive raises it itself for a push out of the player).
 	self._character.maxVelocity = speed
 
-	local moving < const > = self:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, target ~= self._player and target or nil, deltaTime) or false
+	self:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, target ~= self._player and target or nil, deltaTime)
 
 	-- ---- Striking ----
 	local striking = false
@@ -500,11 +500,14 @@ function Human:update(context, totalTime, deltaTime)
 	end
 
 	if self._pose ~= nil then
-		self._pose:setParameterValue("moving", moving)
-		self._pose:setParameterValue("running", moving and speed > self._walkSpeed)
-		self._pose:setParameterValue("attack", striking)
+		-- Walking as the graph sees it is how fast the body is really going (Npc:_gait), not
+		-- whether this frame's step happened to clear a threshold.
+		local walking < const > = self:_gait(pos, deltaTime)
+		-- No "attack": the Hunters' graphs have no Attack state, and asking for one would leave
+		-- them frozen in whatever they were last showing while they strike.
+		self:_poseState(walking and (speed > self._walkSpeed and "running" or "walk") or "idle")
 		self._pose:setParameterValue("work",
-			self._class == "worker" and self._state == "routine" and not moving and self._attend <= 0.0
+			self._class == "worker" and self._state == "routine" and not walking and self._attend <= 0.0
 			and not self._noticing)
 	end
 end

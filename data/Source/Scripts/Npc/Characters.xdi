@@ -190,26 +190,6 @@ function Main:_npcBox(rec)
 	return box
 end
 
--- E at a living character who will talk (see _nearestTalker): they say their line and turn to
--- face the player (Human:talk), and what they carry comes up in the chest window for the player
--- to take from -- freely, for now; there is no buying yet. Their line goes under the window's
--- title, and someone with nothing on them says so instead of opening an empty window.
-function Main:_talkTo(rec)
-	local sc < const > = rec.sc
-	local line < const > = sc:talk(self)
-	local name < const > = sc:displayName()
-	local said < const > = (name ~= nil) and (name .. ":   " .. line) or line
-	local box < const > = self:_npcBox(rec)
-	local left < const > = self._chestContents[box]
-	if #left == 0 then
-		self:_showNotice(said)
-		self:_feed((name ~= nil) and (name .. " HAS NOTHING TO GIVE") or "THEY HAVE NOTHING TO GIVE")
-		return
-	end
-	-- The window's title is their name already, so the line goes under it on its own.
-	self:_setChestOpen(box, line, name or "STRANGER")
-end
-
 -- The container a body's contents are kept in -- a placed character's "npc:<key>", a zombie's
 -- "zombie:<n>" -- or nil for a body that never had anything on it.
 function Main:_boxOf(entity)

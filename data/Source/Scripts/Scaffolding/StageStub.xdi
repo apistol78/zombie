@@ -4,12 +4,14 @@
 #using \{6E9AD100-0000-4000-8000-000000000010}
 #using \{17E40000-0000-4000-8000-000000000001}
 #using \{17E40000-0000-4000-8000-000000000002}
+#using \{D1A10000-0000-4000-8000-000000000003}
 
 import(traktor)
 
 -- StageStub
 --
--- Scripts/Main as far as Scripts/Views/InventoryView and Scripts/Views/ChestView can see it:
+-- Scripts/Main as far as Scripts/Views/InventoryView, Scripts/Views/ChestView,
+-- Scripts/Views/DialogView and Scripts/Views/JournalView can see it:
 -- the `context` both are built with, for their test pages. The pack is a real
 -- Scripts/Items/Inventory, filled with the night's starting kit the way Main fills it, so the
 -- views are tested against the data they read in game. Only the stage's side of each call is
@@ -17,8 +19,9 @@ import(traktor)
 -- its feed line is printed to the log.
 --
 -- Mirrors Main's inventory, armor, equipItem, unequipItem, useItem, dropSlot, giveItem,
--- chestContents, takeFromChest and takeAllFromChest; keep them in step if those change what
--- they answer. Dropping puts nothing in a world -- there is none -- it only takes the stack
+-- chestContents, takeFromChest and takeAllFromChest, and Scripts/Quests/Questing's journal and
+-- questEvent; keep them in step if those change what they answer. The journal is a real
+-- Scripts/Quests/Journal over this stub's pack. Dropping puts nothing in a world -- there is none -- it only takes the stack
 -- out of the pack.
 
 StageStub = StageStub or class("StageStub")
@@ -80,6 +83,23 @@ end
 
 function StageStub:inventory()
 	return self._inventory
+end
+
+-- A journal over the pack, made on first asking and kept until resetJournal.
+function StageStub:journal()
+	if self._journal == nil then
+		self._journal = Journal(self)
+	end
+	return self._journal
+end
+
+function StageStub:resetJournal()
+	self._journal = nil
+	return self:journal()
+end
+
+function StageStub:questEvent(what, id, step)
+	self:_feed("quest " .. what .. ": " .. tostring(id) .. ((step ~= nil and step.text ~= nil) and (" -- " .. step.text) or ""))
 end
 
 function StageStub:armor()

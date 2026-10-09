@@ -1,0 +1,882 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{17E40000-0000-4000-8000-000000000001}
+#using \{D1A10000-0000-4000-8000-00000000000B}
+#using \{D1A10000-0000-4000-8000-000000000001}
+#using \{D1A10000-0000-4000-8000-000000000002}
+
+import(traktor)
+
+-- Journal
+--
+-- The player's quests, and the conversations that hand them out: everything Scripts/Quests/Quests
+-- and Scripts/Quests/Dialogs say, brought to life. Those two are the level designer's -- plain
+-- tables, nothing but what is said and what it leads to -- and this is the one place that knows
+-- what any of it means.
+--
+--   * Journal -- which quests the player has been given, the step each one is on, which one is
+--     active (the one whose waypoint is on the compass and the map), and the flags the dialogs
+--     set to remember what has been said. Plain data, so it rides a stage switch and goes into a
+--     save exactly as the pack does (:saveState / :restoreState).
+--
+--   * Conversation -- one talk with one character: the line they are saying, the replies the
+--     player may give right now, and what choosing one does.
+--
+-- Both read the world only through their `host` -- Main in the game (Scripts/Quests/Stage), a
+-- stub on the test pages -- and only ever ask it these:
+--
+--   host:inventory()                  the pack (Scripts/Items/Inventory); required
+--   host:giveItem(kind, count)        put something in the pack, and say so; returns how many went
+--   host:questEvent(what, quest, step)  "started" | "updated" | "completed": a line on the HUD
+--   host:questDistance(spec)          how far the player is from a waypoint spec, or nil when it
+--                                     is not in this world -- for `reach` steps
+--
+-- Every one but the first is optional, so a journal can be exercised with nothing but a pack.
+--
+-- What is checked when: a step's `find` and `reach` are polled (:update, every frame the night
+-- runs), a `talk` is heard as it happens (:talkedTo, from a Conversation), and an `advance` is a
+-- trigger. All of them come down to :_completeStep, so there is one door a step goes through.
+
+Journal = Journal or class("Journal")
+
+-- ---- Reading the designer's shorthand ----
+
+-- "coin:10" -> "coin", 10; "ring" -> "ring", 1.
+local function itemSpec(spec)
+	local kind < const >, n < const > = string.match(spec, "^%s*([%a_]+)%s*:?%s*(%d*)%s*$")
+	if kind == nil then
+		return nil, 0
+	end
+	return string.lower(kind), tonumber(n) or 1
+end
+
+-- A value that may be one thing or a list of them, as a list. A list is a plain table the
+-- designer wrote; anything the engine made (a Guid out of Scripts/Quests/Names) is one thing.
+local function listOf(v)
+	if v == nil then
+		return {}
+	end
+	if type(v) == "table" and getmetatable(v) == nil then
+		return v
+	end
+	return { v }
+end
+
+-- "quest.step" -> "quest", "step"; "quest" -> "quest", nil.
+local function questStep(spec)
+	local q < const >, s < const > = string.match(spec, "^([^%.]+)%.(.+)$")
+	if q == nil then
+		return spec, nil
+	end
+	return q, s
+end
+
+-- Warnings about the designer's tables, said once each rather than every frame they are read.
+local warned = {}
+local function warn(text)
+	if not warned[text] then
+		warned[text] = true
+		print("Quests: " .. text)
+	end
+end
+
+-- The index of the step called `id` in quest `def`, or nil. A step without an id answers to its
+-- number, so "ledger.2" works for a quest whose steps were never named.
+local function stepIndex(def, id)
+	for i, s in ipairs(def.steps) do
+		if s.id == id or tostring(i) == id then
+			return i
+		end
+	end
+	return nil
+end
+
+-- ---- Entities ----
+--
+-- Characters and places are named by the guid of their entity (Scripts/Quests/Names). Guids
+-- compare with == -- Names.KLARA == entity.id when that entity is Klara -- but a table looks its
+-- keys up by the object, not by its value, so Dialogs[entity.id] would find nothing: a guid
+-- made from the same text is another object. Hence the scan in dialogOf.
+
+-- A guid as text, for what has to be stored or printed: the flags a save keeps, the log. A string
+-- is taken to be that text already.
+local function textOf(v)
+	if v == nil or type(v) == "string" then
+		return v
+	end
+	return v:format()
+end
+
+-- What Names calls the entity `v` is, for the log: "KLARA" rather than a guid.
+function Journal.nameOf(v)
+	for name, guid in pairs(Names) do
+		if guid == v then
+			return name
+		end
+	end
+	return tostring(textOf(v))
+end
+
+-- The dialog of the character whose entity is `v`, or nil.
+local function dialogOf(v)
+	if v == nil then
+		return nil
+	end
+	for key, d in pairs(Dialogs) do
+		if key ~= "default" and key == v then
+			return d
+		end
+	end
+	return nil
+end
+
+function Journal:new(host)
+	self._host = host
+	self._quests = {}       -- id -> { step = n, done = bool, order = n }; plain data
+	self._active = nil      -- the quest whose waypoint is shown, or nil
+	self._flags = {}        -- name -> true
+	self._found = {}        -- the item entities picked up, by their guid as text -> true
+	self._order = 0         -- counts quests as they are given, for the journal's order
+	self._serial = 0        -- moves on every change; a cheap "anything new" for a view
+end
+
+function Journal:serial()
+	return self._serial
+end
+
+-- ---- What the player has ----
+
+-- A quest's record ({ step, done, order }) or nil if it was never given.
+function Journal:quest(id)
+	return self._quests[id]
+end
+
+function Journal:isStarted(id)
+	return self._quests[id] ~= nil
+end
+
+function Journal:isDone(id)
+	local q < const > = self._quests[id]
+	return q ~= nil and q.done
+end
+
+-- Given and not yet finished.
+function Journal:isActive(id)
+	local q < const > = self._quests[id]
+	return q ~= nil and not q.done
+end
+
+-- The id of the step quest `id` is on, nil if it is not under way.
+function Journal:currentStep(id)
+	local q < const > = self._quests[id]
+	local def < const > = Quests[id]
+	if q == nil or q.done or def == nil then
+		return nil
+	end
+	local s < const > = def.steps[q.step]
+	return (s ~= nil) and (s.id or tostring(q.step)) or nil
+end
+
+function Journal:flag(name)
+	return self._flags[name] == true
+end
+
+-- The quest being followed, or nil.
+function Journal:active()
+	return self._active
+end
+
+-- Follow quest `id` (one under way), or nil to follow none. Returns whether it is now followed.
+function Journal:setActive(id)
+	if id ~= nil and not self:isActive(id) then
+		return false
+	end
+	if id ~= self._active then
+		self._active = id
+		self:_changed()
+	end
+	return true
+end
+
+-- The step the followed quest is on, as its definition, with the quest's id: what the compass
+-- and the map are pointed at. nil, nil when nothing is followed.
+function Journal:activeStep()
+	local id < const > = self._active
+	if id == nil then
+		return nil, nil
+	end
+	local q < const > = self._quests[id]
+	local def < const > = Quests[id]
+	if q == nil or q.done or def == nil then
+		return nil, nil
+	end
+	return id, def.steps[q.step]
+end
+
+-- Every quest given, for the journal screen: the ones under way first, newest first, then the
+-- finished ones, newest first. Each as { id, title, done, active }.
+function Journal:list()
+	local out = {}
+	for id, q in pairs(self._quests) do
+		local def < const > = Quests[id]
+		if def ~= nil then
+			table.insert(out, { id = id, title = def.title or id, done = q.done, active = (id == self._active), order = q.order })
+		end
+	end
+	table.sort(out, function(a, b)
+		if a.done ~= b.done then
+			return not a.done
+		end
+		return a.order > b.order
+	end)
+	return out
+end
+
+-- What the journal says of quest `id`: every step reached so far, as { text, done }, the one it is
+-- on last. Steps not reached yet are not given away.
+function Journal:stepsOf(id)
+	local q < const > = self._quests[id]
+	local def < const > = Quests[id]
+	local out = {}
+	if q == nil or def == nil then
+		return out
+	end
+	for i, s in ipairs(def.steps) do
+		if i > q.step then
+			break
+		end
+		table.insert(out, { text = s.text or "", done = q.done or i < q.step })
+	end
+	return out
+end
+
+-- ---- Conditions ----
+
+-- Whether `cond` holds -- a dialog line's or an option's `when`. nil always holds; a table holds
+-- when every one of its tests does. See Scripts/Quests/Dialogs for the vocabulary.
+function Journal:holds(cond)
+	if cond == nil then
+		return true
+	end
+	if type(cond) == "function" then
+		return cond(self, self._host) == true
+	end
+	local inv < const > = self._host:inventory()
+	for key, value in pairs(cond) do
+		local ok = true
+		if key == "has" then
+			for _, spec in ipairs(listOf(value)) do
+				local kind < const >, n < const > = itemSpec(spec)
+				ok = ok and kind ~= nil and inv:count(kind) >= n
+			end
+		elseif key == "lacks" then
+			for _, spec in ipairs(listOf(value)) do
+				local kind < const >, n < const > = itemSpec(spec)
+				ok = ok and (kind == nil or inv:count(kind) < n)
+			end
+		elseif key == "started" then
+			for _, id in ipairs(listOf(value)) do
+				ok = ok and self:isStarted(id)
+			end
+		elseif key == "notStarted" then
+			for _, id in ipairs(listOf(value)) do
+				ok = ok and not self:isStarted(id)
+			end
+		elseif key == "active" then
+			for _, id in ipairs(listOf(value)) do
+				ok = ok and self:isActive(id)
+			end
+		elseif key == "done" then
+			for _, id in ipairs(listOf(value)) do
+				ok = ok and self:isDone(id)
+			end
+		elseif key == "notDone" then
+			for _, id in ipairs(listOf(value)) do
+				ok = ok and not self:isDone(id)
+			end
+		elseif key == "step" then
+			for _, spec in ipairs(listOf(value)) do
+				local q < const >, s < const > = questStep(spec)
+				ok = ok and s ~= nil and self:currentStep(q) == s
+			end
+		elseif key == "flag" then
+			for _, name in ipairs(listOf(value)) do
+				ok = ok and self:flag(name)
+			end
+		elseif key == "notFlag" then
+			for _, name in ipairs(listOf(value)) do
+				ok = ok and not self:flag(name)
+			end
+		elseif key == "test" then
+			ok = type(value) == "function" and value(self, self._host) == true
+		else
+			warn('unknown condition "' .. tostring(key) .. '"; it never holds')
+			ok = false
+		end
+		if not ok then
+			return false
+		end
+	end
+	return true
+end
+
+-- ---- Triggers ----
+
+-- Do what `does` says -- a dialog line's, an option's, a step's or a quest's. Always in the same
+-- order, whatever order the table was written in: the pack first (take, then give, so an
+-- exchange cannot be refused for want of room), then the quests (given, then moved on), then the
+-- flags, then anything scripted. See Scripts/Quests/Dialogs for the vocabulary. The dialog's own
+-- `trade` is the Conversation's to act on, not this.
+function Journal:run(does)
+	if does == nil then
+		return
+	end
+	if type(does) == "function" then
+		does(self, self._host)
+		return
+	end
+	local host < const > = self._host
+	local inv < const > = host:inventory()
+
+	for _, spec in ipairs(listOf(does.take)) do
+		local kind < const >, n < const > = itemSpec(spec)
+		if kind ~= nil then
+			inv:remove(kind, n)
+		end
+	end
+	for _, spec in ipairs(listOf(does.give)) do
+		local kind < const >, n < const > = itemSpec(spec)
+		if kind ~= nil and Items[kind] ~= nil then
+			if host.giveItem ~= nil then
+				host:giveItem(kind, n)
+			else
+				inv:add(kind, n)
+			end
+		else
+			warn('cannot give "' .. tostring(spec) .. '": no such item')
+		end
+	end
+	for _, id in ipairs(listOf(does.quest)) do
+		self:start(id)
+	end
+	for _, spec in ipairs(listOf(does.advance)) do
+		local q < const >, s < const > = questStep(spec)
+		self:advance(q, s)
+	end
+	for _, id in ipairs(listOf(does.finish)) do
+		self:finish(id)
+	end
+	for _, name in ipairs(listOf(does.set)) do
+		self:setFlag(name, true)
+	end
+	for _, name in ipairs(listOf(does.clear)) do
+		self:setFlag(name, false)
+	end
+	if type(does.run) == "function" then
+		does.run(self, host)
+	end
+end
+
+function Journal:setFlag(name, on)
+	local v < const > = on and true or nil
+	if self._flags[name] ~= v then
+		self._flags[name] = v
+		self:_changed()
+	end
+end
+
+-- ---- Moving quests along ----
+
+-- Give the player quest `id`. A quest is only ever given once: asked again, whether under way or
+-- finished, nothing happens. The first quest under way is followed straight away; with one
+-- already followed, a new one waits in the journal until the player picks it.
+function Journal:start(id)
+	local def < const > = Quests[id]
+	if def == nil then
+		warn('no quest called "' .. tostring(id) .. '"')
+		return false
+	end
+	if self._quests[id] ~= nil then
+		return false
+	end
+	self._order = self._order + 1
+	self._quests[id] = { step = 1, done = false, order = self._order }
+	if self._active == nil then
+		self._active = id
+	end
+	self:_event("started", id, def.steps[1])
+	self:_changed()
+	self:_settle(id)
+	return true
+end
+
+-- Complete quest `id`'s current step -- or, with `step` given, only if that is the step it is on,
+-- so a line meant for the last step does not skip the ones before it.
+function Journal:advance(id, step)
+	if not self:isActive(id) then
+		return false
+	end
+	if step ~= nil and self:currentStep(id) ~= step then
+		return false
+	end
+	self:_completeStep(id)
+	return true
+end
+
+-- Finish quest `id` outright, whatever step it is on: the rest are counted as done.
+function Journal:finish(id)
+	if not self:isActive(id) then
+		return false
+	end
+	local q < const > = self._quests[id]
+	q.step = #Quests[id].steps
+	self:_completeStep(id)
+	return true
+end
+
+-- The player has been talking to the character whose entity is `who` (its id, a Guid), and the
+-- talk is at `node`. Completes every quest's current `talk` step that this answers: any line, or
+-- the one its `at` names.
+function Journal:talkedTo(who, node)
+	for _, id in ipairs(self:_underWay()) do
+		local q < const > = self._quests[id]
+		local s < const > = (not q.done) and Quests[id].steps[q.step] or nil
+		if s ~= nil and s.talk ~= nil and s.talk == who and (s.at == nil or s.at == node) then
+			self:_completeStep(id)
+		end
+	end
+end
+
+-- An item entity (its id, a Guid) has been picked up: what a `find` step waits for. Kept for
+-- good, whatever becomes of the item afterwards, and whether or not a quest wants it yet.
+-- Called by the host as the pickup goes into the pack (Main:pickupTaken).
+function Journal:found(id)
+	local key < const > = textOf(id)
+	if key ~= nil and not self._found[key] then
+		self._found[key] = true
+		self:_changed()
+	end
+end
+
+function Journal:hasFound(id)
+	local key < const > = textOf(id)
+	return key ~= nil and self._found[key] == true
+end
+
+-- Check the steps that are waited on rather than told: `find` (picked up) and `reach` (near
+-- enough to a place). Called every frame the night runs; a handful of quests costs nothing.
+function Journal:update()
+	for _, id in ipairs(self:_underWay()) do
+		self:_settle(id)
+	end
+end
+
+-- ---- Between stages, and in a save ----
+
+function Journal:saveState()
+	local quests = {}
+	for id, q in pairs(self._quests) do
+		quests[id] = { step = q.step, done = q.done, order = q.order }
+	end
+	local flags = {}
+	for name, _ in pairs(self._flags) do
+		flags[name] = true
+	end
+	local found = {}
+	for key, _ in pairs(self._found) do
+		found[key] = true
+	end
+	return { quests = quests, active = self._active, flags = flags, found = found, order = self._order }
+end
+
+-- Replace everything with a saved journal. A quest the designer has since removed is dropped,
+-- and a step count that no longer fits is clamped, so an old save still loads.
+function Journal:restoreState(state)
+	self._quests = {}
+	self._flags = {}
+	self._found = {}
+	self._active = nil
+	self._order = (state ~= nil and state.order) or 0
+	if state == nil then
+		self:_changed()
+		return
+	end
+	for id, q in pairs(state.quests or {}) do
+		local def < const > = Quests[id]
+		if def ~= nil then
+			local step < const > = math.max(1, math.min(q.step or 1, #def.steps))
+			self._quests[id] = { step = step, done = q.done == true, order = q.order or 0 }
+		end
+	end
+	for name, on in pairs(state.flags or {}) do
+		if on then
+			self._flags[name] = true
+		end
+	end
+	for key, on in pairs(state.found or {}) do
+		if on then
+			self._found[key] = true
+		end
+	end
+	if state.active ~= nil and self:isActive(state.active) then
+		self._active = state.active
+	end
+	self:_changed()
+end
+
+-- ---- Checking the designer's tables ----
+
+-- Everything in Quests and Dialogs that cannot work -- a reply leading to a line that is not
+-- there, a trigger naming a quest or an item that does not exist, a step with nothing to finish
+-- it -- printed once, when the night starts. Returns how many problems were found.
+function Journal.validate()
+	local problems = 0
+	local function bad(text)
+		problems = problems + 1
+		print("Quests: " .. text)
+	end
+	local function checkDoes(does, where)
+		if type(does) ~= "table" then
+			return
+		end
+		for _, spec in ipairs(listOf(does.give)) do
+			local kind < const > = itemSpec(spec)
+			if kind == nil or Items[kind] == nil then
+				bad(where .. ' gives "' .. tostring(spec) .. '", which is no item')
+			end
+		end
+		for _, spec in ipairs(listOf(does.take)) do
+			local kind < const > = itemSpec(spec)
+			if kind == nil or Items[kind] == nil then
+				bad(where .. ' takes "' .. tostring(spec) .. '", which is no item')
+			end
+		end
+		for _, id in ipairs(listOf(does.quest)) do
+			if Quests[id] == nil then
+				bad(where .. ' gives quest "' .. tostring(id) .. '", which does not exist')
+			end
+		end
+		for _, spec in ipairs(listOf(does.advance)) do
+			local q < const >, s < const > = questStep(spec)
+			if Quests[q] == nil then
+				bad(where .. ' advances quest "' .. tostring(q) .. '", which does not exist')
+			elseif s ~= nil and stepIndex(Quests[q], s) == nil then
+				bad(where .. ' advances "' .. spec .. '"; that quest has no such step')
+			end
+		end
+	end
+
+	for id, def in pairs(Quests) do
+		if type(def) == "table" then
+			local where < const > = 'quest "' .. tostring(id) .. '"'
+			if type(def.steps) ~= "table" or #def.steps == 0 then
+				bad(where .. " has no steps")
+			else
+				for i, s in ipairs(def.steps) do
+					local sw < const > = where .. " step " .. tostring(s.id or i)
+					if s.find ~= nil then
+						for _, spec in ipairs(listOf(s.find)) do
+							if type(spec) == "string" then
+								bad(sw .. ' finds "' .. spec .. '"; a find names the item entity, from Names')
+							end
+						end
+					end
+					if s.talk ~= nil then
+						local d < const > = dialogOf(s.talk)
+						if d == nil then
+							bad(sw .. ' talks to ' .. Journal.nameOf(s.talk) .. ', who has no dialog')
+						elseif s.at ~= nil and (d.nodes == nil or d.nodes[s.at] == nil) then
+							bad(sw .. ' waits for line "' .. tostring(s.at) .. '", which ' .. Journal.nameOf(s.talk) .. ' does not have')
+						end
+					end
+					checkDoes(s.does, sw)
+				end
+			end
+			checkDoes(def.reward, where .. " reward")
+		end
+	end
+
+	for key, d in pairs(Dialogs) do
+		if type(d) == "table" then
+			local where < const > = "dialog " .. ((key == "default") and "default" or Journal.nameOf(key))
+			local nodes < const > = d.nodes or {}
+			local function exists(name, from)
+				if name ~= nil and nodes[name] == nil then
+					bad(from .. ' leads to line "' .. tostring(name) .. '", which does not exist')
+				end
+			end
+			for _, entry in ipairs(listOf(d.start)) do
+				exists(type(entry) == "table" and entry.node or entry, where .. " start")
+			end
+			for name, node in pairs(nodes) do
+				local nw < const > = where .. ' line "' .. tostring(name) .. '"'
+				checkDoes(node.does, nw)
+				for i, o in ipairs(node.options or {}) do
+					local ow < const > = nw .. " reply " .. tostring(i)
+					exists(o.to, ow)
+					checkDoes(o.does, ow)
+				end
+			end
+		end
+	end
+	return problems
+end
+
+-- Private
+
+-- The ids of the quests under way, as a list of its own: completing a step can give a new quest,
+-- and a table must not grow while pairs() is walking it.
+function Journal:_underWay()
+	local ids = {}
+	for id, q in pairs(self._quests) do
+		if not q.done and Quests[id] ~= nil then
+			table.insert(ids, id)
+		end
+	end
+	table.sort(ids)
+	return ids
+end
+
+function Journal:_changed()
+	self._serial = self._serial + 1
+end
+
+function Journal:_event(what, id, step)
+	local host < const > = self._host
+	if host.questEvent ~= nil then
+		host:questEvent(what, id, step)
+	end
+end
+
+-- Whether step `s` is already met by what has been picked up or where the player stands.
+function Journal:_met(s)
+	if s.find ~= nil then
+		for _, id in ipairs(listOf(s.find)) do
+			if not self:hasFound(id) then
+				return false
+			end
+		end
+		return true
+	end
+	if s.reach ~= nil then
+		local host < const > = self._host
+		if host.questDistance == nil then
+			return false
+		end
+		local d < const > = host:questDistance(s.reach)
+		return d ~= nil and d <= (s.radius or 4.0)
+	end
+	return false
+end
+
+-- Complete steps of quest `id` for as long as the one it is on is already met: finding the ledger
+-- before being asked for it means the "find" step is over the moment it is given.
+function Journal:_settle(id)
+	for _ = 1, 32 do
+		local q < const > = self._quests[id]
+		if q == nil or q.done then
+			return
+		end
+		local s < const > = Quests[id].steps[q.step]
+		if s == nil or not self:_met(s) then
+			return
+		end
+		self:_completeStep(id)
+	end
+end
+
+-- The one door: quest `id`'s current step is done. Its own `does` runs, and the quest moves on to
+-- the next step -- or, past the last, is finished, its `reward` run and, if it was the one being
+-- followed, the newest quest still under way is followed instead.
+function Journal:_completeStep(id)
+	local q < const > = self._quests[id]
+	local def < const > = Quests[id]
+	if q == nil or q.done or def == nil then
+		return
+	end
+	local s < const > = def.steps[q.step]
+	if s ~= nil then
+		self:run(s.does)
+	end
+	-- The step's own triggers may have finished the quest already (a `finish` of itself).
+	if q.done then
+		return
+	end
+	if q.step >= #def.steps then
+		q.done = true
+		self:_changed()
+		self:run(def.reward)
+		self:_event("completed", id, nil)
+		if self._active == id then
+			self._active = nil
+			local newest = nil
+			for other, oq in pairs(self._quests) do
+				if not oq.done and (newest == nil or oq.order > self._quests[newest].order) then
+					newest = other
+				end
+			end
+			self._active = newest
+		end
+		return
+	end
+	q.step = q.step + 1
+	self:_changed()
+	self:_event("updated", id, def.steps[q.step])
+	self:_settle(id)
+end
+
+-- ---- One conversation ----
+
+Conversation = Conversation or class("Conversation")
+
+-- The dialog used for a character the designer has not written one for: they say their line --
+-- the scene's `greeting`, or the stock one for their mood -- and can be asked what they carry.
+local DEFAULT_DIALOG < const > = {
+	start = "hello",
+	nodes = {
+		hello = {
+			options = {
+				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
+			}
+		}
+	}
+}
+
+-- A talk with the character whose entity is `who` (its id, a Guid -- Entity.id, Names.KLARA):
+-- Dialogs[who], or for someone with none the designer's `default`, then the built-in one above.
+-- `greeting` is what the character says when a line has no text of its own; `name` what the
+-- window calls them, unless the dialog says.
+function Conversation:new(journal, who, greeting, name)
+	self._journal = journal
+	self._key = who
+	self._tree = dialogOf(who) or Dialogs.default or DEFAULT_DIALOG
+	self._greeting = greeting or ""
+	self._name = self._tree.name or name
+	self._node = nil
+	self._ended = false
+	self._trade = false
+end
+
+function Conversation:key()
+	return self._key
+end
+
+function Conversation:name()
+	return self._name
+end
+
+-- Begin: the first `start` entry whose `when` holds. Returns false when none does, which ends it
+-- before it began.
+function Conversation:start()
+	for _, entry in ipairs(listOf(self._tree.start or "hello")) do
+		local node < const > = (type(entry) == "table") and entry.node or entry
+		local when < const > = (type(entry) == "table") and entry.when or nil
+		if self._journal:holds(when) then
+			self:_enter(node)
+			return not self._ended
+		end
+	end
+	self._ended = true
+	return false
+end
+
+-- What the character is saying now.
+function Conversation:line()
+	local node < const > = self:_current()
+	if node == nil then
+		return ""
+	end
+	local text = node.text
+	if type(text) == "function" then
+		text = text(self._journal, self._journal._host)
+	end
+	if text == nil or text == "" then
+		return self._greeting
+	end
+	return text
+end
+
+-- The replies open to the player now, in the order written, as { text, index } -- `index` is
+-- what :choose takes. A reply whose `when` fails is left out, and so is a `once` reply already given.
+function Conversation:options()
+	local out = {}
+	local node < const > = self:_current()
+	if node == nil then
+		return out
+	end
+	for i, o in ipairs(node.options or {}) do
+		if self._journal:holds(o.when) and not (o.once and self._journal:flag(self:_onceFlag(o))) then
+			table.insert(out, { text = o.text or "...", index = i })
+		end
+	end
+	return out
+end
+
+-- Give reply `index` (an index from :options). Its triggers run, and the talk goes on to the line
+-- it leads to (`to`), or ends there if it leads nowhere. A `trade` reply ends the talk and leaves
+-- :wantsTrade set for the host, which opens the character's pack.
+function Conversation:choose(index)
+	local node < const > = self:_current()
+	local o < const > = (node ~= nil and node.options ~= nil) and node.options[index] or nil
+	if o == nil or self._ended then
+		return
+	end
+	if o.once then
+		self._journal:setFlag(self:_onceFlag(o), true)
+	end
+	self._journal:run(o.does)
+	if type(o.does) == "table" and o.does.trade then
+		self._trade = true
+		self._ended = true
+		return
+	end
+	if o.to == nil then
+		self._ended = true
+		return
+	end
+	self:_enter(o.to)
+end
+
+function Conversation:ended()
+	return self._ended
+end
+
+function Conversation:wantsTrade()
+	return self._trade
+end
+
+-- Private
+
+function Conversation:_current()
+	if self._node == nil or self._tree.nodes == nil then
+		return nil
+	end
+	return self._tree.nodes[self._node]
+end
+
+function Conversation:_onceFlag(o)
+	return "said:" .. tostring(textOf(self._key)) .. ":" .. tostring(self._node) .. ":" .. tostring(o.text)
+end
+
+-- Arrive at line `name`: its own triggers run, and any quest waiting on this character -- or on
+-- this very line -- hears it. A line that does not exist ends the talk rather than hanging it.
+function Conversation:_enter(name)
+	self._node = name
+	local node < const > = self:_current()
+	if node == nil then
+		warn("the dialog of " .. Journal.nameOf(self._key) .. ' has no line "' .. tostring(name) .. '"')
+		self._ended = true
+		return
+	end
+	self._journal:run(node.does)
+	if type(node.does) == "table" and node.does.trade then
+		self._trade = true
+		self._ended = true
+	end
+	if self._key ~= nil then
+		self._journal:talkedTo(self._key, name)
+	end
+end
+]]></text>
+</object>

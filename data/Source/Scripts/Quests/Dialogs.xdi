@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{D1A10000-0000-4000-8000-00000000000B}
+
+import(traktor)
+
+-- Dialogs
+--
+-- What the characters say when the player talks to them (E), as trees of lines and replies. This
+-- file is the level designer's; Scripts/Quests/Journal is what plays them.
+--
+-- Each tree is keyed by the character it belongs to, as Scripts/Quests/Names has them --
+-- Dialogs[Names.KLARA] is what Klara says -- which is the guid of her entity in the scene, so it
+-- is her and nobody else with her name. A character without a tree of their own speaks from
+-- Dialogs.default below. Quests name characters the same way: a step with talk = Names.KLARA is
+-- done by talking to her.
+--
+-- A dialog:
+--
+--   name     what the window calls the character (else their `name` property)
+--   start    the line the talk opens on: a name, or a list to choose from, the first whose
+--            `when` holds -- { { node = "angry", when = { flag = "insulted" } }, "hello" }
+--   nodes    the lines, by name
+--
+-- A line (node):
+--
+--   text     what the character says. Left out, they say their scene `greeting` (or the stock
+--            line for their mood) -- handy for the line a talk opens on. May also be a
+--            function(journal, host) returning the text.
+--   options  the replies the player may give, in order (below). None: the player can only
+--            leave -- the window always has LEAVE, and E and Escape leave too.
+--   does     triggers run when the talk arrives at this line
+--
+-- A reply (option):
+--
+--   text     what the player says
+--   to       the line it leads to; left out, the talk ends with it
+--   when     conditions: the reply is only offered while they hold
+--   does     triggers run when it is chosen, before going on to `to`
+--   once     true: offered only until it has been chosen once
+--
+-- Conditions -- a `when` -- are a table of tests that must all hold. Each takes one name or a
+-- list of them (all of which must hold):
+--
+--   has = "ring"         the pack holds it ("coin:10": at least ten)
+--   lacks = "ring"       ...or does not
+--   notStarted = "ring"  quest not given yet
+--   started = "ring"     quest given, under way or finished
+--   active = "ring"      quest under way
+--   done = "ring"        quest finished
+--   notDone = "ring"     quest not finished (under way, or not given at all)
+--   step = "ring.return" quest under way and on that step
+--   flag = "metKlara"    a flag set by some `does`
+--   notFlag = "metKlara" ...or not
+--   test = function(journal, host) return ... end    anything else, in code
+--
+-- Triggers -- a `does` -- run in this order whatever order they are written in:
+--
+--   take = "ring"        out of the pack ("coin:5", or a list)
+--   give = "coin:10"     into the pack (a list too); a full pack says so and keeps the rest
+--   quest = "ring"       give the player a quest (once only; asking again does nothing)
+--   advance = "ring.return"  complete that step, if it is the one the quest is on;
+--                        "ring" alone completes whatever step it is on
+--   finish = "ring"      finish the quest outright
+--   set = "metKlara"     set a flag (a list too)...
+--   clear = "metKlara"   ...or clear one
+--   trade = true         end the talk and open what the character carries to take from
+--   run = function(journal, host) ... end    anything else, in code
+--
+-- Arriving at a line (or opening on one) also tells the quests: a step with talk = Names.KLARA
+-- is done, and one with at = "thanks" too if this is the "thanks" line.
+--
+-- Text is upper case, as every other line on the HUD. Remember the script preprocessor: no
+-- backslashes in the strings here.
+
+Dialogs = {}
+
+-- Whoever has no dialog of their own: their greeting, and what they carry.
+Dialogs["default"] = {
+	start = "hello",
+	nodes = {
+		hello = {
+			options = {
+				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
+			}
+		}
+	}
+}
+
+-- ---- Klara: the ring ----
+
+Dialogs[Names.KLARA] = {
+	start = "hello",
+	nodes = {
+		hello = {
+			text = "A LIVING FACE. THERE ARE FEWER EVERY NIGHT.",
+			options = {
+				{ text = "YOU LOOK TROUBLED.", when = { notStarted = "ring" }, to = "ring" },
+				{ text = "I FOUND YOUR RING.", when = { step = "ring.return", has = "ring" },
+					does = { take = "ring" }, to = "thanks" },
+				{ text = "WHERE DID YOU LOSE THE RING?", when = { step = "ring.find" }, to = "where" },
+				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
+			}
+		},
+		ring = {
+			text = "MY HENRIK'S SIGNET RING. I DROPPED IT IN THE CHURCHYARD WHEN THE GRAVES OPENED, AND I CANNOT GO BACK THERE. NOT AT MY AGE.",
+			options = {
+				{ text = "I WILL FIND IT FOR YOU.", does = { quest = "ring" }, to = "where" },
+				{ text = "NOT TONIGHT.", to = "hello" }
+			}
+		},
+		where = {
+			text = "BY THE CHAPEL WALL, ON THE NORTH SIDE. GOLD, WITH A STAG ON IT. YOU WILL KNOW IT.",
+			options = {
+				{ text = "I HAD ANOTHER QUESTION.", to = "hello" }
+			}
+		},
+		thanks = {
+			text = "YOU FOUND IT. OH, HENRIK... HERE. IT IS NOT MUCH, BUT IT IS ALL I HAVE LEFT TO GIVE."
+		}
+	}
+}
+
+-- ---- Brother Anselm: the ledger ----
+
+Dialogs[Names.BROTHER_ANSELM] = {
+	start = "hello",
+	nodes = {
+		hello = {
+			options = {
+				{ text = "WHY DON'T THE DEAD REST?", when = { notStarted = "ledger" }, to = "why" },
+				{ text = "I HAVE YOUR LEDGER.", when = { step = "ledger.return", has = "ledger" },
+					does = { take = "ledger" }, to = "thanks" },
+				{ text = "WHERE ARE THE BANDITS?", when = { step = "ledger.find" }, to = "where" },
+				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
+			}
+		},
+		why = {
+			text = "BANDITS BROKE INTO THE CHAPEL AND TOOK THE BURIAL LEDGER. WITHOUT IT I CANNOT NAME THE DEAD, AND THE NAMELESS DO NOT SLEEP.",
+			options = {
+				{ text = "I WILL GET IT BACK.", does = { quest = "ledger" }, to = "where" },
+				{ text = "THAT IS NOT MY CONCERN.", to = "hello" }
+			}
+		},
+		where = {
+			text = "A WOMAN CALLED BELLA LEADS THEM. THEY CAMP ON THE RIDGE TO THE WEST, AND THE LEDGER WILL BE THERE. SHE WILL NOT GIVE IT UP FOR KIND WORDS.",
+			options = {
+				{ text = "I HAD ANOTHER QUESTION.", to = "hello" }
+			}
+		},
+		thanks = {
+			text = "GOD BE THANKED. ONE THING MORE: SAY A PRAYER AT THE ALTAR FOR THE NAMELESS. PERHAPS THE NIGHT WILL BE KINDER TO US."
+		}
+	}
+}
+
+-- ---- Åke: the sword ----
+
+Dialogs[Names.AKE] = {
+	start = "hello",
+	nodes = {
+		hello = {
+			options = {
+				{ text = "WHAT ARE YOU WORKING ON?", when = { notStarted = "sword" }, to = "villinge" },
+				{ text = "I HAVE THE SWORD OF VILLINGE.", when = { step = "sword.return", has = "sword" },
+					does = { take = "sword" }, to = "sword" },
+				{ text = "WHERE IS THE CAVE?", when = { step = "sword.find" }, to = "where" },
+				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
+			}
+		},
+		villinge = {
+			text = "NAILS. HINGES. NOTHING WORTH THE NAME. MY GRANDFATHER FORGED THE SWORD OF VILLINGE, AND IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.",
+			options = {
+				{ text = "I WILL BRING IT BACK.", does = { quest = "sword" }, to = "where" },
+				{ text = "THE CAVE CAN KEEP IT.", to = "hello" }
+			}
+		},
+		where = {
+			text = "THE CAVE MOUTH IS UP THE HILL, NORTH-EAST OF THE VILLAGE. IF THE SWORD IS ANYWHERE, IT IS AT THE VERY BOTTOM, PAST THE IRON GATES.",
+			options = {
+				{ text = "I HAD ANOTHER QUESTION.", to = "hello" }
+			}
+		},
+		sword = {
+			text = "IT IS... STILL SHARP. HE WOULD HAVE WANTED YOU TO HAVE SOMETHING FOR IT. TAKE THIS HELMET, I MADE IT FOR A MAN WHO NEVER CAME BACK."
+		}
+	}
+}
+
+-- ---- Greta and Tomas: the locket ----
+
+Dialogs[Names.GRETA] = {
+	start = "hello",
+	nodes = {
+		hello = {
+			options = {
+				{ text = "IS SOMETHING WRONG?", when = { notStarted = "locket" }, to = "locket" },
+				{ text = "HERE IS YOUR LOCKET.", when = { step = "locket.return", has = "locket" },
+					does = { take = "locket" }, to = "thanks" },
+				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
+			}
+		},
+		locket = {
+			text = "MY MOTHER'S LOCKET IS GONE. TOMAS HAS BEEN PLAYING WITH IT AGAIN, I KNOW HE HAS. HE WILL NOT TELL ME WHERE HE PUT IT.",
+			options = {
+				{ text = "I WILL TALK TO HIM.", does = { quest = "locket" } },
+				{ text = "BOYS WILL BE BOYS.", to = "hello" }
+			}
+		},
+		thanks = {
+			text = "OH... THANK YOU. TAKE SOME BREAD, IT IS THE LEAST I CAN DO. AND DON'T TELL ME WHERE IT WAS."
+		}
+	}
+}
+
+Dialogs[Names.TOMAS] = {
+	start = "hello",
+	nodes = {
+		hello = {
+			options = {
+				{ text = "WHERE IS YOUR MOTHER'S LOCKET?", when = { step = "locket.ask" }, to = "deny" },
+				{ text = "HERE, A COIN FOR YOU.", when = { has = "coin" }, once = true,
+					does = { take = "coin" }, to = "coin" }
+			}
+		},
+		deny = {
+			text = "I DON'T KNOW ANYTHING ABOUT A LOCKET.",
+			options = {
+				{ text = "I WON'T TELL HER YOU TOOK IT.", to = "confess" },
+				{ text = "A COIN FOR THE TRUTH?", when = { has = "coin" }, does = { take = "coin" }, to = "confess" },
+				{ text = "FINE." }
+			}
+		},
+		confess = {
+			text = "I HID IT BEHIND THE OLD CHEST BY THE CHAPEL. NOBODY EVER GOES THERE. DON'T TELL HER!"
+		},
+		coin = {
+			text = "A WHOLE COIN! MOTHER WILL NEVER KNOW."
+		}
+	}
+}
+]]></text>
+</object>

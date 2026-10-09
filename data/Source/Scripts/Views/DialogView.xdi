@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+#using \{D1A10000-0000-4000-8000-000000000001}
+
+import(traktor)
+
+-- DialogView
+--
+-- A conversation, on screen: who is talking, what they are saying, and the replies the player
+-- may give -- Skyrim's, a column of lines under the speaker, the one under the mouse in white.
+-- A UiKit Container that builds its own rows, like Scripts/Views/ChestView beside it; Main shows
+-- it in a dialog of its own, with the night held still behind it (Main:_setDialogOpen, in
+-- Scripts/Quests/Stage).
+--
+-- It plays a Scripts/Quests/Journal Conversation and nothing else: the line and the replies are
+-- the conversation's, and clicking a reply is Conversation:choose. When the talk is over -- a
+-- reply that leads nowhere, a trade, LEAVE, or E or Escape (the host's) -- the host is told
+-- through setOnEnd, with the conversation, so it can see whether the character's pack is to be
+-- opened (Conversation:wantsTrade).
+--
+-- The line has room for the longest one any dialog has (measured when the view is built), so the
+-- replies never move about under the mouse as the character's lines change length. The window is
+-- only as tall as the replies on offer, though -- it stands at the bottom of the screen, under the
+-- character being talked to, and six empty rows would put it over their face. The host re-places
+-- it whenever that changes (setOnResize).
+
+DialogView = DialogView or class("DialogView", Container)
+
+-- A Static that wraps its text at a fixed width and asks for exactly that width, and for the
+-- height `lines` of the tallest text it will ever be given take. The plain Static asks for its
+-- text on one line, which for a sentence of dialog is wider than the screen.
+DialogParagraph = DialogParagraph or class("DialogParagraph", Static)
+
+function DialogParagraph:new(parent, width, size, longest)
+	Static.new(self, parent, longest or "")
+	self:setTextSize(size)
+	self:setMultiLine(true)
+	self:setWordWrap(true)
+	self._width = width
+	local sz < const > = self._text_tb:measureText(longest or "", width * 20)
+	self._height = sz.y
+	self:setText("")
+end
+
+function DialogParagraph:getPreferredSize()
+	return { width = self._width, height = self._height }
+end
+
+-- Wrapped over the whole of its cell. Static:place bounds the text by how wide it measures, and a
+-- wrapped text measures as wide as it was last wrapped -- so once a short line had been shown, a
+-- long one after it wrapped at the short one's width.
+function DialogParagraph:place(x, y, width, height)
+	Widget.place(self, x, y, width, height)
+	self._text_tb.textBounds = Aabb2(Vector2(0, 0), Vector2(width * 20, height * 20))
+	self:setText(self._text_tb.text)
+end
+
+local C_NAME < const > = Color4f(0.96, 0.96, 0.94, 1.0)
+local C_LINE < const > = Color4f(0.68, 0.64, 0.52, 1.0)
+local C_REPLY < const > = Color4f(0.48, 0.48, 0.47, 1.0)
+local C_HINT < const > = Color4f(0.4, 0.4, 0.39, 1.0)
+
+local WIDTH < const > = 640
+local LINE_SIZE < const > = 20
+local MAX_REPLIES < const > = 6
+local BUTTON_W < const > = 132
+
+-- Every string a dialog line might be, for sizing the paragraph: the longest written text of any
+-- line in any dialog. A line written as a function is not known until it is said, and is given
+-- what room the others leave it.
+local function longestLine()
+	local best = "M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M"
+	for _, d in pairs(Dialogs) do
+		if type(d) == "table" and d.nodes ~= nil then
+			for _, node in pairs(d.nodes) do
+				if type(node.text) == "string" and string.len(node.text) > string.len(best) then
+					best = node.text
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- Forget the size every container from `w` up has worked out for itself (UiKit's Container keeps
+-- it until it is placed at a different size), so the next layout asks again.
+local function invalidate(w)
+	while w ~= nil do
+		w._cachedEstimate = nil
+		w = w:getParent()
+	end
+end
+
+-- Set a Static's text and re-place it in the cell its layout gave it; see ChestView.
+local function setText(static, text)
+	static:setText(text)
+	local p < const > = static:getPlacement()
+	if p.width > 0 then
+		static:place(p.x, p.y, p.width, p.height)
+	end
+end
+
+function DialogView:new(parent, context)
+	Container.new(self, parent, TableLayout({ 0 }, { 0 }, 0, 0, 0, 14))
+
+	self._context = context
+	self._conversation = nil
+
+	self._name = Static(self, "BROTHER ANSELM OF THE CHAPEL")
+	self._name:setTextSize(30)
+	self._name:setTextColor(C_NAME)
+
+	self._line = DialogParagraph(self, WIDTH, LINE_SIZE, longestLine())
+	self._line:setTextColor(C_LINE)
+
+	-- One row per reply there could be, hidden while unused. The captions are written as the
+	-- talk goes; every button is at least the paragraph's width, so the column is laid out wide
+	-- enough for any reply.
+	local replies < const > = Container(self, TableLayout({ 0 }, { 0 }, 0, 6, 0, 2))
+	self._repliesBox = replies
+	self._replies = {}
+	for i = 1, MAX_REPLIES do
+		local b < const > = MenuButton(replies, "")
+		b:setMinimumWidth(WIDTH)
+		b:setTextColor(C_REPLY)
+		b:setOnClick(function() self:_reply(i) end)
+		self._replies[i] = { button = b, index = nil }
+	end
+
+	local footer < const > = Container(self, TableLayout({ 100, 0 }, { 0 }, 0, 0, 28, 0))
+	local hint < const > = Static(footer, "CLICK A REPLY     E TO LEAVE")
+	hint:setTextSize(14)
+	hint:setTextColor(C_HINT)
+	local leave < const > = MenuButton(footer, "LEAVE")
+	leave:setMinimumWidth(BUTTON_W)
+	leave:setOnClick(function() self:_end() end)
+end
+
+-- `fn()` is called whenever the window's size has changed -- a line with a different number of
+-- replies -- for the host to place its dialog again.
+function DialogView:setOnResize(fn)
+	self._resizeFn = fn
+	return self
+end
+
+-- `fn(conversation)` is called once the talk is over, however it ended.
+function DialogView:setOnEnd(fn)
+	self._endFn = fn
+	return self
+end
+
+-- Play `conversation` (already started). Called by the host after the dialog has been shown, so
+-- the labels are re-placed in cells the layout has already given them.
+function DialogView:showConversation(conversation)
+	self._conversation = conversation
+	setText(self._name, conversation:name() or "")
+	self:refresh()
+end
+
+function DialogView:conversation()
+	return self._conversation
+end
+
+-- Redraw the line and the replies from the conversation.
+function DialogView:refresh()
+	local c < const > = self._conversation
+	if c == nil then
+		return
+	end
+	setText(self._line, c:line())
+	local options < const > = c:options()
+	if #options > MAX_REPLIES then
+		print("DialogView: " .. tostring(c:key()) .. " offers " .. #options .. " replies; the window shows " .. MAX_REPLIES .. ".")
+	end
+	local shown < const > = math.min(#options, MAX_REPLIES)
+	for i, r in ipairs(self._replies) do
+		local o < const > = options[i]
+		if o ~= nil then
+			r.index = o.index
+			r.button:setCaption(o.text)
+			r.button:setVisible(true)
+			r.button.__layout = nil
+		else
+			r.index = nil
+			r.button:setCaption("")
+			r.button:setVisible(false)
+			-- Out of the layout altogether, so the window closes up around the replies there are.
+			r.button.__layout = ILayout.FLOAT
+		end
+	end
+	if shown ~= self._shown then
+		self._shown = shown
+		invalidate(self._repliesBox)
+		if self._resizeFn ~= nil then
+			self._resizeFn()
+		end
+	end
+end
+
+-- Leave the talk where it is: E, Escape or LEAVE.
+function DialogView:leave()
+	self:_end()
+end
+
+-- Private
+
+function DialogView:_reply(i)
+	local c < const > = self._conversation
+	local r < const > = self._replies[i]
+	if c == nil or r.index == nil then
+		return
+	end
+	c:choose(r.index)
+	-- A reply can end the talk: the window goes, and never needs to be laid out for that.
+	if c:ended() then
+		self:_end()
+	else
+		self:refresh()
+	end
+end
+
+function DialogView:_end()
+	local c < const > = self._conversation
+	if c == nil then
+		return
+	end
+	self._conversation = nil
+	if self._endFn ~= nil then
+		self._endFn(c)
+	end
+end
+]]></text>
+</object>

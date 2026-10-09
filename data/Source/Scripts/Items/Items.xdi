@@ -34,9 +34,12 @@ import(traktor)
 --            the zombie -- which is also how every one of those entities ends up in the build.
 --   keep     the item *is* its entity, and the entity is never destroyed: taken, it is hidden
 --            and rides along in the pack; dropped, the same one comes back out; spent, it is
---            parked where it was spent. Only the relic is one -- the minimap, the compass and
---            the count of wards the night needs all read the relics off their entities, and a
+--            parked where it was spent. Only the relic is one -- the compass and the count of
+--            wards the night needs both read the relics off their entities, and a
 --            relic that was rebuilt from scratch on every drop would be a new relic to them.
+--   quest    one of a kind, wanted by a quest (Scripts/Quests/Quests). It has no `entity`, so
+--            it cannot be put down -- a quest item is not lost by accident -- and the pack
+--            says what it is for. One stack of one: nothing in Config.items.
 --
 -- Adding a kind is an entry here, its numbers in Config.items and an icon in the art. Something
 -- lying in the world becomes one by carrying a Scripts/Pickup that names it, and a chest holds
@@ -147,6 +150,39 @@ item("relic", {
 	equip = "hand",
 	event = "relicTaken",
 	keep = true
+})
+
+-- ---- Quest items ----
+--
+-- One of each in the whole night, and wanted by someone (Scripts/Quests/Quests). Each lies
+-- somewhere in Scene 2 as a pickup of its own (tools/gen_quest_items.py) -- the ring by the
+-- chapel, the ledger in the bandits' camp, the locket behind the old chest, and the sword at the
+-- bottom of the cave (Scenes/S - Cave) -- which a quest names
+-- through Scripts/Quests/Names, and is handed back through a dialog's `take`. No `entity`: none of
+-- them can be put down.
+
+item("ring", {
+	name = "SIGNET RING",
+	info = "GOLD, WITH A STAG ON IT. KLARA'S HUSBAND'S.",
+	quest = true
+})
+
+item("ledger", {
+	name = "BURIAL LEDGER",
+	info = "THE NAMES OF THE CHAPEL'S DEAD, IN A CRAMPED HAND.",
+	quest = true
+})
+
+item("locket", {
+	name = "SILVER LOCKET",
+	info = "A WORN SILVER LOCKET. GRETA'S MOTHER'S.",
+	quest = true
+})
+
+item("sword", {
+	name = "SWORD OF VILLINGE",
+	info = "FORGED BY ÅKE'S GRANDFATHER. STILL SHARP.",
+	quest = true
 })
 
 -- Read a list of kinds as a level designer writes one -- "rounds:24, bread, grenade:2" -- into

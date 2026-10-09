@@ -36,7 +36,8 @@ local S < const > = 64
 -- the art) simply draws no picture.
 local ICONS < const > = {
 	"rifle", "machinegun", "grenade", "rounds", "flask",
-	"bread", "coin", "helmet", "key", "relic"
+	"bread", "coin", "helmet", "key", "relic",
+	"ring", "ledger", "locket", "sword"
 }
 
 local C_COUNT < const > = Color4f(0.92, 0.92, 0.9, 1.0)

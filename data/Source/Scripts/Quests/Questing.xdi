@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
+#using \{D1A10000-0000-4000-8000-000000000003}
+#using \{D1A10000-0000-4000-8000-000000000004}
+#using \{D1A10000-0000-4000-8000-000000000005}
+
+import(traktor)
+
+-- Questing: the part of Scripts/Main that deals with talking to people and the quests they hand
+-- out (Scripts/Quests/Journal), and with the two HUD pieces that point the way -- the compass and
+-- the map -- since both now have a quest waypoint to show beside the night's own objective.
+-- Methods on the Main stage class, kept in a script of their own because Main is already as large
+-- as one script can be (see Scripts/Npc/Characters, the first of these).
+--
+--   * The journal is the stage's own (_journal), built in :_initQuests from what a stage switch or
+--     a save carried (carry.player.quests), and handed on again by Main:_carry.
+--   * E at someone who will talk opens a conversation (_talkTo, from Main:_interact) in the dialog
+--     window -- Scripts/Views/DialogView -- with the night held still behind it, as the chest
+--     window does. What they carry is one of the replies now (`trade`), and opens the chest
+--     window on it when chosen.
+--   * The items a quest sends the player to find are not in the world until that quest has
+--     reached the step that finds them: hidden, and so neither walked over nor offered to E
+--     (_updateQuestItems).
+--   * J opens the journal -- Scripts/Views/JournalView -- where the player picks the quest to
+--     follow.
+--   * The followed quest's current step has a waypoint (Quests: `waypoint`, or worked out from the
+--     step), which is a second marker on the compass strip and a blip on the map -- and when the
+--     step is to talk to someone, the same diamond hangs over their head (_updateQuestBeacon).
+--
+-- Defines the class if Main has not yet -- this is #using'd by Main, so it is loaded first.
+
+Main = Main or class("Main", Stage)
+
+-- Two-argument atan; math.atan2 was folded into math.atan.
+local atan2 < const > = math.atan2 or math.atan
+
+-- How often the followed step's waypoint is looked for again (s): where an item lies, who carries
+-- it now. Its position is read every frame; only the search is this slow. A change to the pack
+-- searches at once, since that is what moves an item out of the world.
+local WAYPOINT_SEARCH < const > = 1.0
+
+-- How far above the bottom of the screen the conversation window stands (px, in the frame's
+-- 1280x720 layout space).
+local DIALOG_BOTTOM < const > = 28
+
+-- The marker over the head of whoever the followed quest wants the player to talk to: the map's
+-- quest diamond (MC_MapQuest, authored centred on BLIP_C like every map blip), drawn bigger.
+local BEACON_HEIGHT < const > = 2.65    -- above the feet (m): over the head and its name tag
+local BEACON_RANGE < const > = 60.0     -- furthest it is shown (m)...
+local BEACON_FADE < const > = 10.0      -- ...fading out over the last of it (m)
+local BEACON_NEAR < const > = 0.5       -- nothing closer to the eye than this (m)
+local BEACON_SCALE < const > = 1.6
+local BEACON_BOB < const > = 3.0        -- px it rises and falls...
+local BEACON_BOB_RATE < const > = 2.4   -- ...at this many radians a second
+local BLIP_C < const > = 40             -- must match tools/gen_hud_svg.py
+
+-- ---- Setting up ----
+
+-- Build the journal and its two windows. Called from Main:new, where the other windows are built
+-- -- before the dawn wash, which has to cover them.
+function Main:_initQuests(carry)
+	self._journal = Journal(self)
+	if carry ~= nil and carry.player ~= nil and carry.player.quests ~= nil then
+		self._journal:restoreState(carry.player.quests)
+	end
+	-- Say once, as the night starts, whatever in the designer's tables cannot work.
+	Journal.validate()
+
+	self._questNotices = {}      -- lines waiting for the notice line (_flushQuestNotices)
+	self._questTick = 0          -- counts updates; see _talkTo
+	self._dialogLeftTick = nil   -- ...the update a conversation was left in
+	self._questAnchor = nil      -- what the followed step's waypoint is on (_questAnchorFor)
+	self._questAnchorKey = nil
+	self._questSearch = 0.0
+	self._questSerial = nil
+	self._questWaypoint = nil    -- { x, y, z } this frame, or nil
+	self._questTalkTo = nil      -- the character record the followed step wants talked to
+	self._questBeacon = nil      -- ...and the marker over their head, made on first use
+	self._questBeaconTime = 0.0
+
+	-- A conversation: on this stage's one Frame, like every other dialog (see Main:new).
+	self._dialogOpen = false
+	self._talkingTo = nil
+	self._dialogDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._dialogView = DialogView(self._dialogDialog, self)
+	self._dialogView:setOnEnd(function(c) self:_endConversation(c) end)
+	self._dialogView:setOnResize(function() self:_placeDialog() end)
+
+	-- The journal (J).
+	self._journalOpen = false
+	self._journalDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._journalView = JournalView(self._journalDialog, self)
+	self._journalView:setOnClose(function() self:_setJournalOpen(false) end)
+end
+
+-- Take the two windows down with the stage. Called from Main:finalize.
+function Main:_finalizeQuests()
+	if self._dialogDialog ~= nil then
+		self._dialogDialog:remove()
+		self._dialogDialog = nil
+		self._dialogView = nil
+	end
+	if self._journalDialog ~= nil then
+		self._journalDialog:remove()
+		self._journalDialog = nil
+		self._journalView = nil
+	end
+end
+
+-- The waypoint search holds live records; a hot reload re-resolves them. Called from Main:reload.
+function Main:_reloadQuests()
+	self._questAnchor = nil
+	self._questAnchorKey = nil
+	self._questTalkTo = nil
+	self._entitiesById = nil
+	self._questItemsFor = nil
+end
+
+function Main:journal()
+	return self._journal
+end
+
+-- ---- What the journal asks of its host ----
+--
+-- inventory() and giveItem() are Main's own; these are the other two (Scripts/Quests/Journal).
+
+-- A quest started, moved on or finished: said on the notice line. Queued, because it happens most
+-- often in the middle of a conversation, with the HUD off screen, and a notice shown then would
+-- have timed out before the window closed.
+function Main:questEvent(what, id, step)
+	local def < const > = Quests[id]
+	local title < const > = (def ~= nil and def.title) or id
+	if what == "started" then
+		table.insert(self._questNotices, "NEW QUEST:   " .. title)
+		if step ~= nil and step.text ~= nil then
+			table.insert(self._questNotices, step.text)
+		end
+	elseif what == "updated" then
+		if step ~= nil and step.text ~= nil then
+			table.insert(self._questNotices, step.text)
+		end
+	elseif what == "completed" then
+		table.insert(self._questNotices, "QUEST COMPLETED:   " .. title)
+	end
+end
+
+-- How far the player is from a waypoint spec, or nil when it is not in this world.
+function Main:questDistance(spec)
+	if self._humanoid == nil then
+		return nil
+	end
+	local p < const > = self:_anchorPosition(self:_anchorOf(spec))
+	if p == nil then
+		return nil
+	end
+	local pp < const > = self._humanoid.transform.translation
+	local dx < const >, dy < const >, dz < const > = p[1] - pp.x, p[2] - pp.y, p[3] - pp.z
+	return math.sqrt(dx * dx + dy * dy + dz * dz)
+end
+
+-- ---- Talking ----
+
+-- E at a living character who will talk (see Main:_nearestTalker): they turn to face the player
+-- (Human:talk) and the conversation opens on their dialog -- Dialogs[<their entity's id>], as
+-- Scripts/Quests/Names names them -- and without one they say their line and offer what they carry.
+--
+-- Not in the same update as a conversation was left in: E leaves one, and that same press would
+-- otherwise go straight on to Main:_interact and open it again.
+function Main:_talkTo(rec)
+	if self._dialogLeftTick == self._questTick then
+		return
+	end
+	local sc < const > = rec.sc
+	local greeting < const > = sc:talk(self)
+	local c < const > = Conversation(self._journal, rec.entity.id, greeting, sc:displayName() or "STRANGER")
+	self._talkingTo = rec
+	-- A talk can be over as it begins: a dialog that opens straight on a trade, or whose every
+	-- start is ruled out.
+	if not c:start() then
+		self:_endConversation(c)
+		return
+	end
+	self:_setDialogOpen(c)
+end
+
+-- Put up the conversation window on `conversation`, or with nil take it down.
+function Main:_setDialogOpen(conversation)
+	if conversation ~= nil then
+		if self._dialogOpen or not self:_canOpenPanel() then
+			return
+		end
+		self._dialogOpen = true
+		self:_holdForPanel(true)
+		self._dialogDialog:show()
+		self._dialogView:showConversation(conversation)
+		self:_placeDialog()
+	elseif self._dialogOpen then
+		self._dialogOpen = false
+		self._dialogDialog:hide()
+		self:_holdForPanel(false)
+	end
+end
+
+-- Stand the conversation window at the bottom of the screen, as tall as the replies on offer make
+-- it, rather than over the middle where the one being talked to is standing. Again whenever the
+-- number of replies changes (DialogView:setOnResize).
+function Main:_placeDialog()
+	if not self._dialogOpen then
+		return
+	end
+	local frame < const > = self._frame:getPlacement()
+	local ps < const > = self._dialogDialog:getPreferredSize()
+	self._dialogDialog:place((frame.width - ps.width) * 0.5, math.max(0, frame.height - ps.height - DIALOG_BOTTOM), ps.width, ps.height)
+end
+
+-- The talk is over, however it ended. A `trade` reply goes on to the character's pack, in the
+-- chest window, as E at them used to do on its own.
+function Main:_endConversation(c)
+	self:_setDialogOpen(nil)
+	self._dialogLeftTick = self._questTick
+	local rec < const > = self._talkingTo
+	self._talkingTo = nil
+	if c:wantsTrade() and rec ~= nil then
+		self:_trade(rec)
+	end
+end
+
+-- What a character carries, up in the chest window for the player to take from -- freely, for
+-- now; there is no buying yet. Someone with nothing on them says so instead of opening an empty
+-- window.
+function Main:_trade(rec)
+	local name < const > = rec.sc:displayName()
+	local box < const > = self:_npcBox(rec)
+	local left < const > = self._chestContents[box]
+	if #left == 0 then
+		self:_feed((name ~= nil) and (name .. " HAS NOTHING TO GIVE") or "THEY HAVE NOTHING TO GIVE")
+		return
+	end
+	self:_setChestOpen(box, nil, name or "STRANGER")
+end
+
+-- ---- The journal window ----
+
+function Main:_setJournalOpen(open)
+	if open == self._journalOpen then
+		return
+	end
+	if open and not self:_canOpenPanel() then
+		return
+	end
+	self._journalOpen = open
+	self:_holdForPanel(open)
+	if open then
+		self._journalDialog:show()
+		self._journalView:refresh()
+	else
+		self._journalDialog:hide()
+	end
+end
+
+-- ---- Keys ----
+
+-- Escape with a conversation or the journal up closes it, and goes no further. Returns whether it
+-- did. Called from Main:update's Escape handling.
+function Main:_closeQuestPanel()
+	if self._dialogOpen then
+		self._dialogView:leave()
+		return true
+	end
+	if self._journalOpen then
+		self:_setJournalOpen(false)
+		return true
+	end
+	return false
+end
+
+-- E leaves a conversation; J opens and closes the journal -- not over the pause menu or another
+-- window, which _setJournalOpen refuses on its own. Called from Main:update with the other keys
+-- that work while the night is held still.
+function Main:_questKeys(mapping)
+	if self._dialogOpen and mapping:isStatePressed("STATE_INTERACT") then
+		self._dialogView:leave()
+		return
+	end
+	if mapping:isStatePressed("STATE_JOURNAL") then
+		self:_setJournalOpen(not self._journalOpen)
+	end
+end
+
+-- ---- Every frame ----
+
+-- Tick the windows, move the quests on and find the followed step's waypoint. Called from
+-- Main:update above its early returns -- the windows are up exactly when the rest is frozen --
+-- and before the compass and the map, which show the waypoint found here.
+function Main:_updateQuests(dt)
+	self._questTick = self._questTick + 1
+	if self._journalOpen then
+		self._journalView:update(dt)
+	end
+
+	local playing < const > = not (self._gameOver or self._nightOver or self._paused) and self._cutscene == nil
+	if playing and self._humanoid ~= nil then
+		-- Steps waited on rather than told: an item come into the pack, a place reached.
+		self._journal:update()
+		self:_flushQuestNotices()
+	end
+	self:_updateQuestItems()
+	self:_updateQuestWaypoint(dt)
+end
+
+-- Show the item entities a quest's `find` names (Scripts/Quests/Quests) once a quest has reached
+-- the step that finds them, and keep them hidden until then -- the ring is not lying by the
+-- chapel before Klara has asked for it, and the locket is not behind the chest before Tomas has
+-- owned up to putting it there. A hidden pickup is not there to be taken (Pickup:collect, and
+-- Main's E scan, which only offers what is visible). Shown for good from then on -- steps only
+-- move forward -- and picked up, the entity is gone anyway.
+--
+-- Worked out again whenever the journal moves, and when the world's pickups are counted -- a
+-- new stage, a hot reload -- rather than every frame: it is a walk over every quest.
+function Main:_updateQuestItems()
+	local books < const > = self._pickups
+	if books == nil then
+		return
+	end
+	local serial < const > = self._journal:serial()
+	if self._questItemsFor == books and self._questItemsSerial == serial then
+		return
+	end
+	self._questItemsFor = books
+	self._questItemsSerial = serial
+
+	-- Each entity named by a find, and whether any quest has reached a step that finds it -- is
+	-- on it, or past it. A pickup already taken has nothing left to show.
+	local wanted = {}
+	for id, def in pairs(Quests) do
+		if type(def) == "table" then
+			local q < const > = self._journal:quest(id)
+			for i, s in ipairs(def.steps or {}) do
+				local reached < const > = q ~= nil and (q.done or q.step >= i)
+				local list < const > = (type(s.find) == "table" and getmetatable(s.find) == nil) and s.find or { s.find }
+				for _, item in ipairs(list) do
+					local e < const > = self:_entityById(item)
+					if e ~= nil then
+						wanted[e] = wanted[e] or reached
+					end
+				end
+			end
+		end
+	end
+	for _, rec in pairs(books) do
+		local show < const > = wanted[rec.entity]
+		if show ~= nil and not rec.taken and rec.entity.visible ~= show then
+			-- Pickup:show, so whatever hangs off the item goes with it.
+			rec.sc:show(show)
+		end
+	end
+end
+
+-- One queued line at a time, each once the notice line is free again.
+function Main:_flushQuestNotices()
+	if #self._questNotices > 0 and self._noticeTimer <= 0.0 then
+		self:_showNotice(table.remove(self._questNotices, 1))
+	end
+end
+
+-- ---- Waypoints ----
+--
+-- What a waypoint is on, its anchor, is one of:
+--   { entity = e }    something placed in the scene, found by name
+--   { pickup = rec }  an item lying in the world (Main:_collectPickups' record)
+--   { npc = rec }     a character, by Main:_collectNpcs' record -- alive or a body
+--   { chest = rec }   a chest, by Main's chest record
+--   { point = {x, y, z} }
+-- Records rather than entities where the entity can go: a pickup taken or a body cleared away is
+-- marked on its record before the entity is destroyed, so an anchor is never left holding one.
+
+function Main:_updateQuestWaypoint(dt)
+	self._questWaypoint = nil
+	local id < const >, step < const > = self._journal:activeStep()
+	local key < const > = (id ~= nil) and (id .. "#" .. tostring(self._journal:quest(id).step)) or nil
+	local serial < const > = self._inventory:serial()
+	if key ~= self._questAnchorKey or serial ~= self._questSerial then
+		self._questAnchorKey = key
+		self._questSerial = serial
+		self._questSearch = 0.0
+	end
+	if step == nil or self.world == nil or self._humanoid == nil then
+		self._questAnchor = nil
+		self._questTalkTo = nil
+		return
+	end
+	self._questSearch = self._questSearch - dt
+	if self._questSearch <= 0.0 then
+		self._questSearch = WAYPOINT_SEARCH
+		self._questAnchor = self:_questAnchorFor(step)
+		-- Whoever a `talk` step is waiting on, whatever its waypoint says -- the head to hang
+		-- the marker over.
+		local talk < const > = (step.talk ~= nil) and self:_anchorOf(step.talk) or nil
+		self._questTalkTo = (talk ~= nil) and talk.npc or nil
+	end
+	self._questWaypoint = self:_anchorPosition(self._questAnchor)
+end
+
+-- Where a step points: its own `waypoint`, or what the step is about.
+function Main:_questAnchorFor(step)
+	local spec = step.waypoint
+	if spec == false then
+		return nil
+	end
+	if spec == nil then
+		if step.talk ~= nil then
+			spec = step.talk
+		elseif step.reach ~= nil then
+			spec = step.reach
+		elseif step.find ~= nil then
+			return self:_findAnchor(step.find)
+		else
+			return nil
+		end
+	end
+	return self:_anchorOf(spec)
+end
+
+-- A waypoint spec as the designer writes one: an entity (Names.ALTAR, Names.KLARA -- see
+-- Scripts/Quests/Names), a point, { x, y, z } or { x, z }, or a list of entities, of which the
+-- first in this world is the one. A character is anchored by their record, which knows when their
+-- body has gone, and a pickup by its, which knows when it has been taken.
+function Main:_anchorOf(spec)
+	if type(spec) == "table" and getmetatable(spec) == nil and type(spec[1]) ~= "number" then
+		for _, each in ipairs(spec) do
+			local anchor < const > = self:_anchorOf(each)
+			if anchor ~= nil then
+				return anchor
+			end
+		end
+		return nil
+	end
+	if type(spec) == "table" and getmetatable(spec) == nil then
+		if #spec >= 3 then
+			return { point = { spec[1], spec[2], spec[3] } }
+		elseif #spec == 2 then
+			local y < const > = (self._humanoid ~= nil) and self._humanoid.transform.translation.y or 0.0
+			return { point = { spec[1], y, spec[2] } }
+		end
+		return nil
+	end
+	local e < const > = self:_entityById(spec)
+	if e == nil then
+		return nil
+	end
+	local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[e] or nil
+	local rec < const > = (key ~= nil) and self._npcs[key] or nil
+	if rec ~= nil then
+		return (not rec.gone) and { npc = rec } or nil
+	end
+	for _, pickup in pairs(self._pickups or {}) do
+		if pickup.entity == e then
+			return (not pickup.taken) and { pickup = pickup } or nil
+		end
+	end
+	return { entity = e }
+end
+
+-- The entity in this world whose id is `id` (a Guid, from Scripts/Quests/Names), or nil -- one in
+-- another stage's world, or one not in any. Looked for once per guid and remembered, false for
+-- not found: a Names guid is the same object every time it is asked about, so it serves as its
+-- own key, and the entities it names are placed in the scene, there from the start. A hot reload
+-- forgets them all (_reloadQuests).
+function Main:_entityById(id)
+	if id == nil then
+		return nil
+	end
+	local known = self._entitiesById
+	if known == nil then
+		known = {}
+		self._entitiesById = known
+	end
+	local e = known[id]
+	if e == nil then
+		e = false
+		local world < const > = (self.world ~= nil) and self.world.world or nil
+		if world == nil then
+			return nil
+		end
+		local all < const > = world:getEntities()
+		for i = 0, all.size - 1 do
+			local candidate < const > = all:get(i)
+			if candidate.id == id then
+				e = candidate
+				break
+			end
+		end
+		known[id] = e
+	end
+	return e or nil
+end
+
+-- The anchor's position this frame as { x, y, z }, or nil once it has gone.
+function Main:_anchorPosition(anchor)
+	if anchor == nil then
+		return nil
+	end
+	if anchor.point ~= nil then
+		return anchor.point
+	end
+	local e = anchor.entity
+	if anchor.pickup ~= nil then
+		e = (not anchor.pickup.taken) and anchor.pickup.entity or nil
+	elseif anchor.npc ~= nil then
+		e = (not anchor.npc.gone) and anchor.npc.entity or nil
+	elseif anchor.chest ~= nil then
+		e = anchor.chest.entity
+	end
+	if e == nil then
+		return nil
+	end
+	local p < const > = e.transform.translation
+	return { p.x, p.y, p.z }
+end
+
+-- Where the first item entity `find` names that has not been picked up yet lies, or nil when it
+-- is not in this world.
+function Main:_findAnchor(find)
+	local list < const > = (type(find) == "table" and getmetatable(find) == nil) and find or { find }
+	for _, id in ipairs(list) do
+		if not self._journal:hasFound(id) then
+			return self:_anchorOf(id)
+		end
+	end
+	return nil
+end
+
+-- Hang the quest diamond over the head of the character the followed quest's step wants talked to,
+-- while they are alive, in front of the camera and within BEACON_RANGE. Not hidden behind walls,
+-- unlike a name tag: like the compass, it is there to find them by. A child of the HUD, so it goes
+-- wherever the HUD goes -- off screen under the pause menu and every window.
+--
+-- Placed from Main:postUpdate, beside the name tags and for the same reason: WorldLayer:
+-- worldToScreen projects with the view the last frame was rendered with.
+function Main:_updateQuestBeacon(dt)
+	local mc = self._questBeacon
+	if mc == nil then
+		if self._hud == nil then
+			return
+		end
+		-- Art from before there were quests has no diamond, and so no marker.
+		mc = Widget._createResource(self._hud, "MC_MapQuest")
+		if mc == nil then
+			return
+		end
+		mc.xScale = BEACON_SCALE * 100.0
+		mc.yScale = BEACON_SCALE * 100.0
+		mc.visible = false
+		self._questBeacon = mc
+	end
+
+	local rec < const > = self._questTalkTo
+	local alpha = 0.0
+	if rec ~= nil and not rec.gone and not rec.dead and self._humanoid ~= nil and self._camera ~= nil
+		and not (self._gameOver or self._paused or self._nightOver or self._dawnPlaying) and self._cutscene == nil then
+		-- A point, not a direction: an entity's translation comes back with w = 0.
+		local head < const > = (rec.entity.transform.translation + Vector4(0.0, BEACON_HEIGHT, 0.0, 0.0)).xyz1
+		local dist < const > = (head - self:eye()).length
+		local ndc < const > = (dist < BEACON_RANGE and dist > BEACON_NEAR) and self.world:worldToScreen(head) or nil
+		local frame < const > = self._frame:getPlacement()
+		if ndc ~= nil and math.abs(ndc.x) < 1.1 and math.abs(ndc.y) < 1.1 and frame.width > 0 then
+			local hud < const > = self._hud:getPlacement()
+			self._questBeaconTime = self._questBeaconTime + dt
+			local sx < const > = (ndc.x * 0.5 + 0.5) * frame.width - hud.x
+			local sy < const > = (0.5 - ndc.y * 0.5) * frame.height - hud.y
+				- BEACON_BOB * math.sin(self._questBeaconTime * BEACON_BOB_RATE)
+			mc.X = sx - BLIP_C * BEACON_SCALE
+			mc.Y = sy - BLIP_C * BEACON_SCALE
+			alpha = math.min(1.0, (BEACON_RANGE - dist) / BEACON_FADE)
+		end
+	end
+	mc.alpha = alpha
+	mc.visible = alpha > 0.0
+end
+
+-- ---- The compass and the map ----
+--
+-- Moved here out of Main with the quest waypoint added to both: the night's own objective keeps
+-- the compass's gold needle; the followed quest's step
+-- gets a marker of its own on each (Scripts/Widgets/ObjectiveMarker:setQuest, Minimap:setQuest).
+
+-- Push the map's moving parts: where the player is, which the whole map is drawn
+-- around, then which ward posts burn and the followed quest's waypoint. The relics are
+-- not drawn (see Scripts/Widgets/Minimap).
+function Main:_updateMinimap()
+	if not self._minimapMapped then
+		return
+	end
+
+	-- Hidden once the night is decided, so neither the victory card nor the Game
+	-- Over menu has a map sitting in the corner behind it -- and while paused, with
+	-- the rest of the HUD. Widget:setVisible is already a no-op when the state has
+	-- not changed, so this needs no latch.
+	--
+	-- The pause flag belongs here rather than in _showHud because this runs above the
+	-- freeze returns: anything hidden from outside would be shown again by the very
+	-- next frame of a paused game.
+	local show < const > = not self._gameOver and not self._nightOver and not self._paused
+		and self._humanoid ~= nil
+	self._minimap:setVisible(show)
+	if not show then
+		return
+	end
+
+	local p < const > = self._humanoid.transform.translation
+	self._minimap:setView(p.x, p.z, self._heading)
+
+	for i, w in ipairs(self._wards) do
+		self._minimap:setWard(i, w.x, w.z, w.lit)
+	end
+
+	local q < const > = self._questWaypoint
+	if q ~= nil then
+		self._minimap:setQuest(q[1], q[3])
+	else
+		self._minimap:setQuest(nil)
+	end
+end
+
+-- Aim the objective compass at wherever the player should be walking: the nearest
+-- still-dark ward while there is a relic in the pack, then a locked gate while there is
+-- a key in it, and otherwise the nearest relic -- or failing that key -- still lying out
+-- in the forest. Blank once the night is over, either way it ended. The followed quest's
+-- waypoint, if it has one here, is a second marker beside it.
+--
+-- Nearest is only ever a suggestion. With no altar to return to, where a relic goes is
+-- the player's decision -- the needle picks the closest unlit post so it has something to
+-- say, and walking past it to a post that covers better ground is the whole point of the
+-- mechanic.
+function Main:_updateMarker(dt)
+	local target = nil
+	local live < const > = not self._gameOver and not self._nightOver and self._humanoid ~= nil
+	if live then
+		local inv < const > = self._inventory
+		if inv:count("relic") > 0 then
+			target = self:_wardObjective()
+		end
+		if target == nil and inv:count("key") > 0 then
+			local gate < const > = self:_nearestLockedGate()
+			target = (gate ~= nil) and gate.entity or nil
+		end
+		if target == nil then
+			-- Nothing in the pack to take anywhere: the nearest thing worth picking up, in
+			-- priority order -- the relic run is the objective, the key run the detour.
+			target = self:_nearestLying("Relic") or self:_nearestLying("Key")
+		end
+	end
+
+	-- Changing what it points at snaps and flashes the needle rather than sweeping
+	-- it across the dial, so a hand-off reads as a new instruction.
+	if target ~= self._markerTarget then
+		self._markerTarget = target
+		self._marker:retarget()
+	end
+
+	-- The strip turns with the player whether or not there is anything on it.
+	self._marker:setHeading(self._heading or 0.0)
+
+	local pp < const > = (self._humanoid ~= nil) and self._humanoid.transform.translation or nil
+	if target == nil then
+		self._marker:setTarget(nil)
+	else
+		local p < const > = target.transform.translation
+		local dx < const > = p.x - pp.x
+		local dz < const > = p.z - pp.z
+		-- Relative bearing. Forward is (sin h, 0, cos h), so the world bearing of
+		-- (dx, dz) is atan2(dx, dz), and subtracting the player's heading turns it
+		-- into "how far round from straight ahead" -- which is where on the strip the
+		-- quest marker stands.
+		self._marker:setTarget(atan2(dx, dz) - self._heading, math.sqrt(dx * dx + dz * dz))
+	end
+
+	local q < const > = live and self._questWaypoint or nil
+	if q == nil then
+		self._marker:setQuest(nil)
+	else
+		local dx < const > = q[1] - pp.x
+		local dz < const > = q[3] - pp.z
+		self._marker:setQuest(atan2(dx, dz) - self._heading, math.sqrt(dx * dx + dz * dz))
+	end
+
+	self._marker:update(dt)
+end
+]]></text>
+</object>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{F7AD081B-BE81-417A-ABB1-29D327FF6C57}
+#using \{D1A10000-0000-4000-8000-000000000005}
+
+import(traktor)
+
+-- JournalViewScaffolding
+--
+-- Test page for Scripts/Views/JournalView, hosted the way Main hosts it (Main:_setJournalOpen in
+-- Scripts/Quests/Questing): a Dialog of its own on the one Frame, shown and then refreshed, ticked
+-- every frame it is up. Main is stood in for by StageStub, whose journal is a real
+-- Scripts/Quests/Journal.
+--
+-- Two scenes, alternating each time the window is closed: a journal with all three sample quests
+-- in it -- one finished, one on its last step and followed, one under way -- and an empty one.
+
+JournalViewScaffolding = JournalViewScaffolding or class("JournalViewScaffolding", GameScaffolding)
+
+local REOPEN < const > = 1.0   -- how long the window stays closed (s)
+
+function JournalViewScaffolding:build(parent, frame)
+	self:note(parent, "JOURNAL VIEW   Click a quest to read it, again (or FOLLOW) to follow it. CLOSE alternates a full journal with an empty one.")
+
+	self._stage = StageStub()
+	self._full = false
+
+	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._view = JournalView(self._dialog, self._stage)
+	self._view:setOnClose(function()
+		self._dialog:hide()
+		self:after(REOPEN, function() self:show() end)
+	end)
+	self:tick(self._view)
+end
+
+function JournalViewScaffolding:show()
+	self._full = not self._full
+	local journal < const > = self._stage:resetJournal()
+	if self._full then
+		journal:start("ring")
+		journal:finish("ring")
+		journal:start("ledger")
+		journal:advance("ledger", "find")
+		journal:advance("ledger", "return")
+		journal:start("locket")
+		journal:advance("locket", "ask")
+		journal:setActive("ledger")
+	end
+	self._dialog:show()
+	self._view:refresh()
+end
+]]></text>
+</object>

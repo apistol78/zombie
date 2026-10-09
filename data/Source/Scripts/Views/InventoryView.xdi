@@ -110,6 +110,7 @@ function InventoryView:new(parent, context)
 	end
 	table.insert(effects, "EQUIPPED " .. PLACE_NAMES.hand)
 	table.insert(effects, "NOT HURT -- NOTHING TO HEAL")
+	table.insert(effects, "WANTED FOR A QUEST -- J FOR THE JOURNAL")
 
 	-- ---- Title row ----
 	local header < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, 32, 0))
@@ -283,6 +284,8 @@ function InventoryView:_refreshDetail()
 		end
 	elseif def.armor ~= nil then
 		effect = "TAKES " .. tostring(math.floor(def.armor * 100.0 + 0.5)) .. "% OF EVERY BITE"
+	elseif def.quest then
+		effect = "WANTED FOR A QUEST -- J FOR THE JOURNAL"
 	end
 	setText(self._effect, effect)
 
@@ -299,7 +302,8 @@ function InventoryView:_refreshDetail()
 		self._useButton:setCaption("USE"):setEnable(false)
 	end
 
-	self._dropButton:setEnable(true)
+	-- A quest item cannot be put down (Items: `quest`); the stage would refuse it anyway.
+	self._dropButton:setEnable(not def.quest)
 end
 
 function InventoryView:_select(index)

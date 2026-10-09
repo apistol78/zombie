@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+#using \{D1A10000-0000-4000-8000-000000000002}
+#using \{D1A10000-0000-4000-8000-000000000004}
+
+import(traktor)
+
+-- JournalView
+--
+-- The quest journal (J): every quest the player has been given down the left, the ones under way
+-- first and the finished ones after, and on the right what the selected one is about and the
+-- steps it has been through so far -- the finished ones dimmed, the one it is on in full. FOLLOW
+-- makes the selected quest the active one, whose waypoint the compass and the map show; the one
+-- being followed is marked in the list in the compass marker's gold.
+--
+-- Reads the journal (context:journal(), a Scripts/Quests/Journal) and changes nothing but which
+-- quest is followed, through Journal:setActive. Redraws itself whenever the journal's serial
+-- moves (update), the same contract as InventoryView has with the pack.
+
+JournalView = JournalView or class("JournalView", Container)
+
+local C_TITLE < const > = Color4f(0.96, 0.96, 0.94, 1.0)
+local C_LABEL < const > = Color4f(0.58, 0.58, 0.57, 1.0)
+local C_HINT < const > = Color4f(0.4, 0.4, 0.39, 1.0)
+local C_NAME < const > = Color4f(1.0, 1.0, 1.0, 1.0)
+local C_INFO < const > = Color4f(0.5, 0.5, 0.49, 1.0)
+local C_STEP < const > = Color4f(0.68, 0.64, 0.52, 1.0)
+local C_STEP_DONE < const > = Color4f(0.3, 0.3, 0.29, 1.0)
+local C_ENTRY < const > = Color4f(0.48, 0.48, 0.47, 1.0)
+local C_ENTRY_DONE < const > = Color4f(0.26, 0.26, 0.25, 1.0)
+local C_FOLLOWED < const > = Color4f(0.62, 0.56, 0.36, 1.0)
+-- ...and on the selected row, which sits on a lit bar: the same, brighter.
+local C_SELECTED < const > = Color4f(0.85, 0.85, 0.83, 1.0)
+local C_SELECTED_FOLLOWED < const > = Color4f(0.85, 0.76, 0.5, 1.0)
+
+local LIST_W < const > = 300
+local DETAIL_W < const > = 480
+local MAX_QUESTS < const > = 10
+local MAX_STEPS < const > = 6
+local BUTTON_W < const > = 132
+
+local function setText(static, text)
+	static:setText(text)
+	local p < const > = static:getPlacement()
+	if p.width > 0 then
+		static:place(p.x, p.y, p.width, p.height)
+	end
+end
+
+-- The longest of every string `pick(def)` gives over the quests, for sizing a paragraph.
+local function longestOf(pick, floor)
+	local best = floor
+	for _, def in pairs(Quests) do
+		if type(def) == "table" then
+			for _, s in ipairs(pick(def)) do
+				if type(s) == "string" and string.len(s) > string.len(best) then
+					best = s
+				end
+			end
+		end
+	end
+	return best
+end
+
+function JournalView:new(parent, context)
+	Container.new(self, parent, TableLayout({ 0 }, { 0 }, 0, 0, 0, 16))
+
+	self._context = context
+	self._selected = nil      -- the id of the quest selected in the list
+	self._serial = nil        -- the journal's serial when last drawn
+	self._entries = {}        -- what each list row shows: the quest id, or nil
+
+	-- ---- Title row ----
+	local header < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, 32, 0))
+	local title < const > = Static(header, "QUESTS")
+	title:setTextSize(34)
+	title:setTextColor(C_TITLE)
+	self._count = Static(header, "00 UNDER WAY   00 FINISHED")
+	self._count:setTextSize(16)
+	self._count:setTextColor(C_HINT)
+
+	-- ---- The list, and the selected quest ----
+	local body < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, 28, 0))
+
+	local list < const > = Container(body, TableLayout({ 0 }, { 0 }, 0, 0, 0, 2))
+	self._rows = {}
+	for i = 1, MAX_QUESTS do
+		local b < const > = MenuButton(list, "")
+		b:setMinimumWidth(LIST_W)
+		b:setTextColor(C_ENTRY)
+		b:setOnClick(function() self:_onRow(i) end)
+		self._rows[i] = b
+	end
+
+	local detail < const > = Container(body, TableLayout({ 0 }, { 0 }, 0, 0, 0, 8))
+	self._name = DialogParagraph(detail, DETAIL_W, 26, longestOf(function(d) return { d.title } end, "THE BURIAL LEDGER"))
+	self._name:setTextColor(C_NAME)
+	self._status = Static(detail, "FOLLOWED   SHOWN ON THE COMPASS AND THE MAP")
+	self._status:setTextSize(15)
+	self._status:setTextColor(C_FOLLOWED)
+	self._info = DialogParagraph(detail, DETAIL_W, 16, longestOf(function(d) return { d.info } end, "M"))
+	self._info:setTextColor(C_INFO)
+
+	-- The steps reached so far, oldest first; the paragraphs are sized for the longest step text
+	-- any quest has.
+	local longestStep < const > = longestOf(function(d)
+		local texts = {}
+		for _, s in ipairs(d.steps or {}) do
+			table.insert(texts, s.text)
+		end
+		return texts
+	end, "M")
+	self._steps = {}
+	for i = 1, MAX_STEPS do
+		local s < const > = DialogParagraph(detail, DETAIL_W, 17, longestStep)
+		s:setTextColor(C_STEP)
+		self._steps[i] = s
+	end
+
+	local buttons < const > = Container(detail, TableLayout({ 0 }, { 0 }, 0, 6, 10, 0))
+	self._followButton = MenuButton(buttons, "FOLLOW")
+	self._followButton:setMinimumWidth(BUTTON_W)
+	self._followButton:setOnClick(function() self:_follow() end)
+
+	-- ---- Footer ----
+	local footer < const > = Container(self, TableLayout({ 100, 0 }, { 0 }, 0, 0, 28, 0))
+	local hint < const > = Static(footer, "THE FOLLOWED QUEST IS MARKED ON THE COMPASS AND THE MAP     J TO CLOSE")
+	hint:setTextSize(14)
+	hint:setTextColor(C_HINT)
+	local close < const > = MenuButton(footer, "CLOSE")
+	close:setMinimumWidth(BUTTON_W)
+	close:setOnClick(function()
+		if self._closeFn ~= nil then
+			self._closeFn()
+		end
+	end)
+end
+
+function JournalView:setOnClose(fn)
+	self._closeFn = fn
+	return self
+end
+
+-- Redraw everything from the journal. Called by the host after the dialog has been shown. The
+-- selection starts on the followed quest, or the first in the list.
+function JournalView:refresh()
+	local journal < const > = self._context:journal()
+	self._serial = journal:serial()
+	local list < const > = journal:list()
+
+	local found = false
+	for _, e in ipairs(list) do
+		found = found or e.id == self._selected
+	end
+	if not found then
+		self._selected = journal:active() or (list[1] ~= nil and list[1].id or nil)
+	end
+
+	local under, finished = 0, 0
+	for i, row in ipairs(self._rows) do
+		local e < const > = list[i]
+		if e ~= nil then
+			self._entries[i] = e.id
+			row:setCaption(e.title)
+			local selected < const > = e.id == self._selected
+			if selected then
+				row:setTextColor(e.active and C_SELECTED_FOLLOWED or C_SELECTED)
+			else
+				row:setTextColor(e.done and C_ENTRY_DONE or (e.active and C_FOLLOWED or C_ENTRY))
+			end
+			row:setToggled(selected)
+			row:setVisible(true)
+		else
+			self._entries[i] = nil
+			row:setCaption("")
+			row:setToggled(false)
+			row:setVisible(false)
+		end
+	end
+	for _, e in ipairs(list) do
+		if e.done then
+			finished = finished + 1
+		else
+			under = under + 1
+		end
+	end
+	setText(self._count, tostring(under) .. " UNDER WAY   " .. tostring(finished) .. " FINISHED")
+
+	local id < const > = self._selected
+	local def < const > = (id ~= nil) and Quests[id] or nil
+	if def == nil then
+		setText(self._name, (#list == 0) and "NO QUESTS YET" or "")
+		setText(self._status, (#list == 0) and "TALK TO PEOPLE. SOMEONE WILL NEED SOMETHING." or "")
+		setText(self._info, "")
+		for _, s in ipairs(self._steps) do
+			setText(s, "")
+		end
+		self._followButton:setEnable(false)
+		return
+	end
+
+	local done < const > = journal:isDone(id)
+	local followed < const > = journal:active() == id
+	setText(self._name, def.title or id)
+	setText(self._status, done and "FINISHED" or (followed and "FOLLOWED   SHOWN ON THE COMPASS AND THE MAP" or "UNDER WAY"))
+	self._status:setTextColor(done and C_HINT or (followed and C_FOLLOWED or C_LABEL))
+	setText(self._info, def.info or "")
+
+	-- The most recent steps if there are more than there are rows: the one it is on matters most.
+	local steps < const > = journal:stepsOf(id)
+	local first < const > = math.max(1, #steps - MAX_STEPS + 1)
+	for i, s in ipairs(self._steps) do
+		local step < const > = steps[first + i - 1]
+		if step ~= nil then
+			setText(s, step.text)
+			s:setTextColor(step.done and C_STEP_DONE or C_STEP)
+		else
+			setText(s, "")
+		end
+	end
+	self._followButton:setEnable(not done and not followed)
+end
+
+-- Redraw if the journal has moved. Called by the host every frame the window is up.
+function JournalView:update(dt)
+	if self._context:journal():serial() ~= self._serial then
+		self:refresh()
+	end
+end
+
+-- Private
+
+function JournalView:_onRow(i)
+	local id < const > = self._entries[i]
+	if id == nil then
+		return
+	end
+	if id == self._selected and not self._context:journal():isDone(id) then
+		-- A second click on the selected quest follows it.
+		self:_follow()
+		return
+	end
+	self._selected = id
+	self:refresh()
+end
+
+function JournalView:_follow()
+	if self._selected ~= nil then
+		self._context:journal():setActive(self._selected)
+		self:refresh()
+	end
+end
+]]></text>
+</object>

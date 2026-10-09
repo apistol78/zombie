@@ -12,8 +12,8 @@ import(traktor)
 -- post with a relic in hand spends it there (Main:_lightWardWithRelic calls :light).
 --
 -- A Pickup (see Scripts/Pickup), and the one keepsake among them (Items: `keep`): its entity is
--- never destroyed. In the pack it is hidden and rides along with the player, which is what keeps
--- its minimap dot on them; equipped, the first one in the pack is shown in the off hand (Main
+-- never destroyed. In the pack it is hidden and rides along with the player, so anything reading
+-- its position finds it on them; equipped, the first one in the pack is shown in the off hand (Main
 -- poses it from :carryTransform every frame); spent, it is parked on the post it lit.
 --
 -- What it no longer does is cost the player anything to hold. A relic in hand used to slow the

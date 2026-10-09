@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Names
+--
+-- The entities the quests and dialogs talk about, by a name a designer can read: Names.KLARA is
+-- the guid of the entity Klara is in Scenes/S - Scene 2. Scripts/Quests/Quests and
+-- Scripts/Quests/Dialogs name everything in the world through this -- Dialogs[Names.KLARA] is what
+-- she says, talk = Names.KLARA a step that waits on her, reach = Names.ALTAR one that waits on
+-- the player standing at the altar, find = Names.RING one that waits on the ring being picked up
+-- -- and the game finds the entity by its id at run time (Entity.id).
+--
+-- The guid is the entity's own id in the scene: the <id> of its entry in the scene file, which
+-- is also what the scene editor shows for it. For a character that is the placed Npc itself, not
+-- the entity data it was made from -- every villager is made from the same one. An entity placed
+-- twice has two ids, so only the ones that are one of a kind are named here: the trappers, the
+-- huntsmen and the cutthroats are not.
+--
+-- Plain guid strings, unescaped: these are entities inside a scene, not database instances, and
+-- the escaped form would have the pipeline look for an instance by that guid.
+
+Names = {
+
+	-- ---- People (Scenes/S - Scene 2, the entities named "Npc") ----
+
+	KLARA = Guid("{8B23BC53-38C7-493A-AF7B-5850E8D4FD9C}"),
+	BROTHER_ANSELM = Guid("{88F6F264-FC88-4CC2-AE3C-129F0C91F8C1}"),
+	GRETA = Guid("{D6F2D166-995C-4EAD-B158-0FE7DB6A0ACE}"),
+	TOMAS = Guid("{730F5D2F-418D-47C1-8334-86E4E6D9A27D}"),
+	AKE = Guid("{ECAB4409-7F1B-4673-A290-AC3FEF14795A}"),
+	ELSA = Guid("{6E1DCE14-C497-455E-8071-546AC1D41622}"),
+	THE_WOODCUTTER = Guid("{EB72D8B3-912C-4D18-90AC-FB82D5102FF3}"),
+	-- Two are called Axel: the merchant at his stall, and the one who walks the village.
+	AXEL_THE_MERCHANT = Guid("{8D384372-9780-44CE-916A-84AD7E85ACDB}"),
+	AXEL = Guid("{4327EC93-6BA9-42EA-B023-48CF201BDF8B}"),
+	BELLA = Guid("{BB843AA0-DC2E-4BCE-B170-79A5FD2C4C64}"),
+
+	-- ---- Places ----
+
+	ALTAR = Guid("{BFE36E93-7848-4C29-8894-743079BA4F7E}"),
+	-- The two ends of the way into the cave: the forest's cave mouth, and the cave's way out.
+	CAVE_MOUTH = Guid("{4079A540-A41F-476F-A202-80591F959901}"),    -- Scene 2
+	CAVE_EXIT = Guid("{A8D91642-5EB2-0A1A-6D93-9B07C8E3378A}"),     -- Scenes/S - Cave
+
+	-- ---- Quest items (Scenes/S - Scene 2's Pickups layer; tools/gen_quest_items.py) ----
+
+	RING = Guid("{D1A10000-0000-4000-8000-000000000100}"),       -- in the churchyard grass
+	LEDGER = Guid("{D1A10000-0000-4000-8000-000000000101}"),     -- in the bandits' camp
+	LOCKET = Guid("{D1A10000-0000-4000-8000-000000000102}"),     -- behind the old chest
+	SWORD = Guid("{D1A10000-0000-4000-8000-000000000103}"),      -- in Scenes/S - Cave, the far dead end
+}
+]]></text>
+</object>

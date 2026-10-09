@@ -28,6 +28,8 @@ import(traktor)
 --   tick_sw    )
 --   tick_nw    )
 --   needle     the quest marker, authored on the centre line and slid along it
+--   quest      the followed quest's waypoint (Scripts/Quests): a silver diamond, slid along the
+--              strip the same way, with a range of its own under it
 --   glow       white overlay; alpha kicked when the objective changes
 --
 -- The letters and the range are text, written over the art by this widget.
@@ -53,6 +55,7 @@ local FADE_FROM < const > = 0.72    -- how far out (of SPAN) the letters start t
 
 local C_LETTER < const > = Color4f(0.94, 0.94, 0.92, 1.0)
 local C_RANGE < const > = Color4f(0.62, 0.62, 0.6, 1.0)
+local C_QUEST_RANGE < const > = Color4f(0.7, 0.69, 0.64, 1.0)
 
 local ARRIVED < const > = 3.0       -- range under which the marker reads as "here" (m)
 
@@ -76,6 +79,14 @@ local function wrap(a)
 end
 
 -- Where on the strip a relative bearing lands, and how visible it is there.
+-- The range under a marker: "HERE" when close, metres otherwise.
+local function rangeText(distance)
+	if distance < ARRIVED then
+		return "HERE"
+	end
+	return string.format("%d m", math.floor(distance + 0.5))
+end
+
 local function onStrip(rel)
 	local x < const > = CX + rel / HALF_FOV * SPAN
 	local d < const > = math.abs(rel) / HALF_FOV
@@ -137,15 +148,40 @@ function ObjectiveMarker:setTarget(bearing, distance)
 		self._dirty = true
 	end
 
-	local text
-	if distance < ARRIVED then
-		text = "HERE"
-	else
-		text = string.format("%d m", math.floor(distance + 0.5))
-	end
+	local text < const > = rangeText(distance)
 	if text ~= self._shown then
 		self._shown = text
 		self._range:setText(text)
+		self._dirty = true
+	end
+	return self
+end
+
+-- Point the quest marker at the followed quest's waypoint, as setTarget points the needle:
+-- `bearing` relative to the way the player faces, `distance` in metres, nil for nothing. It does
+-- not flash the strip -- the night's objective is what that is for.
+function ObjectiveMarker:setQuest(bearing, distance)
+	if self._quest_mc == nil then
+		return self
+	end
+	if bearing == nil then
+		if self._questActive then
+			self._questActive = false
+			self._questShown = nil
+			self._questRange:setText("")
+			self._dirty = true
+		end
+		return self
+	end
+	if not self._questActive or bearing ~= self._questBearing then
+		self._questActive = true
+		self._questBearing = bearing
+		self._dirty = true
+	end
+	local text < const > = rangeText(distance)
+	if text ~= self._questShown then
+		self._questShown = text
+		self._questRange:setText(text)
 		self._dirty = true
 	end
 	return self
@@ -189,6 +225,10 @@ function ObjectiveMarker:_initialize(parent, mc)
 	self._dirty = true
 
 	self._needle_mc = mc:getMember("needle")
+	self._quest_mc = mc:getMember("quest")   -- nil in art from before there were quests
+	self._questActive = false
+	self._questBearing = 0.0
+	self._questShown = nil
 	self._glow_mc = mc:getMember("glow")
 	assert(self._needle_mc ~= nil, "ObjectiveMarker; movie resource is missing its parts")
 	self._glow_mc.alpha = 0.0
@@ -210,12 +250,21 @@ function ObjectiveMarker:_initialize(parent, mc)
 	self._range = Static(self, "")
 	self._range:setTextSize(14)
 	self._range:setTextColor(C_RANGE)
+	self._questRange = Static(self, "")
+	self._questRange:setTextSize(14)
+	self._questRange:setTextColor(C_QUEST_RANGE)
 
 	-- The marker passes over the letters, not under them. Text can only be created on
 	-- top of the art, so the marker trades places with the last thing created -- the
-	-- range, which never sits on the strip and so loses nothing by going under it.
+	-- range, which never sits on the strip and so loses nothing by going under it. The
+	-- quest marker does the same with its own range.
 	local dl < const > = mc.displayList
 	dl:swap(dl:getObjectDepth(self._needle_mc), dl:getObjectDepth(self._range._mc))
+	if self._quest_mc ~= nil then
+		dl:swap(dl:getObjectDepth(self._quest_mc), dl:getObjectDepth(self._questRange._mc))
+	else
+		self._questRange:setVisible(false)
+	end
 
 	self:_layout()
 end
@@ -244,14 +293,43 @@ function ObjectiveMarker:_layout()
 	-- nearer end, as Skyrim's do.
 	self._needle_mc.visible = self._active
 	self._range:setVisible(self._active)
+	local x = nil
 	if self._active then
 		local rel < const > = math.max(-HALF_FOV, math.min(HALF_FOV, wrap(self._bearing)))
-		local x < const > = CX + rel / HALF_FOV * SPAN
+		x = CX + rel / HALF_FOV * SPAN
 		self._needle_mc.X = x - CX
+	end
 
-		local ps < const > = self._range:getPreferredSize()
-		local rx < const > = math.max(0, math.min(W - ps.width, x - ps.width / 2))
-		self._range:place(rx, STRIP_BOTTOM + 1, ps.width, ps.height)
+	local qx = nil
+	if self._quest_mc ~= nil then
+		self._quest_mc.visible = self._questActive
+		self._questRange:setVisible(self._questActive)
+		if self._questActive then
+			local rel < const > = math.max(-HALF_FOV, math.min(HALF_FOV, wrap(self._questBearing)))
+			qx = CX + rel / HALF_FOV * SPAN
+			self._quest_mc.X = qx - CX
+		end
+	end
+
+	-- The two ranges share the line under the strip; when the markers stand close enough for
+	-- them to touch, each is pushed off to its own side of the pair.
+	local ps < const > = self._range:getPreferredSize()
+	local qs < const > = self._questRange:getPreferredSize()
+	local rx, qrx = x, qx
+	if x ~= nil and qx ~= nil then
+		local need < const > = (ps.width + qs.width) / 2 + 6
+		if math.abs(x - qx) < need then
+			local mid < const > = (x + qx) / 2
+			local side < const > = (x <= qx) and -1 or 1
+			rx = mid + side * need / 2
+			qrx = mid - side * need / 2
+		end
+	end
+	if rx ~= nil then
+		self._range:place(math.max(0, math.min(W - ps.width, rx - ps.width / 2)), STRIP_BOTTOM + 1, ps.width, ps.height)
+	end
+	if qrx ~= nil then
+		self._questRange:place(math.max(0, math.min(W - qs.width, qrx - qs.width / 2)), STRIP_BOTTOM + 1, qs.width, qs.height)
 	end
 end
 ]]></text>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{D1A10000-0000-4000-8000-00000000000B}
+
+import(traktor)
+
+-- Quests
+--
+-- Every quest in the game, keyed by the id the dialogs and the journal know it by. This file is
+-- the level designer's: what each quest is called, what the journal says about it and the steps
+-- it is made of. What any of it *does* is Scripts/Quests/Journal's -- nothing here needs code.
+--
+-- A quest is given by a dialog (a reply or a line whose `does` has `quest = "<id>"`, see
+-- Scripts/Quests/Dialogs) and is then worked through one step at a time, in order: only the step
+-- it is on can be completed, and once the last one is, the quest is finished and its reward
+-- handed over. The player may have any number of quests under way; one of them is *active* --
+-- the one the compass and the map point the way for. The first quest given becomes the active
+-- one; the player picks another in the journal (J).
+--
+-- What a quest says:
+--
+--   title    what the journal and the HUD call it
+--   info     a line or two for the journal: what this is about
+--   steps    the steps, in order (below)
+--   reward   triggers run once the last step is done -- the same vocabulary as a dialog's
+--            `does`: { give = "coin:20" }, { give = { "flask", "bread:2" }, set = "someFlag" }
+--
+-- What a step says:
+--
+--   id       a name for it, which dialogs use to ask "is the quest on this step?"
+--            (when = { step = "ring.return" }) and to complete it (does = { advance =
+--            "ring.return" }). A step without one answers to its number: "ring.2".
+--   text     what the journal and the HUD say needs doing
+--
+--   ...and what completes it -- one of:
+--
+--   find     the item to find, as Names has it -- Names.RING -- or a list of them: done once
+--            that very entity has been picked up. The item is not in the world until a quest
+--            reaches this step: it is hidden until then, and cannot be picked up. It has to be
+--            lying in the world as a pickup of its own (a chest's contents or what a character
+--            carries are not entities, and cannot be named).
+--   talk     a character, as Names has them -- Names.KLARA: done when the player talks to
+--            them...
+--   at       ...and with this too, only when that talk reaches the line of this name -- so a
+--            step can wait for "I FOUND YOUR RING", not just for any hello.
+--   reach    a place, as a waypoint (below) -- Names.ALTAR, or a point: done when the player
+--            comes within `radius` metres (default 4) of it.
+--   (none)   only a dialog's `advance` (or `finish`) completes it.
+--
+--   does     triggers run when this step is completed, before the next one comes up
+--
+--   waypoint where the compass and the map point while this step is the active quest's. Left
+--            out, it is worked out from the step itself:
+--              find   the item, where it lies (the first one not picked up yet, for a list)
+--              talk   the character with that dialog, wherever they have walked to
+--              reach  the place itself
+--            Or say where:
+--              Names.ALTAR       an entity, wherever it is -- a character walking about too
+--              { x, y, z }       a point in the world (y may be left out: { x, z })
+--              { Names.SWORD, Names.CAVE_MOUTH }
+--                                the first of these that is in the world the player is in:
+--                                the sword while in the cave, the way into the cave outside it
+--              false             no waypoint at all
+--            A waypoint that is not in the world the player is in -- the cave, say -- simply
+--            does not show until they are back in the right one, unless a list says what to
+--            point at instead.
+--
+-- Everything in the world is named through Scripts/Quests/Names, by its entity's guid, never by
+-- the name it has in the scene: those are not unique (eight huntsmen), and are only labels.
+--
+-- Unique items for quests are entries in Scripts/Items/Items like any other (`quest = true`
+-- there marks them); a dialog gives and takes them by their item kind ("ring"), and a quest
+-- finds them by their entity (Names.RING). Anything misspelt --
+-- a step finding an item that does not exist, a reply leading to a line that is not there -- is
+-- printed to the log when the night starts (Journal.validate).
+--
+-- Remember the script preprocessor: no backslashes in the strings here.
+
+Quests = {}
+
+-- ---- Klara's ring: find something, bring it back ----
+
+Quests["ring"] = {
+	title = "KLARA'S RING",
+	info = "OLD KLARA DROPPED HER LATE HUSBAND'S SIGNET RING IN THE CHURCHYARD WHEN THE GRAVES OPENED. SHE DARE NOT GO BACK FOR IT.",
+	steps = {
+		{
+			id = "find",
+			text = "FIND KLARA'S SIGNET RING BY THE CHAPEL",
+			find = Names.RING
+		},
+		{
+			id = "return",
+			text = "BRING THE RING BACK TO KLARA",
+			talk = Names.KLARA,
+			at = "thanks"
+		}
+	},
+	reward = { give = { "coin:15", "flask" } }
+}
+
+-- ---- The burial ledger: take it off someone, bring it back, go somewhere ----
+
+Quests["ledger"] = {
+	title = "THE BURIAL LEDGER",
+	info = "BANDITS TOOK THE CHAPEL'S BURIAL LEDGER. BROTHER ANSELM SAYS THE DEAD WITH NO NAMES DO NOT SLEEP.",
+	steps = {
+		{
+			id = "find",
+			text = "TAKE THE LEDGER BACK FROM BELLA'S CAMP ON THE WEST RIDGE",
+			find = Names.LEDGER
+		},
+		{
+			id = "return",
+			text = "RETURN THE LEDGER TO BROTHER ANSELM",
+			talk = Names.BROTHER_ANSELM,
+			at = "thanks"
+		},
+		{
+			id = "altar",
+			text = "SAY A PRAYER FOR THE NAMELESS AT THE CHURCHYARD ALTAR",
+			reach = Names.ALTAR,
+			radius = 3.0
+		}
+	},
+	reward = { give = "rounds:24" }
+}
+
+-- ---- Greta's locket: someone to talk to first ----
+
+Quests["locket"] = {
+	title = "THE LOST LOCKET",
+	info = "GRETA'S LOCKET, HER MOTHER'S, HAS GONE MISSING. SHE IS SURE HER BOY TOMAS KNOWS WHERE IT IS.",
+	steps = {
+		{
+			id = "ask",
+			text = "ASK TOMAS WHERE HE PUT HIS MOTHER'S LOCKET",
+			talk = Names.TOMAS,
+			at = "confess"
+		},
+		{
+			id = "find",
+			text = "FIND THE LOCKET BEHIND THE OLD CHEST BY THE CHAPEL",
+			find = Names.LOCKET
+		},
+		{
+			id = "return",
+			text = "GIVE THE LOCKET BACK TO GRETA",
+			talk = Names.GRETA,
+			at = "thanks"
+		}
+	},
+	reward = { give = "bread:2" }
+}
+
+-- ---- The sword of Villinge: a find in another stage ----
+--
+-- The sword is in the cave (Scenes/S - Cave), Åke in the forest, so each step points at the one
+-- it is about when the player is in that world, and otherwise at the way there.
+
+Quests["sword"] = {
+	title = "THE SWORD OF VILLINGE",
+	info = "ÅKE'S GRANDFATHER FORGED THE SWORD OF VILLINGE. IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.",
+	steps = {
+		{
+			id = "find",
+			text = "FIND THE SWORD OF VILLINGE IN THE DEEPEST TUNNEL OF THE CAVE",
+			find = Names.SWORD,
+			waypoint = { Names.SWORD, Names.CAVE_MOUTH }
+		},
+		{
+			id = "return",
+			text = "BRING THE SWORD BACK TO ÅKE THE SMITH",
+			talk = Names.AKE,
+			at = "sword",
+			waypoint = { Names.AKE, Names.CAVE_EXIT }
+		}
+	},
+	reward = { give = { "helmet", "coin:20" } }
+}
+]]></text>
+</object>

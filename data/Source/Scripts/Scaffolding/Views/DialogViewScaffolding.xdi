@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
+#using \{F7AD081B-BE81-417A-ABB1-29D327FF6C57}
+#using \{D1A10000-0000-4000-8000-000000000003}
+#using \{D1A10000-0000-4000-8000-000000000004}
+
+import(traktor)
+
+-- DialogViewScaffolding
+--
+-- Test page for Scripts/Views/DialogView, hosted the way Main hosts it (Main:_setDialogOpen in
+-- Scripts/Quests/Questing): a Dialog of its own on the one Frame, shown and then handed a started
+-- Conversation. Main is stood in for by StageStub, whose journal is a real Scripts/Quests/Journal,
+-- so the talks are the real ones out of Scripts/Quests/Dialogs and choosing a reply really gives
+-- quests and moves them on -- the log says what the HUD would have.
+--
+-- Each time the talk ends (a reply leading nowhere, LEAVE) the window closes, and a moment later
+-- opens on the next scene: Klara with no quest yet, Klara once the ring has been found, Brother
+-- Anselm, Tomas with a coin in the pack, and someone with no dialog of their own.
+
+DialogViewScaffolding = DialogViewScaffolding or class("DialogViewScaffolding", GameScaffolding)
+
+local REOPEN < const > = 1.0   -- how long the window stays closed (s)
+
+local SCENES < const > = {
+	{ key = Names.KLARA, name = "KLARA" },
+	{ key = Names.KLARA, name = "KLARA", ring = true },
+	{ key = Names.BROTHER_ANSELM, name = "BROTHER ANSELM", greeting = "THE DEAD DO NOT REST HERE ANY MORE. PRAY ANYWAY." },
+	{ key = Names.TOMAS, name = "TOMAS", greeting = "MOTHER SAYS I'M NOT TO TALK TO YOU.", locket = true },
+	{ key = nil, name = "AXEL", greeting = "STAY CLOSE TO THE LIGHT TONIGHT." }
+}
+
+function DialogViewScaffolding:build(parent, frame)
+	self:note(parent, "DIALOG VIEW   Click a reply. The talk ending closes the window; it opens again on the next of five scenes.")
+
+	self._stage = StageStub()
+	self._scene = 0
+
+	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
+	self._view = DialogView(self._dialog, self._stage)
+	self._view:setOnEnd(function(c)
+		print("DialogViewScaffolding: talk over" .. (c:wantsTrade() and ", wants to trade" or ""))
+		self._dialog:hide()
+		self:after(REOPEN, function() self:show() end)
+	end)
+	-- Centred again at its new size whenever the number of replies changes, as Main stands it
+	-- at the bottom of the screen again.
+	self._view:setOnResize(function()
+		local p < const > = frame:getPlacement()
+		local ps < const > = self._dialog:getPreferredSize()
+		self._dialog:place((p.width - ps.width) * 0.5, (p.height - ps.height) * 0.5, ps.width, ps.height)
+	end)
+end
+
+function DialogViewScaffolding:show()
+	self._scene = self._scene % #SCENES + 1
+	local scene < const > = SCENES[self._scene]
+
+	local stage < const > = self._stage
+	stage:emptyPack()
+	local journal < const > = stage:resetJournal()
+	if scene.ring then
+		journal:start("ring")
+		stage:inventory():add("ring", 1)
+		journal:update()
+	end
+	if scene.locket then
+		journal:start("locket")
+		stage:inventory():add("coin", 3)
+	end
+
+	local c < const > = Conversation(journal, scene.key, scene.greeting or "", scene.name)
+	c:start()
+	self._dialog:show()
+	self._view:showConversation(c)
+end
+]]></text>
+</object>

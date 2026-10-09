@@ -53,6 +53,10 @@
 #using \{4E9C0000-0000-4000-8000-000000000001}
 #using \{4E9C0000-0000-4000-8000-000000000004}
 
+-- Scripts/Quests/Questing: talking to people, the quests they give (the journal, J), and the
+-- compass and the map that point the way -- more of this class, in a script of its own.
+#using \{D1A10000-0000-4000-8000-000000000006}
+
 import(traktor)
 
 -- Main
@@ -79,9 +83,6 @@ import(traktor)
 -- other, so there is no pose to save and restore across the cut.
 local DAWN_ACT < const > = "Dawn"
 local DAWN_CAMERA < const > = "Camera"
-
--- Two-argument atan; math.atan2 was folded into math.atan.
-local atan2 < const > = math.atan2 or math.atan
 
 -- How high the player's eye rides above the Humanoid's origin. What the first person
 -- camera looks out of, and -- through Main:eye -- what every shot, swing and throw leaves
@@ -126,10 +127,6 @@ local MAP_Y < const > = 20
 -- and the weapon tile stand on the bottom one.
 local HUD_MARGIN_X < const > = 24
 local HUD_MARGIN_Y < const > = 20
-
--- Slack around the scene's points of interest when fitting the map to them, so
--- nothing ends up drawn on the bezel.
-local MAP_PAD < const > = 1.14
 
 -- The hive cutscene (Main:_beginCutscene): where the camera stands while a hive opens
 -- and how long it is held there.
@@ -348,7 +345,7 @@ function Main:new(params, environment)
 	self._minimap.__layout = ILayout.FLOAT
 	local mapSize < const > = self._minimap:getPreferredSize()
 	self._minimap:place(MAP_X, MAP_Y, mapSize.width, mapSize.height)
-	-- Hidden until it has been fitted to a scene, so a stage with nothing to map
+	-- Hidden until it has been given its markers, so a stage with nothing to map
 	-- (Scene 1 has no relics, no wards and none of the landmarks) never shows an
 	-- empty plate, and Scene 2 never flashes one on the frame before resolve runs.
 	self._minimap:setVisible(false)
@@ -654,6 +651,9 @@ function Main:new(params, environment)
 	self._chestDialog = Dialog(self._frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
 	self._chestView = ChestView(self._chestDialog, self)
 	self._chestView:setOnClose(function() self:_setChestOpen(nil) end)
+
+	-- The journal, and the conversation and journal windows (Scripts/Quests/Questing).
+	self:_initQuests(carry)
 
 	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
 	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
@@ -1094,6 +1094,7 @@ function Main:_carry(spawn)
 			kills = self._kills,
 			godMode = self._godMode,
 			infiniteAmmo = self._infiniteAmmo,
+			quests = self._journal:saveState(),
 		},
 	}
 end
@@ -1161,6 +1162,7 @@ function Main:finalize()
 		self._chestDialog = nil
 		self._chestView = nil
 	end
+	self:_finalizeQuests()
 	if self._pauseDialog ~= nil then
 		self._pauseDialog:remove()
 		self._pauseDialog = nil
@@ -1575,6 +1577,7 @@ end
 -- A pickup has gone for good, all of it into the pack (Pickup:_taken). Booked so the world can
 -- be laid out without it if the player leaves for another stage and comes back.
 function Main:pickupTaken(entity)
+	self._journal:found(entity.id)   -- what a quest's `find` waits for (Scripts/Quests/Journal)
 	local key < const > = (self._pickupKeyOf ~= nil) and self._pickupKeyOf[entity] or nil
 	if key ~= nil then
 		self._pickups[key].taken = true
@@ -2800,171 +2803,28 @@ function Main:_updateDawn(dt)
 	end
 end
 
--- Fit the minimap to the scene and give it its markers. Once only, off the world.
+-- Give the minimap its markers. Once only, off the world. The map is the ground around
+-- the player (Scripts/Widgets/Minimap), so there is nothing to fit: only what to draw.
 --
--- The extent is fitted to the scene's own points of interest -- every relic, every
--- ward post, the landmarks and where the player starts -- rather than to the
--- terrain, which is 512 m square while all of that sits inside about 110 m: fitting
--- the heightfield would draw the entire game in one corner of the plate. Squared
--- off about the centre so nothing is stretched, and padded so no marker is drawn on
--- the bezel. Nothing here moves, so none of it is ever recomputed.
---
--- Returns false in a scene with nothing to map (Scene 1), which leaves the widget
--- hidden and stops _updateMinimap doing anything.
+-- Returns false in a scene with nothing to map -- no relics, wards or landmarks -- which
+-- leaves the widget hidden and stops _updateMinimap doing anything.
 function Main:_buildMinimap(world)
-	local minX, maxX = math.huge, -math.huge
-	local minZ, maxZ = math.huge, -math.huge
-	local function fit(p)
-		minX = math.min(minX, p.x)
-		maxX = math.max(maxX, p.x)
-		minZ = math.min(minZ, p.z)
-		maxZ = math.max(maxZ, p.z)
-	end
-
-	local relics = 0
-	local i = 0
-	while true do
-		local r = world:getEntity("Relic", i)
-		if r == nil then
-			break
-		end
-		i = i + 1
-		relics = relics + 1
-		fit(r.transform.translation)
-	end
-
-	for _, w in ipairs(self._wards) do
-		fit({ x = w.x, z = w.z })
-	end
-
 	local marks = {}
 	for _, l in ipairs(LANDMARKS) do
 		local e = world:getEntity(l.entity)
 		if e ~= nil then
 			local p < const > = e.transform.translation
 			table.insert(marks, { x = p.x, z = p.z, glyph = l.glyph })
-			fit(p)
 		end
 	end
 
-	if relics == 0 and #self._wards == 0 and #marks == 0 then
+	if world:getEntity("Relic", 0) == nil and #self._wards == 0 and #marks == 0 then
 		return false
 	end
 
-	-- Where they start, so the arrow is never already off the edge on frame one.
-	if self._humanoid ~= nil then
-		fit(self._humanoid.transform.translation)
-	end
-
-	local span < const > = math.max(maxX - minX, maxZ - minZ, 1.0) * MAP_PAD
-	local cx < const > = (minX + maxX) * 0.5
-	local cz < const > = (minZ + maxZ) * 0.5
-
-	self._minimap:setExtent(cx - span * 0.5, cz - span * 0.5, span)
 	self._minimap:setWardRadius(self._wardRadius)
-	self._minimap:build(relics, #self._wards, marks)
-	self._minimapRelics = relics
+	self._minimap:build(#self._wards, marks)
 	return true
-end
-
--- Push the map's moving parts. Relics are read off their entities rather than
--- tracked, so carrying one, dropping it in the forest and setting it at a post all
--- show up without any of those paths having to know the map exists.
-function Main:_updateMinimap()
-	if not self._minimapMapped then
-		return
-	end
-
-	-- Hidden once the night is decided, so neither the victory card nor the Game
-	-- Over menu has a map sitting in the corner behind it -- and while paused, with
-	-- the rest of the HUD. Widget:setVisible is already a no-op when the state has
-	-- not changed, so this needs no latch.
-	--
-	-- The pause flag belongs here rather than in _showHud because this runs above the
-	-- freeze returns: anything hidden from outside would be shown again by the very
-	-- next frame of a paused game.
-	local show < const > = not self._gameOver and not self._nightOver and not self._paused
-	self._minimap:setVisible(show)
-	if not show then
-		return
-	end
-
-	local world < const > = self.world.world
-	if world ~= nil then
-		for i = 1, self._minimapRelics do
-			local r = world:getEntity("Relic", i - 1)
-			if r ~= nil then
-				-- Spent is hidden and not in the pack: a relic in the pack is hidden too, but
-				-- rides along with the player (postUpdate), so its dot is the player's. A spent
-				-- one is parked on its ward (Pickup:spend), which puts its dot on the post.
-				local p < const > = r.transform.translation
-				self._minimap:setRelic(i, p.x, p.z, not r.visible and not self._inventory:holds(r))
-			end
-		end
-	end
-
-	for i, w in ipairs(self._wards) do
-		self._minimap:setWard(i, w.x, w.z, w.lit)
-	end
-
-	if self._humanoid ~= nil then
-		local p < const > = self._humanoid.transform.translation
-		self._minimap:setPlayer(p.x, p.z, self._heading)
-	end
-end
-
--- Aim the objective compass at wherever the player should be walking: the nearest
--- still-dark ward while there is a relic in the pack, then a locked gate while there is
--- a key in it, and otherwise the nearest relic -- or failing that key -- still lying out
--- in the forest. Blank once the night is over, either way it ended.
---
--- Nearest is only ever a suggestion. With no altar to return to, where a relic goes is
--- the player's decision -- the needle picks the closest unlit post so it has something to
--- say, and walking past it to a post that covers better ground is the whole point of the
--- mechanic.
-function Main:_updateMarker(dt)
-	local target = nil
-	if not self._gameOver and not self._nightOver and self._humanoid ~= nil then
-		local inv < const > = self._inventory
-		if inv:count("relic") > 0 then
-			target = self:_wardObjective()
-		end
-		if target == nil and inv:count("key") > 0 then
-			local gate < const > = self:_nearestLockedGate()
-			target = (gate ~= nil) and gate.entity or nil
-		end
-		if target == nil then
-			-- Nothing in the pack to take anywhere: the nearest thing worth picking up, in
-			-- priority order -- the relic run is the objective, the key run the detour.
-			target = self:_nearestLying("Relic") or self:_nearestLying("Key")
-		end
-	end
-
-	-- Changing what it points at snaps and flashes the needle rather than sweeping
-	-- it across the dial, so a hand-off reads as a new instruction.
-	if target ~= self._markerTarget then
-		self._markerTarget = target
-		self._marker:retarget()
-	end
-
-	-- The strip turns with the player whether or not there is anything on it.
-	self._marker:setHeading(self._heading or 0.0)
-
-	if target == nil then
-		self._marker:setTarget(nil)
-	else
-		local p < const > = target.transform.translation
-		local pp < const > = self._humanoid.transform.translation
-		local dx < const > = p.x - pp.x
-		local dz < const > = p.z - pp.z
-		-- Relative bearing. Forward is (sin h, 0, cos h), so the world bearing of
-		-- (dx, dz) is atan2(dx, dz), and subtracting the player's heading turns it
-		-- into "how far round from straight ahead" -- which is where on the strip the
-		-- quest marker stands.
-		self._marker:setTarget(atan2(dx, dz) - self._heading, math.sqrt(dx * dx + dz * dz))
-	end
-
-	self._marker:update(dt)
 end
 
 -- Place the aiming crosshair at the centre of the screen, and show it only while the
@@ -3250,6 +3110,8 @@ function Main:update(info)
 	-- on the last frame still finishes its flash once the game is paused or over.
 	self._healthBar:update(dt)
 	self._loadout:updateHud(dt)
+	-- The quests, their windows and the waypoint the compass and the map show next.
+	self:_updateQuests(dt)
 	-- Ticks the compass widget itself, as well as re-aiming it.
 	self:_updateMarker(dt)
 
@@ -3335,6 +3197,8 @@ function Main:update(info)
 				self:_setInventoryOpen(false)
 			elseif self._chestOpen ~= nil then
 				self:_setChestOpen(nil)
+			elseif self:_closeQuestPanel() then
+				-- ...and so does a conversation or the journal.
 			else
 				self:_setPaused(not self._paused)
 			end
@@ -3351,6 +3215,9 @@ function Main:update(info)
 		elseif mapping ~= nil and self._chestOpen ~= nil and mapping:isStatePressed("STATE_INTERACT") then
 			-- E opened the chest's window, and E closes it.
 			self:_setChestOpen(nil)
+		elseif mapping ~= nil then
+			-- E leaves a conversation, J opens and closes the journal.
+			self:_questKeys(mapping)
 		end
 	end
 	if self._paused then
@@ -3654,6 +3521,7 @@ function Main:postUpdate(info)
 	-- The world has updated at least once: every component's script object exists. See resolve.
 	self._worldUpdated = true
 	self:_updateNameTags(info.simulationDeltaTime)   -- Scripts/Npc/Characters
+	self:_updateQuestBeacon(info.simulationDeltaTime) -- Scripts/Quests/Questing
 
 	if self._gameOver or self._paused then
 		return
@@ -3720,7 +3588,7 @@ function Main:postUpdate(info)
 	-- The relics in the pack. The one in hand is held up in the off hand, riding the full aim
 	-- exactly like the weapon, so it rises and drops with the view instead of lagging behind it
 	-- (Relic:carryTransform); the rest ride along, hidden, wherever the player is -- which is
-	-- what keeps their dots on the minimap with the player rather than wherever they were found.
+	-- where anything reading a relic's position should find it, rather than where it was found.
 	if self._humanoid ~= nil then
 		local at < const > = Transform(self._humanoid.transform.translation, Quaternion.identity)
 		self._inventory:eachKept(function(e)
@@ -3794,6 +3662,7 @@ function Main:reload()
 	self._npcs = nil
 	self._npcKeyOf = nil
 	self._routes = nil
+	self:_reloadQuests()
 end
 
 ]]></text>

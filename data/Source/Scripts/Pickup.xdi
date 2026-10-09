@@ -129,7 +129,13 @@ end
 -- Put as much of this as fits into the pack. True when anything went; whatever did not fit
 -- stays here, as a smaller pile. Used by both ways of taking one -- the walk-over below, and
 -- Main's E for the rest -- so there is one way into the pack.
+--
+-- A hidden one is not there to be taken: a keepsake already in the pack or spent, or a quest
+-- item whose quest has not been given yet (Scripts/Quests/Questing, _updateQuestItems).
 function Pickup:collect(context)
+	if not self.owner.visible then
+		return false
+	end
 	local kind < const > = self:itemKind()
 	if kind == nil or Items[kind] == nil then
 		return false
@@ -189,7 +195,7 @@ end
 
 -- Spend a keepsake on `target` (an entity): park it there, out of sight. Parked rather than left
 -- wherever the player's pack happened to be, because it is still the entity anything positional
--- reads the item off -- the minimap dot belongs on the post it bought. Nothing moves it after
+-- reads the item off -- a spent relic belongs on the post it bought. Nothing moves it after
 -- this: it is no longer in the pack, and only the pack's are carried along.
 function Pickup:spend(context, target)
 	self.owner.transform = target.transform

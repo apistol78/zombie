@@ -1724,6 +1724,12 @@
       <polygon points="274.5,11 285.5,11 285.5,22 280,29.5 274.5,22" style="fill:#e8d9a6"/>
       <polygon points="274.5,11 280,11 280,29.5 274.5,22" style="fill:#fff6da;fill-opacity:0.55"/>
     </g>
+    <g id="quest" inkscape:label="quest" traktor:sprite="1">
+      <polygon points="280,9.6 287.4,21 280,32.4 272.6,21" style="fill:#050505;fill-opacity:0.9"/>
+      <polygon points="280,11.4 285.8,21 280,30.6 274.2,21" style="fill:#f2efe6"/>
+      <polygon points="274.2,21 280,11.4 280,30.6" style="fill:#cdcac0"/>
+      <polygon points="280,16.8 282.6,21 280,25.2 277.4,21" style="fill:#e8d9a6"/>
+    </g>
     <g id="glow" inkscape:label="glow" traktor:sprite="1">
       <rect x="0" y="6" width="560" height="0.1" style="fill:#ffffff;fill-opacity:0"/>
       <rect x="0" y="35.9" width="560" height="0.1" style="fill:#ffffff;fill-opacity:0"/>
@@ -2076,16 +2082,6 @@
       <circle cx="40" cy="40" r="2.6" style="fill:#fff6da"/>
     </g>
   </g>
-  <g id="MC_MapRelic" inkscape:label="MC_MapRelic"
-     inkscape:groupmode="layer" traktor:sprite="1"
-     style="display:none">
-    <g id="mark" inkscape:label="mark" traktor:sprite="1">
-      <rect x="32.5" y="35.2" width="15" height="5.2" style="fill:#050505;fill-opacity:0.8"/>
-      <rect x="37.4" y="32.5" width="5.2" height="15" style="fill:#050505;fill-opacity:0.8"/>
-      <rect x="33.5" y="36.2" width="13" height="3.2" style="fill:#e8d9a6"/>
-      <rect x="38.4" y="33.5" width="3.2" height="13" style="fill:#e8d9a6"/>
-    </g>
-  </g>
   <g id="MC_MapLandmark" inkscape:label="MC_MapLandmark"
      inkscape:groupmode="layer" traktor:sprite="1"
      style="display:none">
@@ -2178,6 +2174,16 @@
       <polygon points="45.2,42.61 41.73,42.68 38.27,42.62 34.8,42.62 34.8,43.39 38.27,43.37 41.73,43.32 45.2,43.3" style="fill:#d8d8d2"/>
       <polygon points="35.29,43.51 36.99,40.43 38.77,37.39 40.51,34.33 39.82,33.94 38.13,37.03 36.39,40.09 34.65,43.15" style="fill:#d8d8d2"/>
       <circle cx="40" cy="40.3" r="0.9" style="fill:#d8d8d2"/>
+    </g>
+  </g>
+  <g id="MC_MapQuest" inkscape:label="MC_MapQuest"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="pin" inkscape:label="pin" traktor:sprite="1">
+      <polygon points="40,30.88 45.92,40 40,49.12 34.08,40" style="fill:#050505;fill-opacity:0.9"/>
+      <polygon points="40,32.32 44.64,40 40,47.68 35.36,40" style="fill:#f2efe6"/>
+      <polygon points="35.36,40 40,32.32 40,47.68" style="fill:#cdcac0"/>
+      <polygon points="40,36.64 42.08,40 40,43.36 37.92,40" style="fill:#e8d9a6"/>
     </g>
   </g>
   <g id="MC_MapPlayer" inkscape:label="MC_MapPlayer"
@@ -2374,6 +2380,62 @@
       <polygon points="21.2,24.25 42.8,24.25 42.8,31.45 21.2,31.45" style="fill:#e8d9a6"/>
       <polygon points="28.4,16 30,16 30,50 28.4,50" style="fill:#fff6da;fill-opacity:0.8"/>
       <polygon points="21.2,24.25 42.8,24.25 42.8,25.65 21.2,25.65" style="fill:#fff6da;fill-opacity:0.8"/>
+    </g>
+    <g id="icon_ring" inkscape:label="icon_ring" traktor:sprite="1">
+      <ellipse cx="32" cy="34" rx="15.5" ry="12.5" style="fill:#3d2b07"/>
+      <ellipse cx="32" cy="34" rx="14" ry="11" style="fill:#c8962a"/>
+      <ellipse cx="29" cy="31" rx="9" ry="6" style="fill:#dcb55a"/>
+      <ellipse cx="32" cy="36" rx="9.6" ry="7" style="fill:#3d2b07"/>
+      <ellipse cx="32" cy="36.5" rx="8.4" ry="5.8" style="fill:#121212"/>
+      <ellipse cx="32" cy="24" rx="9" ry="6.5" style="fill:#3d2b07"/>
+      <ellipse cx="32" cy="24" rx="7.6" ry="5.2" style="fill:#f2d488"/>
+      <ellipse cx="32" cy="24" rx="4.6" ry="3.1" style="fill:#2a1606"/>
+      <ellipse cx="30.8" cy="23" rx="1.6" ry="1" style="fill:#f2d488"/>
+    </g>
+    <g id="icon_ledger" inkscape:label="icon_ledger" traktor:sprite="1">
+      <polygon points="16.73,19.98 45.79,13.8 52.85,47.02 23.79,53.19" style="fill:#050505"/>
+      <polygon points="14.95,18.82 44.01,12.65 51.07,45.86 22.01,52.04" style="fill:#050505"/>
+      <polygon points="13.17,17.67 42.23,11.49 49.29,44.7 20.23,50.88" style="fill:#050505"/>
+      <polygon points="17.77,20.76 45.16,14.94 51.81,46.24 24.42,52.06" style="fill:#9c8f72"/>
+      <polygon points="15.99,19.6 43.38,13.78 50.03,45.08 22.64,50.9" style="fill:#d9cdb0"/>
+      <polygon points="14.21,18.45 41.6,12.62 48.25,43.93 20.86,49.75" style="fill:#5a2318"/>
+      <polygon points="16.58,19.99 40.06,15 40.47,16.95 17,21.94" style="fill:#7e3a28"/>
+      <polygon points="17.87,35.66 48.19,29.22 49.02,33.13 18.7,39.57" style="fill:#36130c"/>
+      <polygon points="39.18,30.11 44.07,29.07 45.32,34.94 40.43,35.98" style="fill:#c8962a"/>
+      <polygon points="20.35,23.28 37.95,19.53 39.41,26.38 21.8,30.12" style="fill:#45180f"/>
+    </g>
+    <g id="icon_locket" inkscape:label="icon_locket" traktor:sprite="1">
+      <circle cx="20.74" cy="16.5" r="2.2" style="fill:#2b2d33"/>
+      <circle cx="20.74" cy="16.5" r="1.3" style="fill:#c9ccd4"/>
+      <circle cx="25.5" cy="13.21" r="2.2" style="fill:#2b2d33"/>
+      <circle cx="25.5" cy="13.21" r="1.3" style="fill:#c9ccd4"/>
+      <circle cx="32" cy="12" r="2.2" style="fill:#2b2d33"/>
+      <circle cx="32" cy="12" r="1.3" style="fill:#c9ccd4"/>
+      <circle cx="38.5" cy="13.21" r="2.2" style="fill:#2b2d33"/>
+      <circle cx="38.5" cy="13.21" r="1.3" style="fill:#c9ccd4"/>
+      <circle cx="43.26" cy="16.5" r="2.2" style="fill:#2b2d33"/>
+      <circle cx="43.26" cy="16.5" r="1.3" style="fill:#c9ccd4"/>
+      <circle cx="32" cy="20" r="3.6" style="fill:#2b2d33"/>
+      <circle cx="32" cy="20" r="2.4" style="fill:#c9ccd4"/>
+      <circle cx="32" cy="20" r="1.1" style="fill:#121212"/>
+      <ellipse cx="32" cy="35" rx="12.5" ry="14.5" style="fill:#2b2d33"/>
+      <ellipse cx="32" cy="35" rx="11.2" ry="13.2" style="fill:#c9ccd4"/>
+      <ellipse cx="32" cy="35" rx="8.4" ry="10.2" style="fill:#7a7e88"/>
+      <ellipse cx="32" cy="35" rx="7.2" ry="9" style="fill:#c9ccd4"/>
+      <ellipse cx="28.5" cy="30.5" rx="2.6" ry="4" style="fill:#f0f2f6"/>
+    </g>
+    <g id="icon_sword" inkscape:label="icon_sword" traktor:sprite="1">
+      <polygon points="26.61,32.09 52.41,6.17 56.96,5.04 55.83,9.59 29.91,35.39" style="fill:#050505"/>
+      <polygon points="20.32,28.56 22.78,26.1 35.9,39.22 33.44,41.68" style="fill:#050505"/>
+      <polygon points="17.53,41.3 26.33,32.5 29.5,35.67 20.7,44.47" style="fill:#050505"/>
+      <polygon points="27.62,31.27 51.66,7.23 56.04,5.96 54.77,10.34 30.73,34.38" style="fill:#7d828f"/>
+      <polygon points="21.39,29.29 23.51,27.17 34.83,38.49 32.71,40.61" style="fill:#c8962a"/>
+      <polygon points="18.71,40.75 25.78,33.68 28.32,36.22 21.25,43.29" style="fill:#5a2318"/>
+      <polygon points="27.62,31.27 51.66,7.23 54.91,6.24 28.75,32.4" style="fill:#b8bdc9"/>
+      <polygon points="21.39,29.29 22.24,28.44 33.56,39.76 32.71,40.61" style="fill:#f2d488"/>
+      <circle cx="18.21" cy="43.79" r="4.2" style="fill:#050505"/>
+      <circle cx="18.21" cy="43.79" r="3" style="fill:#c8962a"/>
+      <circle cx="17.41" cy="42.99" r="1.1" style="fill:#f2d488"/>
     </g>
     <g id="sel" inkscape:label="sel" traktor:sprite="1">
       <rect x="0" y="0" width="64" height="1.5" style="fill:#ffffff;fill-opacity:0.95"/>

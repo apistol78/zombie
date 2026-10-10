@@ -28,7 +28,7 @@ Relic = Relic or class("Relic", Pickup)
 local REACH < const > = Config.relic.reachRange   -- how close to a relic to take it (m)
 
 function Relic:itemKind()
-	return "relic"
+	return Items.keyOf(Names.RELIC)
 end
 
 function Relic:itemCount()

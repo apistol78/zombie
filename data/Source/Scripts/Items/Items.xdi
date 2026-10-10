@@ -2,194 +2,127 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{D1A10000-0000-4000-8000-00000000000B}
+#using \{D1A10000-0000-4000-8000-00000000000C}
 
 import(traktor)
 
 -- Items
 --
--- Every kind of thing the pack can hold, keyed by the name the rest of the game uses for it
--- ("rifle", "rounds", "relic"). It is a catalogue and nothing more: what the player is actually
--- carrying is Scripts/Items/Inventory's, and what an item *does* is asked of whoever owns that
--- -- the loadout draws a weapon, Main eats food and wears armour, a ward takes a relic. This is
--- only where all of them look up what an item is called, what it looks like, how many share a
--- slot and which way it is used.
+-- How the code looks an item up. What the items *are* is Scripts/Items/VirtualItems, the level
+-- designer's table, keyed by guid (Names.RIFLE); this is the one place that turns whatever an item
+-- is called by -- that guid, its key, or its name as a scene's text property writes it -- into its
+-- entry, so nothing else has to care which of them it was handed.
 --
--- What an entry says:
+-- An item's key is its guid as text, upper case: "{D1A10000-...-000000000200}" for the rifle. It
+-- is what everything keeps an item by -- the pack's stacks, a chest's contents, what a character
+-- carries, the books a save is made of -- because those are plain data and table keys, and a Guid
+-- is neither (two Guids of the same value are equal, ==, but they are not the same table key).
+-- Nothing chooses a key or types one: it is only ever got from here.
 --
---   name     what the inventory screen and the prompts call it
---   plural   ...and a stack of more than one, where that is not just the name
---   info     one line for the inventory screen; short, the detail column is narrow
---   icon     which picture of MC_ItemSlot it is drawn with (data/Assets/UI/Hud.svg, from
---            tools/gen_item_icons.py); the kind itself unless it says otherwise
---   stack    how many share one slot -- Config.items, since it is a balance number
---   equip    which of the player's three places it goes when equipped:
---              "weapon"  in hand; the trigger is on it (Scripts/Weapons/Loadout)
---              "hand"    the off hand; what lights a ward (a relic)
---              "body"    worn; takes `armor` of the contact damage (Config.items)
---   heal     food: the health one restores when it is used from the pack (Config.items)
---   event    what one going into the pack is called to the SpawnOrchestrator, however it got
---            there -- off the ground or out of a chest -- or nil for no surge
---   entity   the EntityData a dropped one is rebuilt from. The escaped form is what makes it a
---            tracked build dependency as well as a guid, exactly as Scripts/Spawner references
---            the zombie -- which is also how every one of those entities ends up in the build.
---   keep     the item *is* its entity, and the entity is never destroyed: taken, it is hidden
---            and rides along in the pack; dropped, the same one comes back out; spent, it is
---            parked where it was spent. Only the relic is one -- the compass and the count of
---            wards the night needs both read the relics off their entities, and a
---            relic that was rebuilt from scratch on every drop would be a new relic to them.
---   quest    one of a kind, wanted by a quest (Scripts/Quests/Quests). It has no `entity`, so
---            it cannot be put down -- a quest item is not lost by accident -- and the pack
---            says what it is for. One stack of one: nothing in Config.items.
+--   Items.get(item)        the item's entry in VirtualItems, or nil; `item` is a Guid, a key or
+--                          a name ("rounds", "ROUNDS" -- Names.ROUNDS)
+--   Items.keyOf(item)      ...its key, or nil for something that is no item
+--   Items.is(a, b)         whether a and b are the same item, however each was named
+--   Items.all()            every entry, ordered by name
+--   Items.describe(item, count)   "RIFLE", "12 ROUNDS"
+--   Items.parseList(spec, who)    a scene's "rounds:24, bread" as { { name, key, count }, ... }
 --
--- Adding a kind is an entry here, its numbers in Config.items and an icon in the art. Something
--- lying in the world becomes one by carrying a Scripts/Pickup that names it, and a chest holds
--- one by naming it in its contents (Scripts/Chest) -- no entity needed for that.
+-- Every entry gets these filled in, besides what the designer wrote: `id` (its Guid), `key`, and
+-- `stack`, `heal` and `armor` out of its `tune` (Config.items), `stack` 1 without one.
 
 Items = {}
 
-local function item(kind, def)
-	local tune < const > = Config.items[kind] or {}
-	def.kind = kind
-	def.icon = def.icon or kind
-	def.stack = tune.stack or 1
-	def.heal = tune.heal
-	def.armor = tune.armor
-	Items[kind] = def
+-- The entries by key, made once per VirtualItems table: a hot reload that rebuilds VirtualItems
+-- rebuilds this too.
+local index = nil
+local indexOf = nil
+
+local function textOf(guid)
+	return string.upper(guid:format())
 end
 
--- ---- Weapons ----
---
--- Each of these is one Scripts/Weapons/Weapon in the loadout, which finds its weapon by this
--- name (Weapon:item). Owning one is having it in the pack; drawing it is equipping it.
+local function build()
+	if indexOf == VirtualItems then
+		return
+	end
+	indexOf = VirtualItems
+	index = {}
+	for id, def in pairs(VirtualItems) do
+		-- The keys are Guids, which are objects with a metatable of their own.
+		if type(def) == "table" and getmetatable(id) ~= nil then
+			local key < const > = textOf(id)
+			local tune < const > = def.tune or {}
+			def.id = id
+			def.key = key
+			def.stack = tune.stack or 1
+			def.heal = tune.heal
+			def.armor = tune.armor
+			index[key] = def
+		end
+	end
+end
 
-item("rifle", {
-	name = "RIFLE",
-	info = "SIX IN THE MAGAZINE. REACHES FAR.",
-	equip = "weapon",
-	entity = Guid("\{17E40000-0000-4000-8000-000000000010}")
-})
+function Items.keyOf(item)
+	if item == nil then
+		return nil
+	end
+	build()
+	if type(item) == "string" then
+		if string.sub(item, 1, 1) == "{" then
+			local key < const > = string.upper(item)
+			return (index[key] ~= nil) and key or nil
+		end
+		local guid < const > = Names[string.upper(item)]
+		return (guid ~= nil) and Items.keyOf(guid) or nil
+	end
+	if type(item) == "table" and getmetatable(item) == nil then
+		return nil
+	end
+	local key < const > = textOf(item)
+	return (index[key] ~= nil) and key or nil
+end
 
-item("machinegun", {
-	name = "MACHINE GUN",
-	info = "A BELT OF 45. HOLD TO FIRE.",
-	equip = "weapon",
-	entity = Guid("\{17E40000-0000-4000-8000-000000000011}")
-})
+function Items.get(item)
+	local key < const > = Items.keyOf(item)
+	return (key ~= nil) and index[key] or nil
+end
 
--- A stack and a weapon at once: drawn like the rifle, and every throw takes one off it. The
--- last one thrown takes the weapon out of the pack with it, and the loadout hands the trigger
--- to whatever is left.
-item("grenade", {
-	name = "GRENADE",
-	plural = "GRENADES",
-	info = "THROWN. TAKES A CROWD WITH IT.",
-	equip = "weapon",
-	entity = Guid("\{6E9AD100-0000-4000-8000-000000000003}")
-})
+function Items.is(a, b)
+	local key < const > = Items.keyOf(a)
+	return key ~= nil and key == Items.keyOf(b)
+end
 
--- ---- What the weapons eat ----
+function Items.all()
+	build()
+	local out = {}
+	for _, def in pairs(index) do
+		table.insert(out, def)
+	end
+	table.sort(out, function(a, b) return a.name < b.name end)
+	return out
+end
 
--- Both firearms load from these: what the rifle used to call its reserve and the machine gun
--- its spare belts are the same stacks now.
-item("rounds", {
-	name = "ROUND",
-	plural = "ROUNDS",
-	info = "FOR THE RIFLE AND THE MACHINE GUN.",
-	entity = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
-})
+-- What a count of an item is called: "RIFLE", "12 ROUNDS". Something that is no item answers
+-- with what it was called, upper cased, rather than nothing -- a typo in a chest's property
+-- should still say what it was.
+function Items.describe(item, count)
+	local def < const > = Items.get(item)
+	if def == nil then
+		return string.upper(tostring(item))
+	end
+	if count == nil or count == 1 then
+		return def.name
+	end
+	return tostring(count) .. " " .. (def.plural or def.name)
+end
 
--- ---- Food ----
-
-item("flask", {
-	name = "FLASK",
-	plural = "FLASKS",
-	info = "SOMETHING RED. DRINK IT TO HEAL.",
-	entity = Guid("\{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}")
-})
-
-item("bread", {
-	name = "BREAD",
-	info = "STALE, BUT IT WILL DO.",
-	entity = Guid("\{17E40000-0000-4000-8000-000000000016}")
-})
-
--- ---- Everything else ----
-
--- Nothing in the night buys anything yet. They are worth picking up because a pack is worth
--- managing, and they are the one thing in it that is only ever taking up room.
-item("coin", {
-	name = "COIN",
-	plural = "COINS",
-	info = "OLD SILVER. NOTHING TO SPEND IT ON.",
-	entity = Guid("\{17E40000-0000-4000-8000-000000000014}")
-})
-
-item("helmet", {
-	name = "IRON HELMET",
-	info = "WORN, IT TAKES A THIRD OF EVERY BITE.",
-	equip = "body",
-	entity = Guid("\{17E40000-0000-4000-8000-000000000012}")
-})
-
--- Turned in a lock straight out of the pack: E at a locked gate with one in it is the whole
--- of it, so there is nothing to equip.
-item("key", {
-	name = "IRON KEY",
-	plural = "IRON KEYS",
-	info = "OPENS A LOCKED GATE.",
-	event = "keyTaken",
-	entity = Guid("\{6E9AD100-0000-4000-8000-000000000026}")
-})
-
--- Equipped into the off hand, which is what lets it light a ward: E at a dark post with one
--- in hand. Carried in the pack it is only weight -- and no longer slows anything.
-item("relic", {
-	name = "RELIC",
-	plural = "RELICS",
-	info = "EQUIP IT, THEN LIGHT A WARD.",
-	equip = "hand",
-	event = "relicTaken",
-	keep = true
-})
-
--- ---- Quest items ----
---
--- One of each in the whole night, and wanted by someone (Scripts/Quests/Quests). Each lies
--- somewhere in Scene 2 as a pickup of its own (tools/gen_quest_items.py) -- the ring by the
--- chapel, the ledger in the bandits' camp, the locket behind the old chest, and the sword at the
--- bottom of the cave (Scenes/S - Cave) -- which a quest names
--- through Scripts/Quests/Names, and is handed back through a dialog's `take`. No `entity`: none of
--- them can be put down.
-
-item("ring", {
-	name = "SIGNET RING",
-	info = "GOLD, WITH A STAG ON IT. KLARA'S HUSBAND'S.",
-	quest = true
-})
-
-item("ledger", {
-	name = "BURIAL LEDGER",
-	info = "THE NAMES OF THE CHAPEL'S DEAD, IN A CRAMPED HAND.",
-	quest = true
-})
-
-item("locket", {
-	name = "SILVER LOCKET",
-	info = "A WORN SILVER LOCKET. GRETA'S MOTHER'S.",
-	quest = true
-})
-
-item("sword", {
-	name = "SWORD OF VILLINGE",
-	info = "FORGED BY ÅKE'S GRANDFATHER. STILL SHARP.",
-	quest = true
-})
-
--- Read a list of kinds as a level designer writes one -- "rounds:24, bread, grenade:2" -- into
--- { { name, count }, ... } in the order written: the name lower cased and not yet checked against
--- the catalogue, the count nil where none was given. `who` names the property's owner in the
--- warning for an entry that cannot be read, which is left out. Scripts/Chest and Scripts/Npc/Npc
--- both hold their contents in this form; what a name means is theirs to decide.
+-- Read a list of items as a level designer writes one in a scene's text property -- "rounds:24,
+-- bread, grenade:2" -- into { { name, key, count }, ... } in the order written: `name` lower cased
+-- as written, `key` the item it names (nil for no item -- the caller says so, knowing who it is),
+-- `count` nil where none was given. `who` names the property's owner in the warning for an entry
+-- that cannot be read at all, which is left out. Scripts/Chest and Scripts/Npc/Npc both hold their
+-- contents in this form.
 function Items.parseList(spec, who)
 	local entries = {}
 	if spec == nil then
@@ -200,24 +133,10 @@ function Items.parseList(spec, who)
 		if name == nil then
 			print(who .. ': cannot read "' .. entry .. '" in "' .. spec .. '"; left out.')
 		else
-			table.insert(entries, { name = string.lower(name), count = tonumber(n) })
+			table.insert(entries, { name = string.lower(name), key = Items.keyOf(name), count = tonumber(n) })
 		end
 	end
 	return entries
-end
-
--- What a count of `kind` is called: "RIFLE", "12 ROUNDS", "A RELIC". Unknown kinds answer with
--- the kind itself, upper cased, rather than nothing -- a typo in a chest's property should still
--- say what it was.
-function Items.describe(kind, count)
-	local def < const > = Items[kind]
-	if def == nil then
-		return string.upper(tostring(kind))
-	end
-	if count == nil or count == 1 then
-		return def.name
-	end
-	return tostring(count) .. " " .. (def.plural or def.name)
 end
 ]]></text>
 </object>

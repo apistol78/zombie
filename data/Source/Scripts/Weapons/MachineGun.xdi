@@ -118,7 +118,11 @@ end
 -- The rifle's rounds, on purpose. See the note at the top: one pile of rounds feeds both, which
 -- is what keeps this from being free.
 function MachineGun:ammoItem()
-	return "rounds"
+	return Items.keyOf(Names.ROUNDS)
+end
+
+function MachineGun:item()
+	return Items.keyOf(Names.MACHINEGUN)
 end
 
 function MachineGun:automatic()

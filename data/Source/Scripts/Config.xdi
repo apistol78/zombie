@@ -813,9 +813,9 @@ Config = {
 		-- `items` instead): each entry is carried with `chance`, `count` of `kind`. Searched off
 		-- the body with E like anyone's.
 		zombieLoot = {
-			{ kind = "rounds", count = 4, chance = 0.15 },
-			{ kind = "coin", count = 3, chance = 0.10 },
-			{ kind = "bread", count = 1, chance = 0.04 }
+			{ item = "rounds", count = 4, chance = 0.15 },
+			{ item = "coin", count = 3, chance = 0.10 },
+			{ item = "bread", count = 1, chance = 0.04 }
 		},
 		-- ...and how long a zombie's body with something on it stays to be searched (s), where an
 		-- empty one goes in corpse.lifetime. Not for good, as a villager's does: the horde never

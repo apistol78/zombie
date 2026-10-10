@@ -24,7 +24,8 @@ import(traktor)
 --   info     a line or two for the journal: what this is about
 --   steps    the steps, in order (below)
 --   reward   triggers run once the last step is done -- the same vocabulary as a dialog's
---            `does`: { give = "coin:20" }, { give = { "flask", "bread:2" }, set = "someFlag" }
+--            `does`: { give = { Names.COIN, 20 } }, { give = { Names.FLASK, { Names.BREAD, 2 } },
+--            set = "someFlag" }
 --
 -- What a step says:
 --
@@ -35,11 +36,12 @@ import(traktor)
 --
 --   ...and what completes it -- one of:
 --
---   find     the item to find, as Names has it -- Names.RING -- or a list of them: done once
---            that very entity has been picked up. The item is not in the world until a quest
---            reaches this step: it is hidden until then, and cannot be picked up. It has to be
---            lying in the world as a pickup of its own (a chest's contents or what a character
---            carries are not entities, and cannot be named).
+--   find     the item to find, as Names has it -- Names.RING -- or a list of them: done once it
+--            has come into the pack, however it came: off the ground, out of a chest or off a
+--            body, or handed over in a dialog. Having had it before the step comes up is enough.
+--            Wherever the item is, it is not there to be found until a quest reaches this step: a
+--            pickup of its own (Scripts/Items/VirtualItems: `entityId`) is hidden, and one in a
+--            chest or carried by a character is held back from them.
 --   talk     a character, as Names has them -- Names.KLARA: done when the player talks to
 --            them...
 --   at       ...and with this too, only when that talk reaches the line of this name -- so a
@@ -52,7 +54,8 @@ import(traktor)
 --
 --   waypoint where the compass and the map point while this step is the active quest's. Left
 --            out, it is worked out from the step itself:
---              find   the item, where it lies (the first one not picked up yet, for a list)
+--              find   the item: where its entry places it, or else wherever one is -- lying on
+--                     the ground, in a chest, carried by someone or on their body
 --              talk   the character with that dialog, wherever they have walked to
 --              reach  the place itself
 --            Or say where:
@@ -69,9 +72,9 @@ import(traktor)
 -- Everything in the world is named through Scripts/Quests/Names, by its entity's guid, never by
 -- the name it has in the scene: those are not unique (eight huntsmen), and are only labels.
 --
--- Unique items for quests are entries in Scripts/Items/Items like any other (`quest = true`
--- there marks them); a dialog gives and takes them by their item kind ("ring"), and a quest
--- finds them by their entity (Names.RING). Anything misspelt --
+-- Items are Scripts/Items/VirtualItems', named through Names like everything else: a quest finds
+-- Names.RING, a dialog takes it. One of a kind items for quests are entries there like any other
+-- (`quest = true` marks them). Anything misspelt --
 -- a step finding an item that does not exist, a reply leading to a line that is not there -- is
 -- printed to the log when the night starts (Journal.validate).
 --
@@ -97,7 +100,7 @@ Quests["ring"] = {
 			at = "thanks"
 		}
 	},
-	reward = { give = { "coin:15", "flask" } }
+	reward = { give = { { Names.COIN, 15 }, Names.FLASK } }
 }
 
 -- ---- The burial ledger: take it off someone, bring it back, go somewhere ----
@@ -108,7 +111,7 @@ Quests["ledger"] = {
 	steps = {
 		{
 			id = "find",
-			text = "TAKE THE LEDGER BACK FROM BELLA'S CAMP ON THE WEST RIDGE",
+			text = "TAKE THE LEDGER BACK FROM BELLA, THE BANDITS' LEADER, ON THE WEST RIDGE",
 			find = Names.LEDGER
 		},
 		{
@@ -124,7 +127,7 @@ Quests["ledger"] = {
 			radius = 3.0
 		}
 	},
-	reward = { give = "rounds:24" }
+	reward = { give = { Names.ROUNDS, 24 } }
 }
 
 -- ---- Greta's locket: someone to talk to first ----
@@ -141,7 +144,7 @@ Quests["locket"] = {
 		},
 		{
 			id = "find",
-			text = "FIND THE LOCKET BEHIND THE OLD CHEST BY THE CHAPEL",
+			text = "SEARCH THE OLD CHEST BY THE CHAPEL FOR THE LOCKET",
 			find = Names.LOCKET
 		},
 		{
@@ -151,7 +154,7 @@ Quests["locket"] = {
 			at = "thanks"
 		}
 	},
-	reward = { give = "bread:2" }
+	reward = { give = { Names.BREAD, 2 } }
 }
 
 -- ---- The sword of Villinge: a find in another stage ----
@@ -177,7 +180,7 @@ Quests["sword"] = {
 			waypoint = { Names.AKE, Names.CAVE_EXIT }
 		}
 	},
-	reward = { give = { "helmet", "coin:20" } }
+	reward = { give = { Names.HELMET, { Names.COIN, 20 } } }
 }
 ]]></text>
 </object>

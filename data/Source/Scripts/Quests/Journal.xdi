@@ -42,13 +42,28 @@ Journal = Journal or class("Journal")
 
 -- ---- Reading the designer's shorthand ----
 
--- "coin:10" -> "coin", 10; "ring" -> "ring", 1.
+-- An item and how many, as a dialog or a quest writes one -- Names.FLASK, { Names.COIN, 15 } --
+-- as the item's key (Scripts/Items/Items) and the count; nil for something that is no item.
 local function itemSpec(spec)
-	local kind < const >, n < const > = string.match(spec, "^%s*([%a_]+)%s*:?%s*(%d*)%s*$")
-	if kind == nil then
-		return nil, 0
+	if type(spec) == "table" and getmetatable(spec) == nil then
+		return Items.keyOf(spec[1]), tonumber(spec[2]) or 1
 	end
-	return string.lower(kind), tonumber(n) or 1
+	return Items.keyOf(spec), 1
+end
+
+-- One item spec or a list of them, as a list: { Names.COIN, 15 } is one spec (an item and a
+-- count), { Names.FLASK, { Names.COIN, 15 } } two.
+local function specList(v)
+	if type(v) == "table" and getmetatable(v) == nil and type(v[2]) == "number" then
+		return { v }
+	end
+	if v == nil then
+		return {}
+	end
+	if type(v) == "table" and getmetatable(v) == nil then
+		return v
+	end
+	return { v }
 end
 
 -- A value that may be one thing or a list of them, as a list. A list is a plain table the
@@ -108,14 +123,21 @@ local function textOf(v)
 	return v:format()
 end
 
--- What Names calls the entity `v` is, for the log: "KLARA" rather than a guid.
+-- What Names calls `v` -- an entity, an item -- for the log: "KLARA" rather than a guid. An item
+-- spec with a count says the item; anything else says what it is.
 function Journal.nameOf(v)
+	if type(v) == "table" and getmetatable(v) == nil then
+		return Journal.nameOf(v[1])
+	end
+	if type(v) == "string" then
+		return '"' .. v .. '"'
+	end
 	for name, guid in pairs(Names) do
 		if guid == v then
 			return name
 		end
 	end
-	return tostring(textOf(v))
+	return tostring(v ~= nil and textOf(v) or nil)
 end
 
 -- The dialog of the character whose entity is `v`, or nil.
@@ -266,12 +288,12 @@ function Journal:holds(cond)
 	for key, value in pairs(cond) do
 		local ok = true
 		if key == "has" then
-			for _, spec in ipairs(listOf(value)) do
+			for _, spec in ipairs(specList(value)) do
 				local kind < const >, n < const > = itemSpec(spec)
 				ok = ok and kind ~= nil and inv:count(kind) >= n
 			end
 		elseif key == "lacks" then
-			for _, spec in ipairs(listOf(value)) do
+			for _, spec in ipairs(specList(value)) do
 				local kind < const >, n < const > = itemSpec(spec)
 				ok = ok and (kind == nil or inv:count(kind) < n)
 			end
@@ -339,22 +361,22 @@ function Journal:run(does)
 	local host < const > = self._host
 	local inv < const > = host:inventory()
 
-	for _, spec in ipairs(listOf(does.take)) do
+	for _, spec in ipairs(specList(does.take)) do
 		local kind < const >, n < const > = itemSpec(spec)
 		if kind ~= nil then
 			inv:remove(kind, n)
 		end
 	end
-	for _, spec in ipairs(listOf(does.give)) do
+	for _, spec in ipairs(specList(does.give)) do
 		local kind < const >, n < const > = itemSpec(spec)
-		if kind ~= nil and Items[kind] ~= nil then
+		if kind ~= nil then
 			if host.giveItem ~= nil then
 				host:giveItem(kind, n)
 			else
 				inv:add(kind, n)
 			end
 		else
-			warn('cannot give "' .. tostring(spec) .. '": no such item')
+			warn("cannot give " .. Journal.nameOf(spec) .. ": no such item")
 		end
 	end
 	for _, id in ipairs(listOf(does.quest)) do
@@ -448,11 +470,11 @@ function Journal:talkedTo(who, node)
 	end
 end
 
--- An item entity (its id, a Guid) has been picked up: what a `find` step waits for. Kept for
--- good, whatever becomes of the item afterwards, and whether or not a quest wants it yet.
--- Called by the host as the pickup goes into the pack (Main:pickupTaken).
+-- An item (Names.RING, or its key) has come into the pack: what a `find` step waits for. Kept for
+-- good, whatever becomes of the item afterwards, and whether or not a quest wants it yet. Called by
+-- the host whenever a quest item is in the pack (Scripts/Quests/Questing).
 function Journal:found(id)
-	local key < const > = textOf(id)
+	local key < const > = Items.keyOf(id)
 	if key ~= nil and not self._found[key] then
 		self._found[key] = true
 		self:_changed()
@@ -460,7 +482,7 @@ function Journal:found(id)
 end
 
 function Journal:hasFound(id)
-	local key < const > = textOf(id)
+	local key < const > = Items.keyOf(id)
 	return key ~= nil and self._found[key] == true
 end
 
@@ -540,16 +562,14 @@ function Journal.validate()
 		if type(does) ~= "table" then
 			return
 		end
-		for _, spec in ipairs(listOf(does.give)) do
-			local kind < const > = itemSpec(spec)
-			if kind == nil or Items[kind] == nil then
-				bad(where .. ' gives "' .. tostring(spec) .. '", which is no item')
+		for _, spec in ipairs(specList(does.give)) do
+			if itemSpec(spec) == nil then
+				bad(where .. " gives " .. Journal.nameOf(spec) .. ", which is no item")
 			end
 		end
-		for _, spec in ipairs(listOf(does.take)) do
-			local kind < const > = itemSpec(spec)
-			if kind == nil or Items[kind] == nil then
-				bad(where .. ' takes "' .. tostring(spec) .. '", which is no item')
+		for _, spec in ipairs(specList(does.take)) do
+			if itemSpec(spec) == nil then
+				bad(where .. " takes " .. Journal.nameOf(spec) .. ", which is no item")
 			end
 		end
 		for _, id in ipairs(listOf(does.quest)) do
@@ -577,8 +597,8 @@ function Journal.validate()
 					local sw < const > = where .. " step " .. tostring(s.id or i)
 					if s.find ~= nil then
 						for _, spec in ipairs(listOf(s.find)) do
-							if type(spec) == "string" then
-								bad(sw .. ' finds "' .. spec .. '"; a find names the item entity, from Names')
+							if Items.get(spec) == nil then
+								bad(sw .. " finds " .. Journal.nameOf(spec) .. ", which is no item")
 							end
 						end
 					end

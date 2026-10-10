@@ -63,12 +63,12 @@ function DialogViewScaffolding:show()
 	local journal < const > = stage:resetJournal()
 	if scene.ring then
 		journal:start("ring")
-		stage:inventory():add("ring", 1)
+		stage:inventory():add(Names.RING, 1)
 		journal:update()
 	end
 	if scene.locket then
 		journal:start("locket")
-		stage:inventory():add("coin", 3)
+		stage:inventory():add(Names.COIN, 3)
 	end
 
 	local c < const > = Conversation(journal, scene.key, scene.greeting or "", scene.name)

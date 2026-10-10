@@ -1549,7 +1549,7 @@ function Main:giveItem(kind, count, entity)
 	-- this item is -- the key's, a relic's -- the item says (Items: `event`), and it is said
 	-- here so it counts the same off the ground or out of a chest. The orchestrator ignores an
 	-- event it has no tuning for.
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def ~= nil and def.event ~= nil and self._orchestrator ~= nil then
 		self._orchestrator:notify(def.event)
 	end
@@ -1569,7 +1569,7 @@ end
 -- A walk-over pickup the pack has no room for. Called once per visit by the pickup itself, so
 -- standing on one says it once rather than every frame.
 function Main:packFull(kind)
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	local what < const > = (def ~= nil) and (def.plural or def.name) or "IT"
 	self:_feed("NO ROOM IN THE PACK FOR " .. what)
 end
@@ -1577,7 +1577,6 @@ end
 -- A pickup has gone for good, all of it into the pack (Pickup:_taken). Booked so the world can
 -- be laid out without it if the player leaves for another stage and comes back.
 function Main:pickupTaken(entity)
-	self._journal:found(entity.id)   -- what a quest's `find` waits for (Scripts/Quests/Journal)
 	local key < const > = (self._pickupKeyOf ~= nil) and self._pickupKeyOf[entity] or nil
 	if key ~= nil then
 		self._pickups[key].taken = true
@@ -1666,11 +1665,11 @@ end
 -- many it is (Pickup:asDropped) -- which also keeps it from being walked straight back into the
 -- pack. Booked as put down, so it is still lying there if the player leaves and comes back.
 function Main:_putDownNew(kind, count, transform)
-	local def < const > = Items[kind]
-	if def == nil or def.entity == nil then
+	local def < const > = Items.get(kind)
+	if def == nil or def.drop == nil then
 		return nil
 	end
-	local e < const > = self.world:createEntity(def.entity)
+	local e < const > = self.world:createEntity(def.drop)
 	if e == nil then
 		return nil
 	end
@@ -1696,7 +1695,7 @@ function Main:equipItem(kind)
 	if not self._inventory:equip(kind) then
 		return false
 	end
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def ~= nil and def.equip == "hand" then
 		self:_feed(def.name .. " IN HAND")
 	end
@@ -1706,7 +1705,7 @@ end
 -- Put `kind` back in the pack. Unequipping the weapon leaves the hands empty, on purpose --
 -- the loadout only reaches for the next weapon when one is *lost* (Loadout:_inventoryChanged).
 function Main:unequipItem(kind)
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def == nil or def.equip == nil or self._inventory:equipped(def.equip) ~= kind then
 		return false
 	end
@@ -1715,7 +1714,7 @@ end
 
 -- Eat or drink one of `kind`. Refused at full health, so food is never wasted on nothing.
 function Main:useItem(kind)
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def == nil or def.heal == nil or self._inventory:count(kind) <= 0 then
 		return false
 	end
@@ -1741,8 +1740,8 @@ function Main:dropSlot(index)
 	if s == nil or self._humanoid == nil or self.world == nil then
 		return false
 	end
-	local def < const > = Items[s.kind]
-	if def == nil or (not def.keep and def.entity == nil) then
+	local def < const > = Items.get(s.kind)
+	if def == nil or (not def.keep and def.drop == nil) then
 		self:_feed("THAT CANNOT BE PUT DOWN")
 		return false
 	end
@@ -1771,7 +1770,7 @@ end
 -- How much of a bite the worn armour takes, 0..1.
 function Main:armor()
 	local kind < const > = self._inventory:equipped("body")
-	local def < const > = (kind ~= nil) and Items[kind] or nil
+	local def < const > = (kind ~= nil) and Items.get(kind) or nil
 	return (def ~= nil and def.armor ~= nil) and def.armor or 0.0
 end
 
@@ -2011,8 +2010,7 @@ function Main:_nearestChest(maxDist)
 		if not c.opened then
 			return true
 		end
-		local left < const > = self._chestContents[c.index]
-		return left ~= nil and #left > 0
+		return #self:chestContents(c.index) > 0
 	end, maxDist)
 end
 
@@ -2084,8 +2082,7 @@ function Main:_openChest(chest)
 			sc:open()
 		end
 	end
-	local left < const > = self._chestContents[chest.index]
-	if left == nil or #left == 0 then
+	if #self:chestContents(chest.index) == 0 then
 		self:_showNotice("THE CHEST IS EMPTY")
 		return
 	end
@@ -2098,22 +2095,30 @@ end
 -- what is left in the chest, and the pack it goes into.
 
 -- What is still in chest `index`, as { { kind, count }, ... }. Read it, do not change it.
+--
+-- Without what a quest has not asked for yet (Scripts/Quests/Questing, _withholdQuestItems): Greta's
+-- locket is not in the chest before Tomas has said it is.
 function Main:chestContents(index)
-	return self._chestContents[index] or {}
+	return self:_withholdQuestItems(self._chestContents[index] or {})
 end
 
 -- Take the stack at `slot` out of chest `index` into the pack -- as much of it as fits, the rest
 -- staying where it is. Returns how many went, and the kind.
 function Main:takeFromChest(index, slot)
 	local left < const > = self._chestContents[index]
-	local entry < const > = (left ~= nil) and left[slot] or nil
+	local entry < const > = self:chestContents(index)[slot]
 	if entry == nil then
 		return 0, nil
 	end
 	local added < const > = self:giveItem(entry.kind, entry.count)
 	entry.count = entry.count - added
 	if entry.count <= 0 then
-		table.remove(left, slot)
+		for i, e in ipairs(left) do
+			if e == entry then
+				table.remove(left, i)
+				break
+			end
+		end
 	end
 	return added, entry.kind
 end
@@ -2121,24 +2126,23 @@ end
 -- Take everything that fits, stack by stack in the order the chest holds them. Returns whether
 -- anything went, and whether anything was left behind for want of room.
 function Main:takeAllFromChest(index)
-	local left < const > = self._chestContents[index]
-	if left == nil then
+	if self._chestContents[index] == nil then
 		return false, false
 	end
 	local any = false
 	local slot = 1
-	while slot <= #left do
-		local before < const > = #left
+	while slot <= #self:chestContents(index) do
+		local before < const > = #self:chestContents(index)
 		local added < const > = self:takeFromChest(index, slot)
 		if added > 0 then
 			any = true
 		end
 		-- An emptied stack has been removed, so the next one has moved up into this slot.
-		if #left == before then
+		if #self:chestContents(index) == before then
 			slot = slot + 1
 		end
 	end
-	return any, #left > 0
+	return any, #self:chestContents(index) > 0
 end
 
 -- Flat distance from the player to one ward record, measured the same way.
@@ -2260,7 +2264,7 @@ end
 -- The relic that comes out is the last one in the pack, so with several carried the one shown
 -- in hand stays there until it is the only one left.
 function Main:_lightWardWithRelic(ward)
-	local removed < const >, out < const > = self._inventory:remove("relic", 1)
+	local removed < const >, out < const > = self._inventory:remove(Names.RELIC, 1)
 	if removed <= 0 then
 		return false
 	end
@@ -2284,7 +2288,7 @@ end
 -- the world are all Gate:unlock's. What is kept here is which gates stand open, as plain data,
 -- so it survives a hot reload (resolve re-asserts it).
 function Main:_unlockGate(gate)
-	if self._inventory:remove("key", 1) <= 0 then
+	if self._inventory:remove(Names.KEY, 1) <= 0 then
 		return false
 	end
 	gate.unlocked = true
@@ -2947,12 +2951,12 @@ function Main:_whatWouldE()
 
 	local inv < const > = self._inventory
 	local ward < const > = self:_nearestUnlitWard(Config.relic.wardRange)
-	if ward ~= nil and inv:equipped("hand") == "relic" then
+	if ward ~= nil and Items.is(inv:equipped("hand"), Names.RELIC) then
 		return "light", ward
 	end
 
 	local gate < const > = self:_nearestLockedGate(self._gateRange)
-	if gate ~= nil and inv:count("key") > 0 then
+	if gate ~= nil and inv:count(Names.KEY) > 0 then
 		return "unlock", gate
 	end
 
@@ -2971,7 +2975,7 @@ function Main:_whatWouldE()
 		return "exit", exit
 	end
 
-	if ward ~= nil and inv:count("relic") > 0 then
+	if ward ~= nil and inv:count(Names.RELIC) > 0 then
 		return "needRelic", ward
 	end
 	if self:_nearestShutLeverGate(self._gateRange) ~= nil then
@@ -3564,7 +3568,7 @@ function Main:postUpdate(info)
 	-- shows.
 	if self._humanoid ~= nil then
 		local inv < const > = self._inventory
-		local want < const > = (inv:equipped("hand") == "relic") and inv:first("relic") or nil
+		local want < const > = Items.is(inv:equipped("hand"), Names.RELIC) and inv:first(Names.RELIC) or nil
 		if want ~= self._handRelic then
 			local old < const > = self._handRelic
 			if old ~= nil and inv:holds(old) then

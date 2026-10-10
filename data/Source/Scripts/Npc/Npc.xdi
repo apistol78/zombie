@@ -237,16 +237,16 @@ function Npc:_stats()
 			-- carries whatever it died with, drawn now (Config.npc.zombieLoot).
 			for _, roll in ipairs(NPC.zombieLoot) do
 				if math.random() < roll.chance then
-					table.insert(self._loot, { kind = roll.kind, count = roll.count })
+					table.insert(self._loot, { kind = Items.keyOf(roll.item), count = roll.count })
 				end
 			end
 		end
 		for _, entry in ipairs(Items.parseList(spec, "Npc")) do
-			local def < const > = Items[entry.name]
+			local def < const > = Items.get(entry.key)
 			if def == nil then
 				print('Npc: unknown item "' .. entry.name .. '"; left out.')
 			elseif not def.keep and (entry.count or 1) > 0 then
-				table.insert(self._loot, { kind = entry.name, count = entry.count or 1 })
+				table.insert(self._loot, { kind = entry.key, count = entry.count or 1 })
 			end
 		end
 	end

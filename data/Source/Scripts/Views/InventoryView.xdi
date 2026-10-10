@@ -96,7 +96,7 @@ function InventoryView:new(parent, context)
 	-- Every string the detail column might ever show, for sizing it.
 	local names, infos, effects = { "EMPTY" }, { "" }, {}
 	-- (Items also carries its helper functions; only the tables in it are kinds.)
-	for _, def in pairs(Items) do
+	for _, def in ipairs(Items.all()) do
 		if type(def) == "table" then
 			table.insert(names, def.name)
 			table.insert(infos, def.info or "")
@@ -251,7 +251,7 @@ end
 function InventoryView:_refreshDetail()
 	local inv < const > = self._inventory
 	local s < const > = (self._selected ~= nil) and inv:slot(self._selected) or nil
-	local def < const > = (s ~= nil) and Items[s.kind] or nil
+	local def < const > = (s ~= nil) and Items.get(s.kind) or nil
 
 	if def == nil then
 		setText(self._name, (self._selected ~= nil) and "EMPTY" or "")
@@ -296,7 +296,7 @@ function InventoryView:_refreshDetail()
 	end
 
 	if def.heal ~= nil then
-		local verb < const > = (s.kind == "flask") and "DRINK" or "EAT"
+		local verb < const > = Items.is(s.kind, Names.FLASK) and "DRINK" or "EAT"
 		self._useButton:setCaption(verb):setEnable(self._context._health < self._context._maxHealth)
 	else
 		self._useButton:setCaption("USE"):setEnable(false)
@@ -346,7 +346,7 @@ end
 -- used, and nothing at all for the rest -- a double click never drops anything.
 function InventoryView:_primary()
 	local s < const > = (self._selected ~= nil) and self._inventory:slot(self._selected) or nil
-	local def < const > = (s ~= nil) and Items[s.kind] or nil
+	local def < const > = (s ~= nil) and Items.get(s.kind) or nil
 	if def == nil then
 		return
 	end

@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{17E40000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -59,7 +60,10 @@ end
 
 -- What is in the cell: an item kind and how many, or nil for an empty cell. The count is only
 -- written for a stack of more than one -- a "1" on every rifle is noise.
-function ItemSlot:setItem(kind, count)
+function ItemSlot:setItem(item, count)
+	-- Drawn with the picture its entry names (VirtualItems: `icon`); `item` as Items takes one.
+	local def < const > = Items.get(item)
+	local kind < const > = (def ~= nil) and def.icon or nil
 	if kind ~= self._kind then
 		self._kind = kind
 		for name, icon in pairs(self._icons) do

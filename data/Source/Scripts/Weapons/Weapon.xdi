@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{17E40000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -64,11 +65,11 @@ function Weapon:slot()
 	return "weapon"
 end
 
--- Which item in the pack *is* this weapon (Scripts/Items/Items). Having one in the pack is
--- owning the weapon, and equipping it is drawing it -- the loadout asks nothing else. The
--- same name as the seat unless a subclass says otherwise.
+-- Which item in the pack *is* this weapon, as its key (Items.keyOf(Names.RIFLE)). Having one in
+-- the pack is owning the weapon, and equipping it is drawing it -- the loadout asks nothing else.
+-- Every weapon in the loadout says which; one that is not an item at all answers nil.
 function Weapon:item()
-	return self:slot()
+	return nil
 end
 
 -- The item this weapon loads from the pack -- "rounds" for both firearms -- or nil for one that

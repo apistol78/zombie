@@ -5,14 +5,21 @@ import(traktor)
 
 -- Names
 --
--- The entities the quests and dialogs talk about, by a name a designer can read: Names.KLARA is
--- the guid of the entity Klara is in Scenes/S - Scene 2. Scripts/Quests/Quests and
--- Scripts/Quests/Dialogs name everything in the world through this -- Dialogs[Names.KLARA] is what
--- she says, talk = Names.KLARA a step that waits on her, reach = Names.ALTAR one that waits on
--- the player standing at the altar, find = Names.RING one that waits on the ring being picked up
--- -- and the game finds the entity by its id at run time (Entity.id).
+-- Everything the game's data talks about, by a name a designer can read: the people and places in
+-- the scenes, and every item there is.
 --
--- The guid is the entity's own id in the scene: the <id> of its entry in the scene file, which
+-- People and places are the guids of their entities: Names.KLARA is the entity Klara is in
+-- Scenes/S - Scene 2. Scripts/Quests/Quests and Scripts/Quests/Dialogs name everything in the
+-- world through this -- Dialogs[Names.KLARA] is what she says, talk = Names.KLARA a step that
+-- waits on her, reach = Names.ALTAR one that waits on the player standing at the altar -- and the
+-- game finds the entity by its id at run time (Entity.id).
+--
+-- Items are the guids of their entries in Scripts/Items/VirtualItems: Names.RING is the signet
+-- ring, wherever it is -- find = Names.RING waits for it to come into the pack, give =
+-- Names.FLASK hands one over. The names are also how a scene's text properties name an item, in
+-- any case: a chest's item = "rounds:24, bread" is Names.ROUNDS and Names.BREAD.
+--
+-- An entity's guid is its own id in the scene: the <id> of its entry in the scene file, which
 -- is also what the scene editor shows for it. For a character that is the placed Npc itself, not
 -- the entity data it was made from -- every villager is made from the same one. An entity placed
 -- twice has two ids, so only the ones that are one of a kind are named here: the trappers, the
@@ -44,12 +51,23 @@ Names = {
 	CAVE_MOUTH = Guid("{4079A540-A41F-476F-A202-80591F959901}"),    -- Scene 2
 	CAVE_EXIT = Guid("{A8D91642-5EB2-0A1A-6D93-9B07C8E3378A}"),     -- Scenes/S - Cave
 
-	-- ---- Quest items (Scenes/S - Scene 2's Pickups layer; tools/gen_quest_items.py) ----
+	-- ---- Items (Scripts/Items/VirtualItems; not entities -- made up, one each) ----
 
-	RING = Guid("{D1A10000-0000-4000-8000-000000000100}"),       -- in the churchyard grass
-	LEDGER = Guid("{D1A10000-0000-4000-8000-000000000101}"),     -- in the bandits' camp
-	LOCKET = Guid("{D1A10000-0000-4000-8000-000000000102}"),     -- behind the old chest
-	SWORD = Guid("{D1A10000-0000-4000-8000-000000000103}"),      -- in Scenes/S - Cave, the far dead end
+	RIFLE = Guid("{D1A10000-0000-4000-8000-000000000200}"),
+	MACHINEGUN = Guid("{D1A10000-0000-4000-8000-000000000201}"),
+	GRENADE = Guid("{D1A10000-0000-4000-8000-000000000202}"),
+	ROUNDS = Guid("{D1A10000-0000-4000-8000-000000000203}"),
+	FLASK = Guid("{D1A10000-0000-4000-8000-000000000204}"),
+	BREAD = Guid("{D1A10000-0000-4000-8000-000000000205}"),
+	COIN = Guid("{D1A10000-0000-4000-8000-000000000206}"),
+	HELMET = Guid("{D1A10000-0000-4000-8000-000000000207}"),
+	KEY = Guid("{D1A10000-0000-4000-8000-000000000208}"),
+	RELIC = Guid("{D1A10000-0000-4000-8000-000000000209}"),
+	-- One of a kind, for the quests; where each lies is its VirtualItems entry's `entityId`.
+	RING = Guid("{D1A10000-0000-4000-8000-00000000020A}"),
+	LEDGER = Guid("{D1A10000-0000-4000-8000-00000000020B}"),
+	LOCKET = Guid("{D1A10000-0000-4000-8000-00000000020C}"),
+	SWORD = Guid("{D1A10000-0000-4000-8000-00000000020D}"),
 }
 ]]></text>
 </object>

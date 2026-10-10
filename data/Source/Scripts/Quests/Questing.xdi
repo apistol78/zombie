@@ -69,6 +69,9 @@ function Main:_initQuests(carry)
 	end
 	-- Say once, as the night starts, whatever in the designer's tables cannot work.
 	Journal.validate()
+	-- A quest item come into the pack is found, however it came.
+	self._inventory:listen(function() self:_noteQuestItems() end)
+	self:_noteQuestItems()
 
 	self._questNotices = {}      -- lines waiting for the notice line (_flushQuestNotices)
 	self._questTick = 0          -- counts updates; see _talkTo
@@ -118,6 +121,88 @@ function Main:_reloadQuests()
 	self._questTalkTo = nil
 	self._entitiesById = nil
 	self._questItemsFor = nil
+end
+
+-- ---- Quest items in chests and on characters ----
+--
+-- An item a quest's `find` names (Scripts/Quests/Quests) is not there to be found before a quest
+-- has reached the step that finds it -- the ledger is not on Bella before Brother Anselm has missed
+-- it -- wherever it is kept: one placed in the world as a pickup of its own is hidden
+-- (_updateQuestItems), and one in a chest or carried by a character is held back from what the
+-- chest window shows and what can be taken (Main:chestContents). It is still in the container,
+-- so it is there the moment the quest asks for it, and a body with nothing else on it stays.
+
+-- The items held back for now, by key: every one some quest finds, less those a quest has reached
+-- the step for. Worked out again whenever the journal moves.
+function Main:_questWithheld()
+	local serial < const > = self._journal:serial()
+	if self._withheldSerial ~= serial or self._withheld == nil then
+		self._withheldSerial = serial
+		local held = {}
+		local reached = {}
+		for id, def in pairs(Quests) do
+			if type(def) == "table" then
+				local q < const > = self._journal:quest(id)
+				for i, s in ipairs(def.steps or {}) do
+					local now < const > = q ~= nil and (q.done or q.step >= i)
+					local list < const > = (type(s.find) == "table" and getmetatable(s.find) == nil) and s.find or { s.find }
+					for _, item in ipairs(list) do
+						local key < const > = Items.keyOf(item)
+						if key ~= nil then
+							if now then
+								reached[key] = true
+							else
+								held[key] = true
+							end
+						end
+					end
+				end
+			end
+		end
+		for key, _ in pairs(reached) do
+			held[key] = nil
+		end
+		self._withheld = held
+	end
+	return self._withheld
+end
+
+-- A container's { kind, count } list without what is held back: the list itself when nothing in
+-- it is, which is nearly always; otherwise a new list of the same entries, so what is taken from
+-- it is taken from the container.
+function Main:_withholdQuestItems(list)
+	local held < const > = self:_questWithheld()
+	local any = false
+	for _, entry in ipairs(list) do
+		if held[entry.kind] then
+			any = true
+			break
+		end
+	end
+	if not any then
+		return list
+	end
+	local out = {}
+	for _, entry in ipairs(list) do
+		if not held[entry.kind] then
+			table.insert(out, entry)
+		end
+	end
+	return out
+end
+
+-- Tell the journal about every quest item in the pack: what a `find` waits for, however it got
+-- there -- off the ground, out of a chest or a body, handed over in a dialog. Heard on every change
+-- to the pack (set up in _initQuests).
+function Main:_noteQuestItems()
+	local inv < const > = self._inventory
+	for i = 1, inv:capacity() do
+		local s < const > = inv:slot(i)
+		local def < const > = (s ~= nil) and Items.get(s.kind) or nil
+		if def ~= nil and def.quest then
+			self._journal:found(s.kind)
+		end
+	end
 end
 
 function Main:journal()
@@ -235,8 +320,7 @@ end
 function Main:_trade(rec)
 	local name < const > = rec.sc:displayName()
 	local box < const > = self:_npcBox(rec)
-	local left < const > = self._chestContents[box]
-	if #left == 0 then
+	if #self:chestContents(box) == 0 then
 		self:_feed((name ~= nil) and (name .. " HAS NOTHING TO GIVE") or "THEY HAVE NOTHING TO GIVE")
 		return
 	end
@@ -312,8 +396,9 @@ function Main:_updateQuests(dt)
 	self:_updateQuestWaypoint(dt)
 end
 
--- Show the item entities a quest's `find` names (Scripts/Quests/Quests) once a quest has reached
--- the step that finds them, and keep them hidden until then -- the ring is not lying by the
+-- Show the pickups of the items a quest's `find` names (Scripts/Quests/Quests; the item's
+-- VirtualItems `entityId`) once a quest has reached the step that finds them, and keep them hidden
+-- until then -- the ring is not lying by the
 -- chapel before Klara has asked for it, and the locket is not behind the chest before Tomas has
 -- owned up to putting it there. A hidden pickup is not there to be taken (Pickup:collect, and
 -- Main's E scan, which only offers what is visible). Shown for good from then on -- steps only
@@ -343,7 +428,8 @@ function Main:_updateQuestItems()
 				local reached < const > = q ~= nil and (q.done or q.step >= i)
 				local list < const > = (type(s.find) == "table" and getmetatable(s.find) == nil) and s.find or { s.find }
 				for _, item in ipairs(list) do
-					local e < const > = self:_entityById(item)
+					local d < const > = Items.get(item)
+					local e < const > = (d ~= nil and d.entityId ~= nil) and self:_entityById(d.entityId) or nil
 					if e ~= nil then
 						wanted[e] = wanted[e] or reached
 					end
@@ -426,8 +512,8 @@ function Main:_questAnchorFor(step)
 end
 
 -- A waypoint spec as the designer writes one: an entity (Names.ALTAR, Names.KLARA -- see
--- Scripts/Quests/Names), a point, { x, y, z } or { x, z }, or a list of entities, of which the
--- first in this world is the one. A character is anchored by their record, which knows when their
+-- Scripts/Quests/Names), an item (Names.SWORD: wherever it is), a point, { x, y, z } or { x, z },
+-- or a list of these, of which the first in this world is the one. A character is anchored by their record, which knows when their
 -- body has gone, and a pickup by its, which knows when it has been taken.
 function Main:_anchorOf(spec)
 	if type(spec) == "table" and getmetatable(spec) == nil and type(spec[1]) ~= "number" then
@@ -447,6 +533,9 @@ function Main:_anchorOf(spec)
 			return { point = { spec[1], y, spec[2] } }
 		end
 		return nil
+	end
+	if Items.get(spec) ~= nil then
+		return self:_findAnchor(spec)
 	end
 	local e < const > = self:_entityById(spec)
 	if e == nil then
@@ -522,16 +611,88 @@ function Main:_anchorPosition(anchor)
 	return { p.x, p.y, p.z }
 end
 
--- Where the first item entity `find` names that has not been picked up yet lies, or nil when it
--- is not in this world.
+-- Where the first item `find` names that is not in the pack yet is, in this world, or nil when it
+-- is not here: the pickup its entry places (VirtualItems: `entityId`), and failing that wherever
+-- one is held -- lying on the ground, in a chest, or carried by a character or left on their body,
+-- the nearest of them.
 function Main:_findAnchor(find)
 	local list < const > = (type(find) == "table" and getmetatable(find) == nil) and find or { find }
-	for _, id in ipairs(list) do
-		if not self._journal:hasFound(id) then
-			return self:_anchorOf(id)
+	for _, item in ipairs(list) do
+		if not self._journal:hasFound(item) then
+			local def < const > = Items.get(item)
+			if def == nil then
+				return nil
+			end
+			if def.entityId ~= nil then
+				local anchor < const > = self:_anchorOf(def.entityId)
+				if anchor ~= nil then
+					return anchor
+				end
+			end
+			return self:_holderOf(def.key)
 		end
 	end
 	return nil
+end
+
+-- Whether a { kind, count } list holds the item `key`.
+local function listHolds(list, key)
+	for _, entry in ipairs(list or {}) do
+		if entry.kind == key and (entry.count or 1) > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+-- The nearest place in this world that holds the item `key`, as an anchor, or nil.
+function Main:_holderOf(key)
+	local pp < const > = self._humanoid.transform.translation
+	local best, bestD = nil, math.huge
+	local function consider(anchor)
+		local p < const > = self:_anchorPosition(anchor)
+		if p ~= nil then
+			local dx < const >, dz < const > = p[1] - pp.x, p[3] - pp.z
+			local d < const > = dx * dx + dz * dz
+			if d < bestD then
+				best, bestD = anchor, d
+			end
+		end
+	end
+
+	for _, rec in pairs(self._pickups or {}) do
+		if not rec.taken and rec.entity.visible and rec.sc:itemKind() == key then
+			consider({ pickup = rec })
+		end
+	end
+
+	for _, chest in ipairs(self._chests or {}) do
+		local left = nil
+		if chest.opened then
+			left = self._chestContents[chest.index]
+		else
+			-- What the level put in it, read once: an unopened chest's contents never change.
+			if chest.questContents == nil then
+				local sc < const > = chest.entity:getComponent(traktor.world.ScriptComponent)
+				chest.questContents = (sc ~= nil and sc.contents ~= nil) and sc:contents() or {}
+			end
+			left = chest.questContents
+		end
+		if listHolds(left, key) then
+			consider({ chest = chest })
+		end
+	end
+
+	for npcKey, rec in pairs(self._npcs or {}) do
+		if not rec.gone then
+			local box < const > = self._chestContents["npc:" .. npcKey]
+			if listHolds((box ~= nil) and box or rec.sc:loot(), key) then
+				consider({ npc = rec })
+			end
+		end
+	end
+
+	return best
 end
 
 -- Hang the quest diamond over the head of the character the followed quest's step wants talked to,
@@ -641,10 +802,10 @@ function Main:_updateMarker(dt)
 	local live < const > = not self._gameOver and not self._nightOver and self._humanoid ~= nil
 	if live then
 		local inv < const > = self._inventory
-		if inv:count("relic") > 0 then
+		if inv:count(Names.RELIC) > 0 then
 			target = self:_wardObjective()
 		end
-		if target == nil and inv:count("key") > 0 then
+		if target == nil and inv:count(Names.KEY) > 0 then
 			local gate < const > = self:_nearestLockedGate()
 			target = (gate ~= nil) and gate.entity or nil
 		end

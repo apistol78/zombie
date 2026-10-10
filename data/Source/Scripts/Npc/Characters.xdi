@@ -332,7 +332,9 @@ function Main:_nearestBody(maxDist)
 	local best, bestRec, bestD = nil, nil, maxDist * maxDist
 	for e, _ in pairs(self._deadEnemies) do
 		local box < const > = self:_boxOf(e)
-		local left < const > = (box ~= nil) and self._chestContents[box] or nil
+		-- What a quest has not asked for yet is not there to search for (Main:chestContents),
+		-- though it holds the body in the world until it is (_hasLoot).
+		local left < const > = (box ~= nil and self._chestContents[box] ~= nil) and self:chestContents(box) or nil
 		if left ~= nil and #left > 0 then
 			local p < const > = e.transform.translation
 			local dx < const >, dz < const > = p.x - pp.x, p.z - pp.z

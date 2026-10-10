@@ -74,8 +74,10 @@ end
 
 -- ---- What it is ----
 
+-- The item, as its key (Scripts/Items/Items): the `item` property names it as Names does --
+-- "rounds", "RING" -- and nil for one that names no item.
 function Pickup:itemKind()
-	return self:_property("item")
+	return Items.keyOf(self:_property("item"))
 end
 
 -- A count set on this one in particular -- what is left of a pile, or a dropped stack -- beats
@@ -104,7 +106,7 @@ function Pickup:promptTake()
 end
 
 function Pickup:isKeepsake()
-	local def < const > = Items[self:itemKind()]
+	local def < const > = Items.get(self:itemKind())
 	return def ~= nil and def.keep == true
 end
 
@@ -137,7 +139,7 @@ function Pickup:collect(context)
 		return false
 	end
 	local kind < const > = self:itemKind()
-	if kind == nil or Items[kind] == nil then
+	if kind == nil or Items.get(kind) == nil then
 		return false
 	end
 	local count < const > = self:itemCount()

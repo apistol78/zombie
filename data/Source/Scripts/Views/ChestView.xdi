@@ -72,7 +72,7 @@ end
 
 -- What it is called when there is more than one, for "no room for" lines.
 local function plural(kind)
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	return (def ~= nil) and (def.plural or def.name) or string.upper(tostring(kind))
 end
 
@@ -88,7 +88,7 @@ function ChestView:new(parent, context)
 
 	-- Every string the detail lines might show, for sizing their column.
 	local names, infos = { "THE CHEST IS EMPTY" }, { "" }
-	for _, def in pairs(Items) do
+	for _, def in ipairs(Items.all()) do
 		if type(def) == "table" then
 			table.insert(names, "999 " .. (def.plural or def.name))
 			table.insert(infos, def.info or "")
@@ -198,7 +198,7 @@ function ChestView:refresh()
 
 	local entry < const > = (self._selected ~= nil) and left[self._selected] or nil
 	if entry ~= nil then
-		local def < const > = Items[entry.kind]
+		local def < const > = Items.get(entry.kind)
 		setText(self._name, describe(entry))
 		setText(self._info, (def ~= nil and def.info) or "")
 	else

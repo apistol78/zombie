@@ -36,9 +36,9 @@ end
 -- A pack with something in it to preview against: a weapon, its rounds and a grenade. The
 -- night itself starts empty-handed (Config.inventory.start), which would leave nothing to look at.
 local SAMPLE_KIT < const > = {
-	{ "rifle", 1 },
-	{ "rounds", 24 },
-	{ "grenade", 1 }
+	{ Names.RIFLE, 1 },
+	{ Names.ROUNDS, 24 },
+	{ Names.GRENADE, 1 }
 }
 
 -- Start again from the sample kit. A new Inventory rather than a cleared one, so a view that
@@ -58,7 +58,7 @@ function StageStub:crowdPack(kind, free)
 	local inv < const > = self._inventory
 	local slots < const > = inv:capacity() - inv:used() - (free or 0)
 	if slots > 0 then
-		inv:add(kind, Items[kind].stack * slots)
+		inv:add(kind, Items.get(kind).stack * slots)
 	end
 	return inv
 end
@@ -73,7 +73,7 @@ end
 function StageStub:setChest(index, contents)
 	local list = {}
 	for _, entry in ipairs(contents) do
-		table.insert(list, { kind = entry.kind, count = entry.count })
+		table.insert(list, { kind = Items.keyOf(entry.kind), count = entry.count })
 	end
 	self._chests[index] = list
 	return self
@@ -104,7 +104,7 @@ end
 
 function StageStub:armor()
 	local kind < const > = self._inventory:equipped("body")
-	local def < const > = (kind ~= nil) and Items[kind] or nil
+	local def < const > = (kind ~= nil) and Items.get(kind) or nil
 	return (def ~= nil and def.armor ~= nil) and def.armor or 0.0
 end
 
@@ -112,7 +112,7 @@ function StageStub:equipItem(kind)
 	if not self._inventory:equip(kind) then
 		return false
 	end
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def ~= nil and def.equip == "hand" then
 		self:_feed(def.name .. " IN HAND")
 	end
@@ -120,7 +120,7 @@ function StageStub:equipItem(kind)
 end
 
 function StageStub:unequipItem(kind)
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def == nil or def.equip == nil or self._inventory:equipped(def.equip) ~= kind then
 		return false
 	end
@@ -128,7 +128,7 @@ function StageStub:unequipItem(kind)
 end
 
 function StageStub:useItem(kind)
-	local def < const > = Items[kind]
+	local def < const > = Items.get(kind)
 	if def == nil or def.heal == nil or self._inventory:count(kind) <= 0 then
 		return false
 	end
@@ -148,8 +148,8 @@ function StageStub:dropSlot(index)
 	if s == nil then
 		return false
 	end
-	local def < const > = Items[s.kind]
-	if def == nil or (not def.keep and def.entity == nil) then
+	local def < const > = Items.get(s.kind)
+	if def == nil or (not def.keep and def.drop == nil) then
 		self:_feed("THAT CANNOT BE PUT DOWN")
 		return false
 	end

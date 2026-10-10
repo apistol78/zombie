@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{6E9AD100-0000-4000-8000-000000000010}
+#using \{D1A10000-0000-4000-8000-00000000000B}
+
+import(traktor)
+
+-- VirtualItems
+--
+-- Every item there is in the game -- everything that can lie in the world, sit in a chest, be
+-- carried by a character or the player, be handed over in a dialog or be looked for by a quest --
+-- keyed by its guid, which Scripts/Quests/Names gives a readable name: VirtualItems[Names.RIFLE]
+-- is the rifle. This file is the level designer's; Scripts/Items/Items is how the code looks an
+-- item up, and Scripts/Items/Inventory is the pack.
+--
+-- An item is an idea, not a thing in a world: a stack of rounds in the pack, twelve of them in a
+-- chest and a crate of them on the ground are all Names.ROUNDS. Where a particular one lies is the
+-- world's business -- a pickup entity naming it, a chest or a character listing it -- except for a
+-- one of a kind item, which can say where it is (`entityId`).
+--
+-- Everything else names an item through Names: a quest step with find = Names.RING, a dialog's
+-- give = { Names.COIN, 15 }, the code's Names.RELIC. In the scene editor, where properties are
+-- plain text, an item is written by its name in Names, in any case -- a chest's item property
+-- "rounds:24, bread", a pickup's "rounds" -- and Scripts/Items/Items looks the name up there.
+--
+-- What an entry says:
+--
+--   name     what the inventory screen and the prompts call it
+--   plural   ...and a stack of more than one, where that is not just the name
+--   info     one line for the inventory screen; short, the detail column is narrow
+--   icon     which picture of MC_ItemSlot it is drawn with (data/Assets/UI/Hud.svg, from
+--            tools/gen_item_icons.py)
+--   tune     its numbers in Config.items, since they are balance numbers: `stack`, how many
+--            share one slot (1 without a tune), `heal` for food, `armor` for what is worn
+--   equip    which of the player's three places it goes when equipped:
+--              "weapon"  in hand; the trigger is on it (Scripts/Weapons/Loadout)
+--              "hand"    the off hand; what lights a ward (a relic)
+--              "body"    worn; takes `armor` of the contact damage
+--   event    what one going into the pack is called to the SpawnOrchestrator, however it got
+--            there -- off the ground or out of a chest -- or nil for no surge
+--   drop     the EntityData a dropped one is rebuilt from. The escaped form is what makes it a
+--            tracked build dependency as well as a guid, exactly as Scripts/Spawner references
+--            the zombie -- which is also how every one of those entities ends up in the build.
+--            Without one an item cannot be put down.
+--   keep     the item *is* its entity, and the entity is never destroyed: taken, it is hidden
+--            and rides along in the pack; dropped, the same one comes back out; spent, it is
+--            parked where it was spent. Only the relic is one -- the compass and the count of
+--            wards the night needs both read the relics off their entities, and a relic that was
+--            rebuilt from scratch on every drop would be a new relic to them.
+--   quest    one of a kind, wanted by a quest (Scripts/Quests/Quests). It has no `drop`, so it
+--            cannot be put down -- a quest item is not lost by accident -- and the pack says what
+--            it is for.
+--   entityId where it lies in a world, for a one of a kind item placed in a scene as a pickup of
+--            its own: the scene id of that pickup (unescaped -- it is an entity in a scene, not a
+--            database instance). A quest finding the item points there, and the pickup is hidden
+--            until the quest reaches the step that finds it. Leave it out for one that is in a
+--            chest or carried by someone -- a quest finds it there, and it is held back from the
+--            chest or the character until then -- or only ever handed over in a dialog.
+--
+-- Adding an item is a guid in Names, an entry here, its numbers in Config.items if it stacks, and
+-- an icon in the art.
+--
+-- Remember the script preprocessor: no backslashes in the strings here, other than the escaped
+-- guids of `drop`.
+
+VirtualItems = {}
+
+-- ---- Weapons ----
+--
+-- Each of these is one Scripts/Weapons/Weapon in the loadout, which finds its weapon by this
+-- item (Weapon:item). Owning one is having it in the pack; drawing it is equipping it.
+
+VirtualItems[Names.RIFLE] = {
+	name = "RIFLE",
+	info = "SIX IN THE MAGAZINE. REACHES FAR.",
+	icon = "rifle",
+	tune = Config.items.rifle,
+	equip = "weapon",
+	drop = Guid("\{17E40000-0000-4000-8000-000000000010}")
+}
+
+VirtualItems[Names.MACHINEGUN] = {
+	name = "MACHINE GUN",
+	info = "A BELT OF 45. HOLD TO FIRE.",
+	icon = "machinegun",
+	tune = Config.items.machinegun,
+	equip = "weapon",
+	drop = Guid("\{17E40000-0000-4000-8000-000000000011}")
+}
+
+-- A stack and a weapon at once: drawn like the rifle, and every throw takes one off it. The last
+-- one thrown takes the weapon out of the pack with it, and the loadout hands the trigger to
+-- whatever is left.
+VirtualItems[Names.GRENADE] = {
+	name = "GRENADE",
+	plural = "GRENADES",
+	info = "THROWN. TAKES A CROWD WITH IT.",
+	icon = "grenade",
+	tune = Config.items.grenade,
+	equip = "weapon",
+	drop = Guid("\{6E9AD100-0000-4000-8000-000000000003}")
+}
+
+-- ---- What the weapons eat ----
+
+-- Both firearms load from these.
+VirtualItems[Names.ROUNDS] = {
+	name = "ROUND",
+	plural = "ROUNDS",
+	info = "FOR THE RIFLE AND THE MACHINE GUN.",
+	icon = "rounds",
+	tune = Config.items.rounds,
+	drop = Guid("\{D12BE6FD-2795-4991-BAF1-076C03B2AB21}")
+}
+
+-- ---- Food ----
+
+VirtualItems[Names.FLASK] = {
+	name = "FLASK",
+	plural = "FLASKS",
+	info = "SOMETHING RED. DRINK IT TO HEAL.",
+	icon = "flask",
+	tune = Config.items.flask,
+	drop = Guid("\{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}")
+}
+
+VirtualItems[Names.BREAD] = {
+	name = "BREAD",
+	info = "STALE, BUT IT WILL DO.",
+	icon = "bread",
+	tune = Config.items.bread,
+	drop = Guid("\{17E40000-0000-4000-8000-000000000016}")
+}
+
+-- ---- Everything else ----
+
+-- Nothing in the night buys anything yet. They are worth picking up because a pack is worth
+-- managing, and they are the one thing in it that is only ever taking up room.
+VirtualItems[Names.COIN] = {
+	name = "COIN",
+	plural = "COINS",
+	info = "OLD SILVER. NOTHING TO SPEND IT ON.",
+	icon = "coin",
+	tune = Config.items.coin,
+	drop = Guid("\{17E40000-0000-4000-8000-000000000014}")
+}
+
+VirtualItems[Names.HELMET] = {
+	name = "IRON HELMET",
+	info = "WORN, IT TAKES A THIRD OF EVERY BITE.",
+	icon = "helmet",
+	tune = Config.items.helmet,
+	equip = "body",
+	drop = Guid("\{17E40000-0000-4000-8000-000000000012}")
+}
+
+-- Turned in a lock straight out of the pack: E at a locked gate with one in it is the whole of
+-- it, so there is nothing to equip.
+VirtualItems[Names.KEY] = {
+	name = "IRON KEY",
+	plural = "IRON KEYS",
+	info = "OPENS A LOCKED GATE.",
+	icon = "key",
+	tune = Config.items.key,
+	event = "keyTaken",
+	drop = Guid("\{6E9AD100-0000-4000-8000-000000000026}")
+}
+
+-- Equipped into the off hand, which is what lets it light a ward: E at a dark post with one in
+-- hand. Carried in the pack it is only weight.
+VirtualItems[Names.RELIC] = {
+	name = "RELIC",
+	plural = "RELICS",
+	info = "EQUIP IT, THEN LIGHT A WARD.",
+	icon = "relic",
+	tune = Config.items.relic,
+	equip = "hand",
+	event = "relicTaken",
+	keep = true
+}
+
+-- ---- Quest items ----
+--
+-- One of each in the whole night, and wanted by someone (Scripts/Quests/Quests): looked for by a
+-- quest's `find`, handed back through a dialog's `take`, and not there to be found before the quest
+-- reaches the step that finds it. The ring and the sword lie in the world as pickups of their own
+-- (tools/gen_quest_items.py); the ledger is carried by the bandit Bella (her `items` in Scene 2),
+-- the locket kept in the old chest by the chapel (its `item`).
+
+VirtualItems[Names.RING] = {
+	name = "SIGNET RING",
+	info = "GOLD, WITH A STAG ON IT. KLARA'S HUSBAND'S.",
+	icon = "ring",
+	quest = true,
+	entityId = Guid("{D1A10000-0000-4000-8000-000000000100}")    -- Scene 2, in the churchyard grass
+}
+
+VirtualItems[Names.LEDGER] = {
+	name = "BURIAL LEDGER",
+	info = "THE NAMES OF THE CHAPEL'S DEAD, IN A CRAMPED HAND.",
+	icon = "ledger",
+	quest = true
+}
+
+VirtualItems[Names.LOCKET] = {
+	name = "SILVER LOCKET",
+	info = "A WORN SILVER LOCKET. GRETA'S MOTHER'S.",
+	icon = "locket",
+	quest = true
+}
+
+VirtualItems[Names.SWORD] = {
+	name = "SWORD OF VILLINGE",
+	info = "FORGED BY ÅKE'S GRANDFATHER. STILL SHARP.",
+	icon = "sword",
+	quest = true,
+	entityId = Guid("{D1A10000-0000-4000-8000-000000000103}")    -- the cave, the far dead end
+}
+]]></text>
+</object>

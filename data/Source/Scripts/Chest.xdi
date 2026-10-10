@@ -87,14 +87,14 @@ function Chest:contents()
 	end
 
 	for _, entry in ipairs(entries) do
-		local kind < const > = ALIASES[entry.name] or entry.name
-		local def < const > = Items[kind]
+		local key < const > = entry.key or Items.keyOf(ALIASES[entry.name])
+		local def < const > = Items.get(key)
 		if def == nil then
 			print('Chest: unknown item "' .. entry.name .. '"; left out.')
 		elseif def.keep then
-			print('Chest: a ' .. kind .. ' cannot be kept in a chest; left out.')
+			print('Chest: a ' .. entry.name .. ' cannot be kept in a chest; left out.')
 		elseif (entry.count or 1) > 0 then
-			table.insert(list, { kind = kind, count = entry.count or 1 })
+			table.insert(list, { kind = key, count = entry.count or 1 })
 		end
 	end
 	return list

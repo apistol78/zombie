@@ -43,8 +43,8 @@ import(traktor)
 -- Conditions -- a `when` -- are a table of tests that must all hold. Each takes one name or a
 -- list of them (all of which must hold):
 --
---   has = "ring"         the pack holds it ("coin:10": at least ten)
---   lacks = "ring"       ...or does not
+--   has = Names.RING     the pack holds it ({ Names.COIN, 10 }: at least ten)
+--   lacks = Names.RING   ...or does not
 --   notStarted = "ring"  quest not given yet
 --   started = "ring"     quest given, under way or finished
 --   active = "ring"      quest under way
@@ -55,10 +55,13 @@ import(traktor)
 --   notFlag = "metKlara" ...or not
 --   test = function(journal, host) return ... end    anything else, in code
 --
+-- Items are named as Names has them (Scripts/Items/VirtualItems): Names.RING, or with a count,
+-- { Names.COIN, 10 }; a list of them is a list of those -- { Names.FLASK, { Names.COIN, 10 } }.
+--
 -- Triggers -- a `does` -- run in this order whatever order they are written in:
 --
---   take = "ring"        out of the pack ("coin:5", or a list)
---   give = "coin:10"     into the pack (a list too); a full pack says so and keeps the rest
+--   take = Names.RING    out of the pack ({ Names.COIN, 5 }, or a list)
+--   give = { Names.COIN, 10 }   into the pack (a list too); a full pack says so and keeps the rest
 --   quest = "ring"       give the player a quest (once only; asking again does nothing)
 --   advance = "ring.return"  complete that step, if it is the one the quest is on;
 --                        "ring" alone completes whatever step it is on
@@ -97,8 +100,8 @@ Dialogs[Names.KLARA] = {
 			text = "A LIVING FACE. THERE ARE FEWER EVERY NIGHT.",
 			options = {
 				{ text = "YOU LOOK TROUBLED.", when = { notStarted = "ring" }, to = "ring" },
-				{ text = "I FOUND YOUR RING.", when = { step = "ring.return", has = "ring" },
-					does = { take = "ring" }, to = "thanks" },
+				{ text = "I FOUND YOUR RING.", when = { step = "ring.return", has = Names.RING },
+					does = { take = Names.RING }, to = "thanks" },
 				{ text = "WHERE DID YOU LOSE THE RING?", when = { step = "ring.find" }, to = "where" },
 				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
 			}
@@ -130,8 +133,8 @@ Dialogs[Names.BROTHER_ANSELM] = {
 		hello = {
 			options = {
 				{ text = "WHY DON'T THE DEAD REST?", when = { notStarted = "ledger" }, to = "why" },
-				{ text = "I HAVE YOUR LEDGER.", when = { step = "ledger.return", has = "ledger" },
-					does = { take = "ledger" }, to = "thanks" },
+				{ text = "I HAVE YOUR LEDGER.", when = { step = "ledger.return", has = Names.LEDGER },
+					does = { take = Names.LEDGER }, to = "thanks" },
 				{ text = "WHERE ARE THE BANDITS?", when = { step = "ledger.find" }, to = "where" },
 				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
 			}
@@ -144,7 +147,7 @@ Dialogs[Names.BROTHER_ANSELM] = {
 			}
 		},
 		where = {
-			text = "A WOMAN CALLED BELLA LEADS THEM. THEY CAMP ON THE RIDGE TO THE WEST, AND THE LEDGER WILL BE THERE. SHE WILL NOT GIVE IT UP FOR KIND WORDS.",
+			text = "A WOMAN CALLED BELLA LEADS THEM. THEY CAMP ON THE RIDGE TO THE WEST. SHE WILL NOT GIVE IT UP FOR KIND WORDS.",
 			options = {
 				{ text = "I HAD ANOTHER QUESTION.", to = "hello" }
 			}
@@ -163,8 +166,8 @@ Dialogs[Names.AKE] = {
 		hello = {
 			options = {
 				{ text = "WHAT ARE YOU WORKING ON?", when = { notStarted = "sword" }, to = "villinge" },
-				{ text = "I HAVE THE SWORD OF VILLINGE.", when = { step = "sword.return", has = "sword" },
-					does = { take = "sword" }, to = "sword" },
+				{ text = "I HAVE THE SWORD OF VILLINGE.", when = { step = "sword.return", has = Names.SWORD },
+					does = { take = Names.SWORD }, to = "sword" },
 				{ text = "WHERE IS THE CAVE?", when = { step = "sword.find" }, to = "where" },
 				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
 			}
@@ -196,8 +199,8 @@ Dialogs[Names.GRETA] = {
 		hello = {
 			options = {
 				{ text = "IS SOMETHING WRONG?", when = { notStarted = "locket" }, to = "locket" },
-				{ text = "HERE IS YOUR LOCKET.", when = { step = "locket.return", has = "locket" },
-					does = { take = "locket" }, to = "thanks" },
+				{ text = "HERE IS YOUR LOCKET.", when = { step = "locket.return", has = Names.LOCKET },
+					does = { take = Names.LOCKET }, to = "thanks" },
 				{ text = "WHAT ARE YOU CARRYING?", does = { trade = true } }
 			}
 		},
@@ -220,20 +223,20 @@ Dialogs[Names.TOMAS] = {
 		hello = {
 			options = {
 				{ text = "WHERE IS YOUR MOTHER'S LOCKET?", when = { step = "locket.ask" }, to = "deny" },
-				{ text = "HERE, A COIN FOR YOU.", when = { has = "coin" }, once = true,
-					does = { take = "coin" }, to = "coin" }
+				{ text = "HERE, A COIN FOR YOU.", when = { has = Names.COIN }, once = true,
+					does = { take = Names.COIN }, to = "coin" }
 			}
 		},
 		deny = {
 			text = "I DON'T KNOW ANYTHING ABOUT A LOCKET.",
 			options = {
 				{ text = "I WON'T TELL HER YOU TOOK IT.", to = "confess" },
-				{ text = "A COIN FOR THE TRUTH?", when = { has = "coin" }, does = { take = "coin" }, to = "confess" },
+				{ text = "A COIN FOR THE TRUTH?", when = { has = Names.COIN }, does = { take = Names.COIN }, to = "confess" },
 				{ text = "FINE." }
 			}
 		},
 		confess = {
-			text = "I HID IT BEHIND THE OLD CHEST BY THE CHAPEL. NOBODY EVER GOES THERE. DON'T TELL HER!"
+			text = "I HID IT IN THE OLD CHEST BY THE CHAPEL. THE ONE NOBODY OPENS. DON'T TELL HER!"
 		},
 		coin = {
 			text = "A WHOLE COIN! MOTHER WILL NEVER KNOW."

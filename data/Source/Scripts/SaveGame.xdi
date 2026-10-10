@@ -30,9 +30,10 @@ import(traktor)
 SaveGame = SaveGame or {}
 
 -- The id of the save in the save data, and the version of what is written under it. A save
--- written by a different version is ignored rather than fed to a game it no longer fits.
+-- written by a different version is ignored rather than fed to a game it no longer fits: 2 since
+-- the items were made guids (Scripts/Items/VirtualItems), which the pack and the books keep.
 local SAVE_ID < const > = "night"
-local VERSION < const > = 1
+local VERSION < const > = 2
 
 local function saveData(environment)
 	if environment == nil then

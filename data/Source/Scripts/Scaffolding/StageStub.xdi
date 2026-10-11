@@ -3,8 +3,6 @@
 	<text><![CDATA[
 #using \{6E9AD100-0000-4000-8000-000000000010}
 #using \{17E40000-0000-4000-8000-000000000001}
-#using \{17E40000-0000-4000-8000-000000000002}
-#using \{D1A10000-0000-4000-8000-000000000003}
 
 import(traktor)
 
@@ -12,21 +10,35 @@ import(traktor)
 --
 -- Scripts/Main as far as Scripts/Views/InventoryView, Scripts/Views/ChestView,
 -- Scripts/Views/DialogView and Scripts/Views/JournalView can see it:
--- the `context` both are built with, for their test pages. The pack is a real
--- Scripts/Items/Inventory, filled with the night's starting kit the way Main fills it, so the
--- views are tested against the data they read in game. Only the stage's side of each call is
--- stood in for -- health is a number, a chest is a list kept here, and what Main would put on
--- its feed line is printed to the log.
+-- the `context` both are built with, for their test pages. The story is a real
+-- traktor.story.Story over the page's resource manager (GameScaffolding) -- the game's own,
+-- Story/Story, its pack filled with a sample kit -- so the views are tested against the data they
+-- read in game, and the talks are the real ones. Only the stage's side of each call is stood in
+-- for -- health is a number, a chest is a list kept here, and what Main would put on its feed line
+-- or the notice line is printed to the log.
 --
 -- Mirrors Main's inventory, armor, equipItem, unequipItem, useItem, dropSlot, giveItem,
--- chestContents, takeFromChest and takeAllFromChest, and Scripts/Quests/Questing's journal and
--- questEvent; keep them in step if those change what they answer. The journal is a real
--- Scripts/Quests/Journal over this stub's pack. Dropping puts nothing in a world -- there is none -- it only takes the stack
--- out of the pack.
+-- chestContents, takeFromChest and takeAllFromChest, and Scripts/Quests/Questing's story and
+-- questLog; keep them in step if those change what they answer. Dropping puts nothing in a world
+-- -- there is none -- it only takes the stack out of the pack.
 
 StageStub = StageStub or class("StageStub")
 
-function StageStub:new()
+-- The game's story, as Scripts/Quests/Questing has it.
+local STORY < const > = Guid("\{D1A20000-0000-4000-8000-000000000001}")
+
+-- The pack's stack in slot `i`, counted from 1 as the cells are (the pack itself counts from 0),
+-- as { kind, count } with the item as its key (Scripts/Items/Items), or nil for an empty slot.
+local function slotOf(inv, i)
+	local s < const > = inv:getSlot(i - 1)
+	if s == nil then
+		return nil
+	end
+	return { kind = Items.keyOf(s.item), count = s.count }
+end
+
+function StageStub:new(resourceManager)
+	self._resourceManager = resourceManager
 	self._maxHealth = Config.player.maxHealth
 	self._health = self._maxHealth
 	self._chests = {}
@@ -36,16 +48,21 @@ end
 -- A pack with something in it to preview against: a weapon, its rounds and a grenade. The
 -- night itself starts empty-handed (Config.inventory.start), which would leave nothing to look at.
 local SAMPLE_KIT < const > = {
-	{ Names.RIFLE, 1 },
-	{ Names.ROUNDS, 24 },
-	{ Names.GRENADE, 1 }
+	{ Items.RIFLE, 1 },
+	{ Items.ROUNDS, 24 },
+	{ Items.GRENADE, 1 }
 }
 
--- Start again from the sample kit. A new Inventory rather than a cleared one, so a view that
--- reads context:inventory() afresh each time (ChestView) sees a pack with no history, while one
--- that kept the old pack (InventoryView keeps its own) is not disturbed.
+-- Start the story again, the pack holding the sample kit and no quest given. A new Story rather
+-- than a cleared one, so a view that reads context:inventory() afresh each time (ChestView) sees a
+-- pack with no history, while one that kept the old pack (InventoryView keeps its own) is not
+-- disturbed.
 function StageStub:emptyPack()
-	self._inventory = Inventory(Config.inventory.slots)
+	self._story = traktor.story.Story.create(self._resourceManager, STORY, Config.inventory.slots)
+	self._story:setEventHandler(function(what, a, b)
+		self:_feed("story " .. what .. ": " .. tostring(a) .. ((b ~= nil) and (" " .. tostring(b.text or b)) or ""))
+	end)
+	self._inventory = self._story.inventory
 	for _, entry in ipairs(SAMPLE_KIT) do
 		self._inventory:add(entry[1], entry[2])
 	end
@@ -56,7 +73,7 @@ end
 -- pack runs out of room.
 function StageStub:crowdPack(kind, free)
 	local inv < const > = self._inventory
-	local slots < const > = inv:capacity() - inv:used() - (free or 0)
+	local slots < const > = inv.capacity - inv.used - (free or 0)
 	if slots > 0 then
 		inv:add(kind, Items.get(kind).stack * slots)
 	end
@@ -85,26 +102,16 @@ function StageStub:inventory()
 	return self._inventory
 end
 
--- A journal over the pack, made on first asking and kept until resetJournal.
-function StageStub:journal()
-	if self._journal == nil then
-		self._journal = Journal(self)
-	end
-	return self._journal
+function StageStub:story()
+	return self._story
 end
 
-function StageStub:resetJournal()
-	self._journal = nil
-	return self:journal()
-end
-
-function StageStub:questEvent(what, id, step)
-	self:_feed("quest " .. what .. ": " .. tostring(id) .. ((step ~= nil and step.text ~= nil) and (" -- " .. step.text) or ""))
+function StageStub:questLog()
+	return self._story.questLog
 end
 
 function StageStub:armor()
-	local kind < const > = self._inventory:equipped("body")
-	local def < const > = (kind ~= nil) and Items.get(kind) or nil
+	local def < const > = Items.get(self._inventory:getEquipped(Items.BODY))
 	return (def ~= nil and def.armor ~= nil) and def.armor or 0.0
 end
 
@@ -113,7 +120,7 @@ function StageStub:equipItem(kind)
 		return false
 	end
 	local def < const > = Items.get(kind)
-	if def ~= nil and def.equip == "hand" then
+	if def ~= nil and def.equip == Items.HAND then
 		self:_feed(def.name .. " IN HAND")
 	end
 	return true
@@ -121,7 +128,7 @@ end
 
 function StageStub:unequipItem(kind)
 	local def < const > = Items.get(kind)
-	if def == nil or def.equip == nil or self._inventory:equipped(def.equip) ~= kind then
+	if def == nil or def.equip == nil or Items.keyOf(self._inventory:getEquipped(def.equip)) ~= kind then
 		return false
 	end
 	return self._inventory:unequip(def.equip)
@@ -144,7 +151,7 @@ function StageStub:useItem(kind)
 end
 
 function StageStub:dropSlot(index)
-	local s < const > = self._inventory:slot(index)
+	local s < const > = slotOf(self._inventory, index)
 	if s == nil then
 		return false
 	end
@@ -153,13 +160,13 @@ function StageStub:dropSlot(index)
 		self:_feed("THAT CANNOT BE PUT DOWN")
 		return false
 	end
-	local stack < const > = self._inventory:removeSlot(index)
-	self:_feed("PUT DOWN " .. Items.describe(stack.kind, stack.count))
+	local stack < const > = self._inventory:removeSlot(index - 1)
+	self:_feed("PUT DOWN " .. Items.describe(stack.item, stack.count))
 	return true
 end
 
 function StageStub:giveItem(kind, count, entity)
-	local added < const > = self._inventory:add(kind, count, entity)
+	local added < const > = (entity ~= nil) and self._inventory:add(kind, count, entity) or self._inventory:add(kind, count)
 	if added <= 0 then
 		return 0
 	end

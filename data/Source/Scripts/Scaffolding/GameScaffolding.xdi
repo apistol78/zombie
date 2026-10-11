@@ -2,6 +2,7 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
 #using \{218D113A-66DC-9049-8424-701FF60F2BC4}
+#using \{17E40000-0000-4000-8000-000000000001}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 
@@ -25,6 +26,10 @@ import(traktor)
 --     anything that reads those styles is built.
 --   * Everything sits on a dark backdrop, roughly the night the HUD and the dialogs are seen
 --     against in game. The editor's grey flatters a 25% pane.
+--   * The preview's resource manager is taught to read the game's story and items (Traktor.Story,
+--     data/Source/Story and data/Source/Story/Items), which the game's own runtime does by itself, and handed to
+--     Scripts/Items/Items: a page's pack and chests show the real items. The manager is the
+--     page's (self._resourceManager), for whatever else wants it -- StageStub does.
 --
 -- A page derives from this and overrides any of:
 --
@@ -43,6 +48,10 @@ GameScaffolding = GameScaffolding or class("GameScaffolding", Scaffolding)
 
 GameScaffolding.DT = 1 / 60
 
+-- The resource managers taught to read items already: the preview keeps one manager while it
+-- rebuilds the page on every save, and one factory is enough.
+local itemsTaught = setmetatable({}, { __mode = "k" })
+
 local BACKDROP < const > = Color4f(0.13, 0.16, 0.12, 1.0)
 local C_CAPTION < const > = Color4f(0.85, 0.87, 0.8, 1.0)
 local C_NOTE < const > = Color4f(0.55, 0.58, 0.64, 1.0)
@@ -60,6 +69,12 @@ function GameScaffolding:setup(frame)
 	self._shown = false
 	self._removed = false
 	self._time = 0.0
+
+	if not itemsTaught[self._resourceManager] then
+		self._resourceManager:addFactory(traktor.story.StoryResourceFactory())
+		itemsTaught[self._resourceManager] = true
+	end
+	Items.bind(self._resourceManager)
 
 	setupUiKitStyles()
 

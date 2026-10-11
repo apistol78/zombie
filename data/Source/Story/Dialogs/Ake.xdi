@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.story.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="traktor.story.DialogStartAsset" version="1">
+			<node>{D7E6A888-1D85-4DB5-85C8-B1FF27CE37BE}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{D7E6A888-1D85-4DB5-85C8-B1FF27CE37BE}</id>
+			<name>hello</name>
+			<text/>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{B410D465-BAED-42CE-84C6-98A75A9F25FD}</id>
+					<text>WHAT ARE YOU WORKING ON?</text>
+					<target>{EB852977-20B1-4663-B71A-86C66C0C21A8}</target>
+					<condition type="traktor.story.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000103}</quest>
+						<state>NotStarted</state>
+						<step>{00000000-0000-0000-0000-000000000000}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{631F64D0-0785-4739-AF44-D2C3724A51D1}</id>
+					<text>I HAVE THE SWORD OF VILLINGE.</text>
+					<target>{10B72A45-CDDE-4A7D-B44B-AB960AB102AA}</target>
+					<condition type="traktor.story.AllCondition">
+						<conditions>
+							<item type="traktor.story.HasItemCondition">
+								<item>{D1A10000-0000-4000-8000-00000000020D}</item>
+								<count>1</count>
+								<negate>false</negate>
+							</item>
+							<item type="traktor.story.QuestCondition" version="1">
+								<quest>{D1A20000-0000-4000-8000-000000000103}</quest>
+								<state>AtStep</state>
+								<step>{B5CAAD3F-B78E-4D8D-BBC7-F81743D8EE00}</step>
+							</item>
+						</conditions>
+					</condition>
+					<actions>
+						<item type="traktor.story.TakeItemAction">
+							<item>{D1A10000-0000-4000-8000-00000000020D}</item>
+							<count>1</count>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{655BFDFF-3A82-4AEA-94E3-8C9623B76234}</id>
+					<text>WHERE IS THE CAVE?</text>
+					<target>{7C076143-DCB4-464D-A4F8-A78F5442B110}</target>
+					<condition type="traktor.story.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000103}</quest>
+						<state>AtStep</state>
+						<step>{774FB29E-D4D6-4BC4-9214-42840046EBC1}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{48F8F018-7C3A-4153-BB95-B28A08272BFF}</id>
+					<text>WHAT ARE YOU CARRYING?</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions>
+						<item type="traktor.story.EventAction" version="1">
+							<event>{D1A20000-0000-4000-8000-000000000500}</event>
+							<endConversation>true</endConversation>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>256, 44</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{10B72A45-CDDE-4A7D-B44B-AB960AB102AA}</id>
+			<name>sword</name>
+			<text><![CDATA[IT IS... STILL SHARP. HE WOULD HAVE WANTED YOU TO HAVE SOMETHING FOR IT. TAKE THIS HELMET, I MADE IT FOR A MAN WHO NEVER CAME BACK.]]></text>
+			<onEnter/>
+			<responses/>
+			<position>719, -37</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{EB852977-20B1-4663-B71A-86C66C0C21A8}</id>
+			<name>villinge</name>
+			<text><![CDATA[NAILS. HINGES. NOTHING WORTH THE NAME. MY GRANDFATHER FORGED THE SWORD OF VILLINGE, AND IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{3645EFA2-3644-483F-8331-F5B9F6B27538}</id>
+					<text>I WILL BRING IT BACK.</text>
+					<target>{7C076143-DCB4-464D-A4F8-A78F5442B110}</target>
+					<condition/>
+					<actions>
+						<item type="traktor.story.StartQuestAction">
+							<quest>{D1A20000-0000-4000-8000-000000000103}</quest>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{CD7E8AA2-249B-4CDE-918F-595C87255A2F}</id>
+					<text>THE CAVE CAN KEEP IT.</text>
+					<target>{D7E6A888-1D85-4DB5-85C8-B1FF27CE37BE}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>720, 70</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{7C076143-DCB4-464D-A4F8-A78F5442B110}</id>
+			<name>where</name>
+			<text><![CDATA[THE CAVE MOUTH IS UP THE HILL, NORTH-EAST OF THE VILLAGE. IF THE SWORD IS ANYWHERE, IT IS AT THE VERY BOTTOM, PAST THE IRON GATES.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{24D95C5D-F387-4CA3-9B93-73C4160A822E}</id>
+					<text>I HAD ANOTHER QUESTION.</text>
+					<target>{D7E6A888-1D85-4DB5-85C8-B1FF27CE37BE}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>720, 184</position>
+		</item>
+	</nodes>
+	<startPosition>0, 0</startPosition>
+</object>

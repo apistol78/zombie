@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.story.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="traktor.story.DialogStartAsset" version="1">
+			<node>{B480250C-BD8E-4128-ABA0-77F0353D2D2D}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{B480250C-BD8E-4128-ABA0-77F0353D2D2D}</id>
+			<name>hello</name>
+			<text/>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{3CD88D7D-B21B-4EBB-B6C9-F4A9160A2CA6}</id>
+					<text>WHERE IS YOUR MOTHER'S LOCKET?</text>
+					<target>{CFA78A80-D407-4FE3-AB41-EB375B9C5FDD}</target>
+					<condition type="traktor.story.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000101}</quest>
+						<state>AtStep</state>
+						<step>{8A432C0C-DC0C-4ECC-B5C7-C3D269C405D7}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{DC2E05BA-4322-42F7-93A3-3EFD15913A0D}</id>
+					<text>HERE, A COIN FOR YOU.</text>
+					<target>{B2410431-FCD4-42EC-88F8-C2B7120B45CB}</target>
+					<condition type="traktor.story.HasItemCondition">
+						<item>{D1A10000-0000-4000-8000-000000000206}</item>
+						<count>1</count>
+						<negate>false</negate>
+					</condition>
+					<actions>
+						<item type="traktor.story.TakeItemAction">
+							<item>{D1A10000-0000-4000-8000-000000000206}</item>
+							<count>1</count>
+						</item>
+					</actions>
+					<once>true</once>
+				</item>
+			</responses>
+			<position>0, 0</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{B2410431-FCD4-42EC-88F8-C2B7120B45CB}</id>
+			<name>coin</name>
+			<text>A WHOLE COIN! MOTHER WILL NEVER KNOW.</text>
+			<onEnter/>
+			<responses/>
+			<position>0, 0</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{2D2CB228-05AF-4BA2-961F-E43D4AF1588D}</id>
+			<name>confess</name>
+			<text>I HID IT IN THE OLD CHEST BY THE CHAPEL. THE ONE NOBODY OPENS. DON'T TELL HER!</text>
+			<onEnter/>
+			<responses/>
+			<position>0, 0</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{CFA78A80-D407-4FE3-AB41-EB375B9C5FDD}</id>
+			<name>deny</name>
+			<text>I DON'T KNOW ANYTHING ABOUT A LOCKET.</text>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{44F6ACD5-C34C-4292-9C05-B7EE87CDB8A5}</id>
+					<text>I WON'T TELL HER YOU TOOK IT.</text>
+					<target>{2D2CB228-05AF-4BA2-961F-E43D4AF1588D}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{38350215-0FDB-4547-95D4-59A79E02C2C3}</id>
+					<text>A COIN FOR THE TRUTH?</text>
+					<target>{2D2CB228-05AF-4BA2-961F-E43D4AF1588D}</target>
+					<condition type="traktor.story.HasItemCondition">
+						<item>{D1A10000-0000-4000-8000-000000000206}</item>
+						<count>1</count>
+						<negate>false</negate>
+					</condition>
+					<actions>
+						<item type="traktor.story.TakeItemAction">
+							<item>{D1A10000-0000-4000-8000-000000000206}</item>
+							<count>1</count>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{66866498-57DD-4762-BF94-7F46C2AB253B}</id>
+					<text>FINE.</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>0, 0</position>
+		</item>
+	</nodes>
+	<startPosition>0, 0</startPosition>
+</object>

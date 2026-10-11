@@ -3,7 +3,6 @@
 	<text><![CDATA[
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
-#using \{D1A10000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -13,15 +12,15 @@ import(traktor)
 -- may give -- Skyrim's, a column of lines under the speaker, the one under the mouse in white.
 -- A UiKit Container that builds its own rows, like Scripts/Views/ChestView beside it; Main shows
 -- it in a dialog of its own, with the night held still behind it (Main:_setDialogOpen, in
--- Scripts/Quests/Stage).
+-- Scripts/Quests/Questing).
 --
--- It plays a Scripts/Quests/Journal Conversation and nothing else: the line and the replies are
+-- It plays a traktor.story.Conversation (Story:talk) and nothing else: the line and the replies are
 -- the conversation's, and clicking a reply is Conversation:choose. When the talk is over -- a
 -- reply that leads nowhere, a trade, LEAVE, or E or Escape (the host's) -- the host is told
 -- through setOnEnd, with the conversation, so it can see whether the character's pack is to be
--- opened (Conversation:wantsTrade).
+-- opened (Conversation:hasEvent("trade")).
 --
--- The line has room for the longest one any dialog has (measured when the view is built), so the
+-- The line has room for the longest one a dialog is likely to have (see longestLine), so the
 -- replies never move about under the mouse as the character's lines change length. The window is
 -- only as tall as the replies on offer, though -- it stands at the bottom of the screen, under the
 -- character being talked to, and six empty rows would put it over their face. The host re-places
@@ -68,21 +67,11 @@ local LINE_SIZE < const > = 20
 local MAX_REPLIES < const > = 6
 local BUTTON_W < const > = 132
 
--- Every string a dialog line might be, for sizing the paragraph: the longest written text of any
--- line in any dialog. A line written as a function is not known until it is said, and is given
--- what room the others leave it.
+-- What a dialog line is given room for: three lines of the widest letter, which is more than any
+-- line the story's dialogs have (data/Source/Story/Dialogs) -- those are compiled into the database
+-- and cannot be gone through from here to measure.
 local function longestLine()
-	local best = "M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M"
-	for _, d in pairs(Dialogs) do
-		if type(d) == "table" and d.nodes ~= nil then
-			for _, node in pairs(d.nodes) do
-				if type(node.text) == "string" and string.len(node.text) > string.len(best) then
-					best = node.text
-				end
-			end
-		end
-	end
-	return best
+	return "M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M M"
 end
 
 -- Forget the size every container from `w` up has worked out for itself (UiKit's Container keeps
@@ -156,7 +145,7 @@ end
 -- the labels are re-placed in cells the layout has already given them.
 function DialogView:showConversation(conversation)
 	self._conversation = conversation
-	setText(self._name, conversation:name() or "")
+	setText(self._name, conversation.name or "")
 	self:refresh()
 end
 
@@ -170,21 +159,21 @@ function DialogView:refresh()
 	if c == nil then
 		return
 	end
-	setText(self._line, c:line())
-	local options < const > = c:options()
-	if #options > MAX_REPLIES then
-		print("DialogView: " .. tostring(c:key()) .. " offers " .. #options .. " replies; the window shows " .. MAX_REPLIES .. ".")
+	setText(self._line, c.line)
+	local responses < const > = c.responses
+	if responses.size > MAX_REPLIES then
+		print("DialogView: " .. tostring(c.name) .. " offers " .. responses.size .. " replies; the window shows " .. MAX_REPLIES .. ".")
 	end
-	local shown < const > = math.min(#options, MAX_REPLIES)
+	local shown < const > = math.min(responses.size, MAX_REPLIES)
 	for i, r in ipairs(self._replies) do
-		local o < const > = options[i]
+		local o < const > = (i <= responses.size) and responses:get(i - 1) or nil
 		if o ~= nil then
-			r.index = o.index
+			r.response = o
 			r.button:setCaption(o.text)
 			r.button:setVisible(true)
 			r.button.__layout = nil
 		else
-			r.index = nil
+			r.response = nil
 			r.button:setCaption("")
 			r.button:setVisible(false)
 			-- Out of the layout altogether, so the window closes up around the replies there are.
@@ -210,12 +199,12 @@ end
 function DialogView:_reply(i)
 	local c < const > = self._conversation
 	local r < const > = self._replies[i]
-	if c == nil or r.index == nil then
+	if c == nil or r.response == nil then
 		return
 	end
-	c:choose(r.index)
+	c:choose(r.response)
 	-- A reply can end the talk: the window goes, and never needs to be laid out for that.
-	if c:ended() then
+	if c.ended then
 		self:_end()
 	else
 		self:refresh()

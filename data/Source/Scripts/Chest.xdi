@@ -17,20 +17,15 @@ import(traktor)
 -- what is left in each is the Stage's (Main:_openChest), as plain data, so it survives a script
 -- hot reload the way the wards and the gates do.
 --
--- What a chest holds is the level designer's. It is read from the ScriptComponentData's
--- properties, so each chest placed in a scene can hold something different -- give the scene's
--- ExternalEntityData wrapper its own ScriptComponentData (class Scripts/Chest, with
--- properties); ResolveExternal swaps it in for this entity's own, which holds nothing.
+-- What a chest holds is the level designer's: a Traktor.Story ItemContainerComponentData on the
+-- placed chest, so each chest in a scene can hold something different -- the scene's
+-- ExternalEntityData wrapper carries it next to its own ScriptComponentData (class Scripts/Chest).
+-- No container, or an empty one: the chest is empty, which is a thing worth placing too. A relic
+-- cannot go in a chest -- relics are their own entities out in the world (Items: `keep`) -- and is
+-- left out with a warning, as is anything that is no item.
 --
---   item    (string) what is inside: a comma separated list of item kinds out of
---           Scripts/Items/Items, each with an optional count after a colon --
---           "rounds:24, flask, grenade:2". Two older names still mean a kind ("ammo",
---           "health"). Empty or absent: the chest is empty, which is a thing worth placing
---           too. A relic cannot go in a chest -- relics are their own entities out in the
---           world (Items: `keep`) -- and is left out with a warning, as is a kind the
---           catalogue does not know.
---   count   (string, optional) how many, for a chest holding a single kind written without
---           one of its own -- the form the older chests were written in.
+-- What the ScriptComponentData's properties still say:
+--
 --   notice  (string, optional) a line of its own, shown under the chest window's title --
 --           "THE SEXTON'S KEY", say.
 --
@@ -50,12 +45,6 @@ Chest = Chest or class("Chest", traktor.world.ScriptComponent)
 
 local ACT < const > = "Open"   -- the act that swings the lid up and creaks the hinges
 
--- The names chests in the scenes were given before there were item kinds.
-local ALIASES < const > = {
-	ammo = "rounds",
-	health = "flask"
-}
-
 -- A string property off this component's ScriptComponentData, or nil.
 function Chest:_property(name)
 	local props < const > = self.properties
@@ -69,32 +58,33 @@ function Chest:_property(name)
 	return v
 end
 
--- What the level put in the box, as a fresh list of { kind, count } in the order it was
--- written. A new list every call: the Stage takes one when the chest is first opened and keeps
--- track of what is left in it from there, so nothing here is ever spent.
+-- What the level put in the box (its ItemContainerComponent), as a fresh list of { kind, count }
+-- in the order it was written. A new list every call: the Stage takes one when the chest is first
+-- opened and keeps track of what is left in it from there, so nothing here is ever spent.
 function Chest:contents()
+	return Chest.listOf(self.owner, "Chest")
+end
+
+-- An entity's ItemContainerComponent as a list of { kind, count }: what a chest holds, and what a
+-- character carries (Scripts/Npc/Npc). `who` names the owner in a warning.
+--
+-- Only the keys are read (Items.keyOf), never the items themselves: a character reads what it
+-- carries as the world is built, before the stage has bound Scripts/Items/Items to the database.
+function Chest.listOf(entity, who)
 	local list = {}
-	local spec < const > = self:_property("item")
-	if spec == nil then
+	local box < const > = entity:getComponent(traktor.story.ItemContainerComponent)
+	if box == nil then
 		return list
 	end
-
-	local entries < const > = Items.parseList(spec, "Chest")
-
-	-- The older form: one kind, and its count in a property of its own.
-	if #entries == 1 and entries[1].count == nil then
-		entries[1].count = tonumber(self:_property("count") or "")
-	end
-
-	for _, entry in ipairs(entries) do
-		local key < const > = entry.key or Items.keyOf(ALIASES[entry.name])
-		local def < const > = Items.get(key)
-		if def == nil then
-			print('Chest: unknown item "' .. entry.name .. '"; left out.')
-		elseif def.keep then
-			print('Chest: a ' .. entry.name .. ' cannot be kept in a chest; left out.')
-		elseif (entry.count or 1) > 0 then
-			table.insert(list, { kind = key, count = entry.count or 1 })
+	for i = 0, box.entryCount - 1 do
+		local item < const > = box:getItem(i)
+		local key < const > = Items.keyOf(item)
+		if key == nil then
+			print(who .. ": " .. ((item ~= nil) and item:format() or "nothing") .. " is no item; left out.")
+		elseif Items.is(key, Items.RELIC) then
+			print(who .. ": a relic cannot be kept by anyone; left out.")
+		elseif box:getCount(i) > 0 then
+			table.insert(list, { kind = key, count = box:getCount(i) })
 		end
 	end
 	return list

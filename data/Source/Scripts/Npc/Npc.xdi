@@ -3,6 +3,7 @@
 	<text><![CDATA[
 #using \{6E9AD100-0000-4000-8000-000000000010}
 #using \{17E40000-0000-4000-8000-000000000001}
+#using \{C4E57000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -30,16 +31,20 @@ import(traktor)
 --   * What it carries -- a list of { kind, count } off its `items` property, the same form a
 --     chest holds, which is what it leaves to be searched when it dies.
 --
--- Properties (all strings, all optional) on a placed character's ScriptComponentData:
+-- Who a character is comes from its actor (Story/Actors, through its ActorComponent): its name,
+-- what the prompts call it ("THE SMITH"), is the actor's own; the rest are the actor's
+-- properties. A property on the entity's own ScriptComponentData is read first, which is where
+-- what belongs to the placement goes. All strings, all optional:
 --
 --   class      wanderer | merchant | worker | braindead
 --   faction    a key of Config.npc.factions (villager, bandit, undead)
---   name       what the prompts call it ("THE SMITH")
 --   greeting   what it says when talked to; a stock line by mood otherwise
---   route      the name of a Scripts/Npc/Route to walk (wanderers, and placed zombies)
---   items      what it carries -- "coin:12, bread", as a chest's `item`
+--   route      on the entity: a reference to the entity of a Scripts/Npc/Route to walk. Only a
+--              wanderer walks one; without, it ambles within strayRadius of where it stands
 --   health, age, courage, hostility    numbers
 --   mood       neutral | happy | angry | scared
+--
+-- What it carries is its ItemContainerComponent.
 
 Npc = Npc or class("Npc", traktor.world.ScriptComponent)
 
@@ -143,9 +148,8 @@ end
 
 -- ---- Who it is ----
 
--- A property off this component's ScriptComponentData, as a string, or nil.
-function Npc:_property(name)
-	local props < const > = self.properties
+-- One value of a property group, as a string, or nil.
+local function propertyOf(props, name)
 	if props == nil then
 		return nil
 	end
@@ -154,6 +158,23 @@ function Npc:_property(name)
 		return nil
 	end
 	return v
+end
+
+-- The character's actor (Story/Actors), through its ActorComponent; nil for one without, such as
+-- every zombie. The actor is who the character is: its name and its properties.
+function Npc:_actor()
+	return self.owner ~= nil and self.owner:getComponent(traktor.story.ActorComponent) or nil
+end
+
+-- A property, as a string, or nil: this entity's own (its ScriptComponentData -- where it is,
+-- such as its route) over its actor's (who it is, such as its class and courage).
+function Npc:_property(name)
+	local v < const > = propertyOf(self.properties, name)
+	if v ~= nil then
+		return v
+	end
+	local actor < const > = self:_actor()
+	return (actor ~= nil) and propertyOf(actor.properties, name) or nil
 end
 
 -- One setting: the scene's property, else this character's class in Config.npc, else the
@@ -196,9 +217,12 @@ function Npc:_stats()
 	local class < const > = self:_property("class") or self._class or "wanderer"
 	self._class = class
 	self._faction = self:_setting("faction", class)
-	self._name = self:_property("name")
+	local actor < const > = self:_actor()
+	self._name = (actor ~= nil and actor.name ~= "") and actor.name or nil
 	self._greeting = self:_property("greeting")
-	self._routeName = self:_property("route")
+	-- The route: an entity reference (traktor.world.PropertyEntityReference) to its entity.
+	local route < const > = self:_property("route")
+	self._routeId = (route ~= nil and type(route) ~= "string") and route.id or nil
 
 	self._maxHealth = self:_setting("health", class)
 	if self._health == nil then
@@ -227,26 +251,18 @@ function Npc:_stats()
 	self._walkSpeed = self:_setting("walkSpeed", class) * pace
 	self._runSpeed = self:_setting("runSpeed", class) * pace
 
-	-- What it carries. Kinds the catalogue does not know, and relics -- which are their own
-	-- entities out in the world -- are left out, as a chest leaves them out.
+	-- What it carries: its ItemContainerComponent, placed on it in the scene. Anything that is no
+	-- item, and relics -- which are their own entities out in the world -- are left out, as a
+	-- chest leaves them out (Chest.listOf).
 	if self._loot == nil then
-		self._loot = {}
-		local spec < const > = self:_property("items")
-		if spec == nil and class == "braindead" then
+		self._loot = Chest.listOf(self.owner, "Npc")
+		if #self._loot == 0 and class == "braindead" then
 			-- A zombie the scene says nothing about -- every one the Spawner or a hive sends up --
 			-- carries whatever it died with, drawn now (Config.npc.zombieLoot).
 			for _, roll in ipairs(NPC.zombieLoot) do
 				if math.random() < roll.chance then
 					table.insert(self._loot, { kind = Items.keyOf(roll.item), count = roll.count })
 				end
-			end
-		end
-		for _, entry in ipairs(Items.parseList(spec, "Npc")) do
-			local def < const > = Items.get(entry.key)
-			if def == nil then
-				print('Npc: unknown item "' .. entry.name .. '"; left out.')
-			elseif not def.keep and (entry.count or 1) > 0 then
-				table.insert(self._loot, { kind = entry.key, count = entry.count or 1 })
 			end
 		end
 	end
@@ -1219,7 +1235,7 @@ function Npc:_route(context)
 	if self._routePoints ~= nil then
 		return self._routePoints
 	end
-	if self._routeName == nil or self._routeMissing or context.route == nil then
+	if self._routeId == nil or self._routeMissing or context.route == nil then
 		return nil
 	end
 	-- Not yet: the Stage collects the routes only once the world has been through an update
@@ -1227,9 +1243,9 @@ function Npc:_route(context)
 	if context._routes == nil then
 		return nil
 	end
-	local route < const > = context:route(self._routeName)
+	local route < const > = context:route(self._routeId)
 	if route == nil or #route.points == 0 then
-		print('Npc: no route named "' .. self._routeName .. '"')
+		print("Npc: no route " .. self._routeId:format())
 		self._routeMissing = true
 		return nil
 	end

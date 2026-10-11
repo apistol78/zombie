@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.story.ItemData">
+	<name>BREAD</name>
+	<pluralName/>
+	<info>STALE, BUT IT WILL DO.</info>
+	<icon>bread</icon>
+	<maxStack>5</maxStack>
+	<quest>false</quest>
+	<keep>false</keep>
+	<dropEntity>{17E40000-0000-4000-8000-000000000016}</dropEntity>
+	<traits>
+		<item type="traktor.story.HealTrait">
+			<amount>15</amount>
+		</item>
+	</traits>
+</object>

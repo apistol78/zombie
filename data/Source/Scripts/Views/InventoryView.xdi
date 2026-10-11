@@ -34,6 +34,16 @@ import(traktor)
 
 InventoryView = InventoryView or class("InventoryView", Container)
 
+-- The pack's stack in slot `i`, counted from 1 as the cells are (the pack itself counts from 0),
+-- as { kind, count } with the item as its key (Scripts/Items/Items), or nil for an empty slot.
+local function slotOf(inv, i)
+	local s < const > = inv:getSlot(i - 1)
+	if s == nil then
+		return nil
+	end
+	return { kind = Items.keyOf(s.item), count = s.count }
+end
+
 local C_TITLE < const > = Color4f(0.96, 0.96, 0.94, 1.0)
 local C_LABEL < const > = Color4f(0.58, 0.58, 0.57, 1.0)
 local C_HINT < const > = Color4f(0.4, 0.4, 0.39, 1.0)
@@ -48,15 +58,15 @@ local DOUBLE_CLICK < const > = 0.4
 
 -- The three places, in the order they are shown, and what each is called.
 local PLACES < const > = {
-	{ place = "weapon", label = "IN HAND" },
-	{ place = "hand", label = "OFF HAND" },
-	{ place = "body", label = "WORN" }
+	{ place = Items.WEAPON, label = "IN HAND" },
+	{ place = Items.HAND, label = "OFF HAND" },
+	{ place = Items.BODY, label = "WORN" }
 }
 
 local PLACE_NAMES < const > = {
-	weapon = "IN HAND",
-	hand = "IN THE OFF HAND",
-	body = "WORN"
+	[Items.WEAPON] = "IN HAND",
+	[Items.HAND] = "IN THE OFF HAND",
+	[Items.BODY] = "WORN"
 }
 
 -- Set a Static's text and re-place it in the cell its layout gave it. A Static clamps its text
@@ -108,7 +118,7 @@ function InventoryView:new(parent, context)
 			end
 		end
 	end
-	table.insert(effects, "EQUIPPED " .. PLACE_NAMES.hand)
+	table.insert(effects, "EQUIPPED " .. PLACE_NAMES[Items.HAND])
 	table.insert(effects, "NOT HURT -- NOTHING TO HEAL")
 	table.insert(effects, "WANTED FOR A QUEST -- J FOR THE JOURNAL")
 
@@ -131,7 +141,7 @@ function InventoryView:new(parent, context)
 	end
 	local grid < const > = Container(body, TableLayout(cdef, { 0 }, 0, 0, CELL_GAP, CELL_GAP))
 	self._cells = {}
-	for i = 1, self._inventory:capacity() do
+	for i = 1, self._inventory.capacity do
 		local cell < const > = ItemSlot(grid)
 		cell:setOnClick(function() self:_onCell(i) end)
 		self._cells[i] = cell
@@ -203,10 +213,10 @@ end
 -- laid out, and by :update whenever the pack has changed since.
 function InventoryView:refresh()
 	local inv < const > = self._inventory
-	self._serial = inv:serial()
+	self._serial = inv.serial
 
 	for i, cell in ipairs(self._cells) do
-		local s < const > = inv:slot(i)
+		local s < const > = slotOf(inv, i)
 		if s ~= nil then
 			cell:setItem(s.kind, s.count)
 			cell:setEquipped(inv:isEquipped(s.kind))
@@ -218,12 +228,12 @@ function InventoryView:refresh()
 	end
 
 	for place, cell in pairs(self._places) do
-		local kind < const > = inv:equipped(place)
+		local kind < const > = Items.keyOf(inv:getEquipped(place))
 		cell:setItem(kind, kind ~= nil and inv:count(kind) or nil)
 		cell:setSelected(false)
 	end
 
-	setText(self._capacity, "SLOTS " .. tostring(inv:used()) .. " / " .. tostring(inv:capacity()))
+	setText(self._capacity, "SLOTS " .. tostring(inv.used) .. " / " .. tostring(inv.capacity))
 
 	local context < const > = self._context
 	local status = "HEALTH " .. tostring(math.ceil(context._health)) .. " / " .. tostring(math.floor(context._maxHealth))
@@ -240,7 +250,7 @@ end
 -- the view is up.
 function InventoryView:update(dt)
 	self._clock = self._clock + dt
-	if self._inventory:serial() ~= self._serial then
+	if self._inventory.serial ~= self._serial then
 		self:refresh()
 	end
 end
@@ -250,7 +260,7 @@ end
 -- The detail column and the buttons, for whatever is selected.
 function InventoryView:_refreshDetail()
 	local inv < const > = self._inventory
-	local s < const > = (self._selected ~= nil) and inv:slot(self._selected) or nil
+	local s < const > = (self._selected ~= nil) and slotOf(inv, self._selected) or nil
 	local def < const > = (s ~= nil) and Items.get(s.kind) or nil
 
 	if def == nil then
@@ -296,7 +306,7 @@ function InventoryView:_refreshDetail()
 	end
 
 	if def.heal ~= nil then
-		local verb < const > = Items.is(s.kind, Names.FLASK) and "DRINK" or "EAT"
+		local verb < const > = Items.is(s.kind, Items.FLASK) and "DRINK" or "EAT"
 		self._useButton:setCaption(verb):setEnable(self._context._health < self._context._maxHealth)
 	else
 		self._useButton:setCaption("USE"):setEnable(false)
@@ -329,12 +339,12 @@ end
 -- An equipment cell: select whatever is there, in the grid.
 function InventoryView:_onPlace(place)
 	local inv < const > = self._inventory
-	local kind < const > = inv:equipped(place)
+	local kind < const > = Items.keyOf(inv:getEquipped(place))
 	if kind == nil then
 		return
 	end
-	for i = 1, inv:capacity() do
-		local s < const > = inv:slot(i)
+	for i = 1, inv.capacity do
+		local s < const > = slotOf(inv, i)
 		if s ~= nil and s.kind == kind then
 			self:_select(i)
 			return
@@ -345,7 +355,7 @@ end
 -- The obvious thing to do with the selected item: equip or put away what equips, use what is
 -- used, and nothing at all for the rest -- a double click never drops anything.
 function InventoryView:_primary()
-	local s < const > = (self._selected ~= nil) and self._inventory:slot(self._selected) or nil
+	local s < const > = (self._selected ~= nil) and slotOf(self._inventory, self._selected) or nil
 	local def < const > = (s ~= nil) and Items.get(s.kind) or nil
 	if def == nil then
 		return
@@ -358,7 +368,7 @@ function InventoryView:_primary()
 end
 
 function InventoryView:_selectedKind()
-	local s < const > = (self._selected ~= nil) and self._inventory:slot(self._selected) or nil
+	local s < const > = (self._selected ~= nil) and slotOf(self._inventory, self._selected) or nil
 	return (s ~= nil) and s.kind or nil
 end
 

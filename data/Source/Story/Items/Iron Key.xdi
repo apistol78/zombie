@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.story.ItemData">
+	<name>IRON KEY</name>
+	<pluralName>IRON KEYS</pluralName>
+	<info>OPENS A LOCKED GATE.</info>
+	<icon>key</icon>
+	<maxStack>5</maxStack>
+	<quest>false</quest>
+	<keep>false</keep>
+	<dropEntity>{6E9AD100-0000-4000-8000-000000000026}</dropEntity>
+	<traits>
+		<item type="traktor.story.EventTrait" version="1">
+			<event>{D1A20000-0000-4000-8000-000000000502}</event>
+		</item>
+	</traits>
+</object>

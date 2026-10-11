@@ -47,12 +47,6 @@
 			<properties type="traktor.PropertyGroup">
 				<value>
 					<item>
-						<first>item</first>
-						<second type="traktor.PropertyString">
-							<value/>
-						</second>
-					</item>
-					<item>
 						<first>notice</first>
 						<second type="traktor.PropertyString">
 							<value/>
@@ -61,6 +55,9 @@
 				</value>
 			</properties>
 			<editorSupport>false</editorSupport>
+		</item>
+		<item type="traktor.story.ItemContainerComponentData">
+			<entries/>
 		</item>
 		<item type="traktor.world.GroupComponentData">
 			<entityData>

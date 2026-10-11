@@ -29,7 +29,7 @@ import(traktor)
 --   context:player()               the Humanoid entity, or nil before it is resolved
 --   context:isRunning()            sprinting, so a view model can drop to a low ready
 --   context:isCarrying()           a relic is held in the off hand, so a view model moves over
---   context:inventory()            the pack (Scripts/Items/Inventory): owning a weapon is having
+--   context:inventory()            the pack (a traktor.story.Inventory): owning a weapon is having
 --                                  its item in it, and the spare rounds are the "rounds" in it
 --   context:killEnemy(e, p, i, w)  the one way anything in this game dies
 --   context:isEnemyDead(e)         ...and whether it already has
@@ -65,7 +65,7 @@ function Weapon:slot()
 	return "weapon"
 end
 
--- Which item in the pack *is* this weapon, as its key (Items.keyOf(Names.RIFLE)). Having one in
+-- Which item in the pack *is* this weapon, as its key (Items.keyOf(Items.RIFLE)). Having one in
 -- the pack is owning the weapon, and equipping it is drawing it -- the loadout asks nothing else.
 -- Every weapon in the loadout says which; one that is not an item at all answers nil.
 function Weapon:item()

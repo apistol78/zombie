@@ -294,6 +294,9 @@
 		<item type="traktor.world.PostProcessComponentData">
 			<imageGraph>{7A1E9C40-0B5D-4E71-9C33-1D2F8A6B4E02}</imageGraph>
 		</item>
+		<item type="traktor.story.StoryWorldComponentData">
+			<refreshInterval>1</refreshInterval>
+		</item>
 	</worldComponents>
 	<layers>
 		<item type="traktor.world.EntityData" version="2">
@@ -2225,6 +2228,9 @@
 									</bodyDesc>
 									<eventCollide/>
 									<transformFilter>0</transformFilter>
+								</item>
+								<item type="traktor.story.PlaceComponentData">
+									<place>{D1A20000-0000-4000-8000-000000000400}</place>
 								</item>
 							</components>
 						</item>
@@ -20563,6 +20569,9 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
+								<item type="traktor.story.PlaceComponentData">
+									<place>{D1A20000-0000-4000-8000-000000000402}</place>
+								</item>
 							</components>
 							<entityData>{CC103709-631E-4E37-9A73-233D5761B478}</entityData>
 						</item>
@@ -20601,7 +20610,7 @@
 					<entityData>
 						<item type="traktor.world.EntityData" version="2">
 							<id>{665F99DF-D23A-4355-9AB8-36B21A98647F}</id>
-							<name>Route</name>
+							<name>Route - Village</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
@@ -20620,12 +20629,6 @@
 												<first>loop</first>
 												<second type="traktor.PropertyString">
 													<value>true</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>village</value>
 												</second>
 											</item>
 											<item>
@@ -20779,7 +20782,7 @@
 						</item>
 						<item type="traktor.world.EntityData" version="2">
 							<id>{516553D2-C602-431E-AA28-8A87FCB4208A}</id>
-							<name>Route</name>
+							<name>Route - Woodpath 1</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
@@ -20798,12 +20801,6 @@
 												<first>loop</first>
 												<second type="traktor.PropertyString">
 													<value>false</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>woodpath</value>
 												</second>
 											</item>
 											<item>
@@ -21040,47 +21037,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>52</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>worker</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.7</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>THE IRON WON&apos;T WORK ITSELF. MIND THE SPARKS.</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>ÅKE</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000300}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21100,47 +21073,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>64</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>merchant</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.2</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>NOTHING TO SELL TONIGHT, FRIEND. COME BACK AT DAWN.</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:30, flask</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>AXEL</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>30</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000204}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000302}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21163,56 +21112,25 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>30</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.4</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>STAY CLOSE TO THE LIGHT TONIGHT.</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>bread</value>
-												</second>
-											</item>
-											<item>
-												<first>mood</first>
-												<second type="traktor.PropertyString">
-													<value>happy</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>AXEL</value>
-												</second>
-											</item>
-											<item>
 												<first>route</first>
-												<second type="traktor.PropertyString">
-													<value>village</value>
+												<second type="traktor.world.PropertyEntityReference">
+													<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
 												</second>
 											</item>
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000301}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21235,38 +21153,25 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>71</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:3</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>KLARA</value>
-												</second>
-											</item>
-											<item>
 												<first>route</first>
-												<second type="traktor.PropertyString">
-													<value>village</value>
+												<second type="traktor.world.PropertyEntityReference">
+													<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
 												</second>
 											</item>
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>3</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000307}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21286,47 +21191,27 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.8</value>
-												</second>
-											</item>
-											<item>
-												<first>faction</first>
-												<second type="traktor.PropertyString">
-													<value>bandit</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:20, rounds:12, ledger</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>BELLA</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>20</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>12</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-00000000020B}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000303}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21346,47 +21231,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>45</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>worker</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.5</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>THE WELL STILL GIVES. THAT IS SOMETHING.</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>bread:2, flask</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>GRETA</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>2</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000204}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000306}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21406,53 +21267,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>38</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>worker</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.8</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>EVERY LOG I SPLIT IS ONE LESS PLACE FOR THEM TO HIDE.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:5, rounds:6</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE WOODCUTTER</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>5</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>6</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000308}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21475,50 +21306,25 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>12</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>MOTHER SAYS I&apos;M NOT TO TALK TO YOU.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>150</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:1</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>TOMAS</value>
-												</second>
-											</item>
-											<item>
 												<first>route</first>
-												<second type="traktor.PropertyString">
-													<value>village</value>
+												<second type="traktor.world.PropertyEntityReference">
+													<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
 												</second>
 											</item>
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21541,50 +21347,25 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>26</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.45</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>IF YOU&apos;RE GOING NEAR THE TOWER, GO QUIETLY.</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>flask</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>ELSA</value>
-												</second>
-											</item>
-											<item>
 												<first>route</first>
-												<second type="traktor.PropertyString">
-													<value>woodpath</value>
+												<second type="traktor.world.PropertyEntityReference">
+													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
 												</second>
 											</item>
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000204}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000305}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21604,47 +21385,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>67</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.6</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>THE DEAD DO NOT REST HERE ANY MORE. PRAY ANYWAY.</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>bread, flask</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>BROTHER ANSELM</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000204}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-000000000304}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21664,47 +21421,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.7</value>
-												</second>
-											</item>
-											<item>
-												<first>faction</first>
-												<second type="traktor.PropertyString">
-													<value>bandit</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>250</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:12, grenade</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>A CUTTHROAT</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>12</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030A}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21724,47 +21457,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.7</value>
-												</second>
-											</item>
-											<item>
-												<first>faction</first>
-												<second type="traktor.PropertyString">
-													<value>bandit</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>250</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:12, grenade</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>A CUTTHROAT</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>12</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030A}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21784,47 +21493,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.7</value>
-												</second>
-											</item>
-											<item>
-												<first>faction</first>
-												<second type="traktor.PropertyString">
-													<value>bandit</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>250</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:12, grenade</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>A CUTTHROAT</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>12</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030A}</actor>
 								</item>
 							</components>
 							<entityData>{033C927E-6A0E-2648-824F-9F7CF1F45E4B}</entityData>
@@ -21844,53 +21529,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>49</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.85</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>MY SNARES CAUGHT NOTHING BUT THE DEAD THIS WEEK.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:6, rounds:10</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE TRAPPER</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>6</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>10</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030C}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -21910,53 +21565,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>49</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.85</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>MY SNARES CAUGHT NOTHING BUT THE DEAD THIS WEEK.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:6, rounds:10</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE TRAPPER</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>6</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>10</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030C}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -21976,53 +21601,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>49</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.85</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>MY SNARES CAUGHT NOTHING BUT THE DEAD THIS WEEK.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>coin:6, rounds:10</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE TRAPPER</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>6</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>10</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030C}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22042,53 +21637,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22108,53 +21673,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22174,53 +21709,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22240,53 +21745,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22306,53 +21781,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22372,53 +21817,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22438,53 +21853,23 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
@@ -22504,60 +21889,30 @@
 							<components>
 								<item type="traktor.world.ScriptComponentData" version="2">
 									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>age</first>
-												<second type="traktor.PropertyString">
-													<value>34</value>
-												</second>
-											</item>
-											<item>
-												<first>class</first>
-												<second type="traktor.PropertyString">
-													<value>wanderer</value>
-												</second>
-											</item>
-											<item>
-												<first>courage</first>
-												<second type="traktor.PropertyString">
-													<value>0.9</value>
-												</second>
-											</item>
-											<item>
-												<first>greeting</first>
-												<second type="traktor.PropertyString">
-													<value>KEEP YOUR POWDER DRY. THEY COME OUT OF THE TREES.</value>
-												</second>
-											</item>
-											<item>
-												<first>health</first>
-												<second type="traktor.PropertyString">
-													<value>300</value>
-												</second>
-											</item>
-											<item>
-												<first>items</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:8, bread</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>THE HUNTSMAN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
+									<properties/>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="traktor.story.ActorComponentData">
+									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
 							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
 						</item>
 						<item type="traktor.world.EntityData" version="2">
 							<id>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</id>
-							<name>Route</name>
+							<name>Route - Woodpath 2</name>
 							<state>
 								<visible>true</visible>
 								<dynamic>false</dynamic>
@@ -22576,12 +21931,6 @@
 												<first>loop</first>
 												<second type="traktor.PropertyString">
 													<value>false</value>
-												</second>
-											</item>
-											<item>
-												<first>name</first>
-												<second type="traktor.PropertyString">
-													<value>woodpath</value>
 												</second>
 											</item>
 											<item>
@@ -22980,12 +22329,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rounds:24, bread, locket</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value/>
@@ -22994,6 +22337,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>24</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-00000000020C}</item>
+											<count>1</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23016,12 +22375,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rifle, rounds:36, grenade:3</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
@@ -23030,6 +22383,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000200}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>36</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>3</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23052,12 +22421,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>flask, bread:2</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value/>
@@ -23066,6 +22429,18 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000204}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>2</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23088,12 +22463,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>key, coin:10</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>CEMETARY KEY</value>
@@ -23102,6 +22471,18 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000208}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000206}</item>
+											<count>10</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23124,12 +22505,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rifle, rounds:36, grenade:3</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
@@ -23138,6 +22513,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000200}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>36</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>3</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23160,12 +22551,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rifle, rounds:36, grenade:3</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
@@ -23174,6 +22559,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000200}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>36</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>3</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23196,12 +22597,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rifle, rounds:36, grenade:3</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
@@ -23210,6 +22605,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000200}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>36</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>3</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23232,12 +22643,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rifle, rounds:36, grenade:3</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
@@ -23246,6 +22651,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000200}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>36</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>3</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -23268,12 +22689,6 @@
 									<properties type="traktor.PropertyGroup">
 										<value>
 											<item>
-												<first>item</first>
-												<second type="traktor.PropertyString">
-													<value>rifle, rounds:36, grenade:3</value>
-												</second>
-											</item>
-											<item>
 												<first>notice</first>
 												<second type="traktor.PropertyString">
 													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
@@ -23282,6 +22697,22 @@
 										</value>
 									</properties>
 									<editorSupport>false</editorSupport>
+								</item>
+								<item type="traktor.story.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000200}</item>
+											<count>1</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>36</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000202}</item>
+											<count>3</count>
+										</item>
+									</entries>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>

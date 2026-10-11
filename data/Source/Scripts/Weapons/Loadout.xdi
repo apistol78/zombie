@@ -15,7 +15,7 @@ import(traktor)
 -- routes them at whichever Scripts/Weapons/Weapon is drawn.
 --
 -- Which weapons the player *has* is not decided here any more. It is the pack's
--- (Scripts/Items/Inventory, reached as context:inventory()): owning a weapon is having its item
+-- (a traktor.story.Inventory, reached as context:inventory()): owning a weapon is having its item
 -- in the pack, and drawing it is equipping that item. So every weapon below exists from the
 -- start of the night whether or not it has been found, and what this file does is read the pack
 -- and keep the hands in step with it:
@@ -68,7 +68,7 @@ end
 
 -- The drawn weapon, or nil with empty hands.
 function Loadout:current()
-	local kind < const > = self._context:inventory():equipped("weapon")
+	local kind < const > = Items.keyOf(self._context:inventory():getEquipped(Items.WEAPON))
 	if kind == nil then
 		return nil
 	end
@@ -122,7 +122,8 @@ end
 
 -- The pack changed. Called by the pack itself, after every change, with the change complete;
 -- an equip made from in here is announced again once this has returned, so this can simply
--- return after making one. See Inventory:_changed.
+-- return after making one (traktor.story.Inventory announces a change made by a listener once
+-- the listeners have all heard the one before).
 function Loadout:_inventoryChanged()
 	local inv < const > = self._context:inventory()
 
@@ -149,7 +150,7 @@ function Loadout:_inventoryChanged()
 	--
 	-- Neither happens when the hands were emptied on purpose (Main:unequipItem): nothing was
 	-- *lost* then, and the next weapon is the player's to reach for.
-	if inv:equipped("weapon") == nil then
+	if Items.keyOf(inv:getEquipped(Items.WEAPON)) == nil then
 		if lostAt ~= nil then
 			local n < const > = #self._weapons
 			for k = 1, n - 1 do

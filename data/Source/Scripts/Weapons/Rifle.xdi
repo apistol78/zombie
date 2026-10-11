@@ -74,11 +74,11 @@ function Rifle:slot()
 end
 
 function Rifle:item()
-	return Items.keyOf(Names.RIFLE)
+	return Items.keyOf(Items.RIFLE)
 end
 
 function Rifle:ammoItem()
-	return Items.keyOf(Names.ROUNDS)
+	return Items.keyOf(Items.ROUNDS)
 end
 
 -- The rifle is a child entity of the player (via GroupComponent). Cache it and its event

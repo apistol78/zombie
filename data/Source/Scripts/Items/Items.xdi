@@ -1,65 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
-#using \{6E9AD100-0000-4000-8000-000000000010}
-#using \{D1A10000-0000-4000-8000-00000000000B}
-#using \{D1A10000-0000-4000-8000-00000000000C}
-
 import(traktor)
 
 -- Items
 --
--- How the code looks an item up. What the items *are* is Scripts/Items/VirtualItems, the level
--- designer's table, keyed by guid (Names.RIFLE); this is the one place that turns whatever an item
--- is called by -- that guid, its key, or its name as a scene's text property writes it -- into its
--- entry, so nothing else has to care which of them it was handed.
+-- How the code asks about an item. The items themselves are Traktor.Story ItemData instances in
+-- data/Source/Story/Items (tools/gen_story_items.py), named by the guid of their instance -- the ones the
+-- code itself refers to are the constants below: Items.RIFLE is the rifle. The pack is a native
+-- traktor.story.Inventory (the story's, Scripts/Quests/Questing), which reads the same instances.
 --
--- An item's key is its guid as text, upper case: "{D1A10000-...-000000000200}" for the rifle. It
--- is what everything keeps an item by -- the pack's stacks, a chest's contents, what a character
--- carries, the books a save is made of -- because those are plain data and table keys, and a Guid
--- is neither (two Guids of the same value are equal, ==, but they are not the same table key).
--- Nothing chooses a key or types one: it is only ever got from here.
+-- Lua keeps an item by its key -- the guid as upper-case text, "{D1A10000-...-000000000200}" for
+-- the rifle -- wherever it is plain data or a table key: a chest's contents, what a character
+-- carries, the books a save is made of. A Guid is neither (two Guids of the same value are equal,
+-- ==, but they are not the same table key). The native side takes an item either way.
 --
---   Items.get(item)        the item's entry in VirtualItems, or nil; `item` is a Guid, a key or
---                          a name ("rounds", "ROUNDS" -- Names.ROUNDS)
---   Items.keyOf(item)      ...its key, or nil for something that is no item
---   Items.is(a, b)         whether a and b are the same item, however each was named
---   Items.all()            every entry, ordered by name
---   Items.describe(item, count)   "RIFLE", "12 ROUNDS"
---   Items.parseList(spec, who)    a scene's "rounds:24, bread" as { { name, key, count }, ... }
+--   Items.bind(resourceManager)    once per stage, before anything is looked up
+--   Items.keyOf(item)              a Guid or a key -> the key; nil for something that is no item
+--   Items.get(item)                the item's entry (below), or nil
+--   Items.is(a, b)                 whether a and b are the same item, however each was named
+--   Items.all()                    every item, ordered by name
+--   Items.describe(item, count)    "RIFLE", "12 ROUNDS"
 --
--- Every entry gets these filled in, besides what the designer wrote: `id` (its Guid), `key`, and
--- `stack`, `heal` and `armor` out of its `tune` (Config.items), `stack` 1 without one.
+-- Only what Items.ALL lists is an item, so asking about anything else is a plain nil rather than
+-- a failed look-up in the database. A new item is an instance in data/Source/Story/Items and a line
+-- here.
+--
+-- An entry is a plain table made once out of the ItemData -- what the scripts read, with the
+-- traits flattened:
+--
+--   name, plural, info, icon   the text and the picture (Scripts/Widgets/ItemSlot)
+--   stack                      how many share one slot (maxStack)
+--   heal                       HealTrait: health one restores, eaten or drunk from the pack
+--   armor                      ArmorTrait: the share of contact damage taken while worn
+--   equip                      EquipTrait: the key of its slot, Items.WEAPON, Items.HAND or Items.BODY
+--   event                      EventTrait: what one coming into the pack is called to the
+--                              SpawnOrchestrator (Items.EVENTS)
+--   drop                       the EntityData a dropped one is rebuilt from, or nil
+--   keep                       the item is its entity (the relic; Scripts/Pickup)
+--   quest                      one of a kind, wanted by a quest
+--   id, key, data              its Guid, its key and the ItemData itself
 
-Items = {}
+Items = Items or {}
 
--- The entries by key, made once per VirtualItems table: a hot reload that rebuilds VirtualItems
--- rebuilds this too.
-local index = nil
-local indexOf = nil
+-- ---- The items ----
+--
+-- Escaped guids: that is what takes every item into the build, those only ever handed over in a
+-- dialog included.
+
+Items.RIFLE = Guid("\{D1A10000-0000-4000-8000-000000000200}")
+Items.MACHINEGUN = Guid("\{D1A10000-0000-4000-8000-000000000201}")
+Items.GRENADE = Guid("\{D1A10000-0000-4000-8000-000000000202}")
+Items.ROUNDS = Guid("\{D1A10000-0000-4000-8000-000000000203}")
+Items.FLASK = Guid("\{D1A10000-0000-4000-8000-000000000204}")
+Items.BREAD = Guid("\{D1A10000-0000-4000-8000-000000000205}")
+Items.COIN = Guid("\{D1A10000-0000-4000-8000-000000000206}")
+Items.HELMET = Guid("\{D1A10000-0000-4000-8000-000000000207}")
+Items.KEY = Guid("\{D1A10000-0000-4000-8000-000000000208}")
+Items.RELIC = Guid("\{D1A10000-0000-4000-8000-000000000209}")
+-- One of a kind, for the quests (data/Source/Story/Quests).
+Items.RING = Guid("\{D1A10000-0000-4000-8000-00000000020A}")
+Items.LEDGER = Guid("\{D1A10000-0000-4000-8000-00000000020B}")
+Items.LOCKET = Guid("\{D1A10000-0000-4000-8000-00000000020C}")
+Items.SWORD = Guid("\{D1A10000-0000-4000-8000-00000000020D}")
+
+-- ---- Slots and events ----
+--
+-- Key assets: the slots in data/Source/Story/Items/Slots, the events in data/Source/Story/Events. An
+-- EquipTrait names its slot, and an EventTrait or a dialog's EventAction its event, by the guid
+-- of the asset; the code keeps them as keys, and the native side takes a key wherever it takes a
+-- slot or an event.
+
+Items.WEAPON = "{D1A10000-0000-4000-8000-000000000600}"   -- Slots/Weapon: drawn
+Items.HAND = "{D1A10000-0000-4000-8000-000000000601}"     -- Slots/Hand: the off hand
+Items.BODY = "{D1A10000-0000-4000-8000-000000000602}"     -- Slots/Body: worn
+
+-- Events of items coming into the pack, by what the SpawnOrchestrator calls them (Config.events).
+Items.EVENTS = {
+	["{D1A20000-0000-4000-8000-000000000501}"] = "relicTaken",   -- Events/Relic Taken
+	["{D1A20000-0000-4000-8000-000000000502}"] = "keyTaken"      -- Events/Key Taken
+}
+
+Items.ALL = {
+	Items.RIFLE, Items.MACHINEGUN, Items.GRENADE, Items.ROUNDS, Items.FLASK, Items.BREAD, Items.COIN,
+	Items.HELMET, Items.KEY, Items.RELIC, Items.RING, Items.LEDGER, Items.LOCKET, Items.SWORD
+}
+
+-- The binding and the entries are kept on Items itself, not in locals of this chunk: the chunk is
+-- run again whenever another script that uses it is loaded, and that would start them over --
+-- the stage's binding lost to the next pickup whose script comes in.
+Items._entries = Items._entries or {}   -- key -> entry, made on first look-up
+
+local known = nil       -- key -> true, for every item in Items.ALL
 
 local function textOf(guid)
 	return string.upper(guid:format())
 end
 
-local function build()
-	if indexOf == VirtualItems then
-		return
-	end
-	indexOf = VirtualItems
-	index = {}
-	for id, def in pairs(VirtualItems) do
-		-- The keys are Guids, which are objects with a metatable of their own.
-		if type(def) == "table" and getmetatable(id) ~= nil then
-			local key < const > = textOf(id)
-			local tune < const > = def.tune or {}
-			def.id = id
-			def.key = key
-			def.stack = tune.stack or 1
-			def.heal = tune.heal
-			def.armor = tune.armor
-			index[key] = def
+local function knownKeys()
+	if known == nil then
+		known = {}
+		for _, guid in ipairs(Items.ALL) do
+			known[textOf(guid)] = true
 		end
+	end
+	return known
+end
+
+local function entryOf(key)
+	local e = Items._entries[key]
+	if e ~= nil then
+		return e
+	end
+	local resourceManager < const > = Items._resourceManager
+	if resourceManager == nil then
+		print("Items: " .. key .. " looked up before Items.bind")
+		return nil
+	end
+	local id < const > = Guid(key)
+	local handle < const > = resourceManager:bind(traktor.story.ItemData, id)
+	local data < const > = (handle ~= nil) and handle:get() or nil
+	if data == nil then
+		print("Items: no item instance " .. key)
+		return nil
+	end
+	local equip < const > = data:getTrait(traktor.story.EquipTrait)
+	local heal < const > = data:getTrait(traktor.story.HealTrait)
+	local armor < const > = data:getTrait(traktor.story.ArmorTrait)
+	local event < const > = data:getTrait(traktor.story.EventTrait)
+	e = {
+		id = id,
+		key = key,
+		data = data,
+		name = data.name,
+		plural = data.pluralName,
+		info = data.info,
+		icon = data.icon,
+		stack = data.maxStack,
+		heal = (heal ~= nil) and heal.amount or nil,
+		armor = (armor ~= nil) and armor.fraction or nil,
+		equip = (equip ~= nil and equip.slot ~= nil) and textOf(equip.slot) or nil,
+		event = (event ~= nil and event.event ~= nil) and Items.EVENTS[textOf(event.event)] or nil,
+		drop = data.dropEntity,
+		keep = data.keep,
+		quest = data.quest
+	}
+	Items._entries[key] = e
+	return e
+end
+
+function Items.bind(resourceManager)
+	if resourceManager ~= Items._resourceManager then
+		Items._resourceManager = resourceManager
+		Items._entries = {}
 	end
 end
 
@@ -67,25 +160,23 @@ function Items.keyOf(item)
 	if item == nil then
 		return nil
 	end
-	build()
+	local key = nil
 	if type(item) == "string" then
-		if string.sub(item, 1, 1) == "{" then
-			local key < const > = string.upper(item)
-			return (index[key] ~= nil) and key or nil
+		if string.sub(item, 1, 1) ~= "{" then
+			return nil
 		end
-		local guid < const > = Names[string.upper(item)]
-		return (guid ~= nil) and Items.keyOf(guid) or nil
-	end
-	if type(item) == "table" and getmetatable(item) == nil then
+		key = string.upper(item)
+	elseif type(item) == "table" and getmetatable(item) == nil then
 		return nil
+	else
+		key = textOf(item)
 	end
-	local key < const > = textOf(item)
-	return (index[key] ~= nil) and key or nil
+	return knownKeys()[key] and key or nil
 end
 
 function Items.get(item)
 	local key < const > = Items.keyOf(item)
-	return (key ~= nil) and index[key] or nil
+	return (key ~= nil) and entryOf(key) or nil
 end
 
 function Items.is(a, b)
@@ -94,18 +185,19 @@ function Items.is(a, b)
 end
 
 function Items.all()
-	build()
 	local out = {}
-	for _, def in pairs(index) do
-		table.insert(out, def)
+	for key, _ in pairs(knownKeys()) do
+		local e < const > = entryOf(key)
+		if e ~= nil then
+			table.insert(out, e)
+		end
 	end
 	table.sort(out, function(a, b) return a.name < b.name end)
 	return out
 end
 
 -- What a count of an item is called: "RIFLE", "12 ROUNDS". Something that is no item answers
--- with what it was called, upper cased, rather than nothing -- a typo in a chest's property
--- should still say what it was.
+-- with what it was called rather than nothing.
 function Items.describe(item, count)
 	local def < const > = Items.get(item)
 	if def == nil then
@@ -114,29 +206,7 @@ function Items.describe(item, count)
 	if count == nil or count == 1 then
 		return def.name
 	end
-	return tostring(count) .. " " .. (def.plural or def.name)
-end
-
--- Read a list of items as a level designer writes one in a scene's text property -- "rounds:24,
--- bread, grenade:2" -- into { { name, key, count }, ... } in the order written: `name` lower cased
--- as written, `key` the item it names (nil for no item -- the caller says so, knowing who it is),
--- `count` nil where none was given. `who` names the property's owner in the warning for an entry
--- that cannot be read at all, which is left out. Scripts/Chest and Scripts/Npc/Npc both hold their
--- contents in this form.
-function Items.parseList(spec, who)
-	local entries = {}
-	if spec == nil then
-		return entries
-	end
-	for entry in string.gmatch(spec, "[^,]+") do
-		local name < const >, n < const > = string.match(entry, "^%s*([%a_]+)%s*:?%s*(%d*)%s*$")
-		if name == nil then
-			print(who .. ': cannot read "' .. entry .. '" in "' .. spec .. '"; left out.')
-		else
-			table.insert(entries, { name = string.lower(name), key = Items.keyOf(name), count = tonumber(n) })
-		end
-	end
-	return entries
+	return tostring(count) .. " " .. def.plural
 end
 ]]></text>
 </object>

@@ -176,7 +176,7 @@ function ChestView:refresh()
 	local context < const > = self._context
 	local left < const > = (self._index ~= nil) and context:chestContents(self._index) or {}
 	local inv < const > = context:inventory()
-	self._serial = inv:serial()
+	self._serial = inv.serial
 
 	if #left > #self._cells then
 		print("ChestView: chest " .. tostring(self._index) .. " holds " .. #left .. " stacks; the window shows " .. #self._cells .. ".")
@@ -208,14 +208,14 @@ function ChestView:refresh()
 	self._takeButton:setEnable(entry ~= nil)
 	self._takeAllButton:setEnable(#left > 0)
 
-	setText(self._pack, "PACK   SLOTS " .. tostring(inv:used()) .. " / " .. tostring(inv:capacity()))
+	setText(self._pack, "PACK   SLOTS " .. tostring(inv.used) .. " / " .. tostring(inv.capacity))
 end
 
 -- Tick the double-click clock, and redraw if the pack has moved. Called by the host every frame
 -- the window is up.
 function ChestView:update(dt)
 	self._clock = self._clock + dt
-	if self._context:inventory():serial() ~= self._serial then
+	if self._context:inventory().serial ~= self._serial then
 		self:refresh()
 	end
 end

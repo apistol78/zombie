@@ -43,7 +43,7 @@ local SCENES < const > = {
 function ChestViewScaffolding:build(parent, frame)
 	self:note(parent, "CHEST VIEW   Click a cell to select it, double click to take it. CLOSE resets the chest and the pack, alternating a roomy pack with a crowded one.")
 
-	self._stage = StageStub()
+	self._stage = StageStub(self._resourceManager)
 	self._scene = 0
 
 	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))

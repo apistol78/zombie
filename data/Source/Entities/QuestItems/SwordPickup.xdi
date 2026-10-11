@@ -36,12 +36,6 @@
 			<properties type="traktor.PropertyGroup">
 				<value>
 					<item>
-						<first>item</first>
-						<second type="traktor.PropertyString">
-							<value>sword</value>
-						</second>
-					</item>
-					<item>
 						<first>take</first>
 						<second type="traktor.PropertyString">
 							<value>press</value>
@@ -50,6 +44,10 @@
 				</value>
 			</properties>
 			<editorSupport>false</editorSupport>
+		</item>
+		<item type="traktor.story.ItemPickupComponentData">
+			<item>{D1A10000-0000-4000-8000-00000000020D}</item>
+			<count>1</count>
 		</item>
 	</components>
 </object>

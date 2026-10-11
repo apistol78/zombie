@@ -23,12 +23,11 @@
 -- and lulls, and publishes the verdict to the Spawner as _spawnDrive on this stage.
 #using \{9F2C606F-BD26-43E1-9A3F-B108C688FB02}
 
--- Scripts/Items/Items and Scripts/Items/Inventory: what every kind of item is, and the
--- pack the player carries them in. The pack is the stage's own (_inventory) and the one
--- record of what the player has -- the weapons, the food, the armour, the keys and the
--- relics are all read out of it.
+-- Scripts/Items/Items: what every item is (Traktor.Story ItemData, data/Source/Story/Items). The pack
+-- the player carries them in is a native traktor.story.Inventory, the stage's own (_inventory)
+-- and the one record of what the player has -- the weapons, the food, the armour, the keys and
+-- the relics are all read out of it.
 #using \{17E40000-0000-4000-8000-000000000001}
-#using \{17E40000-0000-4000-8000-000000000002}
 
 -- Scripts/SaveGame: the one saved night, in the session manager's save data. What goes in it is
 -- what a stage switch carries (see leaveStage and _saveGame).
@@ -280,20 +279,11 @@ function Main:new(params, environment)
 	-- night's starting kit (Config.inventory.start) before anything reads it -- the loadout
 	-- below draws the first weapon in it as it is built.
 	--
-	-- Plain data throughout (but for the relics riding in it, which are their own entities),
-	-- so it survives a script hot reload as the rest of this stage's plain data does.
-	--
-	-- Or, arriving from another stage, with what the player had when they left it. The relics
-	-- in it come without their entities -- those belong to the world they were found in -- and
-	-- are handed back by that world on the way into it (_restorePickups).
-	self._inventory = Inventory(Config.inventory.slots)
-	if carry ~= nil and carry.player ~= nil then
-		self._inventory:restoreState(carry.player.inventory)
-	else
-		for _, entry in ipairs(Config.inventory.start) do
-			self._inventory:add(entry[1], entry[2])
-		end
-	end
+	-- The pack is the story's (traktor.story.Story, Scripts/Quests/Questing:_initStory): the night's
+	-- own, carried from stage to stage. The relics in it arrive without their entities -- those
+	-- belong to the world they were found in -- and are handed back by that world on the way into
+	-- it (_restorePickups).
+	self:_initStory(carry, environment)
 
 	-- What the player has in their hands. Built before the HUD row below, because the row
 	-- reserves a column per weapon tile -- so the arsenal decides how wide the row is rather
@@ -653,7 +643,7 @@ function Main:new(params, environment)
 	self._chestView:setOnClose(function() self:_setChestOpen(nil) end)
 
 	-- The journal, and the conversation and journal windows (Scripts/Quests/Questing).
-	self:_initQuests(carry)
+	self:_initQuests()
 
 	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
 	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
@@ -1087,14 +1077,14 @@ function Main:_carry(spawn)
 		spawn = spawn,
 		worlds = self._worlds,
 		orchestrator = self._orchestrator:saveState(),
+		-- The story object itself, to the next stage; a save keeps what it says (Scripts/SaveGame).
+		story = self._story,
 		player = {
-			inventory = self._inventory:saveState(),
 			weapons = self._loadout:snapshot(),
 			health = self._health,
 			kills = self._kills,
 			godMode = self._godMode,
 			infiniteAmmo = self._infiniteAmmo,
-			quests = self._journal:saveState(),
 		},
 	}
 end
@@ -1478,8 +1468,9 @@ function Main:isCarrying()
 	return self._handRelic ~= nil
 end
 
--- The pack (Scripts/Items/Inventory). The weapons read who owns them and how many spare rounds
--- there are out of it; the pickups and the inventory screen go through the calls below.
+-- The pack (a traktor.story.Inventory). The weapons read who owns them and how many spare rounds
+-- there are out of it; the pickups and the inventory screen go through the calls below. Its slots
+-- count from 0; the inventory screen's cells, and the slot numbers the calls below take, from 1.
 function Main:inventory()
 	return self._inventory
 end
@@ -1539,10 +1530,16 @@ end
 -- to `count` of `kind`, and a keepsake's own `entity` with it. Returns how many went in -- the
 -- rest is the pickup's to leave where it lies -- and says so on the feed line.
 function Main:giveItem(kind, count, entity)
-	local added < const > = self._inventory:add(kind, count, entity)
-	if added <= 0 then
-		return 0
+	local added < const > = (entity ~= nil) and self._inventory:add(kind, count, entity) or self._inventory:add(kind, count)
+	if added > 0 then
+		self:_itemsArrived(kind, count, added)
 	end
+	return added
+end
+
+-- `added` of the `count` of `kind` offered came into the pack -- off the ground, out of a chest, or
+-- handed over in the story (Questing:_storyEvent): said on the feed line, and told to the night.
+function Main:_itemsArrived(kind, count, added)
 	local text = self:_feedCounted(kind, added)
 
 	-- Committing to a run is exactly when the night should lean in. What kind of run taking
@@ -1560,10 +1557,9 @@ function Main:giveItem(kind, count, entity)
 	if added < count then
 		text = text .. "   THE PACK IS FULL"
 	elseif def ~= nil and def.equip ~= nil and not self._inventory:isEquipped(kind) then
-		text = text .. ((def.equip == "weapon") and "   SCROLL TO DRAW" or "   TAB TO EQUIP")
+		text = text .. ((def.equip == Items.WEAPON) and "   SCROLL TO DRAW" or "   TAB TO EQUIP")
 	end
 	self:_feed(text, kind)
-	return added
 end
 
 -- A walk-over pickup the pack has no room for. Called once per visit by the pickup itself, so
@@ -1654,7 +1650,11 @@ function Main:_restorePickups(world, saved, dropped)
 		end
 	end
 	for kind, list in pairs(carried) do
-		self._inventory:attachKept(kind, list)
+		local entities < const > = RefArray()
+		for _, e in ipairs(list) do
+			entities:push_back(e)
+		end
+		self._inventory:attachKept(kind, entities)
 	end
 	for _, d in ipairs(dropped) do
 		self:_putDownNew(d.kind, d.count, fromPlainTransform(d.at))
@@ -1696,7 +1696,7 @@ function Main:equipItem(kind)
 		return false
 	end
 	local def < const > = Items.get(kind)
-	if def ~= nil and def.equip == "hand" then
+	if def ~= nil and def.equip == Items.HAND then
 		self:_feed(def.name .. " IN HAND")
 	end
 	return true
@@ -1706,7 +1706,7 @@ end
 -- the loadout only reaches for the next weapon when one is *lost* (Loadout:_inventoryChanged).
 function Main:unequipItem(kind)
 	local def < const > = Items.get(kind)
-	if def == nil or def.equip == nil or self._inventory:equipped(def.equip) ~= kind then
+	if def == nil or def.equip == nil or not Items.is(self._inventory:getEquipped(def.equip), kind) then
 		return false
 	end
 	return self._inventory:unequip(def.equip)
@@ -1736,41 +1736,42 @@ end
 -- and is stood back on the ground (Pickup:putDown); anything else is built fresh from its item's
 -- entity data (_putDownNew).
 function Main:dropSlot(index)
-	local s < const > = self._inventory:slot(index)
+	local s < const > = self._inventory:getSlot(index - 1)
 	if s == nil or self._humanoid == nil or self.world == nil then
 		return false
 	end
-	local def < const > = Items.get(s.kind)
+	local def < const > = Items.get(s.item)
 	if def == nil or (not def.keep and def.drop == nil) then
 		self:_feed("THAT CANNOT BE PUT DOWN")
 		return false
 	end
 	-- A relic carried out of the world it belongs to has no entity here to stand on the ground
 	-- (Inventory:keptMissing): it can be put down again once the player is back in that world.
-	if self._inventory:keptMissing(index) then
+	if self._inventory:keptMissing(index - 1) then
 		self:_feed("THAT CANNOT BE PUT DOWN HERE")
 		return false
 	end
 
-	local stack < const > = self._inventory:removeSlot(index)
+	local stack < const > = self._inventory:removeSlot(index - 1)
+	local kind < const > = Items.keyOf(stack.item)
 	if def.keep then
-		for k, e in ipairs(stack.entities or {}) do
-			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+		local kept < const > = stack.kept
+		for k = 0, kept.size - 1 do
+			local sc < const > = kept:get(k):getComponent(traktor.world.ScriptComponent)
 			if sc ~= nil and sc.putDown ~= nil then
-				sc:putDown(self:_dropTransform(k - 1))
+				sc:putDown(self:_dropTransform(k))
 			end
 		end
 	else
-		self:_putDownNew(stack.kind, stack.count, self:_dropTransform(0))
+		self:_putDownNew(kind, stack.count, self:_dropTransform(0))
 	end
-	self:_feed("PUT DOWN " .. Items.describe(stack.kind, stack.count))
+	self:_feed("PUT DOWN " .. Items.describe(kind, stack.count))
 	return true
 end
 
 -- How much of a bite the worn armour takes, 0..1.
 function Main:armor()
-	local kind < const > = self._inventory:equipped("body")
-	local def < const > = (kind ~= nil) and Items.get(kind) or nil
+	local def < const > = Items.get(self._inventory:getEquipped(Items.BODY))
 	return (def ~= nil and def.armor ~= nil) and def.armor or 0.0
 end
 
@@ -2264,11 +2265,11 @@ end
 -- The relic that comes out is the last one in the pack, so with several carried the one shown
 -- in hand stays there until it is the only one left.
 function Main:_lightWardWithRelic(ward)
-	local removed < const >, out < const > = self._inventory:remove(Names.RELIC, 1)
-	if removed <= 0 then
+	if self._inventory:count(Items.RELIC) <= 0 then
 		return false
 	end
-	local relic < const > = out[1]
+	local out < const > = self._inventory:removeKept(Items.RELIC, 1)
+	local relic < const > = (out.size > 0) and out:get(0) or nil
 	local sc < const > = (relic ~= nil) and relic:getComponent(traktor.world.ScriptComponent) or nil
 	if sc ~= nil and sc.light ~= nil then
 		sc:light(self, ward)
@@ -2288,7 +2289,7 @@ end
 -- the world are all Gate:unlock's. What is kept here is which gates stand open, as plain data,
 -- so it survives a hot reload (resolve re-asserts it).
 function Main:_unlockGate(gate)
-	if self._inventory:remove(Names.KEY, 1) <= 0 then
+	if self._inventory:remove(Items.KEY, 1) <= 0 then
 		return false
 	end
 	gate.unlocked = true
@@ -2951,12 +2952,12 @@ function Main:_whatWouldE()
 
 	local inv < const > = self._inventory
 	local ward < const > = self:_nearestUnlitWard(Config.relic.wardRange)
-	if ward ~= nil and Items.is(inv:equipped("hand"), Names.RELIC) then
+	if ward ~= nil and Items.is(inv:getEquipped(Items.HAND), Items.RELIC) then
 		return "light", ward
 	end
 
 	local gate < const > = self:_nearestLockedGate(self._gateRange)
-	if gate ~= nil and inv:count(Names.KEY) > 0 then
+	if gate ~= nil and inv:count(Items.KEY) > 0 then
 		return "unlock", gate
 	end
 
@@ -2975,7 +2976,7 @@ function Main:_whatWouldE()
 		return "exit", exit
 	end
 
-	if ward ~= nil and inv:count(Names.RELIC) > 0 then
+	if ward ~= nil and inv:count(Items.RELIC) > 0 then
 		return "needRelic", ward
 	end
 	if self:_nearestShutLeverGate(self._gateRange) ~= nil then
@@ -3568,7 +3569,7 @@ function Main:postUpdate(info)
 	-- shows.
 	if self._humanoid ~= nil then
 		local inv < const > = self._inventory
-		local want < const > = Items.is(inv:equipped("hand"), Names.RELIC) and inv:first(Names.RELIC) or nil
+		local want < const > = Items.is(inv:getEquipped(Items.HAND), Items.RELIC) and inv:first(Items.RELIC) or nil
 		if want ~= self._handRelic then
 			local old < const > = self._handRelic
 			if old ~= nil and inv:holds(old) then
@@ -3595,7 +3596,9 @@ function Main:postUpdate(info)
 	-- where anything reading a relic's position should find it, rather than where it was found.
 	if self._humanoid ~= nil then
 		local at < const > = Transform(self._humanoid.transform.translation, Quaternion.identity)
-		self._inventory:eachKept(function(e)
+		local kept < const > = self._inventory.kept
+		for i = 0, kept.size - 1 do
+			local e < const > = kept:get(i)
 			if e == self._handRelic then
 				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
 				if sc ~= nil and sc.carryTransform ~= nil then
@@ -3604,7 +3607,7 @@ function Main:postUpdate(info)
 			else
 				e.transform = at
 			end
-		end)
+		end
 	end
 end
 

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.story.ItemData">
+	<name>FLASK</name>
+	<pluralName>FLASKS</pluralName>
+	<info>SOMETHING RED. DRINK IT TO HEAL.</info>
+	<icon>flask</icon>
+	<maxStack>3</maxStack>
+	<quest>false</quest>
+	<keep>false</keep>
+	<dropEntity>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</dropEntity>
+	<traits>
+		<item type="traktor.story.HealTrait">
+			<amount>35</amount>
+		</item>
+	</traits>
+</object>

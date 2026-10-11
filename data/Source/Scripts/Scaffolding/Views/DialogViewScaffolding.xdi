@@ -3,7 +3,6 @@
 	<text><![CDATA[
 #using \{1456EC45-179D-412E-8992-CF569E4DC4C3}
 #using \{F7AD081B-BE81-417A-ABB1-29D327FF6C57}
-#using \{D1A10000-0000-4000-8000-000000000003}
 #using \{D1A10000-0000-4000-8000-000000000004}
 
 import(traktor)
@@ -12,8 +11,8 @@ import(traktor)
 --
 -- Test page for Scripts/Views/DialogView, hosted the way Main hosts it (Main:_setDialogOpen in
 -- Scripts/Quests/Questing): a Dialog of its own on the one Frame, shown and then handed a started
--- Conversation. Main is stood in for by StageStub, whose journal is a real Scripts/Quests/Journal,
--- so the talks are the real ones out of Scripts/Quests/Dialogs and choosing a reply really gives
+-- Conversation. Main is stood in for by StageStub, whose story is the game's real one, so the
+-- talks are the real ones out of data/Source/Story/Dialogs and choosing a reply really gives
 -- quests and moves them on -- the log says what the HUD would have.
 --
 -- Each time the talk ends (a reply leading nowhere, LEAVE) the window closes, and a moment later
@@ -24,24 +23,31 @@ DialogViewScaffolding = DialogViewScaffolding or class("DialogViewScaffolding", 
 
 local REOPEN < const > = 1.0   -- how long the window stays closed (s)
 
+-- The actors (data/Source/Story/Actors) and the quests (Story/Quests) the scenes are about.
+local KLARA < const > = Guid("{D1A20000-0000-4000-8000-000000000307}")
+local BROTHER_ANSELM < const > = Guid("{D1A20000-0000-4000-8000-000000000304}")
+local TOMAS < const > = Guid("{D1A20000-0000-4000-8000-000000000309}")
+local RING_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000102}")
+local LOCKET_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000101}")
+
 local SCENES < const > = {
-	{ key = Names.KLARA, name = "KLARA" },
-	{ key = Names.KLARA, name = "KLARA", ring = true },
-	{ key = Names.BROTHER_ANSELM, name = "BROTHER ANSELM", greeting = "THE DEAD DO NOT REST HERE ANY MORE. PRAY ANYWAY." },
-	{ key = Names.TOMAS, name = "TOMAS", greeting = "MOTHER SAYS I'M NOT TO TALK TO YOU.", locket = true },
-	{ key = nil, name = "AXEL", greeting = "STAY CLOSE TO THE LIGHT TONIGHT." }
+	{ actor = KLARA, name = "KLARA" },
+	{ actor = KLARA, name = "KLARA", ring = true },
+	{ actor = BROTHER_ANSELM, name = "BROTHER ANSELM", greeting = "THE DEAD DO NOT REST HERE ANY MORE. PRAY ANYWAY." },
+	{ actor = TOMAS, name = "TOMAS", greeting = "MOTHER SAYS I'M NOT TO TALK TO YOU.", locket = true },
+	{ actor = nil, name = "AXEL", greeting = "STAY CLOSE TO THE LIGHT TONIGHT." }
 }
 
 function DialogViewScaffolding:build(parent, frame)
 	self:note(parent, "DIALOG VIEW   Click a reply. The talk ending closes the window; it opens again on the next of five scenes.")
 
-	self._stage = StageStub()
+	self._stage = StageStub(self._resourceManager)
 	self._scene = 0
 
 	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
 	self._view = DialogView(self._dialog, self._stage)
 	self._view:setOnEnd(function(c)
-		print("DialogViewScaffolding: talk over" .. (c:wantsTrade() and ", wants to trade" or ""))
+		print("DialogViewScaffolding: talk over" .. (c:hasEvent("{D1A20000-0000-4000-8000-000000000500}") and ", wants to trade" or ""))
 		self._dialog:hide()
 		self:after(REOPEN, function() self:show() end)
 	end)
@@ -60,19 +66,18 @@ function DialogViewScaffolding:show()
 
 	local stage < const > = self._stage
 	stage:emptyPack()
-	local journal < const > = stage:resetJournal()
+	local log < const > = stage:questLog()
 	if scene.ring then
-		journal:start("ring")
-		stage:inventory():add(Names.RING, 1)
-		journal:update()
+		log:start(RING_QUEST)
+		stage:inventory():add(Items.RING, 1)
+		stage:story():update()
 	end
 	if scene.locket then
-		journal:start("locket")
-		stage:inventory():add(Names.COIN, 3)
+		log:start(LOCKET_QUEST)
+		stage:inventory():add(Items.COIN, 3)
 	end
 
-	local c < const > = Conversation(journal, scene.key, scene.greeting or "", scene.name)
-	c:start()
+	local c < const > = stage:story():talk(scene.actor, scene.greeting or "", scene.name)
 	self._dialog:show()
 	self._view:showConversation(c)
 end

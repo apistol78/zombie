@@ -618,9 +618,10 @@ Config = {
 
 	-- ---- The pack ----
 	--
-	-- Scripts/Items/Inventory. A fixed number of slots, each holding one stack of one kind of
-	-- item; what a stack may grow to is the item's own (items, below). Room is the whole of the
-	-- economy here: a pack of rounds is a slot that is not a flask.
+	-- A traktor.story.Inventory. A fixed number of slots, each holding one stack of one item; what
+	-- a stack may grow to is the item's own (maxStack in data/Source/Story/Items, as are what food heals
+	-- and armour takes). Room is the whole of the economy here: a pack of rounds is a slot that is
+	-- not a flask.
 	inventory = {
 		slots = 16,
 		columns = 8,            -- ...laid out this many to a row on the inventory screen
@@ -633,28 +634,6 @@ Config = {
 		-- How far in front of the player something dropped out of the pack lands (m). Past the
 		-- take range on purpose, so a walk-over item put down is not picked straight back up.
 		dropAhead = 1.4
-	},
-
-	-- ---- What each kind of item is ----
-	--
-	-- Only the numbers: names, icons and what each one does live in Scripts/Items/Items.
-	-- `stack` is how many share one slot.
-	items = {
-		rifle      = { stack = 1 },
-		machinegun = { stack = 1 },
-		-- One grenade at the start (inventory.start), deliberately: enough to find out what a
-		-- grenade does and not enough to plan around.
-		grenade    = { stack = 4 },
-		rounds     = { stack = 60 },
-		-- Food. `heal` is the health one restores when eaten from the pack, capped at the max.
-		flask      = { stack = 3, heal = 35.0 },
-		bread      = { stack = 5, heal = 15.0 },
-		coin       = { stack = 99 },
-		-- Worn on the body. `armor` is the share of contact damage it takes instead of the
-		-- player: 0.35 turns a 20 hp/s bite into 13.
-		helmet     = { stack = 1, armor = 0.35 },
-		key        = { stack = 5 },
-		relic      = { stack = 5 }
 	},
 
 	-- ---- Characters: what every Scripts/Npc shares ----

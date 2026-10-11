@@ -24,16 +24,23 @@ import(traktor)
 -- and anything else as a PropertyFloat (32-bit float), which is plenty for positions and
 -- health but not for anything that needs a double.
 --
+-- The objects that may be in it are native ones that save themselves -- the story
+-- (traktor.story.Story), which a stage switch carries as it is -- and the PropertyGroup such an
+-- object saved itself into. Either is stored as that group (saveState), marked "r<i>", and read
+-- back as the same group rather than as a table; Main makes the story again from it
+-- (Questing:_initStory).
+--
 -- Every call guards against the session manager not being there at all (a target without the
 -- online module); `available` tells the menus whether to offer saving and continuing.
 
 SaveGame = SaveGame or {}
 
 -- The id of the save in the save data, and the version of what is written under it. A save
--- written by a different version is ignored rather than fed to a game it no longer fits: 2 since
--- the items were made guids (Scripts/Items/VirtualItems), which the pack and the books keep.
+-- written by a different version is ignored rather than fed to a game it no longer fits: 4 since
+-- the pack and the quests became a native traktor.story.Story, which saves itself; 5 since the
+-- story saves equip slots, steps and said responses by guid.
 local SAVE_ID < const > = "night"
-local VERSION < const > = 2
+local VERSION < const > = 5
 
 local function saveData(environment)
 	if environment == nil then
@@ -58,6 +65,11 @@ local function encode(value, path)
 		local vt < const > = type(v)
 		if kt ~= "string" and kt ~= "number" then
 			print("SaveGame: key of type " .. kt .. " under " .. path .. " left out")
+		elseif vt == "table" and getmetatable(v) ~= nil and (v.getProperty ~= nil or v.saveState ~= nil) then
+			n = n + 1
+			group:setProperty("k" .. n, k)
+			group:setProperty("v" .. n, (v.getProperty ~= nil) and v or v:saveState())
+			group:setProperty("r" .. n, true)
 		elseif vt == "table" then
 			n = n + 1
 			group:setProperty("k" .. n, k)
@@ -80,8 +92,9 @@ local function decode(group)
 	for i = 1, n do
 		local k < const > = group:getProperty("k" .. i)
 		local v = group:getProperty("v" .. i)
-		-- A nested group comes back as the object itself; everything else as its value.
-		if type(v) == "table" and v.getProperty ~= nil then
+		-- A nested group comes back as the object itself; everything else as its value. A group
+		-- stored as it was (encode) stays the group.
+		if type(v) == "table" and v.getProperty ~= nil and group:getProperty("r" .. i) ~= true then
 			v = decode(v)
 		end
 		if k ~= nil then

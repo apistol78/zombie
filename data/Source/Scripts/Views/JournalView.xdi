@@ -3,7 +3,6 @@
 	<text><![CDATA[
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
-#using \{D1A10000-0000-4000-8000-000000000002}
 #using \{D1A10000-0000-4000-8000-000000000004}
 
 import(traktor)
@@ -16,9 +15,10 @@ import(traktor)
 -- makes the selected quest the active one, whose waypoint the compass and the map show; the one
 -- being followed is marked in the list in the compass marker's gold.
 --
--- Reads the journal (context:journal(), a Scripts/Quests/Journal) and changes nothing but which
--- quest is followed, through Journal:setActive. Redraws itself whenever the journal's serial
--- moves (update), the same contract as InventoryView has with the pack.
+-- Reads the quest log (context:questLog(), a traktor.story.QuestLog) and changes nothing but which
+-- quest is followed, through QuestLog:setActive. Redraws itself whenever the log's serial moves
+-- (update), the same contract as InventoryView has with the pack. context:story() is asked for the
+-- story's quests, to size the title for the longest of them.
 
 JournalView = JournalView or class("JournalView", Container)
 
@@ -50,12 +50,14 @@ local function setText(static, text)
 	end
 end
 
--- The longest of every string `pick(def)` gives over the quests, for sizing a paragraph.
-local function longestOf(pick, floor)
+-- The longest of every string `pick(quest)` gives over the story's quests (traktor.story.QuestData),
+-- for sizing a paragraph.
+local function longestOf(story, pick, floor)
 	local best = floor
-	for _, def in pairs(Quests) do
-		if type(def) == "table" then
-			for _, s in ipairs(pick(def)) do
+	for i = 0, story.questCount - 1 do
+		local quest < const > = story:getQuest(story:getQuestId(i))
+		if quest ~= nil then
+			for _, s in ipairs(pick(quest)) do
 				if type(s) == "string" and string.len(s) > string.len(best) then
 					best = s
 				end
@@ -63,6 +65,19 @@ local function longestOf(pick, floor)
 		end
 	end
 	return best
+end
+
+-- The quest log's entries (traktor.story.QuestEntry) as plain rows, each keyed by its quest's guid
+-- as text -- what the rows and the selection are kept by.
+local function rowsOf(log)
+	local rows = {}
+	local entries < const > = log.entries
+	for i = 0, entries.size - 1 do
+		local e < const > = entries:get(i)
+		-- A failed quest has ended as a finished one has: `done`, and `failed` besides.
+		table.insert(rows, { key = e.quest:format(), quest = e.quest, data = e.data, step = e.step, done = e.done or e.failed, failed = e.failed, active = e.active })
+	end
+	return rows
 end
 
 function JournalView:new(parent, context)
@@ -96,20 +111,21 @@ function JournalView:new(parent, context)
 	end
 
 	local detail < const > = Container(body, TableLayout({ 0 }, { 0 }, 0, 0, 0, 8))
-	self._name = DialogParagraph(detail, DETAIL_W, 26, longestOf(function(d) return { d.title } end, "THE BURIAL LEDGER"))
+	self._name = DialogParagraph(detail, DETAIL_W, 26, longestOf(context:story(), function(q) return { q.title } end, "THE BURIAL LEDGER"))
 	self._name:setTextColor(C_NAME)
 	self._status = Static(detail, "FOLLOWED   SHOWN ON THE COMPASS AND THE MAP")
 	self._status:setTextSize(15)
 	self._status:setTextColor(C_FOLLOWED)
-	self._info = DialogParagraph(detail, DETAIL_W, 16, longestOf(function(d) return { d.info } end, "M"))
+	self._info = DialogParagraph(detail, DETAIL_W, 16, longestOf(context:story(), function(q) return { q.info } end, "M"))
 	self._info:setTextColor(C_INFO)
 
 	-- The steps reached so far, oldest first; the paragraphs are sized for the longest step text
 	-- any quest has.
-	local longestStep < const > = longestOf(function(d)
+	local longestStep < const > = longestOf(context:story(), function(q)
 		local texts = {}
-		for _, s in ipairs(d.steps or {}) do
-			table.insert(texts, s.text)
+		local steps < const > = q.steps
+		for i = 0, steps.size - 1 do
+			table.insert(texts, steps:get(i).text)
 		end
 		return texts
 	end, "M")
@@ -147,31 +163,39 @@ end
 -- Redraw everything from the journal. Called by the host after the dialog has been shown. The
 -- selection starts on the followed quest, or the first in the list.
 function JournalView:refresh()
-	local journal < const > = self._context:journal()
-	self._serial = journal:serial()
-	local list < const > = journal:list()
+	local log < const > = self._context:questLog()
+	self._serial = log.serial
+	local list < const > = rowsOf(log)
+	local active < const > = (log.active ~= nil) and log.active:format() or nil
 
-	local found = false
+	local selected = nil
 	for _, e in ipairs(list) do
-		found = found or e.id == self._selected
+		if e.key == self._selected then
+			selected = e
+		end
 	end
-	if not found then
-		self._selected = journal:active() or (list[1] ~= nil and list[1].id or nil)
+	if selected == nil then
+		self._selected = active or (list[1] ~= nil and list[1].key or nil)
+		for _, e in ipairs(list) do
+			if e.key == self._selected then
+				selected = e
+			end
+		end
 	end
 
 	local under, finished = 0, 0
 	for i, row in ipairs(self._rows) do
 		local e < const > = list[i]
 		if e ~= nil then
-			self._entries[i] = e.id
-			row:setCaption(e.title)
-			local selected < const > = e.id == self._selected
-			if selected then
+			self._entries[i] = e
+			row:setCaption(e.data.title)
+			local isSelected < const > = e.key == self._selected
+			if isSelected then
 				row:setTextColor(e.active and C_SELECTED_FOLLOWED or C_SELECTED)
 			else
 				row:setTextColor(e.done and C_ENTRY_DONE or (e.active and C_FOLLOWED or C_ENTRY))
 			end
-			row:setToggled(selected)
+			row:setToggled(isSelected)
 			row:setVisible(true)
 		else
 			self._entries[i] = nil
@@ -180,18 +204,19 @@ function JournalView:refresh()
 			row:setVisible(false)
 		end
 	end
+	local failed = 0
 	for _, e in ipairs(list) do
-		if e.done then
+		if e.failed then
+			failed = failed + 1
+		elseif e.done then
 			finished = finished + 1
 		else
 			under = under + 1
 		end
 	end
-	setText(self._count, tostring(under) .. " UNDER WAY   " .. tostring(finished) .. " FINISHED")
+	setText(self._count, tostring(under) .. " UNDER WAY   " .. tostring(finished) .. " FINISHED" .. ((failed > 0) and ("   " .. tostring(failed) .. " FAILED") or ""))
 
-	local id < const > = self._selected
-	local def < const > = (id ~= nil) and Quests[id] or nil
-	if def == nil then
+	if selected == nil then
 		setText(self._name, (#list == 0) and "NO QUESTS YET" or "")
 		setText(self._status, (#list == 0) and "TALK TO PEOPLE. SOMEONE WILL NEED SOMETHING." or "")
 		setText(self._info, "")
@@ -202,15 +227,21 @@ function JournalView:refresh()
 		return
 	end
 
-	local done < const > = journal:isDone(id)
-	local followed < const > = journal:active() == id
-	setText(self._name, def.title or id)
-	setText(self._status, done and "FINISHED" or (followed and "FOLLOWED   SHOWN ON THE COMPASS AND THE MAP" or "UNDER WAY"))
+	local def < const > = selected.data
+	local done < const > = selected.done
+	local followed < const > = active == selected.key
+	setText(self._name, def.title)
+	setText(self._status, selected.failed and "FAILED" or (done and "FINISHED" or (followed and "FOLLOWED   SHOWN ON THE COMPASS AND THE MAP" or "UNDER WAY")))
 	self._status:setTextColor(done and C_HINT or (followed and C_FOLLOWED or C_LABEL))
 	setText(self._info, def.info or "")
 
-	-- The most recent steps if there are more than there are rows: the one it is on matters most.
-	local steps < const > = journal:stepsOf(id)
+	-- Every step reached so far, the one it is on last; steps not reached yet are not given away.
+	-- The most recent if there are more than there are rows: the one it is on matters most.
+	local steps = {}
+	local all < const > = def.steps
+	for i = 0, math.min(selected.step, all.size - 1) do
+		table.insert(steps, { text = all:get(i).text, done = (done and not selected.failed) or i < selected.step })
+	end
 	local first < const > = math.max(1, #steps - MAX_STEPS + 1)
 	for i, s in ipairs(self._steps) do
 		local step < const > = steps[first + i - 1]
@@ -226,7 +257,7 @@ end
 
 -- Redraw if the journal has moved. Called by the host every frame the window is up.
 function JournalView:update(dt)
-	if self._context:journal():serial() ~= self._serial then
+	if self._context:questLog().serial ~= self._serial then
 		self:refresh()
 	end
 end
@@ -234,22 +265,22 @@ end
 -- Private
 
 function JournalView:_onRow(i)
-	local id < const > = self._entries[i]
-	if id == nil then
+	local e < const > = self._entries[i]
+	if e == nil then
 		return
 	end
-	if id == self._selected and not self._context:journal():isDone(id) then
+	if e.key == self._selected and not e.done then
 		-- A second click on the selected quest follows it.
 		self:_follow()
 		return
 	end
-	self._selected = id
+	self._selected = e.key
 	self:refresh()
 end
 
 function JournalView:_follow()
 	if self._selected ~= nil then
-		self._context:journal():setActive(self._selected)
+		self._context:questLog():setActive(self._selected)
 		self:refresh()
 	end
 end

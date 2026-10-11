@@ -11,20 +11,24 @@ import(traktor)
 --
 -- Test page for Scripts/Views/JournalView, hosted the way Main hosts it (Main:_setJournalOpen in
 -- Scripts/Quests/Questing): a Dialog of its own on the one Frame, shown and then refreshed, ticked
--- every frame it is up. Main is stood in for by StageStub, whose journal is a real
--- Scripts/Quests/Journal.
+-- every frame it is up. Main is stood in for by StageStub, whose story is the game's real one.
 --
 -- Two scenes, alternating each time the window is closed: a journal with all three sample quests
 -- in it -- one finished, one on its last step and followed, one under way -- and an empty one.
 
 JournalViewScaffolding = JournalViewScaffolding or class("JournalViewScaffolding", GameScaffolding)
 
+-- The quests (data/Source/Story/Quests).
+local LEDGER_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000100}")
+local LOCKET_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000101}")
+local RING_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000102}")
+
 local REOPEN < const > = 1.0   -- how long the window stays closed (s)
 
 function JournalViewScaffolding:build(parent, frame)
 	self:note(parent, "JOURNAL VIEW   Click a quest to read it, again (or FOLLOW) to follow it. CLOSE alternates a full journal with an empty one.")
 
-	self._stage = StageStub()
+	self._stage = StageStub(self._resourceManager)
 	self._full = false
 
 	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))
@@ -38,16 +42,17 @@ end
 
 function JournalViewScaffolding:show()
 	self._full = not self._full
-	local journal < const > = self._stage:resetJournal()
+	self._stage:emptyPack()
+	local log < const > = self._stage:questLog()
 	if self._full then
-		journal:start("ring")
-		journal:finish("ring")
-		journal:start("ledger")
-		journal:advance("ledger", "find")
-		journal:advance("ledger", "return")
-		journal:start("locket")
-		journal:advance("locket", "ask")
-		journal:setActive("ledger")
+		log:start(RING_QUEST)
+		log:finish(RING_QUEST)
+		log:start(LEDGER_QUEST)
+		log:advance(LEDGER_QUEST, "{02B1CB0D-A001-4CF3-B1E9-37E5AFCBB945}")   -- find
+		log:advance(LEDGER_QUEST, "{615C4DC3-32DC-4BB6-B748-9C2FC767E043}")   -- return
+		log:start(LOCKET_QUEST)
+		log:advance(LOCKET_QUEST, "{8A432C0C-DC0C-4ECC-B5C7-C3D269C405D7}")   -- ask
+		log:setActive(LEDGER_QUEST)
 	end
 	self._dialog:show()
 	self._view:refresh()

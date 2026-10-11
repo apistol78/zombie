@@ -10,7 +10,7 @@ import(traktor)
 -- Base ScriptComponent for anything lying in the world that goes into the player's pack: a
 -- crate of rounds, a flask, a grenade, a pile of coins, a weapon, a helmet, a key, a relic.
 -- What each one *is* comes from Scripts/Items/Items; this owns only how it gets from the ground
--- into the pack (Scripts/Items/Inventory), and back out again.
+-- into the pack (a traktor.story.Inventory), and back out again.
 --
 -- Two ways of being taken:
 --
@@ -23,16 +23,16 @@ import(traktor)
 --     through :collect, exactly as a walk-over one is, so there is one way into the pack.
 --
 -- Most pickups are this script and nothing else: the entity's ScriptComponentData names it as the
--- class and says what the pickup is in its string properties -- the ammo crate is { item =
--- "rounds", count = "12" }, the key { item = "key", take = "press" }. A subclass is only for a
--- pickup with behaviour of its own (Scripts/Relic). Either way, this is what is asked, and the
--- property each answer defaults to:
+-- class, and a Traktor.Story ItemPickupComponentData beside it says what the pickup is -- the
+-- ammo crate is 12 of Items.ROUNDS. The one string property left is how it is taken: the key has
+-- { take = "press" }. A subclass is only for a pickup with behaviour of its own (Scripts/Relic).
+-- Either way, this is what is asked, and where each answer comes from:
 --
---   itemKind()      "item"     which kind of item it is
---   itemCount()     "count"    how many of it (default 1)
---   pressToTake()   "take"     "press" for E; anything else, or absent, is walked over
---   promptTake()               the E line, for an E item
---   reach()                    how close the player must be
+--   itemKind()      the pickup component's item, as its key (Scripts/Items/Items)
+--   itemCount()     the pickup component's count
+--   pressToTake()   "take" property: "press" for E; anything else, or absent, is walked over
+--   promptTake()    the E line, for an E item
+--   reach()         how close the player must be
 --
 -- What taking one is called to the SpawnOrchestrator -- a key run, a relic run -- is the item's
 -- (Items: `event`), and Main:giveItem sends it, so a key taken out of a chest counts exactly as
@@ -74,19 +74,30 @@ end
 
 -- ---- What it is ----
 
--- The item, as its key (Scripts/Items/Items): the `item` property names it as Names does --
--- "rounds", "RING" -- and nil for one that names no item.
+-- What the entity's ItemPickupComponent says, read once and kept: the books still ask a pickup
+-- what it was after it has been taken and its entity is gone (Main:_saveWorld).
+function Pickup:_read()
+	if self._kind == nil then
+		local pickup < const > = (self.owner ~= nil) and self.owner:getComponent(traktor.story.ItemPickupComponent) or nil
+		self._kind = (pickup ~= nil) and Items.keyOf(pickup.item) or false
+		self._placed = (pickup ~= nil) and pickup.count or 1
+	end
+end
+
+-- The item, as its key (Scripts/Items/Items), or nil for a pickup that names no item.
 function Pickup:itemKind()
-	return Items.keyOf(self:_property("item"))
+	self:_read()
+	return self._kind or nil
 end
 
 -- A count set on this one in particular -- what is left of a pile, or a dropped stack -- beats
--- what its kind would hand out.
+-- what the scene put there.
 function Pickup:itemCount()
 	if self._count ~= nil then
 		return self._count
 	end
-	return tonumber(self:_property("count") or "") or 1
+	self:_read()
+	return self._placed
 end
 
 function Pickup:pressToTake()
@@ -133,7 +144,7 @@ end
 -- Main's E for the rest -- so there is one way into the pack.
 --
 -- A hidden one is not there to be taken: a keepsake already in the pack or spent, or a quest
--- item whose quest has not been given yet (Scripts/Quests/Questing, _updateQuestItems).
+-- item whose quest has not asked for it yet (the scene's traktor.story.StoryWorldComponent hides it).
 function Pickup:collect(context)
 	if not self.owner.visible then
 		return false

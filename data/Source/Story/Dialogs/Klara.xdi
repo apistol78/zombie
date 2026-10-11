@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.story.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="traktor.story.DialogStartAsset" version="1">
+			<node>{A211DB72-C013-4491-81C4-DE8DA0A72348}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{A211DB72-C013-4491-81C4-DE8DA0A72348}</id>
+			<name>hello</name>
+			<text>A LIVING FACE. THERE ARE FEWER EVERY NIGHT.</text>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{D30870F3-5D70-4FAE-8084-6450DAAFBAA3}</id>
+					<text>YOU LOOK TROUBLED.</text>
+					<target>{9D7FF297-1E11-473A-AC03-8CE028829E15}</target>
+					<condition type="traktor.story.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000102}</quest>
+						<state>NotStarted</state>
+						<step>{00000000-0000-0000-0000-000000000000}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{2187B245-9481-4F1F-8674-04EF164FEEF2}</id>
+					<text>I FOUND YOUR RING.</text>
+					<target>{FABAC809-5FEF-41C8-9B17-C2E880B633EF}</target>
+					<condition type="traktor.story.AllCondition">
+						<conditions>
+							<item type="traktor.story.HasItemCondition">
+								<item>{D1A10000-0000-4000-8000-00000000020A}</item>
+								<count>1</count>
+								<negate>false</negate>
+							</item>
+							<item type="traktor.story.QuestCondition" version="1">
+								<quest>{D1A20000-0000-4000-8000-000000000102}</quest>
+								<state>AtStep</state>
+								<step>{15001AE7-3169-4BCE-9A96-0904E1319A07}</step>
+							</item>
+						</conditions>
+					</condition>
+					<actions>
+						<item type="traktor.story.TakeItemAction">
+							<item>{D1A10000-0000-4000-8000-00000000020A}</item>
+							<count>1</count>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{5CFA4E6F-90C1-4647-B497-029C17BF311F}</id>
+					<text>WHERE DID YOU LOSE THE RING?</text>
+					<target>{80F25550-03E2-4268-9F18-D67BBC9DB803}</target>
+					<condition type="traktor.story.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000102}</quest>
+						<state>AtStep</state>
+						<step>{63794B10-889B-4D0D-AB70-A55ABB41FE1E}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{FA2B2BCB-1EB6-4DA1-8DDF-F35E05DB9476}</id>
+					<text>WHAT ARE YOU CARRYING?</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions>
+						<item type="traktor.story.EventAction" version="1">
+							<event>{D1A20000-0000-4000-8000-000000000500}</event>
+							<endConversation>true</endConversation>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>0, 0</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{9D7FF297-1E11-473A-AC03-8CE028829E15}</id>
+			<name>ring</name>
+			<text>MY HENRIK'S SIGNET RING. I DROPPED IT IN THE CHURCHYARD WHEN THE GRAVES OPENED, AND I CANNOT GO BACK THERE. NOT AT MY AGE.</text>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{7A3C2246-E55F-43E9-A1C0-48D2A102C60B}</id>
+					<text>I WILL FIND IT FOR YOU.</text>
+					<target>{80F25550-03E2-4268-9F18-D67BBC9DB803}</target>
+					<condition/>
+					<actions>
+						<item type="traktor.story.StartQuestAction">
+							<quest>{D1A20000-0000-4000-8000-000000000102}</quest>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{3F9787D1-BA14-48FB-9CE2-7653464627DE}</id>
+					<text>NOT TONIGHT.</text>
+					<target>{A211DB72-C013-4491-81C4-DE8DA0A72348}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>0, 0</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{FABAC809-5FEF-41C8-9B17-C2E880B633EF}</id>
+			<name>thanks</name>
+			<text>YOU FOUND IT. OH, HENRIK... HERE. IT IS NOT MUCH, BUT IT IS ALL I HAVE LEFT TO GIVE.</text>
+			<onEnter/>
+			<responses/>
+			<position>0, 0</position>
+		</item>
+		<item type="traktor.story.DialogNodeAsset" version="1">
+			<id>{80F25550-03E2-4268-9F18-D67BBC9DB803}</id>
+			<name>where</name>
+			<text>BY THE CHAPEL WALL, ON THE NORTH SIDE. GOLD, WITH A STAG ON IT. YOU WILL KNOW IT.</text>
+			<onEnter/>
+			<responses>
+				<item type="traktor.story.DialogResponseAsset" version="2">
+					<id>{20310186-525A-4CD9-89E1-AC6A349B2B8A}</id>
+					<text>I HAD ANOTHER QUESTION.</text>
+					<target>{A211DB72-C013-4491-81C4-DE8DA0A72348}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>0, 0</position>
+		</item>
+	</nodes>
+	<startPosition>0, 0</startPosition>
+</object>

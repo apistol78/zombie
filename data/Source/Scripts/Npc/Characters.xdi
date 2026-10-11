@@ -94,10 +94,23 @@ function Main:hurtPlayer(amount)
 	self._incomingDamage = self._incomingDamage + amount
 end
 
--- The route named `name` as { points, loop, pause } (Scripts/Npc/Route), or nil. Asked by the
--- characters that walk one.
-function Main:route(name)
-	return (self._routes ~= nil) and self._routes[name] or nil
+-- The route whose entity has guid `id`, as { points, loop, pause } (Scripts/Npc/Route), or nil.
+-- Asked by the characters that walk one; read from the world the first time, then kept.
+function Main:route(id)
+	if self._routes == nil or id == nil then
+		return nil
+	end
+	local key < const > = string.upper(id:format())
+	local route = self._routes[key]
+	if route == nil and self._routeWorld ~= nil then
+		local e < const > = self._routeWorld:getEntityById(id)
+		local sc < const > = (e ~= nil) and e:getComponent(traktor.world.ScriptComponent) or nil
+		if sc ~= nil and sc.describe ~= nil then
+			route = sc:describe()
+			self._routes[key] = route
+		end
+	end
+	return route
 end
 
 -- Every Route laid out in the scene (Scripts/Npc/Route), drawn whole -- not just the stretch
@@ -171,6 +184,16 @@ function Main:_afterDeath(enemy)
 	rec.dead = true
 	rec.at = plainTransform(enemy.transform)
 	self:_npcBox(rec)
+	self:_actorDied(rec)
+end
+
+-- Tell the story a character with an actor has died: conditions on it change, and quests
+-- waiting on it may fail (The Lost Locket, with Tomas). The story remembers it, saved with it.
+function Main:_actorDied(rec)
+	local actor < const > = rec.entity:getComponent(traktor.story.ActorComponent)
+	if actor ~= nil and self._questLog ~= nil then
+		self._questLog:died(actor.actor)
+	end
 end
 
 -- What a character carries, as the container the chest window shows: _chestContents["npc:<key>"],
@@ -289,6 +312,7 @@ function Main:_restoreNpcs(world, saved)
 		if rec ~= nil then
 			if s.dead then
 				rec.dead = true
+				self:_actorDied(rec)
 				local left < const > = self._chestContents["npc:" .. key]
 				if left ~= nil and #left > 0 and s.at ~= nil then
 					rec.at = s.at
@@ -397,7 +421,7 @@ function Main:_applyDamage(dt)
 		self._incomingDamage = 0.0
 		if amount > 0.0 then
 			self._bitten = 0.25
-			-- Whatever armour is worn takes its share of every bite (Config.items).
+			-- Whatever armour is worn takes its share of every bite (its ArmorTrait).
 			self._health = self._health - amount * (1.0 - self:armor())
 		end
 		if self._bitten > 0.0 then
@@ -454,19 +478,8 @@ end
 -- frame from Main:resolve; does nothing once both are collected.
 function Main:_resolveCharacters(world)
 	if self._routes == nil then
-		self._routes = {}
-		local i = 0
-		while true do
-			local e < const > = world:getEntity("Route", i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-			if sc ~= nil and sc.describe ~= nil and sc:name() ~= nil then
-				self._routes[sc:name()] = sc:describe()
-			end
-		end
+		self._routes = {}             -- route entity's guid as text -> { points, loop, pause }
+		self._routeWorld = world      -- where Main:route looks them up
 	end
 	if self._npcs == nil then
 		self:_collectNpcs(world)

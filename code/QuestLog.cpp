@@ -189,7 +189,7 @@ void QuestLog::talkedTo(const Guid& actor, const Guid& line)
 	for (const auto& quest : getUnderWay())
 	{
 		const TalkStep* talkStep = dynamic_type_cast< const TalkStep* >(getCurrentStep(quest));
-		if (talkStep == nullptr || talkStep->getActor() != actor)
+		if (talkStep == nullptr || actor != talkStep->getActor())
 			continue;
 		if (talkStep->getLine().isNotNull() && talkStep->getLine() != line)
 			continue;

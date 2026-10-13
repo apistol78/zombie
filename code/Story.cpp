@@ -121,7 +121,7 @@ bool Story::isHeldBack(const Guid& item) const
 		for (int32_t i = 0; i < (int32_t)questData->getSteps().size(); ++i)
 		{
 			const FindItemStep* findItemStep = dynamic_type_cast< const FindItemStep* >(questData->getSteps()[i]);
-			if (findItemStep == nullptr || findItemStep->getItem() != item)
+			if (findItemStep == nullptr || item != findItemStep->getItem())
 				continue;
 
 			// A quest at or past the step has asked for the item; it is not held back from anyone.

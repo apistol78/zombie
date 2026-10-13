@@ -11,7 +11,7 @@ import(traktor)
 -- Scripts/Main as far as Scripts/Views/InventoryView, Scripts/Views/ChestView,
 -- Scripts/Views/DialogView and Scripts/Views/JournalView can see it:
 -- the `context` both are built with, for their test pages. The story is a real
--- traktor.story.Story over the page's resource manager (GameScaffolding) -- the game's own,
+-- zombie.Story over the page's resource manager (GameScaffolding) -- the game's own,
 -- Story/Story, its pack filled with a sample kit -- so the views are tested against the data they
 -- read in game, and the talks are the real ones. Only the stage's side of each call is stood in
 -- for -- health is a number, a chest is a list kept here, and what Main would put on its feed line
@@ -58,7 +58,7 @@ local SAMPLE_KIT < const > = {
 -- pack with no history, while one that kept the old pack (InventoryView keeps its own) is not
 -- disturbed.
 function StageStub:emptyPack()
-	self._story = traktor.story.Story.create(self._resourceManager, STORY, Config.inventory.slots)
+	self._story = zombie.Story.create(self._resourceManager, STORY, Config.inventory.slots)
 	self._story:setEventHandler(function(what, a, b)
 		self:_feed("story " .. what .. ": " .. tostring(a) .. ((b ~= nil) and (" " .. tostring(b.text or b)) or ""))
 	end)

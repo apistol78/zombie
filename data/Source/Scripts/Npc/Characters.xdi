@@ -190,7 +190,7 @@ end
 -- Tell the story a character with an actor has died: conditions on it change, and quests
 -- waiting on it may fail (The Lost Locket, with Tomas). The story remembers it, saved with it.
 function Main:_actorDied(rec)
-	local actor < const > = rec.entity:getComponent(traktor.story.ActorComponent)
+	local actor < const > = rec.entity:getComponent(zombie.ActorComponent)
 	if actor ~= nil and self._questLog ~= nil then
 		self._questLog:died(actor.actor)
 	end
@@ -377,7 +377,8 @@ function Main:_nearestBody(maxDist)
 end
 
 -- The nearest character that will talk, within `maxDist` and roughly where the player is
--- looking -- a crowd of villagers answers to the one being faced, not the one behind.
+-- looking -- a crowd of villagers answers to the one being faced, not the one behind. Only one
+-- whose actor has a dialog talks at all (Main:_hasDialog).
 function Main:_nearestTalker(maxDist)
 	if self._npcs == nil or self._humanoid == nil then
 		return nil
@@ -386,7 +387,7 @@ function Main:_nearestTalker(maxDist)
 	local aim < const > = self:aimDirection()
 	local best, bestD = nil, maxDist * maxDist
 	for _, rec in pairs(self._npcs) do
-		if not rec.gone and not rec.dead and rec.sc.canTalk ~= nil and rec.sc:canTalk(self) then
+		if not rec.gone and not rec.dead and rec.sc.canTalk ~= nil and rec.sc:canTalk(self) and self:_hasDialog(rec) then
 			local p < const > = rec.entity.transform.translation
 			local dx < const >, dz < const > = p.x - pp.x, p.z - pp.z
 			local d < const > = dx * dx + dz * dz
@@ -488,11 +489,12 @@ end
 
 -- ---- Name tags ----
 --
--- A character with a name (the scene's `name` property -- zombies have none) wears it over
--- its head while it is near enough to matter and in plain view: a pale line of text that
--- follows it about the screen, turned red once it means the player harm. Not a health bar,
--- not a marker through walls -- only what the player would know looking at someone close by
--- in the dark: who it is, and whether it is coming for them.
+-- A character with a name (its actor's -- zombies have none) wears it over its head while it
+-- is near enough to matter and in plain view: a pale line of text that follows it about the
+-- screen, turned red once it means the player harm. Not a marker through walls -- only what
+-- the player would know looking at someone close by in the dark: who it is, and whether it is
+-- coming for them. In a fight, or for a while after being hurt, a health bar
+-- (Widgets/HealthBar, "MC_NpcHealthBar") hangs under the name.
 --
 -- The labels are children of the HUD container, so they go wherever the HUD goes -- hidden
 -- under the pause menu and the pack, drawn beneath every dialog -- and are made the first time
@@ -508,6 +510,8 @@ local TAG_FADE < const > = 4.0         -- ...fading out over the last of it (m)
 local TAG_NEAR < const > = 0.5         -- nothing closer to the eye than this is tagged (m)
 local TAG_SIZE < const > = 17
 local TAG_SIGHT_EVERY < const > = 0.2  -- how often each tag re-checks the line of sight (s)
+local TAG_BAR_GAP < const > = 2        -- between the name and the health bar under it (px)
+local TAG_BAR_LINGER < const > = 4.0   -- the bar stays this long after the fight or the hurt (s)
 
 -- Dim on purpose: Spark draws text far brighter than its value says (0.7 reads as white).
 local C_TAG < const > = Color4f(0.6, 0.58, 0.53, 1.0)
@@ -518,6 +522,10 @@ function Main:_hideNameTags()
 		if tag.shown then
 			tag.shown = false
 			tag.widget:setVisible(false)
+		end
+		if tag.barShown then
+			tag.barShown = false
+			tag.bar:setVisible(false)
 		end
 	end
 end
@@ -579,6 +587,17 @@ function Main:_updateNameTags(dt)
 			end
 		end
 
+		-- In combat: fighting, or its health has gone down, within the last TAG_BAR_LINGER.
+		if tag ~= nil and name ~= nil then
+			local health < const > = rec.sc:healthFraction()
+			if (rec.sc.state ~= nil and rec.sc:state() == "fight") or (tag.health ~= nil and health < tag.health) then
+				tag.combat = TAG_BAR_LINGER
+			else
+				tag.combat = math.max(0.0, (tag.combat or 0.0) - dt)
+			end
+			tag.health = health
+		end
+
 		if alpha > 0.0 then
 			if tag.widget == nil then
 				tag.widget = Static(self._hud, "")
@@ -602,6 +621,25 @@ function Main:_updateNameTags(dt)
 		elseif tag ~= nil and tag.shown then
 			tag.shown = false
 			tag.widget:setVisible(false)
+		end
+
+		if alpha > 0.0 and tag.combat > 0.0 then
+			if tag.bar == nil then
+				tag.bar = HealthBar(self._hud, "MC_NpcHealthBar"):setAlwaysShown(true)
+				tag.bar.__layout = ILayout.FLOAT
+				tag.barSize = tag.bar:getPreferredSize()
+				tag.bar:setValue(tag.health)
+			end
+			tag.bar:setValue(tag.health):setOpacity(alpha)
+			tag.bar:update(dt)
+			tag.bar:place(sx - hud.x - tag.barSize.width * 0.5, sy - hud.y + TAG_BAR_GAP, tag.barSize.width, tag.barSize.height)
+			if not tag.barShown then
+				tag.barShown = true
+				tag.bar:setVisible(true)
+			end
+		elseif tag ~= nil and tag.barShown then
+			tag.barShown = false
+			tag.bar:setVisible(false)
 		end
 	end
 end

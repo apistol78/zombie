@@ -294,7 +294,7 @@
 		<item type="traktor.world.PostProcessComponentData">
 			<imageGraph>{7A1E9C40-0B5D-4E71-9C33-1D2F8A6B4E02}</imageGraph>
 		</item>
-		<item type="traktor.story.StoryWorldComponentData">
+		<item type="zombie.StoryWorldComponentData">
 			<refreshInterval>1</refreshInterval>
 		</item>
 	</worldComponents>
@@ -2229,7 +2229,7 @@
 									<eventCollide/>
 									<transformFilter>0</transformFilter>
 								</item>
-								<item type="traktor.story.PlaceComponentData">
+								<item type="zombie.PlaceComponentData">
 									<place>{D1A20000-0000-4000-8000-000000000400}</place>
 								</item>
 							</components>
@@ -12942,7 +12942,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-19.5, 22.93, 73.1, 0</translation>
+								<translation>-19.5, 22.93, 73.099998, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
@@ -20569,7 +20569,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.PlaceComponentData">
+								<item type="zombie.PlaceComponentData">
 									<place>{D1A20000-0000-4000-8000-000000000402}</place>
 								</item>
 							</components>
@@ -21040,7 +21040,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21052,7 +21052,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000300}</actor>
 								</item>
 							</components>
@@ -21076,7 +21076,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21088,7 +21088,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000302}</actor>
 								</item>
 							</components>
@@ -21121,7 +21121,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000205}</item>
@@ -21129,7 +21129,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000301}</actor>
 								</item>
 							</components>
@@ -21162,7 +21162,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21170,7 +21170,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000307}</actor>
 								</item>
 							</components>
@@ -21194,7 +21194,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21210,7 +21210,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000303}</actor>
 								</item>
 							</components>
@@ -21234,7 +21234,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000205}</item>
@@ -21246,7 +21246,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000306}</actor>
 								</item>
 							</components>
@@ -21270,7 +21270,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21282,7 +21282,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000308}</actor>
 								</item>
 							</components>
@@ -21315,7 +21315,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21323,7 +21323,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
 								</item>
 							</components>
@@ -21356,7 +21356,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000204}</item>
@@ -21364,7 +21364,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000305}</actor>
 								</item>
 							</components>
@@ -21388,7 +21388,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000205}</item>
@@ -21400,7 +21400,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-000000000304}</actor>
 								</item>
 							</components>
@@ -21424,7 +21424,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21436,7 +21436,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030A}</actor>
 								</item>
 							</components>
@@ -21460,7 +21460,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21472,7 +21472,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030A}</actor>
 								</item>
 							</components>
@@ -21496,7 +21496,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21508,7 +21508,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030A}</actor>
 								</item>
 							</components>
@@ -21532,7 +21532,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21544,7 +21544,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030C}</actor>
 								</item>
 							</components>
@@ -21568,7 +21568,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21580,7 +21580,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030C}</actor>
 								</item>
 							</components>
@@ -21604,7 +21604,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000206}</item>
@@ -21616,7 +21616,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030C}</actor>
 								</item>
 							</components>
@@ -21640,7 +21640,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21652,7 +21652,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21676,7 +21676,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21688,7 +21688,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21712,7 +21712,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21724,7 +21724,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21748,7 +21748,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21760,7 +21760,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21784,7 +21784,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21796,7 +21796,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21820,7 +21820,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21832,7 +21832,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21856,7 +21856,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21868,7 +21868,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -21892,7 +21892,7 @@
 									<properties/>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -21904,7 +21904,7 @@
 										</item>
 									</entries>
 								</item>
-								<item type="traktor.story.ActorComponentData">
+								<item type="zombie.ActorComponentData">
 									<actor>{D1A20000-0000-4000-8000-00000000030B}</actor>
 								</item>
 							</components>
@@ -22292,6 +22292,51 @@
 								</item>
 							</components>
 						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{100C1DB2-63F5-AD45-84A7-533A7BCB9F8B}</id>
+							<name>Npc</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>true</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>27.296732, 22.45145, 10.28582, 0</translation>
+								<rotation>0, -0.707107, 0, 0.707107</rotation>
+							</transform>
+							<components>
+								<item type="traktor.world.ScriptComponentData" version="2">
+									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
+									<properties type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>route</first>
+												<second type="traktor.world.PropertyEntityReference">
+													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+												</second>
+											</item>
+										</value>
+									</properties>
+									<editorSupport>false</editorSupport>
+								</item>
+								<item type="zombie.ItemContainerComponentData">
+									<entries>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000203}</item>
+											<count>8</count>
+										</item>
+										<item>
+											<item>{D1A10000-0000-4000-8000-000000000205}</item>
+											<count>1</count>
+										</item>
+									</entries>
+								</item>
+								<item type="zombie.ActorComponentData">
+									<actor>{15E01A28-58E5-F74F-B742-B88800C65677}</actor>
+								</item>
+							</components>
+							<entityData>{64D7F2A9-5AA7-4375-9FBF-58176C8EC66B}</entityData>
+						</item>
 					</entityData>
 				</item>
 			</components>
@@ -22338,7 +22383,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000203}</item>
@@ -22384,7 +22429,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000200}</item>
@@ -22430,7 +22475,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000204}</item>
@@ -22472,7 +22517,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000208}</item>
@@ -22514,7 +22559,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000200}</item>
@@ -22560,7 +22605,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000200}</item>
@@ -22606,7 +22651,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000200}</item>
@@ -22652,7 +22697,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000200}</item>
@@ -22698,7 +22743,7 @@
 									</properties>
 									<editorSupport>false</editorSupport>
 								</item>
-								<item type="traktor.story.ItemContainerComponentData">
+								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
 											<item>{D1A10000-0000-4000-8000-000000000200}</item>

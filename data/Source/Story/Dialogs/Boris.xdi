@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="zombie.DialogStartAsset" version="1">
+			<node>{69B545F0-BD5A-43D2-BF81-F65811AEE3EE}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{69B545F0-BD5A-43D2-BF81-F65811AEE3EE}</id>
+			<name>hello</name>
+			<text><![CDATA[WHAT DO YOU WANT?!]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{8466A663-5201-4F41-9AFA-26EF3C52C894}</id>
+					<text>LOOKING FOR SOMETHING?</text>
+					<target>{B0EBD00E-BB7F-6F47-8B1D-C2FF3FB7EAFB}</target>
+					<condition type="zombie.HasItemCondition">
+						<item>{D1A10000-0000-4000-8000-000000000207}</item>
+						<count>1</count>
+						<negate>true</negate>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{1DFC181A-668A-407B-813E-B58A1790FD09}</id>
+					<text>WHAT ARE YOU CARRYING?</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions>
+						<item type="zombie.EventAction" version="1">
+							<event>{D1A20000-0000-4000-8000-000000000500}</event>
+							<endConversation>true</endConversation>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>229, 10</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{B0EBD00E-BB7F-6F47-8B1D-C2FF3FB7EAFB}</id>
+			<name>lost_helmet</name>
+			<text><![CDATA[I'VE LOST MY HELMET]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{4D46AE80-2071-854C-A1F9-567AAB6E815A}</id>
+					<text>I KEEP MY EYES OPEN</text>
+					<target>{E2690F08-7879-D242-A24C-5BA038243F4E}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>586, 29</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{E2690F08-7879-D242-A24C-5BA038243F4E}</id>
+			<name>lost_helmet_end</name>
+			<text><![CDATA[THANKS, HERE HAVE A COIN!]]></text>
+			<onEnter>
+				<item type="zombie.GiveItemAction">
+					<item>{D1A10000-0000-4000-8000-000000000206}</item>
+					<count>1</count>
+				</item>
+			</onEnter>
+			<responses/>
+			<position>925, 47</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{6DEAFF3E-868F-024D-B317-2E952702B0DA}</id>
+			<name>dismiss</name>
+			<text><![CDATA[GET LOST]]></text>
+			<onEnter/>
+			<responses/>
+			<position>235, 128</position>
+		</item>
+	</nodes>
+	<startPosition>19, 71</startPosition>
+</object>

@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.story.DialogAsset" version="2">
+<object type="zombie.DialogAsset" version="2">
 	<name/>
 	<start>
-		<item type="traktor.story.DialogStartAsset" version="1">
+		<item type="zombie.DialogStartAsset" version="1">
 			<node>{418DA863-C4B3-40FC-836E-12BB0E7DDC2A}</node>
 			<condition/>
 		</item>
 	</start>
 	<nodes>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{418DA863-C4B3-40FC-836E-12BB0E7DDC2A}</id>
 			<name>hello</name>
-			<text/>
+			<text>THE WELL STILL GIVES. THAT IS SOMETHING.</text>
 			<onEnter/>
 			<responses>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{8FF9A397-5695-44E9-A513-0488CEE3C799}</id>
 					<text>IS SOMETHING WRONG?</text>
 					<target>{07C01B20-4EE9-4513-A7C7-D7D8882ADC7E}</target>
-					<condition type="traktor.story.AllCondition">
+					<condition type="zombie.AllCondition">
 						<conditions>
-							<item type="traktor.story.QuestCondition" version="1">
+							<item type="zombie.QuestCondition" version="1">
 								<quest>{D1A20000-0000-4000-8000-000000000101}</quest>
 								<state>NotStarted</state>
 								<step>{00000000-0000-0000-0000-000000000000}</step>
 							</item>
-							<item type="traktor.story.ActorCondition">
+							<item type="zombie.ActorCondition">
 								<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
 								<state>Alive</state>
 							</item>
@@ -34,29 +34,29 @@
 					<actions/>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{DADD3EE3-DE6A-40BB-9FF5-A7C79EF2653A}</id>
 					<text>IS SOMETHING WRONG?</text>
 					<target>{9560A32B-0132-4F1C-870A-9C92E8300D05}</target>
-					<condition type="traktor.story.ActorCondition">
+					<condition type="zombie.ActorCondition">
 						<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
 						<state>Dead</state>
 					</condition>
 					<actions/>
 					<once>true</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{043472C6-DA0A-4DF0-ACAB-D6D78DE4E534}</id>
 					<text>HERE IS YOUR LOCKET.</text>
 					<target>{A2A22BAA-D60D-4089-BF52-4CF91D14CB63}</target>
-					<condition type="traktor.story.AllCondition">
+					<condition type="zombie.AllCondition">
 						<conditions>
-							<item type="traktor.story.HasItemCondition">
+							<item type="zombie.HasItemCondition">
 								<item>{D1A10000-0000-4000-8000-00000000020C}</item>
 								<count>1</count>
 								<negate>false</negate>
 							</item>
-							<item type="traktor.story.QuestCondition" version="1">
+							<item type="zombie.QuestCondition" version="1">
 								<quest>{D1A20000-0000-4000-8000-000000000101}</quest>
 								<state>AtStep</state>
 								<step>{600BA235-9E5F-4405-AA3A-9F0521EDB226}</step>
@@ -64,20 +64,20 @@
 						</conditions>
 					</condition>
 					<actions>
-						<item type="traktor.story.TakeItemAction">
+						<item type="zombie.TakeItemAction">
 							<item>{D1A10000-0000-4000-8000-00000000020C}</item>
 							<count>1</count>
 						</item>
 					</actions>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{E7191E30-464F-4B49-9CE6-076E935000C0}</id>
 					<text>WHAT ARE YOU CARRYING?</text>
 					<target>{00000000-0000-0000-0000-000000000000}</target>
 					<condition/>
 					<actions>
-						<item type="traktor.story.EventAction" version="1">
+						<item type="zombie.EventAction" version="1">
 							<event>{D1A20000-0000-4000-8000-000000000500}</event>
 							<endConversation>true</endConversation>
 						</item>
@@ -87,25 +87,25 @@
 			</responses>
 			<position>360, 0</position>
 		</item>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{07C01B20-4EE9-4513-A7C7-D7D8882ADC7E}</id>
 			<name>locket</name>
 			<text><![CDATA[MY MOTHER'S LOCKET IS GONE. TOMAS HAS BEEN PLAYING WITH IT AGAIN, I KNOW HE HAS. HE WILL NOT TELL ME WHERE HE PUT IT.]]></text>
 			<onEnter/>
 			<responses>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{83717FA7-E29B-4A4E-B96E-1BEBC7310A7C}</id>
 					<text>I WILL TALK TO HIM.</text>
 					<target>{00000000-0000-0000-0000-000000000000}</target>
 					<condition/>
 					<actions>
-						<item type="traktor.story.StartQuestAction">
+						<item type="zombie.StartQuestAction">
 							<quest>{D1A20000-0000-4000-8000-000000000101}</quest>
 						</item>
 					</actions>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{8794F53E-EA9C-48F7-89FA-3F81E84439AB}</id>
 					<text>BOYS WILL BE BOYS.</text>
 					<target>{418DA863-C4B3-40FC-836E-12BB0E7DDC2A}</target>
@@ -116,7 +116,7 @@
 			</responses>
 			<position>720, 0</position>
 		</item>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{A2A22BAA-D60D-4089-BF52-4CF91D14CB63}</id>
 			<name>thanks</name>
 			<text><![CDATA[OH... THANK YOU. TAKE SOME BREAD, IT IS THE LEAST I CAN DO. AND DON'T TELL ME WHERE IT WAS.]]></text>
@@ -124,13 +124,13 @@
 			<responses/>
 			<position>720, 100</position>
 		</item>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{9560A32B-0132-4F1C-870A-9C92E8300D05}</id>
 			<name>mourning</name>
 			<text><![CDATA[MY BOY TOMAS IS DEAD. THERE IS NOTHING ANYONE CAN DO FOR HIM NOW.]]></text>
 			<onEnter/>
 			<responses>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{8BADE1F0-9333-48D2-8D2D-6F0228C6F3DB}</id>
 					<text>I AM SORRY.</text>
 					<target>{00000000-0000-0000-0000-000000000000}</target>

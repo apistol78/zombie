@@ -101,6 +101,12 @@ jobs:
     needs: check
     if: needs.check.outputs.build == 'true'
     runs-on: windows-latest
+    env:
+      # Traktor lives in traktor\ inside the workspace: its sources at the commit of the
+      # Traktor build used, with that build's binaries on top. Set for the whole job, since
+      # generating the projects bakes it into them as absolute paths, and the asset build
+      # resolves the workspace's Runtime.SystemRoot ($(TRAKTOR_HOME)) through it.
+      TRAKTOR_HOME: ${{ github.workspace }}\traktor
     steps:
     - uses: actions/checkout@v4
 
@@ -109,13 +115,40 @@ jobs:
       with:
         version: '5.2'
 
+    # The commit of the run chosen by the check job, so the headers match the binaries.
+    # Only what building Zombie's C++ needs: the headers, the solution and its
+    # configurations, config.bat and the solution builder. The build adds the rest.
+    - name: Check out Traktor
+      uses: actions/checkout@v4
+      with:
+        repository: apistol78/traktor
+        ref: ${{ needs.check.outputs.traktor_sha }}
+        path: traktor
+        sparse-checkout: |
+          code
+          resources/build
+          scripts
+          bin/win64
+
     - name: Download Traktor
       env:
         GH_TOKEN: ${{ github.token }}
         TRAKTOR_RUN: ${{ needs.check.outputs.traktor_run }}
       # The exact run chosen by the check job, so the Traktor commit recorded in
       # the release notes is the one actually built against.
-      run: gh run download $env:TRAKTOR_RUN --repo apistol78/traktor --name traktor --dir traktor
+      run: |
+        gh run download $env:TRAKTOR_RUN --repo apistol78/traktor --name traktor --dir traktor-build
+        robocopy traktor-build traktor /E /NFL /NDL /NJH /NJS /NP
+        if ($LASTEXITCODE -ge 8) { throw "Copying the Traktor build failed ($LASTEXITCODE)." }
+        exit 0
+
+    - name: Set up MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    # Before the assets: their pipeline loads Zombie.Editor, and the game Zombie.
+    - name: Build code
+      shell: cmd
+      run: scripts\autobuild-code-win64.bat
 
     - name: Build
       run: ./scripts/autobuild-win64.bat

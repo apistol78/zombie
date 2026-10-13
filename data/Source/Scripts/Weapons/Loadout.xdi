@@ -15,7 +15,7 @@ import(traktor)
 -- routes them at whichever Scripts/Weapons/Weapon is drawn.
 --
 -- Which weapons the player *has* is not decided here any more. It is the pack's
--- (a traktor.story.Inventory, reached as context:inventory()): owning a weapon is having its item
+-- (a zombie.Inventory, reached as context:inventory()): owning a weapon is having its item
 -- in the pack, and drawing it is equipping that item. So every weapon below exists from the
 -- start of the night whether or not it has been found, and what this file does is read the pack
 -- and keep the hands in step with it:
@@ -122,7 +122,7 @@ end
 
 -- The pack changed. Called by the pack itself, after every change, with the change complete;
 -- an equip made from in here is announced again once this has returned, so this can simply
--- return after making one (traktor.story.Inventory announces a change made by a listener once
+-- return after making one (zombie.Inventory announces a change made by a listener once
 -- the listeners have all heard the one before).
 function Loadout:_inventoryChanged()
 	local inv < const > = self._context:inventory()

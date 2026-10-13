@@ -15,7 +15,7 @@ import(traktor)
 -- makes the selected quest the active one, whose waypoint the compass and the map show; the one
 -- being followed is marked in the list in the compass marker's gold.
 --
--- Reads the quest log (context:questLog(), a traktor.story.QuestLog) and changes nothing but which
+-- Reads the quest log (context:questLog(), a zombie.QuestLog) and changes nothing but which
 -- quest is followed, through QuestLog:setActive. Redraws itself whenever the log's serial moves
 -- (update), the same contract as InventoryView has with the pack. context:story() is asked for the
 -- story's quests, to size the title for the longest of them.
@@ -50,7 +50,7 @@ local function setText(static, text)
 	end
 end
 
--- The longest of every string `pick(quest)` gives over the story's quests (traktor.story.QuestData),
+-- The longest of every string `pick(quest)` gives over the story's quests (zombie.QuestData),
 -- for sizing a paragraph.
 local function longestOf(story, pick, floor)
 	local best = floor
@@ -67,7 +67,7 @@ local function longestOf(story, pick, floor)
 	return best
 end
 
--- The quest log's entries (traktor.story.QuestEntry) as plain rows, each keyed by its quest's guid
+-- The quest log's entries (zombie.QuestEntry) as plain rows, each keyed by its quest's guid
 -- as text -- what the rows and the selection are kept by.
 local function rowsOf(log)
 	local rows = {}

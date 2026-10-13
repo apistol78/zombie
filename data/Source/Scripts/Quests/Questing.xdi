@@ -15,16 +15,16 @@ import(traktor)
 -- Main stage class, kept in a script of their own because Main is already as large as one script
 -- can be (see Scripts/Npc/Characters, the first of these).
 --
---   * The story is a native traktor.story.Story (Traktor.Story): the pack, the quest log and the
+--   * The story is a native zombie.Story (the game's code/): the pack, the quest log and the
 --     flags the dialogs set. One for the whole night: made when it starts (or read back from a
 --     save), and carried from stage to stage as it is (Main:_carry). What it is made of is the
 --     database's: data/Source/Story -- the quests, the dialogs, the actors and the places.
 --   * E at someone who will talk opens a conversation (_talkTo, from Main:_interact) in the dialog
 --     window -- Scripts/Views/DialogView -- with the night held still behind it, as the chest
---     window does. A character is the actor their ActorComponent says; anyone else gets the
---     story's default dialog. What they carry is one of the replies (an EventAction "trade"), and
+--     window does. A character is the actor their ActorComponent says, and talks only if the
+--     actor has a dialog. What they carry is one of the replies (an EventAction "trade"), and
 --     opens the chest window on it when chosen.
---   * The world's side of the story is a native traktor.story.StoryWorldComponent in each scene,
+--   * The world's side of the story is a native zombie.StoryWorldComponent in each scene,
 --     handed the story and the player here (_storyWorldOf). It completes reach steps, hides the
 --     pickups of items a quest has not asked for yet -- so they are neither walked over nor offered
 --     to E -- and works out where the followed quest points. Items held back in chests and on
@@ -73,10 +73,10 @@ function Main:_initStory(carry, environment)
 	local resourceManager < const > = environment.resource.resourceManager
 	Items.bind(resourceManager)
 	local carried < const > = (carry ~= nil) and carry.story or nil
-	if carried ~= nil and isa(carried, traktor.story.Story) then
+	if carried ~= nil and isa(carried, zombie.Story) then
 		self._story = carried
 	else
-		self._story = traktor.story.Story.create(resourceManager, STORY, Config.inventory.slots)
+		self._story = zombie.Story.create(resourceManager, STORY, Config.inventory.slots)
 		if carried ~= nil then
 			self._story:restoreState(carried)
 		end
@@ -216,8 +216,7 @@ end
 -- ---- Talking ----
 
 -- E at a living character who will talk (see Main:_nearestTalker): they turn to face the player
--- (Human:talk) and the conversation opens on their dialog -- their actor's (ActorComponent), or
--- the story's default one, where they say their line and offer what they carry.
+-- (Human:talk) and the conversation opens on their actor's dialog (ActorComponent).
 --
 -- Not in the same update as a conversation was left in: E leaves one, and that same press would
 -- otherwise go straight on to Main:_interact and open it again.
@@ -225,10 +224,12 @@ function Main:_talkTo(rec)
 	if self._dialogLeftTick == self._questTick then
 		return
 	end
-	local sc < const > = rec.sc
-	local greeting < const > = sc:talk(self)
-	local actor < const > = rec.entity:getComponent(traktor.story.ActorComponent)
-	local c < const > = self._story:talk((actor ~= nil) and actor.actor or nil, greeting, sc:displayName() or "STRANGER")
+	local actor < const > = rec.entity:getComponent(zombie.ActorComponent)
+	local c < const > = (actor ~= nil) and self._story:talk(actor.actor) or nil
+	if c == nil then
+		return
+	end
+	rec.sc:talk(self)
 	self._talkingTo = rec
 	-- A talk can be over as it begins: a dialog whose every start is ruled out.
 	if c.ended then
@@ -236,6 +237,16 @@ function Main:_talkTo(rec)
 		return
 	end
 	self:_setDialogOpen(c)
+end
+
+-- Whether `rec`'s actor has a dialog; one without cannot be talked to. Asked once per character.
+function Main:_hasDialog(rec)
+	if rec.hasDialog == nil and self._story ~= nil then
+		local actor < const > = rec.entity:getComponent(zombie.ActorComponent)
+		local data < const > = (actor ~= nil) and self._story:getActor(actor.actor) or nil
+		rec.hasDialog = data ~= nil and data.dialog ~= nil
+	end
+	return rec.hasDialog == true
 end
 
 -- Put up the conversation window on `conversation`, or with nil take it down.
@@ -374,7 +385,7 @@ end
 -- player, or nil in a scene without one.
 function Main:_storyWorldOf()
 	local world < const > = (self.world ~= nil) and self.world.world or nil
-	local storyWorld < const > = (world ~= nil) and world:getComponent(traktor.story.StoryWorldComponent) or nil
+	local storyWorld < const > = (world ~= nil) and world:getComponent(zombie.StoryWorldComponent) or nil
 	if storyWorld == nil then
 		return nil
 	end

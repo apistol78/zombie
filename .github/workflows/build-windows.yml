@@ -9,6 +9,12 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      # Traktor lives in traktor\ inside the workspace: its sources at the commit of the
+      # Traktor build used, with that build's binaries on top. Set for the whole job, since
+      # generating the projects bakes it into them as absolute paths, and the asset build
+      # resolves the workspace's Runtime.SystemRoot ($(TRAKTOR_HOME)) through it.
+      TRAKTOR_HOME: ${{ github.workspace }}\traktor
     steps:
     - uses: actions/checkout@v3
 
@@ -17,7 +23,8 @@ jobs:
       with:
         version: '5.2'
 
-    - name: Download Traktor
+    - name: Find Traktor build
+      id: traktor
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -28,7 +35,39 @@ jobs:
         $run = $runs | Where-Object { $_.head_branch -eq 'master' -and $_.event -eq 'push' -and $_.conclusion -eq 'success' } | Select-Object -First 1
         if (-not $run) { throw 'No successful Traktor master build found.' }
         Write-Host "Using Traktor build $($run.html_url) (commit $($run.head_sha), $($run.created_at))"
-        gh run download $run.id --repo apistol78/traktor --name traktor --dir traktor
+        "run=$($run.id)" >> $env:GITHUB_OUTPUT
+        "sha=$($run.head_sha)" >> $env:GITHUB_OUTPUT
+
+    # Only what building Zombie's C++ needs: the headers, the solution and its configurations,
+    # config.bat and the solution builder. The build adds the rest.
+    - name: Check out Traktor
+      uses: actions/checkout@v4
+      with:
+        repository: apistol78/traktor
+        ref: ${{ steps.traktor.outputs.sha }}
+        path: traktor
+        sparse-checkout: |
+          code
+          resources/build
+          scripts
+          bin/win64
+
+    - name: Download Traktor
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh run download ${{ steps.traktor.outputs.run }} --repo apistol78/traktor --name traktor --dir traktor-build
+        robocopy traktor-build traktor /E /NFL /NDL /NJH /NJS /NP
+        if ($LASTEXITCODE -ge 8) { throw "Copying the Traktor build failed ($LASTEXITCODE)." }
+        exit 0
+
+    - name: Set up MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    # Before the assets: their pipeline loads Zombie.Editor, and the game Zombie.
+    - name: Build code
+      shell: cmd
+      run: scripts\autobuild-code-win64.bat
 
     - name: Build
       run: ./scripts/autobuild-win64.bat

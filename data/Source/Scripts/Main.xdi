@@ -23,8 +23,8 @@
 -- and lulls, and publishes the verdict to the Spawner as _spawnDrive on this stage.
 #using \{9F2C606F-BD26-43E1-9A3F-B108C688FB02}
 
--- Scripts/Items/Items: what every item is (Traktor.Story ItemData, data/Source/Story/Items). The pack
--- the player carries them in is a native traktor.story.Inventory, the stage's own (_inventory)
+-- Scripts/Items/Items: what every item is (zombie.ItemData, data/Source/Story/Items). The pack
+-- the player carries them in is a native zombie.Inventory, the stage's own (_inventory)
 -- and the one record of what the player has -- the weapons, the food, the armour, the keys and
 -- the relics are all read out of it.
 #using \{17E40000-0000-4000-8000-000000000001}
@@ -279,7 +279,7 @@ function Main:new(params, environment)
 	-- night's starting kit (Config.inventory.start) before anything reads it -- the loadout
 	-- below draws the first weapon in it as it is built.
 	--
-	-- The pack is the story's (traktor.story.Story, Scripts/Quests/Questing:_initStory): the night's
+	-- The pack is the story's (zombie.Story, Scripts/Quests/Questing:_initStory): the night's
 	-- own, carried from stage to stage. The relics in it arrive without their entities -- those
 	-- belong to the world they were found in -- and are handed back by that world on the way into
 	-- it (_restorePickups).
@@ -1468,7 +1468,7 @@ function Main:isCarrying()
 	return self._handRelic ~= nil
 end
 
--- The pack (a traktor.story.Inventory). The weapons read who owns them and how many spare rounds
+-- The pack (a zombie.Inventory). The weapons read who owns them and how many spare rounds
 -- there are out of it; the pickups and the inventory screen go through the calls below. Its slots
 -- count from 0; the inventory screen's cells, and the slot numbers the calls below take, from 1.
 function Main:inventory()

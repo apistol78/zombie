@@ -8,6 +8,101 @@
 			</second>
 		</item>
 		<item>
+			<first>Editor.BrowseTypeFilter</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>zombie.ActorData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.ActorData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.DialogData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.DialogAsset</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.PlaceData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.PlaceData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.QuestData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.QuestData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.StoryData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.StoryData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.ItemData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.ItemData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.FlagData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.FlagData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.EventData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.EventData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.EquipSlotData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.EquipSlotData</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>zombie.ScriptConditionData</first>
+						<second type="traktor.PropertyStringSet">
+							<value>
+								<item>zombie.ScriptConditionData</item>
+							</value>
+						</second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>Editor.Dictionaries</first>
+			<second type="traktor.PropertyStringSet">
+				<value>
+					<item>resources/locale/english</item>
+				</value>
+			</second>
+		</item>
+		<item>
 			<first>Editor.HomeUrl</first>
 			<second type="traktor.PropertyString">
 				<value>file://info/index.html</value>
@@ -45,6 +140,22 @@
 			<first>Pipeline.AssetPath</first>
 			<second type="traktor.PropertyString">
 				<value>data/Assets</value>
+			</second>
+		</item>
+		<item>
+			<first>Editor.ModulePaths</first>
+			<second type="traktor.PropertyStringSet">
+				<value>
+					<item>bin/latest/win64/releaseshared</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>Editor.Modules</first>
+			<second type="traktor.PropertyStringSet">
+				<value>
+					<item>Zombie.Editor</item>
+				</value>
 			</second>
 		</item>
 	</value>

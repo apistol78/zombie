@@ -17,7 +17,7 @@ import(traktor)
 -- what is left in each is the Stage's (Main:_openChest), as plain data, so it survives a script
 -- hot reload the way the wards and the gates do.
 --
--- What a chest holds is the level designer's: a Traktor.Story ItemContainerComponentData on the
+-- What a chest holds is the level designer's: a zombie.ItemContainerComponentData on the
 -- placed chest, so each chest in a scene can hold something different -- the scene's
 -- ExternalEntityData wrapper carries it next to its own ScriptComponentData (class Scripts/Chest).
 -- No container, or an empty one: the chest is empty, which is a thing worth placing too. A relic
@@ -72,7 +72,7 @@ end
 -- carries as the world is built, before the stage has bound Scripts/Items/Items to the database.
 function Chest.listOf(entity, who)
 	local list = {}
-	local box < const > = entity:getComponent(traktor.story.ItemContainerComponent)
+	local box < const > = entity:getComponent(zombie.ItemContainerComponent)
 	if box == nil then
 		return list
 	end

@@ -110,6 +110,65 @@
       <rect x="24" y="16" width="312" height="8" style="fill:#ffffff"/>
     </g>
   </g>
+  <g id="MC_NpcHealthBar" inkscape:label="MC_NpcHealthBar"
+     inkscape:groupmode="layer" traktor:sprite="1"
+     style="display:none">
+    <g id="shadow" inkscape:label="shadow" traktor:sprite="1">
+      <rect x="0" y="0" width="72" height="0.75" style="fill:#000000;fill-opacity:0.02"/>
+      <rect x="0" y="9.25" width="72" height="0.75" style="fill:#000000;fill-opacity:0.02"/>
+      <rect x="0" y="0.75" width="1.5" height="8.5" style="fill:#000000;fill-opacity:0.02"/>
+      <rect x="70.5" y="0.75" width="1.5" height="8.5" style="fill:#000000;fill-opacity:0.02"/>
+      <rect x="1.5" y="0.75" width="69" height="0.75" style="fill:#000000;fill-opacity:0.16"/>
+      <rect x="1.5" y="8.5" width="69" height="0.75" style="fill:#000000;fill-opacity:0.16"/>
+      <rect x="1.5" y="1.5" width="1.5" height="7" style="fill:#000000;fill-opacity:0.16"/>
+      <rect x="69" y="1.5" width="1.5" height="7" style="fill:#000000;fill-opacity:0.16"/>
+      <rect x="3" y="1.5" width="66" height="0.75" style="fill:#000000;fill-opacity:0.34"/>
+      <rect x="3" y="7.75" width="66" height="0.75" style="fill:#000000;fill-opacity:0.34"/>
+      <rect x="3" y="2.25" width="1.5" height="5.5" style="fill:#000000;fill-opacity:0.34"/>
+      <rect x="67.5" y="2.25" width="1.5" height="5.5" style="fill:#000000;fill-opacity:0.34"/>
+      <rect x="4.5" y="2.25" width="63" height="0.75" style="fill:#000000;fill-opacity:0.48"/>
+      <rect x="4.5" y="7" width="63" height="0.75" style="fill:#000000;fill-opacity:0.48"/>
+      <rect x="4.5" y="3" width="1.5" height="4" style="fill:#000000;fill-opacity:0.48"/>
+      <rect x="66" y="3" width="1.5" height="4" style="fill:#000000;fill-opacity:0.48"/>
+      <rect x="6" y="3" width="60" height="4" style="fill:#000000;fill-opacity:0.5"/>
+    </g>
+    <g id="warn" inkscape:label="warn" traktor:sprite="1">
+      <rect x="0" y="0" width="72" height="0.75" style="fill:#c4241a;fill-opacity:0.03"/>
+      <rect x="0" y="9.25" width="72" height="0.75" style="fill:#c4241a;fill-opacity:0.03"/>
+      <rect x="0" y="0.75" width="1.5" height="8.5" style="fill:#c4241a;fill-opacity:0.03"/>
+      <rect x="70.5" y="0.75" width="1.5" height="8.5" style="fill:#c4241a;fill-opacity:0.03"/>
+      <rect x="1.5" y="0.75" width="69" height="0.75" style="fill:#c4241a;fill-opacity:0.19"/>
+      <rect x="1.5" y="8.5" width="69" height="0.75" style="fill:#c4241a;fill-opacity:0.19"/>
+      <rect x="1.5" y="1.5" width="1.5" height="7" style="fill:#c4241a;fill-opacity:0.19"/>
+      <rect x="69" y="1.5" width="1.5" height="7" style="fill:#c4241a;fill-opacity:0.19"/>
+      <rect x="3" y="1.5" width="66" height="0.75" style="fill:#c4241a;fill-opacity:0.41"/>
+      <rect x="3" y="7.75" width="66" height="0.75" style="fill:#c4241a;fill-opacity:0.41"/>
+      <rect x="3" y="2.25" width="1.5" height="5.5" style="fill:#c4241a;fill-opacity:0.41"/>
+      <rect x="67.5" y="2.25" width="1.5" height="5.5" style="fill:#c4241a;fill-opacity:0.41"/>
+      <rect x="4.5" y="2.25" width="63" height="0.75" style="fill:#c4241a;fill-opacity:0.57"/>
+      <rect x="4.5" y="7" width="63" height="0.75" style="fill:#c4241a;fill-opacity:0.57"/>
+      <rect x="4.5" y="3" width="1.5" height="4" style="fill:#c4241a;fill-opacity:0.57"/>
+      <rect x="66" y="3" width="1.5" height="4" style="fill:#c4241a;fill-opacity:0.57"/>
+      <rect x="6" y="3" width="60" height="4" style="fill:#c4241a;fill-opacity:0.6"/>
+    </g>
+    <g id="plate" inkscape:label="plate" traktor:sprite="1">
+      <polygon points="1,5 5,1 67,1 71,5 67,9 5,9" style="fill:#d8d8d2;fill-opacity:0.85"/>
+      <polygon points="2.92,5 6.92,2.2 65.08,2.2 69.08,5 65.08,7.8 6.92,7.8" style="fill:#0b0b0b"/>
+    </g>
+    <g id="track" inkscape:label="track" traktor:sprite="1">
+      <rect x="6" y="3.5" width="60" height="3" style="fill:#160605"/>
+    </g>
+    <g id="ghost" inkscape:label="ghost" traktor:sprite="1">
+      <rect x="6" y="3.5" width="60" height="3" style="fill:#5c1a0f;fill-opacity:0.95"/>
+    </g>
+    <g id="fill" inkscape:label="fill" traktor:sprite="1">
+      <rect x="6" y="3.5" width="60" height="3" style="fill:#b4b4b4"/>
+      <rect x="6" y="3.5" width="60" height="1" style="fill:#f0f0f0"/>
+    </g>
+    <g id="flash" inkscape:label="flash" traktor:sprite="1">
+      <rect x="6" y="3.5" width="60" height="3" style="fill:#ffffff"/>
+    </g>
+  </g>
   <g id="MC_TreasureCounter" inkscape:label="MC_TreasureCounter"
      inkscape:groupmode="layer" traktor:sprite="1"
      style="display:none">

@@ -26,7 +26,7 @@ import(traktor)
 --     anything that reads those styles is built.
 --   * Everything sits on a dark backdrop, roughly the night the HUD and the dialogs are seen
 --     against in game. The editor's grey flatters a 25% pane.
---   * The preview's resource manager is taught to read the game's story and items (Traktor.Story,
+--   * The preview's resource manager is taught to read the game's story and items (the game's native module,
 --     data/Source/Story and data/Source/Story/Items), which the game's own runtime does by itself, and handed to
 --     Scripts/Items/Items: a page's pack and chests show the real items. The manager is the
 --     page's (self._resourceManager), for whatever else wants it -- StageStub does.
@@ -71,7 +71,7 @@ function GameScaffolding:setup(frame)
 	self._time = 0.0
 
 	if not itemsTaught[self._resourceManager] then
-		self._resourceManager:addFactory(traktor.story.StoryResourceFactory())
+		self._resourceManager:addFactory(zombie.StoryResourceFactory())
 		itemsTaught[self._resourceManager] = true
 	end
 	Items.bind(self._resourceManager)

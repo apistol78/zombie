@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.story.DialogAsset" version="2">
+<object type="zombie.DialogAsset" version="2">
 	<name/>
 	<start>
-		<item type="traktor.story.DialogStartAsset" version="1">
+		<item type="zombie.DialogStartAsset" version="1">
 			<node>{E0741AB5-5910-4A2E-859F-57D29FBB0811}</node>
 			<condition/>
 		</item>
 	</start>
 	<nodes>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{E0741AB5-5910-4A2E-859F-57D29FBB0811}</id>
 			<name>hello</name>
-			<text/>
+			<text>THE DEAD DO NOT REST HERE ANY MORE. PRAY ANYWAY.</text>
 			<onEnter/>
 			<responses>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{D3E9DB7D-19AD-4398-8D9F-41DC2EDF03A6}</id>
-					<text>WHY DON'T THE DEAD REST?</text>
+					<text>WHY DON&apos;T THE DEAD REST?</text>
 					<target>{631C6BCA-C15A-4046-BD08-A4F2A7CE849E}</target>
-					<condition type="traktor.story.QuestCondition" version="1">
+					<condition type="zombie.QuestCondition" version="1">
 						<quest>{D1A20000-0000-4000-8000-000000000100}</quest>
 						<state>NotStarted</state>
 						<step>{00000000-0000-0000-0000-000000000000}</step>
@@ -26,18 +26,18 @@
 					<actions/>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{6367466E-8889-404E-83F2-0BF6495A7048}</id>
 					<text>I HAVE YOUR LEDGER.</text>
 					<target>{9F07EDC7-4255-4439-B7E8-A27756AEC6C7}</target>
-					<condition type="traktor.story.AllCondition">
+					<condition type="zombie.AllCondition">
 						<conditions>
-							<item type="traktor.story.HasItemCondition">
+							<item type="zombie.HasItemCondition">
 								<item>{D1A10000-0000-4000-8000-00000000020B}</item>
 								<count>1</count>
 								<negate>false</negate>
 							</item>
-							<item type="traktor.story.QuestCondition" version="1">
+							<item type="zombie.QuestCondition" version="1">
 								<quest>{D1A20000-0000-4000-8000-000000000100}</quest>
 								<state>AtStep</state>
 								<step>{615C4DC3-32DC-4BB6-B748-9C2FC767E043}</step>
@@ -45,18 +45,18 @@
 						</conditions>
 					</condition>
 					<actions>
-						<item type="traktor.story.TakeItemAction">
+						<item type="zombie.TakeItemAction">
 							<item>{D1A10000-0000-4000-8000-00000000020B}</item>
 							<count>1</count>
 						</item>
 					</actions>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{94DD76E5-2BD5-4745-83C7-4209DB922183}</id>
 					<text>WHERE ARE THE BANDITS?</text>
 					<target>{938FEBCF-6AF6-46E9-988F-D11445F27E63}</target>
-					<condition type="traktor.story.QuestCondition" version="1">
+					<condition type="zombie.QuestCondition" version="1">
 						<quest>{D1A20000-0000-4000-8000-000000000100}</quest>
 						<state>AtStep</state>
 						<step>{02B1CB0D-A001-4CF3-B1E9-37E5AFCBB945}</step>
@@ -64,13 +64,13 @@
 					<actions/>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{8B776DB1-FA89-47F0-A85F-D27F28355D0E}</id>
 					<text>WHAT ARE YOU CARRYING?</text>
 					<target>{00000000-0000-0000-0000-000000000000}</target>
 					<condition/>
 					<actions>
-						<item type="traktor.story.EventAction" version="1">
+						<item type="zombie.EventAction" version="1">
 							<event>{D1A20000-0000-4000-8000-000000000500}</event>
 							<endConversation>true</endConversation>
 						</item>
@@ -78,23 +78,23 @@
 					<once>false</once>
 				</item>
 			</responses>
-			<position>0, 0</position>
+			<position>360, 0</position>
 		</item>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{9F07EDC7-4255-4439-B7E8-A27756AEC6C7}</id>
 			<name>thanks</name>
-			<text>GOD BE THANKED. ONE THING MORE: SAY A PRAYER AT THE ALTAR FOR THE NAMELESS. PERHAPS THE NIGHT WILL BE KINDER TO US.</text>
+			<text><![CDATA[GOD BE THANKED. ONE THING MORE: SAY A PRAYER AT THE ALTAR FOR THE NAMELESS. PERHAPS THE NIGHT WILL BE KINDER TO US.]]></text>
 			<onEnter/>
 			<responses/>
-			<position>0, 0</position>
+			<position>720, 0</position>
 		</item>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{938FEBCF-6AF6-46E9-988F-D11445F27E63}</id>
 			<name>where</name>
-			<text>A WOMAN CALLED BELLA LEADS THEM. THEY CAMP ON THE RIDGE TO THE WEST. SHE WILL NOT GIVE IT UP FOR KIND WORDS.</text>
+			<text><![CDATA[A WOMAN CALLED BELLA LEADS THEM. THEY CAMP ON THE RIDGE TO THE WEST. SHE WILL NOT GIVE IT UP FOR KIND WORDS.]]></text>
 			<onEnter/>
 			<responses>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{CEF57FFD-3747-4E05-8FAF-29EC381C633B}</id>
 					<text>I HAD ANOTHER QUESTION.</text>
 					<target>{E0741AB5-5910-4A2E-859F-57D29FBB0811}</target>
@@ -103,27 +103,27 @@
 					<once>false</once>
 				</item>
 			</responses>
-			<position>0, 0</position>
+			<position>720, 70</position>
 		</item>
-		<item type="traktor.story.DialogNodeAsset" version="1">
+		<item type="zombie.DialogNodeAsset" version="1">
 			<id>{631C6BCA-C15A-4046-BD08-A4F2A7CE849E}</id>
 			<name>why</name>
-			<text>BANDITS BROKE INTO THE CHAPEL AND TOOK THE BURIAL LEDGER. WITHOUT IT I CANNOT NAME THE DEAD, AND THE NAMELESS DO NOT SLEEP.</text>
+			<text><![CDATA[BANDITS BROKE INTO THE CHAPEL AND TOOK THE BURIAL LEDGER. WITHOUT IT I CANNOT NAME THE DEAD, AND THE NAMELESS DO NOT SLEEP.]]></text>
 			<onEnter/>
 			<responses>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{B5C499F6-EB0D-4A8B-9BD3-9C6A83CC95DC}</id>
 					<text>I WILL GET IT BACK.</text>
 					<target>{938FEBCF-6AF6-46E9-988F-D11445F27E63}</target>
 					<condition/>
 					<actions>
-						<item type="traktor.story.StartQuestAction">
+						<item type="zombie.StartQuestAction">
 							<quest>{D1A20000-0000-4000-8000-000000000100}</quest>
 						</item>
 					</actions>
 					<once>false</once>
 				</item>
-				<item type="traktor.story.DialogResponseAsset" version="2">
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{A7879947-A482-4B66-B107-F3DF5C3F2550}</id>
 					<text>THAT IS NOT MY CONCERN.</text>
 					<target>{E0741AB5-5910-4A2E-859F-57D29FBB0811}</target>
@@ -132,7 +132,7 @@
 					<once>false</once>
 				</item>
 			</responses>
-			<position>0, 0</position>
+			<position>720, 162</position>
 		</item>
 	</nodes>
 	<startPosition>0, 0</startPosition>

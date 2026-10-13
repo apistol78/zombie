@@ -29,7 +29,7 @@ import(traktor)
 --   context:player()               the Humanoid entity, or nil before it is resolved
 --   context:isRunning()            sprinting, so a view model can drop to a low ready
 --   context:isCarrying()           a relic is held in the off hand, so a view model moves over
---   context:inventory()            the pack (a traktor.story.Inventory): owning a weapon is having
+--   context:inventory()            the pack (a zombie.Inventory): owning a weapon is having
 --                                  its item in it, and the spare rounds are the "rounds" in it
 --   context:killEnemy(e, p, i, w)  the one way anything in this game dies
 --   context:isEnemyDead(e)         ...and whether it already has

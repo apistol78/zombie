@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="zombie.DialogStartAsset" version="1">
+			<node>{7A7F569D-42D2-4817-80D2-11A1E2E16477}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{7A7F569D-42D2-4817-80D2-11A1E2E16477}</id>
+			<name>hello</name>
+			<text><![CDATA[NOTHING TO SELL TONIGHT, FRIEND. COME BACK AT DAWN.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{9383DA58-4284-4AFF-9BEC-ABFB9403AE45}</id>
+					<text>WHAT ARE YOU CARRYING?</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions>
+						<item type="zombie.EventAction" version="1">
+							<event>{D1A20000-0000-4000-8000-000000000500}</event>
+							<endConversation>true</endConversation>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>360, 0</position>
+		</item>
+	</nodes>
+	<startPosition>0, 0</startPosition>
+</object>

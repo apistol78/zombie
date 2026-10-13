@@ -12,9 +12,10 @@ import(traktor)
 -- altogether once the player has been at full health for a while. Its art is
 -- authored in data/Assets/UI/Hud.svg and imported as a Spark movie (UI/Hud); this
 -- widget instantiates that movie's "MC_HealthBar" export and animates the named
--- sprites inside it. The movie has to be listed in the Widget.initialize resource
--- kits of whoever uses the widget (see Scripts/Main and
--- Scripts/Scaffolding/GameScaffolding).
+-- sprites inside it; "MC_NpcHealthBar" is the same bar, small, worn under a
+-- character's name tag (Scripts/Npc/Characters). The movie has to be listed in
+-- the Widget.initialize resource kits of whoever uses the widget (see
+-- Scripts/Main and Scripts/Scaffolding/GameScaffolding).
 --
 -- Layers in the SVG, back to front, and how each is driven:
 --
@@ -35,10 +36,12 @@ HealthBar = HealthBar or class("HealthBar", Widget)
 
 HealthBar:setStyle("resource", "MC_HealthBar")
 
--- All of these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
-local W < const > = 360
-local H < const > = 40
-local CENTRE_X < const > = 180    -- middle of the track, which the bar drains towards
+-- Each export's box, and the middle of its track, which the bar drains towards. All of
+-- these must match data/Assets/UI/Hud.svg (see tools/gen_hud_svg.py).
+local SKINS < const > = {
+	MC_HealthBar = { width = 360, height = 40, centre = 180 },
+	MC_NpcHealthBar = { width = 72, height = 10, centre = 36 }
+}
 
 local NO_SHIFT < const > = Color4f(0.0, 0.0, 0.0, 0.0)
 
@@ -59,13 +62,16 @@ local function scaleX(mc, px, s)
 end
 
 function HealthBar:new(parent, skin)
-	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
+	skin = skin or self:getStyle().resource
+	self._skin = SKINS[skin]
+	assert(self._skin ~= nil, "HealthBar; no such skin, " .. tostring(skin))
+	local mc < const > = Widget._createResource(parent, skin)
 	assert(mc ~= nil, "HealthBar; no such movie resource, is UI/Hud in the resource kits?")
 	self:_initialize(parent, mc)
 end
 
 function HealthBar:getPreferredSize()
-	return { width = W, height = H }
+	return { width = self._skin.width, height = self._skin.height }
 end
 
 -- Set health as a 0..1 fraction. Losing health kicks the hit flash and leaves
@@ -94,6 +100,12 @@ end
 -- For screens that are about the bar itself, such as the scaffolding.
 function HealthBar:setAlwaysShown(always)
 	self._alwaysShown = always == true
+	return self
+end
+
+-- Fade the whole bar, 0..1, over whatever its own fading does.
+function HealthBar:setOpacity(opacity)
+	self._opacity = opacity
 	return self
 end
 
@@ -148,7 +160,7 @@ function HealthBar:update(dt)
 	elseif self._shown > target then
 		self._shown = math.max(target, self._shown - dt * FADE_OUT)
 	end
-	self._mc.alpha = self._shown
+	self._mc.alpha = self._shown * self._opacity
 end
 
 -- Private
@@ -174,6 +186,7 @@ function HealthBar:_initialize(parent, mc)
 	self._idle = 0.0
 	self._shown = 1.0
 	self._alwaysShown = false
+	self._opacity = 1.0
 
 	self._ghost_mc = mc:getMember("ghost")
 	self._fill_mc = mc:getMember("fill")
@@ -190,7 +203,7 @@ end
 function HealthBar:_setLength(mc, value)
 	if value > 0.002 then
 		mc.visible = true
-		scaleX(mc, CENTRE_X, value)
+		scaleX(mc, self._skin.centre, value)
 	else
 		mc.visible = false
 	end

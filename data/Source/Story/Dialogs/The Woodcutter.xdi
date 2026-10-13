@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="zombie.DialogStartAsset" version="1">
+			<node>{2A6DD606-1666-46F4-857A-DE4A994BDA3C}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{2A6DD606-1666-46F4-857A-DE4A994BDA3C}</id>
+			<name>hello</name>
+			<text><![CDATA[EVERY LOG I SPLIT IS ONE LESS PLACE FOR THEM TO HIDE.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{292F9F88-6ABB-4EF3-9310-22E4FDB27A9C}</id>
+					<text>WHAT ARE YOU CARRYING?</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions>
+						<item type="zombie.EventAction" version="1">
+							<event>{D1A20000-0000-4000-8000-000000000500}</event>
+							<endConversation>true</endConversation>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>360, 0</position>
+		</item>
+	</nodes>
+	<startPosition>0, 0</startPosition>
+</object>

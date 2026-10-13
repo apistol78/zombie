@@ -5,10 +5,10 @@ import(traktor)
 
 -- Items
 --
--- How the code asks about an item. The items themselves are Traktor.Story ItemData instances in
+-- How the code asks about an item. The items themselves are zombie.ItemData instances in
 -- data/Source/Story/Items (tools/gen_story_items.py), named by the guid of their instance -- the ones the
 -- code itself refers to are the constants below: Items.RIFLE is the rifle. The pack is a native
--- traktor.story.Inventory (the story's, Scripts/Quests/Questing), which reads the same instances.
+-- zombie.Inventory (the story's, Scripts/Quests/Questing), which reads the same instances.
 --
 -- Lua keeps an item by its key -- the guid as upper-case text, "{D1A10000-...-000000000200}" for
 -- the rifle -- wherever it is plain data or a table key: a chest's contents, what a character
@@ -118,16 +118,16 @@ local function entryOf(key)
 		return nil
 	end
 	local id < const > = Guid(key)
-	local handle < const > = resourceManager:bind(traktor.story.ItemData, id)
+	local handle < const > = resourceManager:bind(zombie.ItemData, id)
 	local data < const > = (handle ~= nil) and handle:get() or nil
 	if data == nil then
 		print("Items: no item instance " .. key)
 		return nil
 	end
-	local equip < const > = data:getTrait(traktor.story.EquipTrait)
-	local heal < const > = data:getTrait(traktor.story.HealTrait)
-	local armor < const > = data:getTrait(traktor.story.ArmorTrait)
-	local event < const > = data:getTrait(traktor.story.EventTrait)
+	local equip < const > = data:getTrait(zombie.EquipTrait)
+	local heal < const > = data:getTrait(zombie.HealTrait)
+	local armor < const > = data:getTrait(zombie.ArmorTrait)
+	local event < const > = data:getTrait(zombie.EventTrait)
 	e = {
 		id = id,
 		key = key,

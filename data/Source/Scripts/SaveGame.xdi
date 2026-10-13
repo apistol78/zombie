@@ -25,7 +25,7 @@ import(traktor)
 -- health but not for anything that needs a double.
 --
 -- The objects that may be in it are native ones that save themselves -- the story
--- (traktor.story.Story), which a stage switch carries as it is -- and the PropertyGroup such an
+-- (zombie.Story), which a stage switch carries as it is -- and the PropertyGroup such an
 -- object saved itself into. Either is stored as that group (saveState), marked "r<i>", and read
 -- back as the same group rather than as a table; Main makes the story again from it
 -- (Questing:_initStory).
@@ -37,7 +37,7 @@ SaveGame = SaveGame or {}
 
 -- The id of the save in the save data, and the version of what is written under it. A save
 -- written by a different version is ignored rather than fed to a game it no longer fits: 4 since
--- the pack and the quests became a native traktor.story.Story, which saves itself; 5 since the
+-- the pack and the quests became a native zombie.Story, which saves itself; 5 since the
 -- story saves equip slots, steps and said responses by guid.
 local SAVE_ID < const > = "night"
 local VERSION < const > = 5

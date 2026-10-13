@@ -10,7 +10,7 @@ import(traktor)
 -- Base ScriptComponent for anything lying in the world that goes into the player's pack: a
 -- crate of rounds, a flask, a grenade, a pile of coins, a weapon, a helmet, a key, a relic.
 -- What each one *is* comes from Scripts/Items/Items; this owns only how it gets from the ground
--- into the pack (a traktor.story.Inventory), and back out again.
+-- into the pack (a zombie.Inventory), and back out again.
 --
 -- Two ways of being taken:
 --
@@ -23,7 +23,7 @@ import(traktor)
 --     through :collect, exactly as a walk-over one is, so there is one way into the pack.
 --
 -- Most pickups are this script and nothing else: the entity's ScriptComponentData names it as the
--- class, and a Traktor.Story ItemPickupComponentData beside it says what the pickup is -- the
+-- class, and a zombie.ItemPickupComponentData beside it says what the pickup is -- the
 -- ammo crate is 12 of Items.ROUNDS. The one string property left is how it is taken: the key has
 -- { take = "press" }. A subclass is only for a pickup with behaviour of its own (Scripts/Relic).
 -- Either way, this is what is asked, and where each answer comes from:
@@ -78,7 +78,7 @@ end
 -- what it was after it has been taken and its entity is gone (Main:_saveWorld).
 function Pickup:_read()
 	if self._kind == nil then
-		local pickup < const > = (self.owner ~= nil) and self.owner:getComponent(traktor.story.ItemPickupComponent) or nil
+		local pickup < const > = (self.owner ~= nil) and self.owner:getComponent(zombie.ItemPickupComponent) or nil
 		self._kind = (pickup ~= nil) and Items.keyOf(pickup.item) or false
 		self._placed = (pickup ~= nil) and pickup.count or 1
 	end
@@ -144,7 +144,7 @@ end
 -- Main's E for the rest -- so there is one way into the pack.
 --
 -- A hidden one is not there to be taken: a keepsake already in the pack or spent, or a quest
--- item whose quest has not asked for it yet (the scene's traktor.story.StoryWorldComponent hides it).
+-- item whose quest has not asked for it yet (the scene's zombie.StoryWorldComponent hides it).
 function Pickup:collect(context)
 	if not self.owner.visible then
 		return false

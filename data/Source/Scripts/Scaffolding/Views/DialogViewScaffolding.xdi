@@ -17,7 +17,7 @@ import(traktor)
 --
 -- Each time the talk ends (a reply leading nowhere, LEAVE) the window closes, and a moment later
 -- opens on the next scene: Klara with no quest yet, Klara once the ring has been found, Brother
--- Anselm, Tomas with a coin in the pack, and someone with no dialog of their own.
+-- Anselm, Tomas with a coin in the pack, and Axel.
 
 DialogViewScaffolding = DialogViewScaffolding or class("DialogViewScaffolding", GameScaffolding)
 
@@ -27,15 +27,16 @@ local REOPEN < const > = 1.0   -- how long the window stays closed (s)
 local KLARA < const > = Guid("{D1A20000-0000-4000-8000-000000000307}")
 local BROTHER_ANSELM < const > = Guid("{D1A20000-0000-4000-8000-000000000304}")
 local TOMAS < const > = Guid("{D1A20000-0000-4000-8000-000000000309}")
+local AXEL < const > = Guid("{D1A20000-0000-4000-8000-000000000301}")
 local RING_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000102}")
 local LOCKET_QUEST < const > = Guid("{D1A20000-0000-4000-8000-000000000101}")
 
 local SCENES < const > = {
-	{ actor = KLARA, name = "KLARA" },
-	{ actor = KLARA, name = "KLARA", ring = true },
-	{ actor = BROTHER_ANSELM, name = "BROTHER ANSELM", greeting = "THE DEAD DO NOT REST HERE ANY MORE. PRAY ANYWAY." },
-	{ actor = TOMAS, name = "TOMAS", greeting = "MOTHER SAYS I'M NOT TO TALK TO YOU.", locket = true },
-	{ actor = nil, name = "AXEL", greeting = "STAY CLOSE TO THE LIGHT TONIGHT." }
+	{ actor = KLARA },
+	{ actor = KLARA, ring = true },
+	{ actor = BROTHER_ANSELM },
+	{ actor = TOMAS, locket = true },
+	{ actor = AXEL }
 }
 
 function DialogViewScaffolding:build(parent, frame)
@@ -77,7 +78,7 @@ function DialogViewScaffolding:show()
 		stage:inventory():add(Items.COIN, 3)
 	end
 
-	local c < const > = stage:story():talk(scene.actor, scene.greeting or "", scene.name)
+	local c < const > = stage:story():talk(scene.actor)
 	self._dialog:show()
 	self._view:showConversation(c)
 end

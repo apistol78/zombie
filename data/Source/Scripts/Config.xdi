@@ -618,7 +618,7 @@ Config = {
 
 	-- ---- The pack ----
 	--
-	-- A traktor.story.Inventory. A fixed number of slots, each holding one stack of one item; what
+	-- A zombie.Inventory. A fixed number of slots, each holding one stack of one item; what
 	-- a stack may grow to is the item's own (maxStack in data/Source/Story/Items, as are what food heals
 	-- and armour takes). Room is the whole of the economy here: a pack of rounds is a slot that is
 	-- not a flask.
@@ -776,12 +776,6 @@ Config = {
 		noticeRange = 2.0,
 		noticeSlack = 0.5,
 		noticeTime = 4.0,
-		lines = {
-			neutral = "WHAT DO YOU WANT?",
-			happy = "GOOD TO SEE A LIVING FACE.",
-			scared = "PLEASE, LEAVE ME BE.",
-			angry = "GET AWAY FROM ME."
-		},
 
 		-- How near a body has to be to be searched (m). A villager's body with something still on
 		-- it stays for good -- a corpse with a purse on it is a place, not an effect -- and is gone

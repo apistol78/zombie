@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.story.QuestData">
+<object type="zombie.QuestData">
 	<title>THE SWORD OF VILLINGE</title>
 	<info>ÅKE'S GRANDFATHER FORGED THE SWORD OF VILLINGE. IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.</info>
 	<steps>
-		<item type="traktor.story.FindItemStep" version="1">
+		<item type="zombie.FindItemStep" version="1">
 			<id>{774FB29E-D4D6-4BC4-9214-42840046EBC1}</id>
 			<name>find</name>
 			<text>FIND THE SWORD OF VILLINGE IN THE DEEPEST TUNNEL OF THE CAVE</text>
-			<waypoint type="traktor.story.FirstOfWaypoint">
+			<waypoint type="zombie.FirstOfWaypoint">
 				<candidates>
-					<item type="traktor.story.ItemWaypoint">
+					<item type="zombie.ItemWaypoint">
 						<item>{D1A10000-0000-4000-8000-00000000020D}</item>
 					</item>
-					<item type="traktor.story.PlaceWaypoint">
+					<item type="zombie.PlaceWaypoint">
 						<place>{D1A20000-0000-4000-8000-000000000402}</place>
 					</item>
 				</candidates>
@@ -20,16 +20,16 @@
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020D}</item>
 		</item>
-		<item type="traktor.story.TalkStep" version="1">
+		<item type="zombie.TalkStep" version="1">
 			<id>{B5CAAD3F-B78E-4D8D-BBC7-F81743D8EE00}</id>
 			<name>return</name>
 			<text>BRING THE SWORD BACK TO ÅKE THE SMITH</text>
-			<waypoint type="traktor.story.FirstOfWaypoint">
+			<waypoint type="zombie.FirstOfWaypoint">
 				<candidates>
-					<item type="traktor.story.ActorWaypoint">
+					<item type="zombie.ActorWaypoint">
 						<actor>{D1A20000-0000-4000-8000-000000000300}</actor>
 					</item>
-					<item type="traktor.story.PlaceWaypoint">
+					<item type="zombie.PlaceWaypoint">
 						<place>{D1A20000-0000-4000-8000-000000000401}</place>
 					</item>
 				</candidates>
@@ -40,11 +40,11 @@
 		</item>
 	</steps>
 	<reward>
-		<item type="traktor.story.GiveItemAction">
+		<item type="zombie.GiveItemAction">
 			<item>{D1A10000-0000-4000-8000-000000000207}</item>
 			<count>1</count>
 		</item>
-		<item type="traktor.story.GiveItemAction">
+		<item type="zombie.GiveItemAction">
 			<item>{D1A10000-0000-4000-8000-000000000206}</item>
 			<count>20</count>
 		</item>

@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.i18n.Dictionary">
+  <map>
+    <item>
+      <first>STORY_DIALOG_ADD_LINE</first>
+      <second>Add line</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ADD_RESPONSE</first>
+      <second>Add response</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ADD_START</first>
+      <second>Add start</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ALIGN_BOTTOM</first>
+      <second>Align bottom</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ALIGN_LEFT</first>
+      <second>Align left</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ALIGN_RIGHT</first>
+      <second>Align right</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ALIGN_TOP</first>
+      <second>Align top</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_ARRANGE</first>
+      <second>Arrange</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_COPY</first>
+      <second>Copy</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_CUT</first>
+      <second>Cut</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_DELETE</first>
+      <second>Delete</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_EVEN_HORIZONTALLY</first>
+      <second>Even space horizontally</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_EVEN_VERTICALLY</first>
+      <second>Even space vertically</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_PASTE</first>
+      <second>Paste</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_START</first>
+      <second>Start</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST</first>
+      <second>Dialog</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST_CANNOT_COMPILE</first>
+      <second>The dialog cannot be compiled; see the log.</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST_ENDED</first>
+      <second>The conversation ends.</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST_NO_CONDITIONS</first>
+      <second>Items are held as checked; quest, flag and script conditions are taken to hold.</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST_NO_ITEMS</first>
+      <second>No line or response depends on an item.</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST_NO_START</first>
+      <second>No start holds; the conversation does not begin.</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_TEST_RESTART</first>
+      <second>Restart</second>
+    </item>
+    <item>
+      <first>STORY_DIALOG_UNNAMED</first>
+      <second>(unnamed)</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_ACTOR_NO_DIALOG</first>
+      <second>the actor has no dialog</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_ADD_FIND_ITEM</first>
+      <second>Add find item</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_ADD_REACH</first>
+      <second>Add reach</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_ADD_TALK</first>
+      <second>Add talk</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_ADD_TRIGGER</first>
+      <second>Add trigger</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_DIALOG_MISSING</first>
+      <second>the actor's dialog does not exist</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_DIALOG_NO_LINE</first>
+      <second>the actor's dialog does not have the line it waits for</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_DUPLICATE_ID</first>
+      <second>another step has the same guid</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_KIND_FIND_ITEM</first>
+      <second>Find item</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_KIND_REACH</first>
+      <second>Reach</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_KIND_TALK</first>
+      <second>Talk</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_KIND_TRIGGER</first>
+      <second>Trigger</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_MISSING</first>
+      <second>(missing)</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_MOVE_DOWN</first>
+      <second>Move down</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_MOVE_UP</first>
+      <second>Move up</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NONE</first>
+      <second>(none)</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_ACTOR</first>
+      <second>talks to no actor</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_ITEM</first>
+      <second>finds no item</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_OBJECTIVE</first>
+      <second>(no objective)</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_PLACE</first>
+      <second>reaches no place</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_REFERENCES</first>
+      <second>Nothing starts, advances, finishes or checks this quest.</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_REWARD</first>
+      <second>(nothing)</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_STEPS</first>
+      <second>The quest has no steps.</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_PANEL</first>
+      <second>Quest</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_PROBLEM</first>
+      <second>Step {0}: {1}.</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REACH_WITHIN</first>
+      <second>{0}, within {1} m</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_ADVANCES</first>
+      <second>completes the current step</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_ADVANCES_STEP</first>
+      <second>completes step {0}</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_ADVANCES_UNKNOWN</first>
+      <second>completes step {0}, which the quest does not have</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_CHECKS</first>
+      <second>checks that the quest is {0}</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_CHECKS_STEP</first>
+      <second>checks that the quest is at step {0}</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_CHECKS_UNKNOWN</first>
+      <second>checks that the quest is at step {0}, which the quest does not have</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_FINISHES</first>
+      <second>finishes the quest</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REF_STARTS</first>
+      <second>starts the quest</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_REWARD</first>
+      <second>Reward</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STATE_ACTIVE</first>
+      <second>under way</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STATE_DONE</first>
+      <second>done</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STATE_NOT_DONE</first>
+      <second>not done</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STATE_NOT_STARTED</first>
+      <second>not started</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STATE_STARTED</first>
+      <second>started</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STEP_TITLE</first>
+      <second>{0}. {1}</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_STEP_TITLE_ID</first>
+      <second>{0}. {1} "{2}"</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_TALK_AT</first>
+      <second>{0}, at line "{1}"</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_TARGET_MISSING</first>
+      <second>what it is about does not exist</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_TRIGGERED</first>
+      <second>completed by the game</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_UNTITLED</first>
+      <second>(untitled)</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_WHERE_LINE</first>
+      <second>line "{0}"</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_WHERE_RESPONSE</first>
+      <second>line "{0}", response "{1}"</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_WHERE_START</first>
+      <second>start {0}</second>
+    </item>
+    <item>
+      <first>STORY_BROWSE_LINE</first>
+      <second>Dialog line</second>
+    </item>
+    <item>
+      <first>STORY_BROWSE_STEP</first>
+      <second>Quest step</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_NO_ID</first>
+      <second>the step has no guid</second>
+    </item>
+    <item>
+      <first>STORY_SCENE_EMPTY</first>
+      <second>(empty)</second>
+    </item>
+    <item>
+      <first>STORY_SCENE_NO_QUEST</first>
+      <second>(no quest)</second>
+    </item>
+    <item>
+      <first>STORY_SCENE_QUEST</first>
+      <second>Quest whose targets are highlighted</second>
+    </item>
+    <item>
+      <first>STORY_QUEST_CAN_FAIL</first>
+      <second> (can fail)</second>
+    </item>
+    <item>
+      <first>ZOMBIE_ACTORDATA</first>
+      <second>Actor</second>
+    </item>
+    <item>
+      <first>ZOMBIE_DIALOGASSET</first>
+      <second>Dialog</second>
+    </item>
+    <item>
+      <first>ZOMBIE_PLACEDATA</first>
+      <second>Place</second>
+    </item>
+    <item>
+      <first>ZOMBIE_QUESTDATA</first>
+      <second>Quest</second>
+    </item>
+    <item>
+      <first>ZOMBIE_STORYDATA</first>
+      <second>Story</second>
+    </item>
+    <item>
+      <first>ZOMBIE_ITEMDATA</first>
+      <second>Item</second>
+    </item>
+    <item>
+      <first>ZOMBIE_FLAGDATA</first>
+      <second>Flag</second>
+    </item>
+    <item>
+      <first>ZOMBIE_EVENTDATA</first>
+      <second>Event</second>
+    </item>
+    <item>
+      <first>ZOMBIE_EQUIPSLOTDATA</first>
+      <second>Equip slot</second>
+    </item>
+    <item>
+      <first>ZOMBIE_SCRIPTCONDITIONDATA</first>
+      <second>Script condition</second>
+    </item>
+  </map>
+</object>

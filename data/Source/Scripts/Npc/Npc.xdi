@@ -38,7 +38,6 @@ import(traktor)
 --
 --   class      wanderer | merchant | worker | braindead
 --   faction    a key of Config.npc.factions (villager, bandit, undead)
---   greeting   what it says when talked to; a stock line by mood otherwise
 --   route      on the entity: a reference to the entity of a Scripts/Npc/Route to walk. Only a
 --              wanderer walks one; without, it ambles within strayRadius of where it stands
 --   health, age, courage, hostility    numbers
@@ -163,7 +162,7 @@ end
 -- The character's actor (Story/Actors), through its ActorComponent; nil for one without, such as
 -- every zombie. The actor is who the character is: its name and its properties.
 function Npc:_actor()
-	return self.owner ~= nil and self.owner:getComponent(traktor.story.ActorComponent) or nil
+	return self.owner ~= nil and self.owner:getComponent(zombie.ActorComponent) or nil
 end
 
 -- A property, as a string, or nil: this entity's own (its ScriptComponentData -- where it is,
@@ -219,7 +218,6 @@ function Npc:_stats()
 	self._faction = self:_setting("faction", class)
 	local actor < const > = self:_actor()
 	self._name = (actor ~= nil and actor.name ~= "") and actor.name or nil
-	self._greeting = self:_property("greeting")
 	-- The route: an entity reference (traktor.world.PropertyEntityReference) to its entity.
 	local route < const > = self:_property("route")
 	self._routeId = (route ~= nil and type(route) ~= "string") and route.id or nil

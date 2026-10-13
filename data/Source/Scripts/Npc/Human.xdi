@@ -89,17 +89,10 @@ function Human:canTalk(context)
 	return not self._dead and self._state == "routine" and not self:hatesPlayer()
 end
 
--- Talked to: say something, and stop to face the player for a while. The line is the scene's
--- `greeting` if it has one and the character is in its own mood; otherwise a stock line for the
--- mood it is in, so a villager the player frightened earlier says so.
+-- Talked to: stop to face the player for a while. What it says is its actor's dialog's.
 function Human:talk(context)
-	self:_stats()
 	self._attend = NPC.attendTime
 	self:_dropPath()
-	if self._greeting ~= nil and self._mood == self._baseMood then
-		return self._greeting
-	end
-	return NPC.lines[self._mood] or NPC.lines.neutral
 end
 
 function Human:state()

@@ -14,7 +14,7 @@ import(traktor)
 -- it in a dialog of its own, with the night held still behind it (Main:_setDialogOpen, in
 -- Scripts/Quests/Questing).
 --
--- It plays a traktor.story.Conversation (Story:talk) and nothing else: the line and the replies are
+-- It plays a zombie.Conversation (Story:talk) and nothing else: the line and the replies are
 -- the conversation's, and clicking a reply is Conversation:choose. When the talk is over -- a
 -- reply that leads nowhere, a trade, LEAVE, or E or Escape (the host's) -- the host is told
 -- through setOnEnd, with the conversation, so it can see whether the character's pack is to be

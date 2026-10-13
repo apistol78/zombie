@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.DialogAsset" version="2">
+	<name/>
+	<start>
+		<item type="zombie.DialogStartAsset" version="1">
+			<node>{AAD770E0-CEB6-404E-9BCA-1D0B6D12A952}</node>
+			<condition/>
+		</item>
+	</start>
+	<nodes>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{AAD770E0-CEB6-404E-9BCA-1D0B6D12A952}</id>
+			<name>hello</name>
+			<text><![CDATA[STAY CLOSE TO THE LIGHT TONIGHT.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{EA25BDB0-F3AB-4395-BEC4-63B9BC4FADAE}</id>
+					<text>WHAT ARE YOU CARRYING?</text>
+					<target>{00000000-0000-0000-0000-000000000000}</target>
+					<condition/>
+					<actions>
+						<item type="zombie.EventAction" version="1">
+							<event>{D1A20000-0000-4000-8000-000000000500}</event>
+							<endConversation>true</endConversation>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>360, 0</position>
+		</item>
+	</nodes>
+	<startPosition>0, 0</startPosition>
+</object>

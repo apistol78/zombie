@@ -1039,9 +1039,9 @@ function Main:leaveStage(target, notice, spawn)
 	self:_census("leave")
 	local carry < const > = self:_carry(spawn)
 	self._loader = self:loadStageAsync("LOADING", { target = target, carry = carry })
-	-- Every trip between the forest and the cave is also a save: the night as it stands, to be
+	-- Every trip between the forest and a cave is also a save: the night as it stands, to be
 	-- continued in the stage being left for, at the spot the player arrives on.
-	if self._loader ~= nil and (target == "TERRAIN" or target == "CAVE") then
+	if self._loader ~= nil and target ~= "STARTUP" then
 		SaveGame.write(self.environment, { target = target, carry = carry })
 	end
 	return self._loader ~= nil

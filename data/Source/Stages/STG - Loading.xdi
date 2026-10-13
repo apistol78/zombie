@@ -30,16 +30,20 @@
 	<fadeRate>1</fadeRate>
 	<transitions>
 		<item>
+			<first>CAVE</first>
+			<second>{C9EB7A54-A216-43C9-80D1-737F76E4F479}</second>
+		</item>
+		<item>
+			<first>CAVE2</first>
+			<second>{BD163732-F0D7-E54F-9BA8-B29A4B88C244}</second>
+		</item>
+		<item>
 			<first>STARTUP</first>
 			<second>{54FD784B-C583-48D8-92AD-E5B3F45D1D79}</second>
 		</item>
 		<item>
 			<first>TERRAIN</first>
 			<second>{EB4D25B0-AC39-4A49-8F53-FE66233B0EDA}</second>
-		</item>
-		<item>
-			<first>CAVE</first>
-			<second>{C9EB7A54-A216-43C9-80D1-737F76E4F479}</second>
 		</item>
 	</transitions>
 	<resourceBundle>{00000000-0000-0000-0000-000000000000}</resourceBundle>

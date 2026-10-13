@@ -473,8 +473,9 @@ function Npc:_stagger(deltaTime)
 	-- While it is held it is the only state asked for (:_poseState), so nothing else competes
 	-- with the jump into Hit; after it, none is, so nothing cuts the reaction short either --
 	-- the graph finishes it and comes back to Idle on its own, and the controller takes over
-	-- again when the reel is done. A character whose graph has no Hit state (the Hunters)
-	-- simply holds whatever it was showing.
+	-- again when the reel is done. A character whose graph has no Hit state (the Hunters) says
+	-- what to stand the whole reel out in instead, _reelPose: holding whatever it was showing
+	-- played a turn or a swing the reel had cut short over and over until it was done.
 	--
 	-- Timed rather than measured in metres, so a flinch -- which owes none -- holds the pulse
 	-- exactly as long as a shove does.
@@ -486,7 +487,11 @@ function Npc:_stagger(deltaTime)
 
 	local pulsing < const > = self._pushTimer > 0.0
 	if self._pose ~= nil then
-		self:_poseState(pulsing and "hit" or nil)
+		if self._reelPose ~= nil then
+			self:_poseState(self._reelPose)
+		else
+			self:_poseState(pulsing and "hit" or nil)
+		end
 		if self._usesWork then
 			self._pose:setParameterValue("work", false)
 		end

@@ -65,9 +65,11 @@ function Human:new()
 	self._class = "wanderer"
 	self._usesWork = true       -- the graph has a "work" state (see Npc:_stagger)
 
-	-- The Hunter Female graph has no hit reaction, so a hard blow only stops them for a moment
-	-- rather than for the length of the horde's Hit animation (Npc:flinch).
+	-- The Hunters' graphs have no hit reaction, so a hard blow only stops them for a moment
+	-- rather than for the length of the horde's Hit animation (Npc:flinch), and they stand it
+	-- out in Idle (Npc:_stagger).
 	self._flinchTime = 0.5
+	self._reelPose = "idle"
 
 	self._state = "routine"     -- "routine" | "fight" | "flee"
 	self._target = nil          -- what FIGHT is after (an entity; may be the player)
@@ -92,9 +94,22 @@ function Human:canTalk(context)
 end
 
 -- Talked to: stop to face the player for a while. What it says is its actor's dialog's.
+--
+-- Stood still for it at once. The conversation holds the world (Main:_holdForPanel) and this
+-- brain with it, so whatever the graph is showing now is shown until it ends -- a walker caught
+-- mid-stride stood frozen in it throughout. A turn or a swing already under way plays out, and
+-- then it turns to face the player for the conversation (:_hold).
 function Human:talk(context)
 	self._attend = NPC.attendTime
 	self:_dropPath()
+	-- The body stops dead with nothing driving it, so it is no longer walking, whatever the gait
+	-- last measured -- which would keep :_turnOnTheSpot from starting.
+	self._gaitSpeed = 0.0
+	self._gaitMoving = false
+	if self._turn == nil and self._swinging == nil and self._pose ~= nil then
+		self:_poseState("idle")
+		self._pose:setParameterValue("work", false)
+	end
 end
 
 function Human:state()
@@ -378,40 +393,52 @@ function Human:_turnOnTheSpot(pos, goal, face, faceRange, deltaTime)
 		end
 		-- Heading grows to the right (facing is sin/cos of it, x right and z ahead).
 		local clip < const > = (delta < 0.0 and "turnLeft" or "turnRight") .. (math.abs(delta) >= NPC.turn180At and "180" or "90")
-		self._turn = { flag = clip, t = 0.0, duration = NPC.turns[clip] }
+		self._turn = { flag = clip, t = 0.0, duration = NPC.turns[clip], release = NPC.turnRelease }
 	end
 
-	local turn < const > = self._turn
-	turn.t = turn.t + deltaTime
-
-	-- The clip's own little step (root motion) is not walking: the gait is held at a standstill
-	-- through the turn, or it reads the step as a pace and Walk flashes in as the turn ends.
-	-- Show the clip until just before it ends.
-	self._gaitPos = pos
-	self._gaitSpeed = 0.0
-	self._gaitMoving = false
-	if self._pose ~= nil then
-		self:_poseState((turn.t < turn.duration - NPC.turnRelease) and turn.flag or "idle")
-		self._pose:setParameterValue("work", false)
-	end
-
-	if turn.t >= turn.duration then
+	if self:_playClip(self._turn, pos, deltaTime) then
 		self._turn = nil
 	end
 	return true
 end
 
--- A blow is a swing of the graph's Attack clip -- the hook, Config.npc.attack -- held the way a
--- turn clip is (:_turnOnTheSpot). In reach of what it is fighting one is started every
--- strikeInterval; its flag is held for the clip's length and let go `release` before the end, so
--- the graph blends back to Idle rather than starting the clip over; and nothing else is done
--- while it runs -- no steering, no crowd -- so the lunge the clip carries (its root motion,
--- Npc:_applyRootMotion) is the whole of the movement. The blow itself lands at `hitAt`, where
--- the fist is out, on whatever was swung at: not measured again, since the swing was aimed when
--- that was in reach, only checked to still be standing (Npc:_blow). The player is drained as the
--- horde drains them (Npc:_strike), every frame in reach, so against the player the swing is only
--- the look of it. A shove drops a swing (see update). Returns whether a swing is running, in
--- which case the frame is the swing's.
+-- Turn toward `face` on the spot at the face turn rate: what is left after a turn clip, or a gap
+-- too small for one -- what Npc:_drive does for the same, where it is not running (:_hold).
+function Human:_turnTowards(face, pos, deltaTime)
+	local delta < const > = wrap((math.atan2 or math.atan)(face.x - pos.x, face.z - pos.z) - self._heading)
+	local step < const > = self._faceTurnRate * deltaTime
+	self._heading = self._heading + math.max(-step, math.min(step, delta))
+	self._character.headAngle = self._heading
+end
+
+-- One frame of a one-shot clip -- a turn, a swing -- being played out. `clip` is { flag, t,
+-- duration, release }: its flag is held until `release` before the end and then let go to Idle,
+-- so the graph blends back rather than starting the clip over -- a one-shot clip whose flag is
+-- still up when it ends simply plays again. The clip's own root motion is all the movement there
+-- is (Npc:_applyRootMotion), and that is not walking: the gait is held at a standstill
+-- throughout, or it reads the step as a pace and Walk flashes in as the clip ends. Returns
+-- whether the clip has ended.
+function Human:_playClip(clip, pos, deltaTime)
+	clip.t = clip.t + deltaTime
+	self._gaitPos = pos
+	self._gaitSpeed = 0.0
+	self._gaitMoving = false
+	if self._pose ~= nil then
+		self:_poseState((clip.t < clip.duration - clip.release) and clip.flag or "idle")
+		self._pose:setParameterValue("work", false)
+	end
+	return clip.t >= clip.duration
+end
+
+-- A blow is a swing of the graph's Attack clip -- the hook, Config.npc.attack -- played out the
+-- way a turn clip is (:_playClip). In reach of what it is fighting one is started every
+-- strikeInterval, and nothing else is done while it runs -- no steering, no crowd -- so the lunge
+-- the clip carries (its root motion, Npc:_applyRootMotion) is the whole of the movement. The blow
+-- itself lands at `hitAt`, where the fist is out, on whatever was swung at: not measured again,
+-- since the swing was aimed when that was in reach, only checked to still be standing
+-- (Npc:_blow). The player is drained as the horde drains them (Npc:_strike), every frame in
+-- reach, so against the player the swing is only the look of it. A shove drops a swing (see
+-- update). Returns whether a swing is running, in which case the frame is the swing's.
 function Human:_swing(context, pos, target, tpos, deltaTime)
 	if self._state == "fight" and tpos ~= nil and (tpos - pos).length < self._reach then
 		if target == self._player then
@@ -420,7 +447,10 @@ function Human:_swing(context, pos, target, tpos, deltaTime)
 		self._strikeTimer = self._strikeTimer - deltaTime
 		if self._strikeTimer <= 0.0 and self._swinging == nil then
 			self._strikeTimer = self._strikeInterval
-			self._swinging = { target = target, t = 0.0, landed = false }
+			self._swinging = {
+				flag = "attack", t = 0.0, duration = ATTACK.duration, release = ATTACK.release,
+				target = target, landed = false
+			}
 		end
 	end
 
@@ -428,7 +458,7 @@ function Human:_swing(context, pos, target, tpos, deltaTime)
 	if swing == nil then
 		return false
 	end
-	swing.t = swing.t + deltaTime
+	local ended < const > = self:_playClip(swing, pos, deltaTime)
 
 	if not swing.landed and swing.t >= ATTACK.hitAt then
 		swing.landed = true
@@ -437,20 +467,45 @@ function Human:_swing(context, pos, target, tpos, deltaTime)
 		end
 	end
 
-	-- The clip's lunge (root motion) is not walking: the gait is held at a standstill through the
-	-- swing, as through a turn, or it reads the step as a pace and Walk flashes in after.
-	self._gaitPos = pos
-	self._gaitSpeed = 0.0
-	self._gaitMoving = false
-	if self._pose ~= nil then
-		self:_poseState((swing.t < ATTACK.duration - ATTACK.release) and "attack" or "idle")
-		self._pose:setParameterValue("work", false)
-	end
-
-	if swing.t >= ATTACK.duration then
+	if ended then
 		self._swinging = nil
 	end
 	return true
+end
+
+-- A frame of the world held still -- the pause menu, a window, a conversation, a hive cutscene --
+-- which stops this brain but not the world: the animation graph plays on with whatever it was
+-- last asked for. So a turn or a swing caught by it is played out here, back to Idle, or its flag
+-- stayed up and the clip played again and again for as long as the world was held -- stepping or
+-- punching on the spot -- and the root motion is taken as it is played. Left in the skeleton, the
+-- root motion of every one of those plays was handed over on the first frame after, in one step:
+-- a Hunter talked to mid-swing lunged off fifteen metres when a ten second conversation ended. No
+-- blow is struck while the world is held; the swing is only played out.
+--
+-- One talked to (:talk) then turns to face the player for the conversation, as it would going
+-- about its day: a turn clip for the long way round (:_turnOnTheSpot), and the rest of the way
+-- on the spot (:_turnTowards). Whatever distance the player is standing at.
+function Human:_hold(deltaTime)
+	if self._dead or self._heading == nil then
+		return
+	end
+	self:_applyRootMotion(deltaTime)
+	local pos < const > = self.owner.transform.translation
+	if self._swinging ~= nil then
+		self._swinging.landed = true
+		if self:_playClip(self._swinging, pos, deltaTime) then
+			self._swinging = nil
+		end
+	elseif self._attend > 0.0 and self._state == "routine" and self._player ~= nil then
+		local face < const > = self._player.transform.translation
+		if not self:_turnOnTheSpot(pos, nil, face, math.huge, deltaTime) then
+			self:_turnTowards(face, pos, deltaTime)
+		end
+	elseif self._turn ~= nil then
+		if self:_playClip(self._turn, pos, deltaTime) then
+			self._turn = nil
+		end
+	end
 end
 
 function Human:update(context, totalTime, deltaTime)
@@ -459,6 +514,7 @@ function Human:update(context, totalTime, deltaTime)
 		return
 	end
 	if context._gameOver or context._paused then
+		self:_hold(deltaTime)
 		return
 	end
 	if self:_checkDead(context) then
@@ -467,6 +523,7 @@ function Human:update(context, totalTime, deltaTime)
 	-- A hive cutscene freezes everything outside the hive (EnemyController says why); the
 	-- village is never inside one.
 	if context._cutscene ~= nil then
+		self:_hold(deltaTime)
 		return
 	end
 

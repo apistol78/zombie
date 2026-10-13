@@ -358,6 +358,14 @@
 	<migrateProperties type="traktor.PropertyGroup">
 		<value>
 			<item>
+				<first>Migrate.ModulePaths</first>
+				<second type="traktor.PropertyStringSet">
+					<value>
+						<item>$(DEPLOY_PROJECT_ROOT)/bin/latest/win64/releaseshared</item>
+					</value>
+				</second>
+			</item>
+			<item>
 				<first>Migrate.Modules</first>
 				<second type="traktor.PropertyStringSet">
 					<value>

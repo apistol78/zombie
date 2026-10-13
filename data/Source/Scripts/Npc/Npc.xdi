@@ -1059,7 +1059,7 @@ end
 -- one transition per state, each on a parameter of the same name, so this sets exactly that one
 -- and clears the rest. They have to be exclusive: when several transitions out of a state hold at
 -- once the graph picks one of them at random, so "walk" must never still be true while "attack"
--- is. A graph without a state simply never answers its parameter (the Hunters have no Attack).
+-- is. A graph without a state simply never answers its parameter (the Hunters have no Hit).
 --
 -- nil, none of them, is how the graph is left to finish something on its own: the stand-up a
 -- zombie rises with, the Hit reaction after its pulse, both of which hand back to Idle when their
@@ -1308,7 +1308,8 @@ end
 
 -- One frame of being in reach of `target`, an entity: the player is drained continuously, the
 -- way the horde always has been (so a villager's blows and a zombie's bite feel alike), and any
--- other character takes a blow every _strikeInterval through the Stage.
+-- other character takes a blow every _strikeInterval through the Stage. The horde's; a Human
+-- swings its Attack clip first and lands the blow out of that (Human:_swing).
 function Npc:_strike(context, target, deltaTime)
 	if target == context:player() then
 		context:hurtPlayer(self._strikeDamage / self._strikeInterval * deltaTime)
@@ -1319,6 +1320,12 @@ function Npc:_strike(context, target, deltaTime)
 		return
 	end
 	self._strikeTimer = self._strikeInterval
+	self:_blow(context, target)
+end
+
+-- One blow at `target`, another character: _strikeDamage through the Stage (Main:damage), at
+-- chest height, from this character -- which is what the target comes to hate it for.
+function Npc:_blow(context, target)
 	local at < const > = (target.transform.translation + Vector4(0.0, 1.2, 0.0, 0.0)).xyz1
 	context:damage(target, self._strikeDamage, at, nil, false, self.owner)
 end

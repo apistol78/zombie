@@ -4,8 +4,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Idle</name>
 			<position>
-				<first>389</first>
-				<second>-33</second>
+				<first>396</first>
+				<second>-277</second>
 			</position>
 			<animations>
 				<item>{D315AD59-1B1A-4DEE-ABCC-CBA0F4739C78}</item>
@@ -16,8 +16,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Walk</name>
 			<position>
-				<first>389</first>
-				<second>38</second>
+				<first>396</first>
+				<second>-190</second>
 			</position>
 			<animations>
 				<item>{7353EF2C-9CAE-40A7-B6B3-71F01E6DED60}</item>
@@ -29,8 +29,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Run</name>
 			<position>
-				<first>389</first>
-				<second>109</second>
+				<first>396</first>
+				<second>-103</second>
 			</position>
 			<animations>
 				<item>{041CE19F-3D07-475E-B071-E3CEB2A5D92D}</item>
@@ -42,8 +42,8 @@
 		<item type="traktor.animation.StateNodeController">
 			<name>Dead</name>
 			<position>
-				<first>389</first>
-				<second>180</second>
+				<first>396</first>
+				<second>-16</second>
 			</position>
 			<poseController type="traktor.animation.RagDollPoseControllerData" version="8">
 				<skeleton>{BBD9F62A-E9E3-4EE3-8EAA-DF08DD86647B}</skeleton>
@@ -60,8 +60,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Turn Left 90</name>
 			<position>
-				<first>700</first>
-				<second>40</second>
+				<first>396</first>
+				<second>71</second>
 			</position>
 			<animations>
 				<item>{4E9C0000-0000-4000-8000-0000000000A5}</item>
@@ -72,8 +72,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Turn Left 180</name>
 			<position>
-				<first>700</first>
-				<second>140</second>
+				<first>396</first>
+				<second>158</second>
 			</position>
 			<animations>
 				<item>{4E9C0000-0000-4000-8000-0000000000A6}</item>
@@ -84,8 +84,8 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Turn Right 90</name>
 			<position>
-				<first>700</first>
-				<second>240</second>
+				<first>396</first>
+				<second>245</second>
 			</position>
 			<animations>
 				<item>{4E9C0000-0000-4000-8000-0000000000A7}</item>
@@ -96,11 +96,23 @@
 		<item type="traktor.animation.StateNodeAnimation" version="2">
 			<name>Turn Right 180</name>
 			<position>
-				<first>700</first>
-				<second>340</second>
+				<first>396</first>
+				<second>332</second>
 			</position>
 			<animations>
 				<item>{4E9C0000-0000-4000-8000-0000000000A8}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>AN - Hunter Male - Attack</name>
+			<position>
+				<first>396</first>
+				<second>419</second>
+			</position>
+			<animations>
+				<item>{F87E3150-DC8D-484D-8B77-516B56BEFF25}</item>
 			</animations>
 			<loopDuration>0</loopDuration>
 			<transformTime/>
@@ -163,10 +175,17 @@
 			<moment>Immediately</moment>
 			<condition>turnRight180</condition>
 		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[9]"/>
+			<duration>0.1</duration>
+			<moment>Immediately</moment>
+			<condition>attack</condition>
+		</item>
 	</transitions>
 	<rootState ref="/object/states/item"/>
 	<previewSkeleton>{D8790888-03A4-44E0-B038-A1D12DE1B66E}</previewSkeleton>
 	<previewMesh>{CB832E00-0FBB-4ACE-88D3-316D14948910}</previewMesh>
-	<previewPosition>0.100002, -1.025001, 2.374985, 1</previewPosition>
-	<previewAngles>9.660008, -0.135, 0, 0</previewAngles>
+	<previewPosition>-0.874998, -1.025001, 2.449985, 1</previewPosition>
+	<previewAngles>11.460015, -0.105, 0, 0</previewAngles>
 </object>

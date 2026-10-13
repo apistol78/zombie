@@ -756,6 +756,12 @@ Config = {
 		turnRelease = 0.15,
 		turns = { turnLeft90 = 0.90, turnLeft180 = 1.55, turnRight90 = 0.93, turnRight180 = 1.63 },
 
+		-- Striking (Scripts/Npc/Human:_swing, with the Hunters' Attack clip -- a hook). Held like
+		-- a turn clip: `duration` is the clip's length (s, as measured; the same for both Hunters),
+		-- let go `release` before the end for the same reason as turnRelease, and the blow itself
+		-- lands at `hitAt`, where the fist is out. How often one is thrown is strikeInterval above.
+		attack = { duration = 0.47, hitAt = 0.25, release = 0.15 },
+
 		-- Routes (Scripts/Npc/Route): how close counts as having reached a waypoint (m), and
 		-- how far a wanderer with no route strays from where it was placed.
 		arrive = 1.0,

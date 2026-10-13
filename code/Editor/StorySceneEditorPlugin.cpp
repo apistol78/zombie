@@ -11,6 +11,8 @@
 #include "Editor/StoryComponentEditor.h"
 #include "Editor/StoryComponentEditorFactory.h"
 #include "Editor/StorySceneEditorUIExtension.h"
+#include "StoryEntityFactory.h"
+#include "StoryResourceFactory.h"
 #include "Ui/Command.h"
 
 namespace zombie
@@ -35,10 +37,12 @@ void StorySceneEditorPlugin::createUIExtensions(scene::SceneEditorContext* conte
 
 void StorySceneEditorPlugin::createResourceFactories(scene::SceneEditorContext* context, RefArray< const resource::IResourceFactory >& outResourceFactories) const
 {
+	outResourceFactories.push_back(new StoryResourceFactory());
 }
 
 void StorySceneEditorPlugin::createEntityFactories(scene::SceneEditorContext* context, RefArray< world::IEntityFactory >& outEntityFactories) const
 {
+	outEntityFactories.push_back(new StoryEntityFactory());
 }
 
 void StorySceneEditorPlugin::createEntityRenderers(
@@ -46,8 +50,7 @@ void StorySceneEditorPlugin::createEntityRenderers(
 	render::IRenderView* renderView,
 	render::PrimitiveRenderer* primitiveRenderer,
 	const TypeInfo& worldRendererType,
-	RefArray< world::IEntityRenderer >& outEntityRenderers
-) const
+	RefArray< world::IEntityRenderer >& outEntityRenderers) const
 {
 }
 

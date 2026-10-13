@@ -27,7 +27,7 @@ namespace zombie
 T_IMPLEMENT_RTTI_CLASS(L"zombie.StorySceneEditorUIExtension", StorySceneEditorUIExtension, scene::ISceneEditorUIExtension)
 
 StorySceneEditorUIExtension::StorySceneEditorUIExtension(scene::SceneEditorContext* context)
-:	m_context(context)
+	: m_context(context)
 {
 }
 

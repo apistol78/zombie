@@ -205,7 +205,7 @@
 							</state>
 							<transform>
 								<translation>0, 0, 0, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{3A518A8A-569B-40A6-AF3D-55468F3E34B1}</entityData>
@@ -280,7 +280,7 @@
 							</state>
 							<transform>
 								<translation>16, 0, 16, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{6867002B-B0EC-4920-9CE0-6D7B6C055EAE}</entityData>
@@ -325,7 +325,7 @@
 							</state>
 							<transform>
 								<translation>40, 0, 16, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{95EE2636-ADC0-4E73-9D84-6043A346DE3D}</entityData>
@@ -445,7 +445,7 @@
 							</state>
 							<transform>
 								<translation>88, 0, 0, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{7FD468C5-2A7E-4D34-820F-70486715C6BE}</entityData>
@@ -535,7 +535,7 @@
 							</state>
 							<transform>
 								<translation>72, -4, -24, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{6867002B-B0EC-4920-9CE0-6D7B6C055EAE}</entityData>
@@ -640,7 +640,7 @@
 							</state>
 							<transform>
 								<translation>32, -4, -40, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{297DFA08-7003-4338-8992-14B49D11CC90}</entityData>
@@ -759,7 +759,7 @@
 							</state>
 							<transform>
 								<translation>192, 0, 0, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{33A13FD8-8129-46C4-BCA4-AAE181285B10}</entityData>
@@ -1952,8 +1952,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>201.2, -0.14, -0.8, 0</translation>
-								<rotation>0, 0.3826834, 0, 0.9238795</rotation>
+								<translation>201.199997, -0.14, -0.8, 0</translation>
+								<rotation>0, 0.382683, 0, 0.92388</rotation>
 							</transform>
 							<components/>
 							<entityData>{D1A10000-0000-4000-8000-00000000001D}</entityData>
@@ -2261,7 +2261,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>62.5, -4.15, -39.2, 0</translation>
+								<translation>62.5, -4.15, -39.200001, 0</translation>
 								<rotation>0, -0.980785, 0, 0.19509</rotation>
 							</transform>
 							<components>
@@ -2345,7 +2345,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>88.8, -0.12, -29.3, 0</translation>
+								<translation>88.800003, -0.12, -29.299999, 0</translation>
 								<rotation>0, -0.83147, 0, 0.55557</rotation>
 							</transform>
 							<components>
@@ -2387,7 +2387,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>140, -16.03, 2.5, 0</translation>
+								<translation>140, -16.030001, 2.5, 0</translation>
 								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components>
@@ -2429,7 +2429,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>136.9, -16.12, -21.3, 0</translation>
+								<translation>136.899994, -16.120001, -21.299999, 0</translation>
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
@@ -2809,7 +2809,7 @@
 							</state>
 							<transform>
 								<translation>0.5, 4.164152, -0.5, 0</translation>
-								<rotation>0, 1, 0, -0</rotation>
+								<rotation>0, 1, 0, 0</rotation>
 							</transform>
 							<components/>
 							<entityData>{8BD207AF-2277-514B-A378-D531495E8067}</entityData>
@@ -4102,7 +4102,7 @@
 							<name>Gate</name>
 							<state>
 								<visible>true</visible>
-								<dynamic>false</dynamic>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
@@ -4144,7 +4144,7 @@
 							<name>LeverGate</name>
 							<state>
 								<visible>true</visible>
-								<dynamic>false</dynamic>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
@@ -4192,7 +4192,7 @@
 							<name>Gate</name>
 							<state>
 								<visible>true</visible>
-								<dynamic>false</dynamic>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
@@ -4234,7 +4234,7 @@
 							<name>LeverGate</name>
 							<state>
 								<visible>true</visible>
-								<dynamic>false</dynamic>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
@@ -4282,7 +4282,7 @@
 							<name>Lever</name>
 							<state>
 								<visible>true</visible>
-								<dynamic>false</dynamic>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>
@@ -4318,7 +4318,7 @@
 							<name>Lever</name>
 							<state>
 								<visible>true</visible>
-								<dynamic>false</dynamic>
+								<dynamic>true</dynamic>
 								<locked>false</locked>
 							</state>
 							<transform>

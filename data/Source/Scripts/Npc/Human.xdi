@@ -19,8 +19,8 @@ import(traktor)
 --     Talked to (:talk), any of them stops and faces the player for a few seconds.
 --
 --   * FIGHT -- goes for a character it hates (Config.npc.factions), one that has hurt it, or the
---     player once the player has made an enemy of it (`hostility`). Chases at a run and strikes
---     in reach (Npc:_strike).
+--     player once the player has made an enemy of it (`hostility`). Chases at a run and swings
+--     at it in reach (:_swing, the graph's Attack clip).
 --
 --   * FLEE -- runs from whatever frightens it: too hurt for its courage, or more of them than
 --     its courage will stand. Leg by leg away from the threat, until it has gone a few seconds
@@ -38,6 +38,7 @@ import(traktor)
 Human = Human or class("Human", Npc)
 
 local NPC < const > = Config.npc
+local ATTACK < const > = NPC.attack
 local CLOSE_QUARTERS < const > = Config.enemy.closeQuarters
 
 -- Awareness dot (see the debug block in update), as the horde's: white going about its day,
@@ -70,6 +71,7 @@ function Human:new()
 
 	self._state = "routine"     -- "routine" | "fight" | "flee"
 	self._target = nil          -- what FIGHT is after (an entity; may be the player)
+	self._swinging = nil        -- the blow being swung, while one is (see _swing)
 	self._seenTimer = 0.0       -- FIGHT gives up this long after last seeing it (s)
 	self._fleeFrom = nil        -- where the threat FLEE is running from was last seen (Vector4)
 	self._calmTimer = 0.0       -- FLEE ends once this has run out well clear of the threat (s)
@@ -399,6 +401,58 @@ function Human:_turnOnTheSpot(pos, goal, face, faceRange, deltaTime)
 	return true
 end
 
+-- A blow is a swing of the graph's Attack clip -- the hook, Config.npc.attack -- held the way a
+-- turn clip is (:_turnOnTheSpot). In reach of what it is fighting one is started every
+-- strikeInterval; its flag is held for the clip's length and let go `release` before the end, so
+-- the graph blends back to Idle rather than starting the clip over; and nothing else is done
+-- while it runs -- no steering, no crowd -- so the lunge the clip carries (its root motion,
+-- Npc:_applyRootMotion) is the whole of the movement. The blow itself lands at `hitAt`, where
+-- the fist is out, on whatever was swung at: not measured again, since the swing was aimed when
+-- that was in reach, only checked to still be standing (Npc:_blow). The player is drained as the
+-- horde drains them (Npc:_strike), every frame in reach, so against the player the swing is only
+-- the look of it. A shove drops a swing (see update). Returns whether a swing is running, in
+-- which case the frame is the swing's.
+function Human:_swing(context, pos, target, tpos, deltaTime)
+	if self._state == "fight" and tpos ~= nil and (tpos - pos).length < self._reach then
+		if target == self._player then
+			context:hurtPlayer(self._strikeDamage / self._strikeInterval * deltaTime)
+		end
+		self._strikeTimer = self._strikeTimer - deltaTime
+		if self._strikeTimer <= 0.0 and self._swinging == nil then
+			self._strikeTimer = self._strikeInterval
+			self._swinging = { target = target, t = 0.0, landed = false }
+		end
+	end
+
+	local swing < const > = self._swinging
+	if swing == nil then
+		return false
+	end
+	swing.t = swing.t + deltaTime
+
+	if not swing.landed and swing.t >= ATTACK.hitAt then
+		swing.landed = true
+		if swing.target ~= self._player and self:_standing(context, swing.target) then
+			self:_blow(context, swing.target)
+		end
+	end
+
+	-- The clip's lunge (root motion) is not walking: the gait is held at a standstill through the
+	-- swing, as through a turn, or it reads the step as a pace and Walk flashes in after.
+	self._gaitPos = pos
+	self._gaitSpeed = 0.0
+	self._gaitMoving = false
+	if self._pose ~= nil then
+		self:_poseState((swing.t < ATTACK.duration - ATTACK.release) and "attack" or "idle")
+		self._pose:setParameterValue("work", false)
+	end
+
+	if swing.t >= ATTACK.duration then
+		self._swinging = nil
+	end
+	return true
+end
+
 function Human:update(context, totalTime, deltaTime)
 	local me < const > = self.owner
 	if context == nil or me == nil or self.world == nil then
@@ -502,9 +556,11 @@ function Human:update(context, totalTime, deltaTime)
 		dbg:point(pos + Vector4(0.0, DEBUG_DOT_HEIGHT, 0.0, 0.0), DEBUG_DOT_SIZE, colour)
 	end
 
-	-- Shoved or flinching: the reel replaces everything below (Npc:_stagger), a turn included.
+	-- Shoved or flinching: the reel replaces everything below (Npc:_stagger), a turn or a swing
+	-- included.
 	if self._hitTimer > 0.0 then
 		self._turn = nil
+		self._swinging = nil
 		self:_stagger(deltaTime)
 		return
 	end
@@ -552,6 +608,11 @@ function Human:update(context, totalTime, deltaTime)
 		end
 	end
 
+	-- ---- Striking ----
+	if self:_swing(context, pos, target, tpos, deltaTime) then
+		return
+	end
+
 	-- ---- Turning on the spot ----
 	if self:_turnOnTheSpot(pos, goal, face, faceRange, deltaTime) then
 		return
@@ -571,19 +632,10 @@ function Human:update(context, totalTime, deltaTime)
 
 	local driving < const > = self:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, target ~= self._player and target or nil, deltaTime)
 
-	-- ---- Striking ----
-	local striking = false
-	if self._state == "fight" and tpos ~= nil and (tpos - pos).length < self._reach then
-		striking = true
-		self:_strike(context, target, deltaTime)
-	end
-
 	if self._pose ~= nil then
 		-- Walking as the graph sees it is how fast the body is really going (Npc:_gait), not
 		-- whether this frame's step happened to clear a threshold.
 		local walking < const > = self:_gait(pos, deltaTime, driving)
-		-- No "attack": the Hunters' graphs have no Attack state, and asking for one would leave
-		-- them frozen in whatever they were last showing while they strike.
 		self:_poseState(walking and (speed > self._walkSpeed and "running" or "walk") or "idle")
 		self._pose:setParameterValue("work",
 			self._class == "worker" and self._state == "routine" and not walking and self._attend <= 0.0

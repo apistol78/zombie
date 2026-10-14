@@ -761,6 +761,9 @@ Config = {
 		-- let go `release` before the end for the same reason as turnRelease, and the blow itself
 		-- lands at `hitAt`, where the fist is out. How often one is thrown is strikeInterval above.
 		attack = { duration = 0.47, hitAt = 0.25, release = 0.15 },
+		-- ...thrown only at something within this angle of where it is facing (rad, either side):
+		-- further round it turns to face it first, and it keeps turning to it through the swing.
+		strikeArc = 0.5,
 
 		-- Routes (Scripts/Npc/Route): how close counts as having reached a waypoint (m), and
 		-- how far a wanderer with no route strays from where it was placed.

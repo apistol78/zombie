@@ -439,13 +439,18 @@ end
 -- (Npc:_blow). The player is drained as the horde drains them (Npc:_strike), every frame in
 -- reach, so against the player the swing is only the look of it. A shove drops a swing (see
 -- update). Returns whether a swing is running, in which case the frame is the swing's.
+--
+-- A swing is only started at something within NPC.strikeArc of the facing; until then the timer
+-- waits and the frame is left to Npc:_drive, which turns to the target up close. The swing then
+-- keeps turning to it (:_turnTowards), or a target that moved during the clip was punched past.
 function Human:_swing(context, pos, target, tpos, deltaTime)
 	if self._state == "fight" and tpos ~= nil and (tpos - pos).length < self._reach then
 		if target == self._player then
 			context:hurtPlayer(self._strikeDamage / self._strikeInterval * deltaTime)
 		end
 		self._strikeTimer = self._strikeTimer - deltaTime
-		if self._strikeTimer <= 0.0 and self._swinging == nil then
+		local aim < const > = wrap((math.atan2 or math.atan)(tpos.x - pos.x, tpos.z - pos.z) - self._heading)
+		if self._strikeTimer <= 0.0 and self._swinging == nil and math.abs(aim) < NPC.strikeArc then
 			self._strikeTimer = self._strikeInterval
 			self._swinging = {
 				flag = "attack", t = 0.0, duration = ATTACK.duration, release = ATTACK.release,
@@ -459,6 +464,9 @@ function Human:_swing(context, pos, target, tpos, deltaTime)
 		return false
 	end
 	local ended < const > = self:_playClip(swing, pos, deltaTime)
+	if tpos ~= nil and swing.target == target then
+		self:_turnTowards(tpos, pos, deltaTime)
+	end
 
 	if not swing.landed and swing.t >= ATTACK.hitAt then
 		swing.landed = true

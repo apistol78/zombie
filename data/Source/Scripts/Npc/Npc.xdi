@@ -817,6 +817,20 @@ end
 function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, engaged, deltaTime)
 	local world < const > = self.world
 
+	-- Up close to a character it is fighting: straight at it. The path was aimed at where it
+	-- stood at the last re-path, up to half a second ago, and against something that moves too
+	-- that points off to the side -- the two ended up circling each other.
+	local duel = false
+	if engaged ~= nil and face ~= nil then
+		local ax < const > = face.x - pos.x
+		local az < const > = face.z - pos.z
+		local al < const > = math.sqrt(ax * ax + az * az)
+		if al > 0.001 and al < faceRange then
+			targetX, targetZ = ax / al, az / al
+			duel = true
+		end
+	end
+
 	-- Collision avoidance: accumulate a push away from nearby characters (both lists) and the
 	-- player. This character is in one of the lists too, but its own delta is zero.
 	local sepX, sepZ = 0.0, 0.0
@@ -990,6 +1004,14 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 	if self._spawnDelay > 0.0 then
 		self._spawnDelay = self._spawnDelay - deltaTime
 		return nil
+	end
+
+	-- ...and with nothing carried over. move() adds to a velocity the controller keeps, held at
+	-- maxVelocity, so a small step below (the align gate holding it back) never slowed one
+	-- already going: it slid on sideways at full pace, and two of them orbited each other.
+	if duel then
+		local velocity < const > = self._character.velocity
+		self._character.velocity = Vector4(0.0, velocity.y, 0.0, 0.0)
 	end
 
 	local moving = false

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="28">
+	<fileName>Entities/Furniture/Painting Portrait.blend</fileName>
+	<importFilter/>
+	<meshType>MtInstance</meshType>
+	<materialShaders>
+		<item>
+			<first>MAT_Gold</first>
+			<second>{D1A10000-0000-4000-8000-000000000010}</second>
+		</item>
+		<item>
+			<first>MAT_Painting</first>
+			<second>{28C2B055-DAE8-59E2-B5EE-3FBE58E4DFE5}</second>
+		</item>
+		<item>
+			<first>MAT_WoodPlank</first>
+			<second>{E919C69B-5B60-154D-AC61-30661D2E43B2}</second>
+		</item>
+	</materialShaders>
+	<materialTextures/>
+	<scaleFactor>1, 1, 1, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
+	<reduce>1</reduce>
+	<raytracingReduce>1</raytracingReduce>
+	<previewAngle>3.6</previewAngle>
+</object>

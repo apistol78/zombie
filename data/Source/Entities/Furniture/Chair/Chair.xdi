@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{D5507281-E80A-5580-A3F7-241A0502E779}</id>
+	<name>Chair</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{364DA6D5-84A7-5E9D-BE47-53F06E7A9289}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.DynamicBodyDesc" version="6">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{551BADB9-AF11-41BF-98A9-44A9391D0D30}</item>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{7778B921-E2EE-5FB3-BDBD-AC4DA1CEBEB9}</mesh>
+				</shape>
+				<mass>13.5</mass>
+				<autoDeactivate>true</autoDeactivate>
+				<active>true</active>
+				<linearDamping>0</linearDamping>
+				<angularDamping>0</angularDamping>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<linearThreshold>0.8</linearThreshold>
+				<angularThreshold>1</angularThreshold>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+	</components>
+</object>

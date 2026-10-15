@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="28">
+	<fileName>Entities/Furniture/Bed.blend</fileName>
+	<importFilter/>
+	<meshType>MtInstance</meshType>
+	<materialShaders>
+		<item>
+			<first>MAT_Linen</first>
+			<second>{C1D7C224-CDE1-5CFC-9970-CA5396D57C8F}</second>
+		</item>
+		<item>
+			<first>MAT_Ticking</first>
+			<second>{F1F74EF8-8414-59CD-BFB0-A8EE121D4C7C}</second>
+		</item>
+		<item>
+			<first>MAT_WoodPlank</first>
+			<second>{E919C69B-5B60-154D-AC61-30661D2E43B2}</second>
+		</item>
+		<item>
+			<first>MAT_WoolRed</first>
+			<second>{62E06D1B-75F8-5F7C-84EF-33C286F38892}</second>
+		</item>
+	</materialShaders>
+	<materialTextures/>
+	<scaleFactor>1, 1, 1, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
+	<reduce>1</reduce>
+	<raytracingReduce>1</raytracingReduce>
+	<previewAngle>3.6</previewAngle>
+</object>

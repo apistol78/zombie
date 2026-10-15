@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+import(traktor)
+
+-- Breadcrumb: the trail of light that shows the way to the followed quest's waypoint, on T. More
+-- of the Main stage class, kept beside Scripts/Quests/Questing, which #using's it and calls in
+-- from its own hooks (_initQuests, _questKeys, _updateQuests, _reloadQuests, _finalizeQuests).
+--
+--   * T asks the scene's nav mesh for a route from the player's feet to where the followed quest
+--     points (Main._questWaypoint, the StoryWorldComponent's waypoint). The query is the same
+--     asynchronous createMoveQuery the characters walk by (Scripts/Npc/Npc), collected once it
+--     is ready.
+--   * The route's corners are resampled a metre apart and each sample is dropped onto the mesh
+--     beneath it, so the trail follows the ground over hills rather than cutting through them
+--     on a long straight leg.
+--   * A wisp (Entities/Breadcrumb: Effects/FX - Breadcrumb's motes and glow, and a gold ribbon)
+--     is then flown along it, swaying a little, at waist height. Its motes are emitted in world
+--     space and linger, so what it leaves behind is the trail. It flies at most TRAIL_REACH
+--     metres; T again shows the next stretch from wherever the player has got to.
+--   * Once it has arrived (or run out of reach) it stops emitting and is taken out of the world
+--     when the last of its motes have gone.
+
+Main = Main or class("Main", Stage)
+
+-- The wisp's entity data: Entities/Breadcrumb/Breadcrumb.
+local WISP < const > = Guid("\{E40ECF2A-73E6-4108-82AB-8473A205F013}")
+
+local TRAIL_LEAD < const > = 1.5        -- the wisp appears this far along the route (m)...
+local TRAIL_REACH < const > = 60.0      -- ...and flies at most this far along it (m)
+local TRAIL_STEP < const > = 1.0        -- the route is resampled this far apart (m)...
+local TRAIL_SNAP < const > = 0.75       -- ...each sample dropped onto the mesh within this (m)
+local TRAIL_GOAL_SNAP < const > = 12.0  -- how far off the mesh a waypoint may be and still be routed to (m)
+local TRAIL_LIFT < const > = 0.8        -- above the ground (m)
+local TRAIL_SPEED_START < const > = 2.0 -- m/s when it appears...
+local TRAIL_SPEED < const > = 9.0       -- ...and once up to speed...
+local TRAIL_ACCEL < const > = 10.0      -- ...getting there at this (m/s²)...
+local TRAIL_BRAKE < const > = 6.0       -- ...and slowing down to arrive at this (m/s²)
+local TRAIL_SWAY < const > = 0.18       -- sideways weave (m)...
+local TRAIL_SWAY_RATE < const > = 3.1   -- ...at this many radians a second
+local TRAIL_BOB < const > = 0.1         -- up and down (m)...
+local TRAIL_BOB_RATE < const > = 4.7    -- ...at this many radians a second
+local TRAIL_HOLD < const > = 1.2        -- seconds it hovers at the waypoint once there
+local TRAIL_LINGER < const > = 2.2      -- seconds from its last mote to its going: the motes' longest age
+
+-- ---- Setting up ----
+
+-- Called from Main:_initQuests.
+function Main:_initTrail()
+	self._trailQuery = nil   -- { result, from, goal } while the route is being found
+	self._trail = nil        -- the wisp in flight; see _flyTrail
+	self._trailSpent = {}    -- { entity, timer } wisps winding down, see _retireTrail
+end
+
+-- Take every wisp out of the world. Called from Main:_finalizeQuests.
+function Main:_finalizeTrail()
+	self._trailQuery = nil
+	if self._trail ~= nil then
+		self:_removeTrailEntity(self._trail.entity)
+		self._trail = nil
+	end
+	for _, s in ipairs(self._trailSpent or {}) do
+		self:_removeTrailEntity(s.entity)
+	end
+	self._trailSpent = {}
+end
+
+-- A hot reload brings the world back new, so every handle here is stale: drop them, without
+-- touching entities that belonged to the old world. Called from Main:_reloadQuests.
+function Main:_reloadTrail()
+	self._trailQuery = nil
+	self._trail = nil
+	self._trailSpent = {}
+end
+
+-- ---- T ----
+
+-- Ask for the way to the followed quest's waypoint. Refused over a window, in a cutscene or
+-- once the night is decided; a press while the route is still being found is let go, and one
+-- while a wisp is in flight sends a new one from where the player stands now.
+function Main:_showTrail()
+	if self._gameOver or self._nightOver or self._paused or self._cutscene ~= nil or self._humanoid == nil
+		or self._dialogOpen or self._journalOpen or self._inventoryOpen or self._chestOpen ~= nil then
+		return
+	end
+	if self._trailQuery ~= nil then
+		return
+	end
+
+	local q < const > = self._questWaypoint
+	if q == nil then
+		table.insert(self._questNotices, "NO QUEST TO SHOW THE WAY TO -- J FOR THE JOURNAL")
+		return
+	end
+
+	local from = self._humanoid.transform.translation.xyz1
+	local goal < const > = Vector4(q[1], q[2], q[3], 1.0)
+	local nav < const > = self:_trailNavMesh()
+	local result = nil
+	if nav ~= nil then
+		-- Both ends onto the mesh first: createMoveQuery looks for them only a metre up or down,
+		-- and a waypoint is wherever its entity stands -- up a tower, on a table, in a pond.
+		from = nav:findClosestPointXZ(from, 2.0)
+		result = nav:createMoveQuery(from, nav:findClosestPointXZ(goal, TRAIL_GOAL_SNAP))
+	end
+	self._trailQuery = { result = result, from = from, goal = goal }
+end
+
+-- This world's nav mesh, or nil in a scene without one.
+function Main:_trailNavMesh()
+	local world < const > = (self.world ~= nil) and self.world.world or nil
+	local component < const > = (world ~= nil) and world:getComponent(traktor.ai.NavMeshComponent) or nil
+	return (component ~= nil) and component:get() or nil
+end
+
+-- ---- Every frame ----
+
+-- Collect a found route, fly the wisp and wind down the spent ones. Called from
+-- Main:_updateQuests, above Main:update's early returns; `playing` is false while the night is
+-- held still, which holds the wisp where it is.
+function Main:_updateTrail(dt, playing)
+	if self._trailQuery ~= nil then
+		local tq < const > = self._trailQuery
+		if tq.result == nil or tq.result.ready then
+			self._trailQuery = nil
+			-- A query that found no route at all is ready too, with nothing to get.
+			local query < const > = (tq.result ~= nil) and tq.result:get() or nil
+			self:_launchTrail(self:_trailRoute(query, tq.from, tq.goal))
+		end
+	end
+
+	if playing and self._trail ~= nil then
+		self:_flyTrail(dt)
+	end
+
+	local kept < const > = {}
+	for _, s in ipairs(self._trailSpent) do
+		s.timer = s.timer - dt
+		if s.timer > 0.0 then
+			table.insert(kept, s)
+		else
+			self:_removeTrailEntity(s.entity)
+		end
+	end
+	self._trailSpent = kept
+end
+
+-- The route's corners, from the player to the waypoint, as { x, y, z } -- the waypoint itself
+-- last, when the mesh could only get near it. With no route (no mesh, or none found) it is
+-- the straight line there, which still points the way.
+function Main:_trailRoute(query, from, goal)
+	local route < const > = { { from.x, from.y, from.z } }
+	if query ~= nil then
+		for i = 0, query:getSteerPathCount() - 1 do
+			local p < const > = query:getSteerPathPosition(i)
+			local last < const > = route[#route]
+			local dx < const > = p.x - last[1]
+			local dz < const > = p.z - last[3]
+			if dx * dx + dz * dz > 0.01 then
+				table.insert(route, { p.x, p.y, p.z })
+			end
+		end
+	end
+	local last < const > = route[#route]
+	local dx < const > = goal.x - last[1]
+	local dz < const > = goal.z - last[3]
+	if dx * dx + dz * dz > 1.0 then
+		table.insert(route, { goal.x, goal.y, goal.z })
+	end
+	return route
+end
+
+-- Resample a route TRAIL_STEP apart, up to TRAIL_LEAD + TRAIL_REACH along it, each sample at the
+-- height of the mesh beneath it, smoothed so the wisp glides over the steps of the mesh.
+-- Returns the samples as { x, y, z, d } with d the distance along, and whether the last of
+-- them is the end of the route.
+function Main:_trailSamples(route)
+	local nav < const > = self:_trailNavMesh()
+	local reach < const > = TRAIL_LEAD + TRAIL_REACH
+	local samples < const > = { { route[1][1], route[1][2], route[1][3], 0.0 } }
+	local d = 0.0          -- distance along the route
+	local nextAt = TRAIL_STEP
+	local whole = true
+	for i = 2, #route do
+		local a < const > = route[i - 1]
+		local b < const > = route[i]
+		local dx < const > = b[1] - a[1]
+		local dy < const > = b[2] - a[2]
+		local dz < const > = b[3] - a[3]
+		local len < const > = math.sqrt(dx * dx + dy * dy + dz * dz)
+		while nextAt < d + len and nextAt < reach do
+			local t < const > = (nextAt - d) / len
+			table.insert(samples, { a[1] + dx * t, a[2] + dy * t, a[3] + dz * t, nextAt })
+			nextAt = nextAt + TRAIL_STEP
+		end
+		d = d + len
+		if d >= reach then
+			whole = false
+			break
+		end
+		table.insert(samples, { b[1], b[2], b[3], d })
+		nextAt = d + TRAIL_STEP
+	end
+
+	-- Onto the ground. findClosestPointXZ hands the point back untouched where there is no mesh
+	-- within reach -- over the last stretch to a waypoint off it -- which keeps the line's own height.
+	if nav ~= nil then
+		for _, s in ipairs(samples) do
+			s[2] = nav:findClosestPointXZ(Vector4(s[1], s[2], s[3], 1.0), TRAIL_SNAP).y
+		end
+	end
+	for _ = 1, 2 do
+		for i = 2, #samples - 1 do
+			samples[i][2] = (samples[i - 1][2] + samples[i][2] * 2.0 + samples[i + 1][2]) * 0.25
+		end
+	end
+	return samples, whole
+end
+
+-- Send a wisp along a route, retiring the one in flight.
+function Main:_launchTrail(route)
+	if self._trail ~= nil then
+		self:_retireTrail(self._trail.entity)
+		self._trail = nil
+	end
+	local samples < const >, whole < const > = self:_trailSamples(route)
+	local length < const > = samples[#samples][4]
+	if length <= TRAIL_LEAD or self.world == nil then
+		return
+	end
+	local entity < const > = self.world:createEntity(WISP)
+	if entity == nil then
+		return
+	end
+	self._trail = {
+		entity = entity,
+		samples = samples,
+		whole = whole,        -- the last sample is the waypoint, so it hovers there
+		length = length,
+		at = TRAIL_LEAD,      -- distance along
+		index = 1,            -- the sample at or before `at`
+		speed = TRAIL_SPEED_START,
+		time = 0.0,
+		hold = TRAIL_HOLD,
+	}
+	-- Placed on the frame it is made, before the world first updates it: the effect and the
+	-- ribbon take their first position as where they start, not as a move from the origin.
+	self:_placeTrail(0.0)
+end
+
+-- Fly the wisp on along its route, then hover, then retire it.
+function Main:_flyTrail(dt)
+	local tr < const > = self._trail
+	if tr.entity.world == nil then
+		self._trail = nil
+		return
+	end
+	tr.time = tr.time + dt
+
+	local left < const > = tr.length - tr.at
+	if left > 0.0 then
+		-- Up to speed from a standstill, and down again into the end, so it arrives rather than stops.
+		tr.speed = math.min(tr.speed + TRAIL_ACCEL * dt, TRAIL_SPEED, math.sqrt(2.0 * TRAIL_BRAKE * left) + 0.5)
+		tr.at = math.min(tr.at + tr.speed * dt, tr.length)
+		self:_placeTrail(dt)
+	elseif tr.whole and tr.hold > 0.0 then
+		tr.hold = tr.hold - dt
+		self:_placeTrail(dt)
+	else
+		self:_retireTrail(tr.entity)
+		self._trail = nil
+	end
+end
+
+-- Stand the wisp where it has got to along its route, weaving about it.
+function Main:_placeTrail(dt)
+	local tr < const > = self._trail
+	local samples < const > = tr.samples
+	while tr.index < #samples - 1 and samples[tr.index + 1][4] <= tr.at do
+		tr.index = tr.index + 1
+	end
+	local a < const > = samples[tr.index]
+	local b < const > = samples[math.min(tr.index + 1, #samples)]
+	local span < const > = b[4] - a[4]
+	local t < const > = (span > 0.0) and math.min((tr.at - a[4]) / span, 1.0) or 1.0
+
+	-- Sideways is across the way it is going, in the ground plane.
+	local dx = b[1] - a[1]
+	local dz = b[3] - a[3]
+	local dl < const > = math.sqrt(dx * dx + dz * dz)
+	if dl > 0.001 then
+		dx = dx / dl
+		dz = dz / dl
+	end
+	local sway < const > = TRAIL_SWAY * math.sin(tr.time * TRAIL_SWAY_RATE)
+	local bob < const > = TRAIL_BOB * math.sin(tr.time * TRAIL_BOB_RATE)
+
+	tr.entity.transform = Transform(Vector4(
+		a[1] + (b[1] - a[1]) * t - dz * sway,
+		a[2] + (b[2] - a[2]) * t + TRAIL_LIFT + bob,
+		a[3] + (b[3] - a[3]) * t + dx * sway,
+		1.0
+	), Quaternion.identity)
+end
+
+-- Stop a wisp emitting and take it out of the world once what it has left behind has faded.
+function Main:_retireTrail(entity)
+	local effect < const > = entity:getComponent(traktor.spray.EffectComponent)
+	if effect ~= nil then
+		effect.enable = false
+	end
+	local ribbon < const > = entity:getComponent(traktor.spray.TrailComponent)
+	if ribbon ~= nil then
+		ribbon.enable = false
+	end
+	table.insert(self._trailSpent, { entity = entity, timer = TRAIL_LINGER })
+end
+
+-- Same pair as Scripts/Weapons/Grenades: removeEntity clears the entity's world at once, which
+-- lets destroy() run now. An entity whose world has already gone is left alone.
+function Main:_removeTrailEntity(entity)
+	local world < const > = (self.world ~= nil) and self.world.world or nil
+	if world ~= nil and entity.world ~= nil then
+		world:removeEntity(entity)
+		entity:destroy()
+	end
+end
+]]></text>
+</object>

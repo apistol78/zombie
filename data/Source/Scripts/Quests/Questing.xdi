@@ -7,6 +7,9 @@
 #using \{D1A10000-0000-4000-8000-000000000004}
 #using \{D1A10000-0000-4000-8000-000000000005}
 
+-- Scripts/Quests/Breadcrumb: the trail of light to the followed quest's waypoint (T).
+#using \{BBC472A1-9867-4C3A-97FF-85F8B6EEC4BB}
+
 import(traktor)
 
 -- Questing: the part of Scripts/Main that deals with the story -- the pack, the quests and the
@@ -34,6 +37,7 @@ import(traktor)
 --   * The followed quest's current step has a waypoint (StoryWorldComponent.waypoint), which is a
 --     second marker on the compass strip and a blip on the map -- and when the step is to talk to
 --     someone (.talkTarget), the same diamond hangs over their head (_updateQuestBeacon).
+--   * T sends a wisp along the nav mesh route to that waypoint -- Scripts/Quests/Breadcrumb.
 --
 -- Defines the class if Main has not yet -- this is #using'd by Main, so it is loaded first.
 
@@ -103,6 +107,7 @@ function Main:_initQuests()
 	self._questTalkTo = nil      -- the character record the followed step wants talked to
 	self._questBeacon = nil      -- ...and the marker over their head, made on first use
 	self._questBeaconTime = 0.0
+	self:_initTrail()
 
 	-- A conversation: on this stage's one Frame, like every other dialog (see Main:new).
 	self._dialogOpen = false
@@ -121,6 +126,7 @@ end
 
 -- Take the two windows down with the stage. Called from Main:finalize.
 function Main:_finalizeQuests()
+	self:_finalizeTrail()
 	if self._dialogDialog ~= nil then
 		self._dialogDialog:remove()
 		self._dialogDialog = nil
@@ -136,6 +142,7 @@ end
 -- A hot reload looks the world through again. Called from Main:reload.
 function Main:_reloadQuests()
 	self._questTalkTo = nil
+	self:_reloadTrail()
 	local storyWorld < const > = self:_storyWorldOf()
 	if storyWorld ~= nil then
 		storyWorld:refresh()
@@ -340,7 +347,8 @@ function Main:_closeQuestPanel()
 end
 
 -- E leaves a conversation; J opens and closes the journal -- not over the pause menu or another
--- window, which _setJournalOpen refuses on its own. Called from Main:update with the other keys
+-- window, which _setJournalOpen refuses on its own; T shows the way to the followed quest's
+-- waypoint, which _showTrail refuses over any window. Called from Main:update with the other keys
 -- that work while the night is held still.
 function Main:_questKeys(mapping)
 	if self._dialogOpen and mapping:isStatePressed("STATE_INTERACT") then
@@ -349,6 +357,8 @@ function Main:_questKeys(mapping)
 	end
 	if mapping:isStatePressed("STATE_JOURNAL") then
 		self:_setJournalOpen(not self._journalOpen)
+	elseif mapping:isStatePressed("STATE_TRAIL") then
+		self:_showTrail()
 	end
 end
 
@@ -370,6 +380,7 @@ function Main:_updateQuests(dt)
 		self:_flushQuestNotices()
 	end
 	self:_updateQuestWaypoint()
+	self:_updateTrail(dt, playing)
 end
 
 -- One queued line at a time, each once the notice line is free again.

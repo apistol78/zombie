@@ -5,38 +5,72 @@
 	<state>
 		<visible>true</visible>
 		<dynamic>false</dynamic>
-		<locked>true</locked>
+		<locked>false</locked>
 	</state>
 	<transform>
 		<translation>0, 0, 0, 0</translation>
 		<rotation>0, 0, 0, 1</rotation>
 	</transform>
 	<components>
-		<item type="traktor.mesh.MeshComponentData" version="1">
-			<mesh>{F780192C-1B4E-2D40-86E3-66BB637C3F4D}</mesh>
-		</item>
-		<item type="traktor.physics.RigidBodyComponentData" version="1">
-			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
-				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
-					<localTransform>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+					<id>{B7A84943-ED7E-E545-81CB-E8AC32CE2A74}</id>
+					<name>Door</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0.040758, 1.647473, 3.020025, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components/>
+					<entityData>{12FBE0E2-89EF-43B0-8782-B166F6C98267}</entityData>
+				</item>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{DB28DA6D-C85A-3A40-BB9C-285E984BCCB7}</id>
+					<name>House</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
 						<translation>0, 0, 0, 0</translation>
 						<rotation>0, 0, 0, 1</rotation>
-					</localTransform>
-					<collisionGroup>
-						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-					</collisionGroup>
-					<collisionMask>
-						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
-					</collisionMask>
-					<material>0</material>
-					<mesh>{945ABA19-81DA-7D4B-AC23-41288F426D4B}</mesh>
-				</shape>
-				<friction>0.75</friction>
-				<restitution>0</restitution>
-				<kinematic>false</kinematic>
-			</bodyDesc>
-			<eventCollide/>
-			<transformFilter>0</transformFilter>
+					</transform>
+					<components>
+						<item type="traktor.mesh.MeshComponentData" version="1">
+							<mesh>{F780192C-1B4E-2D40-86E3-66BB637C3F4D}</mesh>
+						</item>
+						<item type="traktor.physics.RigidBodyComponentData" version="1">
+							<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+								<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+									<localTransform>
+										<translation>0, 0, 0, 0</translation>
+										<rotation>0, 0, 0, 1</rotation>
+									</localTransform>
+									<collisionGroup>
+										<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+									</collisionGroup>
+									<collisionMask>
+										<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+									</collisionMask>
+									<material>0</material>
+									<mesh>{945ABA19-81DA-7D4B-AC23-41288F426D4B}</mesh>
+								</shape>
+								<friction>0.75</friction>
+								<restitution>0</restitution>
+								<kinematic>false</kinematic>
+							</bodyDesc>
+							<eventCollide/>
+							<transformFilter>0</transformFilter>
+						</item>
+					</components>
+				</item>
+			</entityData>
 		</item>
 	</components>
 </object>

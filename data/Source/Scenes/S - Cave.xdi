@@ -859,6 +859,1630 @@
 			</components>
 		</item>
 		<item type="traktor.world.EntityData" version="2">
+			<id>{0C678F4D-9FCB-4BF7-BA4E-59C091749402}</id>
+			<name>Dressing</name>
+			<state>
+				<visible>true</visible>
+				<dynamic>false</dynamic>
+				<locked>false</locked>
+			</state>
+			<transform>
+				<translation>0, 0, 0, 0</translation>
+				<rotation>0, 0, 0, 1</rotation>
+			</transform>
+			<components>
+				<item type="traktor.world.GroupComponentData">
+					<entityData>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C927A2E3-54D4-4253-B3C0-4E2B5DDB0AC1}</id>
+							<name>Cave_Impaling_Stakes</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-4.25, -0.443, -1.75, 0</translation>
+								<rotation>0, 0.9895, 0, -0.1444</rotation>
+							</transform>
+							<components/>
+							<entityData>{C216FCD4-ED37-DD4B-BCBF-638EEBE0A58C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D5F8F835-7462-455B-B746-B562B47C95CD}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-6.25, -0.315649, -0.75, 0</translation>
+								<rotation>0.266146, -0.646841, 0.258357, 0.666344</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{BB58AB09-456E-48FB-A313-CB3204AECF6C}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-4.213974, -0.400629, 1.618311, 0</translation>
+								<rotation>0.174551, 0.374945, -0.072109, 0.907606</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{69D565E7-BB9E-4B42-8614-D0C6885868D9}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>7.6065, 2.86, -2.8935, 0</translation>
+								<rotation>0, -0.9239, 0, 0.3827</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DD88AA4E-F7F2-4562-9485-B8937EE4C70F}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>9.25, 0.061, -2.25, 0</translation>
+								<rotation>0, 0.9859, 0, 0.1673</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9DD9A1AF-4182-4D9A-9159-896A00C0084E}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>15.25, 6.248, 1.75, 0</translation>
+								<rotation>0, 0.3968, 0, -0.9179</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7EA495FF-407F-4D72-9E43-5F3C94FCDED3}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>17.25, -0.12, -5.75, 0</translation>
+								<rotation>0, 0.7209, 0, 0.6931</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{FE323199-6AD6-4860-8D2C-50C957424CAE}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14.75, -0.164, 6.25, 0</translation>
+								<rotation>0, 0.9606, 0, -0.2778</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E0BC9CC3-3BF7-4275-98C9-553FFDBD373F}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14.25, -0.016962, 4.75, 0</translation>
+								<rotation>0.097634, -0.780126, 0.125896, 0.604997</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{48E26444-CBF1-4565-B882-CF24D4223ED3}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14.25, -0.062366, 7.75, 0</translation>
+								<rotation>0.086727, -0.775744, 0.109319, 0.615426</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CC1043B1-E52D-4FA5-B758-767431EAFE7A}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>14.0479, 2.525, 14.0408, 0</translation>
+								<rotation>0, 0.5556, 0, -0.8315</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{AC2C2CCB-C401-4DB5-88FF-A26E5817C9BF}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>29.25, 2.608, 18.33, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{566A515D-8677-4BD7-81FF-3BA79329AA32}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>39.75, 6.329, 14.75, 0</translation>
+								<rotation>0, 0.2909, 0, -0.9567</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{23462F32-2223-467E-8733-9585FCB8612D}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>41.25, 2.589, 18.370001, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{F274FD7B-45AD-485A-B4A1-223DE2913596}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>46.75, 2.589, 13.63, 0</translation>
+								<rotation>0, -1, 0, 0</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{574BDAF8-FE3C-43A9-9D9D-BA5CEA7577A0}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>54.25, -0.596, 15.75, 0</translation>
+								<rotation>0, -0.081, 0, -0.9967</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{ACFAD210-2508-4292-BF14-FB9F14EC452F}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>58.25, 0.022, 16.25, 0</translation>
+								<rotation>-0.027269, 0.730854, 0.02925, 0.681361</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C73F1B40-8726-4024-8A55-AFE7DCC8BCCA}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>55.75, -0.166688, 18.25, 0</translation>
+								<rotation>0.101996, 0.367582, -0.040598, 0.923489</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{8100A6A6-8B19-4BFC-92D2-CEC2E9D51088}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>55.75, 6.323, 0.75, 0</translation>
+								<rotation>0, 0.6134, 0, 0.7898</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{76518EA8-5281-4C38-BC49-9D7F5751CC16}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>53.75, 2.606, -2.37, 0</translation>
+								<rotation>0, -1, 0, 0</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{272ACC7C-33FE-46C0-9416-13ED8C67190A}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>24.8916, 3.01, 2.0918, 0</translation>
+								<rotation>0, 0.1951, 0, 0.9808</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{84CBA6F3-539B-44C4-AC18-795D04901DE3}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>23.073999, 2.999, -2.175, 0</translation>
+								<rotation>0, -0.9808, 0, 0.1951</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A9828D6F-B1F3-4BF7-AD4D-92E579EBBE0C}</id>
+							<name>Cave_Altar</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>36.25, -0.383, -4.75, 0</translation>
+								<rotation>0, 0.4391, 0, 0.8985</rotation>
+							</transform>
+							<components/>
+							<entityData>{A9BA1E10-9EF1-A948-BC61-3AFFA5D337F0}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6564DB3E-B188-4B50-8832-99A7C5AD0CFF}</id>
+							<name>Cave_Brazier</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>36.25, -0.46, -1.75, 0</translation>
+								<rotation>0, -0.8882, 0, 0.4595</rotation>
+							</transform>
+							<components/>
+							<entityData>{11A0A6CA-A457-2D4E-8EA1-EA4C8F3521BA}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{69A80E6E-A530-4379-BA43-4A245F776F58}</id>
+							<name>Cave_Brazier</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>31.75, -0.058, -6.25, 0</translation>
+								<rotation>0, -0.7189, 0, 0.6951</rotation>
+							</transform>
+							<components/>
+							<entityData>{11A0A6CA-A457-2D4E-8EA1-EA4C8F3521BA}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B4BE522C-E23E-479F-8F1D-B0735BD0F44D}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.75, -0.539, -2.75, 0</translation>
+								<rotation>0, -0.955, 0, 0.2966</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{053C6F64-307F-4237-879B-98716AE6BDE0}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>37.75, -0.332, -6.75, 0</translation>
+								<rotation>0.054874, -0.926822, 0.14957, 0.340028</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2BECD06D-603E-445E-8772-40BC5C430A91}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.75, -0.384353, -5.25, 0</translation>
+								<rotation>0.226277, -0.118695, 0.027792, 0.966404</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1BF4832D-380D-4D33-9A42-B2BAC53E5D69}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>37.75, -0.329903, -7.75, 0</translation>
+								<rotation>0.204358, -0.211738, -0.002831, 0.955718</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A7BC2F37-E118-4B12-9D75-4D84C0F659AF}</id>
+							<name>Cave_Sigil_Stone</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>43.75, -0.446, -3.25, 0</translation>
+								<rotation>0, 0.7705, 0, 0.6374</rotation>
+							</transform>
+							<components/>
+							<entityData>{A28BD324-FA5B-C549-BE38-BEA0CBFB7439}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{38D490C7-065C-4DC7-9D97-6808199812FD}</id>
+							<name>Cave_Impaling_Stakes</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>35.75, -0.379, 3.25, 0</translation>
+								<rotation>0, 0.2827, 0, 0.9592</rotation>
+							</transform>
+							<components/>
+							<entityData>{C216FCD4-ED37-DD4B-BCBF-638EEBE0A58C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6A00EAFE-904B-4CFD-AE7F-F94912BC10D3}</id>
+							<name>Cave_Bone_Pile</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>37.75, -0.613, 1.75, 0</translation>
+								<rotation>0, 0.5527, 0, 0.8334</rotation>
+							</transform>
+							<components/>
+							<entityData>{45C37267-E64F-FB4D-B261-5608C2894B68}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A6BCD992-969C-4250-925A-F4A3E79A4024}</id>
+							<name>Cave_Altar</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>86.25, -0.087, -2.75, 0</translation>
+								<rotation>0, 0.5436, 0, 0.8394</rotation>
+							</transform>
+							<components/>
+							<entityData>{A9BA1E10-9EF1-A948-BC61-3AFFA5D337F0}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DB47E9FC-2694-43A2-BA00-57F6877E4CF5}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>84.75, -0.07, -5.75, 0</translation>
+								<rotation>0, 0.9932, 0, 0.1161</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{948FCCBC-1A78-48EA-81EB-C4D6E205B6E4}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>88.25, -0.157, -4.75, 0</translation>
+								<rotation>0, 0.7017, 0, 0.7124</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{77A2FE9D-6397-44B7-AD70-BB7B772C9256}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>79.25, 3.919, -7.25, 0</translation>
+								<rotation>0, 0.9344, 0, -0.3561</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D1D33C4F-5AA8-4E76-A9A3-B12F56DF7C22}</id>
+							<name>Cave_Inverted_Cross</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>81.25, 4.127, 1.75, 0</translation>
+								<rotation>0, 0.1847, 0, 0.9828</rotation>
+							</transform>
+							<components/>
+							<entityData>{A007695F-CAE0-A24B-AA81-F9EBC7C3354B}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{F9A7F9BD-C201-4C4F-9CB6-30CC65307C55}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>85.75, 7.983, -9.75, 0</translation>
+								<rotation>0, -0.4453, 0, -0.8954</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5CBDBD75-4737-4094-A76F-D53476BEA085}</id>
+							<name>Cave_Shrouded_Corpse</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>106.75, -0.097, -6.75, 0</translation>
+								<rotation>0, 0.9902, 0, 0.1397</rotation>
+							</transform>
+							<components/>
+							<entityData>{022CE154-8C02-EB43-85FA-579FDEB25CE4}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2248D483-EEDF-46A1-8F49-E297E8EE690C}</id>
+							<name>Cave_Shrouded_Corpse</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>101.25, -0.085, -6.75, 0</translation>
+								<rotation>0, -0.6852, 0, 0.7283</rotation>
+							</transform>
+							<components/>
+							<entityData>{022CE154-8C02-EB43-85FA-579FDEB25CE4}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7DBA9998-8853-4293-9F42-8565CC13E4ED}</id>
+							<name>Cave_Impaling_Stakes</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>101.25, -0.079, -3.25, 0</translation>
+								<rotation>0, -0.7885, 0, 0.6151</rotation>
+							</transform>
+							<components/>
+							<entityData>{C216FCD4-ED37-DD4B-BCBF-638EEBE0A58C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{F187A46F-B4AA-4B00-9FEE-5B7C4DB36AF4}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>106.25, -0.059, -3.75, 0</translation>
+								<rotation>0, -0.8079, 0, 0.5893</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C27FC4F8-19FB-41B5-B845-02222353E7AD}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>104.25, 7.751, -0.25, 0</translation>
+								<rotation>0, 0.6956, 0, 0.7184</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1096E63F-E018-4B5E-92BB-886874C5EB2A}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>109.25, 8.109, -8.25, 0</translation>
+								<rotation>0, 0.9906, 0, -0.1369</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D1994EFF-6CBD-48BD-B45D-CDFC1233608E}</id>
+							<name>Cave_Ritual_Dais</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>141.25, -16.108, -5.25, 0</translation>
+								<rotation>0, 0.4478, 0, 0.8942</rotation>
+							</transform>
+							<components/>
+							<entityData>{CB6EB7FE-72CA-BE4D-A502-C13783C78A83}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0DC1BCFA-B184-4BFA-993E-BFBF097F821E}</id>
+							<name>Cave_Brazier</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>137.75, -16.056999, -1.25, 0</translation>
+								<rotation>0, -0.9989, 0, 0.0477</rotation>
+							</transform>
+							<components/>
+							<entityData>{11A0A6CA-A457-2D4E-8EA1-EA4C8F3521BA}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{7220336F-F77B-4974-84F3-55D792D0ABDF}</id>
+							<name>Cave_Brazier</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>143.25, -16.056, -1.25, 0</translation>
+								<rotation>0, 0.8765, 0, 0.4814</rotation>
+							</transform>
+							<components/>
+							<entityData>{11A0A6CA-A457-2D4E-8EA1-EA4C8F3521BA}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B06D99BA-C616-4454-8DD4-EA393980082E}</id>
+							<name>Cave_Horned_Effigy</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>135.25, -16.055, 6.75, 0</translation>
+								<rotation>0, 0.7075, 0, 0.7067</rotation>
+							</transform>
+							<components/>
+							<entityData>{1F29DC8E-8BD9-1649-AF0F-E83A877DD9D9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{92BFB8D2-D9BE-4578-A232-7638E70003C2}</id>
+							<name>Cave_Sigil_Stone</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>152.75, -0.015, 0.75, 0</translation>
+								<rotation>0, 0.6543, 0, 0.7563</rotation>
+							</transform>
+							<components/>
+							<entityData>{A28BD324-FA5B-C549-BE38-BEA0CBFB7439}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2D883205-3BDC-4358-A430-70E9650446A7}</id>
+							<name>Cave_Impaling_Stakes</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>153.25, -0.077, 7.25, 0</translation>
+								<rotation>0, 0.5649, 0, 0.8252</rotation>
+							</transform>
+							<components/>
+							<entityData>{C216FCD4-ED37-DD4B-BCBF-638EEBE0A58C}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B7DA093D-FF23-4142-B61B-111E1F85FD42}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>150.25, 17.476, 2.25, 0</translation>
+								<rotation>0, 0.991, 0, 0.134</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B2E21C11-9A2D-4D87-8D8C-7DE0FBB3B952}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>148.75, 17.57, 5.25, 0</translation>
+								<rotation>0, 0.1003, 0, -0.995</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{60032478-6FD1-4399-B37F-9658FEE21D1A}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>144.75, -16.025999, -3.25, 0</translation>
+								<rotation>0.246941, -0.364307, 0.100825, 0.892264</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0D99B61E-A6E7-4D1C-99D0-879E737AA690}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>138.75, -16.052999, -2.25, 0</translation>
+								<rotation>0.206153, 0.535688, -0.136784, 0.807359</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{9928973C-2B08-4BB3-A172-62845E8AA92E}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>105.25, -0.422, 7.75, 0</translation>
+								<rotation>0, -0.2148, 0, -0.9766</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0DA1959A-4B01-4920-94AB-5D313829F6D5}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>105.75, -0.045, 9.25, 0</translation>
+								<rotation>0, 0.012, 0, -0.9999</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D3D46915-8ED0-46B6-A3A8-5F488D20E7E5}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>104.75, -0.172655, 9.25, 0</translation>
+								<rotation>0.133611, -0.442864, 0.066932, 0.884047</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{EC874815-5C10-4FF2-A3D8-ECC119EF6DF0}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>105.25, -0.236891, 6.25, 0</translation>
+								<rotation>0.305015, -0.381165, 0.134832, 0.862264</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B36CB6A2-CF32-4BCD-AA16-DFDA7C60E67A}</id>
+							<name>Cave_Bone_Pile</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>86.75, -0.064, -15.75, 0</translation>
+								<rotation>0, 0.0839, 0, 0.9965</rotation>
+							</transform>
+							<components/>
+							<entityData>{45C37267-E64F-FB4D-B261-5608C2894B68}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2873A4C5-F526-4E58-8FB7-299E7944D54B}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>87.75, 8.257, -22.25, 0</translation>
+								<rotation>0, 0.1763, 0, -0.9843</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{91F21A31-FD5D-465C-AB2D-D4FC4DD6918D}</id>
+							<name>Cave_Sigil_Stone</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>83.75, -4.053, -20.25, 0</translation>
+								<rotation>0, 0.8899, 0, 0.4562</rotation>
+							</transform>
+							<components/>
+							<entityData>{A28BD324-FA5B-C549-BE38-BEA0CBFB7439}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D701EB4A-052D-4B00-A91A-CC9EADF83175}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>86.75, -0.148, -31.25, 0</translation>
+								<rotation>0, 1, 0, -0.0051</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{FC3A6AD9-2F28-4B03-8648-3800708EBA5E}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>73.493599, -1.409, -22.131001, 0</translation>
+								<rotation>0, 0.1951, 0, -0.9808</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1B9AA968-6301-4B24-9283-CCEAFB2F4F33}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>72.75, -4.122, -24.25, 0</translation>
+								<rotation>0, 0.2216, 0, -0.9751</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{95ED8290-5C9D-417A-9C61-EA2EC02F5406}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>69.75, -3.793, -33.75, 0</translation>
+								<rotation>0, -0.595, 0, 0.8037</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3B868877-86B6-4A2D-ADAE-6B2D2734A590}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>70.9692, -1.331, -41.4692, 0</translation>
+								<rotation>0, 0.9239, 0, 0.3827</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{41EEED59-68D6-4156-A892-5E92F18F410C}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>72.918404, -1.23, -40.156502, 0</translation>
+								<rotation>0, 0.9808, 0, 0.1951</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{94257835-2100-4EDD-962F-6EA72B3AE296}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>63.75, -4.157, -41.25, 0</translation>
+								<rotation>0, 0.9951, 0, 0.0984</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DC8C7451-9505-4C7B-8FBD-C415EA59164D}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>65.75, -4.164, -41.25, 0</translation>
+								<rotation>0, 0.916, 0, 0.4013</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2AC6E1E3-61FF-47EA-A9A4-BB797BCA70F5}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>55.979599, -1.091, -37.195702, 0</translation>
+								<rotation>0, 0.1951, 0, 0.9808</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{12AB355D-ECCB-4FAB-98A2-9CD2DC3FD16B}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>56.25, -3.849, -41.75, 0</translation>
+								<rotation>0, 0.9981, 0, 0.0613</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B8A45859-90B6-4084-AADF-08556CFECC11}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>47.4375, -1.418, -42.202702, 0</translation>
+								<rotation>0, 0.9808, 0, 0.1951</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{1E25C207-5146-4B31-86DF-8C2007E7E482}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>39.75, 2.323, -39.25, 0</translation>
+								<rotation>0, 0.5169, 0, 0.856</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3112E347-584C-4E84-94DE-9E7ADC14817E}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>40.75, -1.437, -42.18, 0</translation>
+								<rotation>0, -1, 0, 0</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{0EBABAF0-2053-4943-A1C1-F8B245819158}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>32.75, -4.422, -38.75, 0</translation>
+								<rotation>0, 0.2571, 0, 0.9664</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{029AD919-4360-4B8D-9A9A-41971E59832A}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>42.240002, -1.35, -31.25, 0</translation>
+								<rotation>0, 0.7071, 0, 0.7071</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{800830E7-6D5C-4DE5-A709-A1CABC298188}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>42.174999, -1.441, -33.074001, 0</translation>
+								<rotation>0, 0.5556, 0, 0.8315</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{5A759A76-D360-4254-97FB-06E97372DF14}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>38.75, -4.130325, -34.25, 0</translation>
+								<rotation>0.184281, -0.366184, 0.074229, 0.909087</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{F1C36907-9A2F-49E6-A6C9-0BDE0CB7E5E8}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>37.009998, -0.583, -22.75, 0</translation>
+								<rotation>0, 0.7071, 0, -0.7071</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{811570DA-939F-4DF8-A8D5-04343168666D}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>159.974197, 5.112, -9.5258, 0</translation>
+								<rotation>0, -0.9239, 0, 0.3827</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6548AF08-7710-4737-BF61-4D419789EA26}</id>
+							<name>Cave_Horned_Effigy</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>174.25, -0.089, -8.25, 0</translation>
+								<rotation>0, 0.0255, 0, 0.9997</rotation>
+							</transform>
+							<components/>
+							<entityData>{1F29DC8E-8BD9-1649-AF0F-E83A877DD9D9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E1A97D01-EF34-41C0-9901-9CE6A1EA467D}</id>
+							<name>Cave_Brazier</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>174.75, -0.028, -10.75, 0</translation>
+								<rotation>0, 0.5174, 0, 0.8557</rotation>
+							</transform>
+							<components/>
+							<entityData>{11A0A6CA-A457-2D4E-8EA1-EA4C8F3521BA}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{264FD034-07CD-4E36-9DCE-8FFD6A768C23}</id>
+							<name>Cave_Sigil_Stone</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>168.75, -0.074, -13.25, 0</translation>
+								<rotation>0, -0.6323, 0, 0.7747</rotation>
+							</transform>
+							<components/>
+							<entityData>{A28BD324-FA5B-C549-BE38-BEA0CBFB7439}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{B08196AA-B7C6-4B98-901E-EFDC844289CA}</id>
+							<name>Cave_Sigil_Stone</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>172.75, -0.064, -10.25, 0</translation>
+								<rotation>0, -0.477, 0, 0.8789</rotation>
+							</transform>
+							<components/>
+							<entityData>{A28BD324-FA5B-C549-BE38-BEA0CBFB7439}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{D30FACC3-AE54-4E0B-AFEF-24F36382993F}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>167.25, 3.959, -5.75, 0</translation>
+								<rotation>0, -0.4867, 0, 0.8736</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3CE00515-8F9D-4486-A614-CF459EDE145A}</id>
+							<name>Cave_Shrouded_Corpse</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>177.25, -0.431, -15.75, 0</translation>
+								<rotation>0, -0.1688, 0, 0.9856</rotation>
+							</transform>
+							<components/>
+							<entityData>{022CE154-8C02-EB43-85FA-579FDEB25CE4}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{DB2FF89B-8F76-40D5-A02E-B456D66AC661}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>166.25, 12.461, -8.75, 0</translation>
+								<rotation>0, 0.4006, 0, -0.9163</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{76F352F0-2314-4BB2-9D45-3C2EAC55EDAD}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>166.75, -0.148, -23.25, 0</translation>
+								<rotation>0, 0.998, 0, -0.0639</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{FCFBA9A9-0EBE-4AA2-BD75-321DBE0BF5A5}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>182.75, -0.387, -17.25, 0</translation>
+								<rotation>0, 0.9453, 0, 0.3263</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{72A4D896-60EB-4B74-901E-2E9D41BCEC7A}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>184.25, -0.328, -17.75, 0</translation>
+								<rotation>0.012843, -0.985113, 0.148885, 0.084974</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E4A71F0C-7E30-42E2-83FE-9F780F467205}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>181.25, -0.014, -17.75, 0</translation>
+								<rotation>-0.06487, -0.988861, 0.131622, 0.02491</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C40A486C-2550-4AE1-8BE7-DA39F0F44F5B}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>191.75, 3.979, -7.25, 0</translation>
+								<rotation>0, 0.9206, 0, 0.3904</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E8039524-C22E-4EFA-BCE4-36DA18F1964C}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>187.75, 3.270406, -9.25, 0</translation>
+								<rotation>0.099829, -0.933774, 0.250103, 0.235687</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A85FA09F-FBB4-4E72-B39F-C491D6ADC2CB}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>193.25, 4.6891, -3.75, 0</translation>
+								<rotation>0.140516, 0.527349, -0.167862, 0.820963</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{513FAE43-A984-4A57-9A77-1F6F97B8F68D}</id>
+							<name>Cave_Hanging_Cage</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>189.75, 12.562, -2.25, 0</translation>
+								<rotation>0, 0.9927, 0, -0.1205</rotation>
+							</transform>
+							<components/>
+							<entityData>{C55BBC95-158F-BE42-AAFC-0278EE7066C8}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{ACBDE45A-D52B-4FD1-B86E-EBCC84D48FAF}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>199.25, -0.422, -1.25, 0</translation>
+								<rotation>0, 0.9389, 0, 0.3441</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{CEA2C896-5B3A-4CE1-8CA7-028A2CE6DA09}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>200.25, -0.084, -2.25, 0</translation>
+								<rotation>0, 0.1889, 0, 0.982</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{130EFF78-1D63-4CE2-BBA7-477D6398186C}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>197.75, -0.028, -1.75, 0</translation>
+								<rotation>0, 0.1239, 0, 0.9923</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E4CAB4E2-5E87-471D-93C1-BA0BFBCD3B0E}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>133.630005, -13.411, -14.75, 0</translation>
+								<rotation>0, -0.7071, 0, 0.7071</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{3C7995B7-F9E2-4B2E-9C3A-60D99AAC6C55}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>138.089996, -13.413, -16.75, 0</translation>
+								<rotation>0, 0.7071, 0, 0.7071</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{2F2C780C-175B-49C3-91EA-885A822F5978}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>134.75, -16.157, -15.75, 0</translation>
+								<rotation>0, -0.6368, 0, 0.771</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A54B0BFB-F196-45D0-A8AD-CDA35CC8716B}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>134.75, -16.125999, -22.75, 0</translation>
+								<rotation>0, 0.8903, 0, -0.4554</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{412E9F37-4331-402C-9188-32ABED4C7AFB}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>134.25, -16.014, -21.25, 0</translation>
+								<rotation>0, -0.4944, 0, 0.8692</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6968FC6B-7D9D-4C48-8C9A-F8C526FFE046}</id>
+							<name>Cave_Skull</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>134.75, -16.031, -24.25, 0</translation>
+								<rotation>0, 0.7682, 0, 0.6402</rotation>
+							</transform>
+							<components/>
+							<entityData>{47F34CF7-300C-1E42-B8A3-86F6D5303DE9}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{75F79617-F743-4CB5-B9E9-28765B0181BC}</id>
+							<name>Cave_Wall_Shackles</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>119.75, 4.576, 16.959999, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{36ABDCEF-8205-E04A-B82C-4838309FB809}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{C5E93C51-CF9D-467B-8170-6146ED6D926B}</id>
+							<name>Cave_Skull_Cairn</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>118.75, -0.287, 22.25, 0</translation>
+								<rotation>0, 0.7597, 0, -0.6503</rotation>
+							</transform>
+							<components/>
+							<entityData>{37BBC1E0-9AB0-8240-9F89-FEC5A163EC36}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{6C9B32F4-E95B-4517-BEA2-1B2063406D5D}</id>
+							<name>Cave_Candle_Cluster</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>118.75, -0.365, 24.25, 0</translation>
+								<rotation>0, 0.192, 0, -0.9814</rotation>
+							</transform>
+							<components/>
+							<entityData>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</entityData>
+						</item>
+					</entityData>
+				</item>
+			</components>
+		</item>
+		<item type="traktor.world.EntityData" version="2">
 			<id>{8C4A2E10-5B3D-4F7A-9E61-0D2C8B4A7E03}</id>
 			<name>Lights</name>
 			<state>
@@ -2162,8 +3786,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>83.434013, 0.168631, -1.775123, 0</translation>
-								<rotation>0, -0.305059, 0, 0.952334</rotation>
+								<translation>85.495552, 1.399795, -2.136577, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components/>
 							<entityData>{6A8C0221-2FCE-4492-B411-B1549F35F763}</entityData>

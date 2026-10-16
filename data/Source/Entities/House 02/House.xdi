@@ -38,5 +38,39 @@
 			<eventCollide/>
 			<transformFilter>0</transformFilter>
 		</item>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+					<id>{82DFA33F-954C-264E-810F-FAD8AD1EE942}</id>
+					<name>Door</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>-1.785121, 1.57, -3.98711, 0</translation>
+						<rotation>0, -1, 0, 0</rotation>
+					</transform>
+					<components/>
+					<entityData>{12FBE0E2-89EF-43B0-8782-B166F6C98267}</entityData>
+				</item>
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+					<id>{A1BD6F13-33B3-3643-BB56-C81909B18BB7}</id>
+					<name>Door</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>true</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>3.010344, 1.592401, 4.020282, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components/>
+					<entityData>{12FBE0E2-89EF-43B0-8782-B166F6C98267}</entityData>
+				</item>
+			</entityData>
+		</item>
 	</components>
 </object>

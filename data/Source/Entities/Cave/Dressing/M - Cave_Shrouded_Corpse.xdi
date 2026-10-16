@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="29">
+	<fileName>Entities/Cave/Dressing/Cave_Shrouded_Corpse.blend</fileName>
+	<importFilter>!Collision</importFilter>
+	<meshType>MtInstance</meshType>
+	<materialShaders>
+		<item>
+			<first>Blood</first>
+			<second>{3C8359D3-3D0B-F346-931D-5FDB3225A5A5}</second>
+		</item>
+		<item>
+			<first>Rope</first>
+			<second>{550175A0-D05D-4DA4-A426-DE75B8C7BA68}</second>
+		</item>
+		<item>
+			<first>Shroud</first>
+			<second>{447AEC3A-E021-E84A-BC67-10396529DCC0}</second>
+		</item>
+	</materialShaders>
+	<materialTextures/>
+	<scaleFactor>1.5, 1.5, 1.5, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
+	<enableDeform>false</enableDeform>
+	<reduce>1</reduce>
+	<raytracingReduce>0.5</raytracingReduce>
+	<previewAngle>0</previewAngle>
+</object>

@@ -35,6 +35,7 @@ function Loading:new(params, environment)
 	-- other UI stages list it for exactly the same reason.
 	Widget.initialize(
 		environment.resource.resourceManager,
+		environment.audio.soundPlayer,
 		{
 			"\{B11AC173-A951-4180-B16B-36F57D2603C8}",
 			"\{6FC8E464-F249-674E-8FA9-1CD2547A0494}",

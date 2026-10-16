@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.mesh.MeshAsset" version="29">
+	<fileName>Entities/Cave/Dressing/Cave_Ritual_Dais.blend</fileName>
+	<importFilter>!Collision</importFilter>
+	<meshType>MtInstance</meshType>
+	<materialShaders>
+		<item>
+			<first>Blood</first>
+			<second>{3C8359D3-3D0B-F346-931D-5FDB3225A5A5}</second>
+		</item>
+		<item>
+			<first>Bone</first>
+			<second>{6FE2F8C2-E6E4-2B45-B9EA-95FF0417F4B0}</second>
+		</item>
+		<item>
+			<first>CaveRock</first>
+			<second>{2CF5451B-8780-4743-90DE-457EA0393291}</second>
+		</item>
+		<item>
+			<first>Flame</first>
+			<second>{C0538054-B629-5F45-B297-E279211F5104}</second>
+		</item>
+		<item>
+			<first>Soot</first>
+			<second>{5154012E-86E4-F94C-956E-94B6E5FDB1A5}</second>
+		</item>
+		<item>
+			<first>Wax</first>
+			<second>{EC9CF2F5-D6CD-414B-88EF-6F6039C396B5}</second>
+		</item>
+	</materialShaders>
+	<materialTextures/>
+	<scaleFactor>1.5, 1.5, 1.5, 1</scaleFactor>
+	<offset>0, 0, 0, 0</offset>
+	<renormalize>false</renormalize>
+	<center>None</center>
+	<grounded>false</grounded>
+	<decalResponse>true</decalResponse>
+	<enableRaytracing>true</enableRaytracing>
+	<enableDeform>false</enableDeform>
+	<reduce>1</reduce>
+	<raytracingReduce>0.5</raytracingReduce>
+	<previewAngle>0</previewAngle>
+</object>

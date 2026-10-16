@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{06DC67BC-03A3-964E-9874-ABE2B10288B6}</id>
+	<name>Cave_Candle_Cluster</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{D924D672-ACF3-F447-8601-FF1CDACCD5E0}</mesh>
+		</item>
+		<item type="traktor.world.GroupComponentData">
+			<entityData>
+				<item type="traktor.world.EntityData" version="2">
+					<id>{534DD76E-296F-4763-9A7F-36E8C7C1ED08}</id>
+					<name>Light</name>
+					<state>
+						<visible>true</visible>
+						<dynamic>false</dynamic>
+						<locked>false</locked>
+					</state>
+					<transform>
+						<translation>0, 0.525, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</transform>
+					<components>
+						<item type="traktor.world.LightComponentData" version="13">
+							<lightType>Point</lightType>
+							<color>1, 0.55, 0.22, 1</color>
+							<intensity>120</intensity>
+							<castShadow>true</castShadow>
+							<nearRange>0</nearRange>
+							<farRange>9</farRange>
+							<radius>1.570796</radius>
+							<flickerAmount>0.6</flickerAmount>
+							<flickerFilter>0.4</flickerFilter>
+							<bakeMode>LbmIndirect</bakeMode>
+						</item>
+					</components>
+				</item>
+			</entityData>
+		</item>
+	</components>
+</object>

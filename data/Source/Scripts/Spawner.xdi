@@ -444,31 +444,40 @@ function Spawner:update(context, totalTime, deltaTime)
 	-- Only yaw: the body stays upright rather than tipping into the slope. Pitching it to
 	-- match the ground normal would not survive anyway, because the controller rebuilds
 	-- the rotation from headAngle alone on its first update.
-	local enemy = context.world:createEntity(Spawner.pickZombie())
-	if enemy == nil then
+	local enemyLoader = context.world:createEntityAsync(Spawner.pickZombie())
+	if enemyLoader == nil then
 		return
 	end
-	local yaw < const > = (math.atan2 or math.atan)(playerPos.x - best.x, playerPos.z - best.z)
-	enemy.transform = traktor.Transform(traktor.Vector4(best.x, best.y, best.z, 1.0), traktor.Quaternion.fromEulerAngles(yaw, 0.0, 0.0))
+	-- Defer rest until loading has completed.
+	-- #fixme What will happen to a pending loader if we enter a cave?
+	enemyLoader:defer(function()
+		local enemy < const > = enemyLoader:get()
+		if enemy == nil then return end
 
-	-- Send it after the player rather than leaving it to notice them.
-	--
-	-- Placing it in cover is only half the job: cover hides the player from *it* too,
-	-- so on its own it would fail perception, stay on patrol, and shuffle about within
-	-- two metres of where it rose until the player had walked past and the sight line
-	-- opened from behind. EnemyController:alertTo puts it straight into its chase state
-	-- so it walks out of that cover towards them instead. Spawning in front of the
-	-- player is worth nothing without this.
-	--
-	-- MUST come after the transform assignment above: ScriptComponent builds its Lua
-	-- object lazily in validate(), which runs on the first setTransform or update, so
-	-- calling this on a freshly created entity would find nothing to call.
-	local sc < const > = enemy:getComponent(traktor.world.ScriptComponent)
-	if sc ~= nil then
-		sc:alertTo()
-	end
-
-	table.insert(self._spawned, enemy)
+		context.world:addEntity(enemy)
+	
+		local yaw < const > = (math.atan2 or math.atan)(playerPos.x - best.x, playerPos.z - best.z)
+		enemy.transform = traktor.Transform(traktor.Vector4(best.x, best.y, best.z, 1.0), traktor.Quaternion.fromEulerAngles(yaw, 0.0, 0.0))
+	
+		-- Send it after the player rather than leaving it to notice them.
+		--
+		-- Placing it in cover is only half the job: cover hides the player from *it* too,
+		-- so on its own it would fail perception, stay on patrol, and shuffle about within
+		-- two metres of where it rose until the player had walked past and the sight line
+		-- opened from behind. EnemyController:alertTo puts it straight into its chase state
+		-- so it walks out of that cover towards them instead. Spawning in front of the
+		-- player is worth nothing without this.
+		--
+		-- MUST come after the transform assignment above: ScriptComponent builds its Lua
+		-- object lazily in validate(), which runs on the first setTransform or update, so
+		-- calling this on a freshly created entity would find nothing to call.
+		local sc < const > = enemy:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil then
+			sc:alertTo()
+		end
+	
+		table.insert(self._spawned, enemy)
+	end)
 end
 ]]></text>
 </object>

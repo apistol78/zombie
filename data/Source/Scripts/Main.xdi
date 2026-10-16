@@ -1673,6 +1673,7 @@ function Main:_putDownNew(kind, count, transform)
 	if e == nil then
 		return nil
 	end
+	self.world:addEntity(e)
 	-- The transform first: assigning it is what brings the item's script object into being
 	-- (ScriptComponent::setTransform), so it can be told what it is straight after.
 	e.transform = transform

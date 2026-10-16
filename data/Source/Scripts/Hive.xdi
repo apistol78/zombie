@@ -240,6 +240,7 @@ function Hive:_rise(context)
 	if zombie == nil then
 		return false
 	end
+	context.world:addEntity(zombie)
 	zombie.transform = Transform(
 		Vector4(at.x, at.y, at.z, 1.0),
 		Quaternion.fromEulerAngles(yaw, 0.0, 0.0)

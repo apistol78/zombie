@@ -6364,7 +6364,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-37.174591, 23.56114, 0.486416, 0</translation>
+								<translation>-37.174591, 23.08934, 0.486416, 0</translation>
 								<rotation>0, -0.636537, 0, 0.771246</rotation>
 							</transform>
 							<components/>
@@ -6894,6 +6894,159 @@
 							</transform>
 							<components/>
 							<entityData>{197E1879-514A-DF41-9493-1DFF1DC93243}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{FC7BB03C-1DFD-EB42-86EF-E1CCF2B1C95C}</id>
+							<name>Dining Table</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-38.348068, 23.75226, -0.01372, 0</translation>
+								<rotation>0, 0.089877, 0, 0.995953</rotation>
+							</transform>
+							<components/>
+							<entityData>{621D1FC9-B29D-53DE-B9CA-47D82E31D615}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{344994C2-8526-5D4D-857D-36404F2F3AB8}</id>
+							<name>Candles 01</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-33.546257, 26.525549, 4.437354, 0</translation>
+								<rotation>0, -0.416871, 0, 0.908966</rotation>
+							</transform>
+							<components/>
+							<entityData>{197E1879-514A-DF41-9493-1DFF1DC93243}</entityData>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{7531C3C2-D8A8-FF46-A157-DF911366C0FA}</id>
+							<name>Fence</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-17.643673, 20.434399, -135.807922, 0</translation>
+								<rotation>0, -0.420387, 0, 0.907345</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
+								</item>
+								<item type="traktor.physics.RigidBodyComponentData" version="1">
+									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+											<localTransform>
+												<translation>0, 0, 0, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</localTransform>
+											<collisionGroup>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionGroup>
+											<collisionMask>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionMask>
+											<material>0</material>
+											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
+										</shape>
+										<friction>0.75</friction>
+										<restitution>0</restitution>
+										<kinematic>false</kinematic>
+									</bodyDesc>
+									<eventCollide/>
+									<transformFilter>0</transformFilter>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{C9D82859-F108-2149-B025-0DC8AF2F0883}</id>
+							<name>Fence</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>5.183066, 20.841452, -129.377014, 0</translation>
+								<rotation>0, -0.843557, 0, 0.53704</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
+								</item>
+								<item type="traktor.physics.RigidBodyComponentData" version="1">
+									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+											<localTransform>
+												<translation>0, 0, 0, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</localTransform>
+											<collisionGroup>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionGroup>
+											<collisionMask>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionMask>
+											<material>0</material>
+											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
+										</shape>
+										<friction>0.75</friction>
+										<restitution>0</restitution>
+										<kinematic>false</kinematic>
+									</bodyDesc>
+									<eventCollide/>
+									<transformFilter>0</transformFilter>
+								</item>
+							</components>
+						</item>
+						<item type="traktor.world.EntityData" version="2">
+							<id>{24B66AE0-27B8-2343-A6A7-5E1745EF8AF1}</id>
+							<name>Fence</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>-12.938816, 20.672041, -119.048454, 0</translation>
+								<rotation>0, 0.026125, 0, 0.999659</rotation>
+							</transform>
+							<components>
+								<item type="traktor.mesh.MeshComponentData" version="1">
+									<mesh>{B169B92D-5DF2-C648-9BB9-0E74C7938ACC}</mesh>
+								</item>
+								<item type="traktor.physics.RigidBodyComponentData" version="1">
+									<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+										<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+											<localTransform>
+												<translation>0, 0, 0, 0</translation>
+												<rotation>0, 0, 0, 1</rotation>
+											</localTransform>
+											<collisionGroup>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionGroup>
+											<collisionMask>
+												<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+											</collisionMask>
+											<material>0</material>
+											<mesh>{2BD2426C-D6F9-644A-8743-21D270C27B9F}</mesh>
+										</shape>
+										<friction>0.75</friction>
+										<restitution>0</restitution>
+										<kinematic>false</kinematic>
+									</bodyDesc>
+									<eventCollide/>
+									<transformFilter>0</transformFilter>
+								</item>
+							</components>
 						</item>
 					</entityData>
 				</item>
@@ -13006,8 +13159,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-36.233208, 24.190006, -4.333866, 0</translation>
-								<rotation>-0.002724, 0.557858, -0.006556, 0.829906</rotation>
+								<translation>-35.822697, 23.60537, -3.624391, 0</translation>
+								<rotation>0.007097, 0.57572, -0.000201, -0.817616</rotation>
 							</transform>
 							<components/>
 							<entityData>{D12BE6FD-2795-4991-BAF1-076C03B2AB21}</entityData>
@@ -14195,7 +14348,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-37.42086, 24.350645, 3.479844, 0</translation>
+								<translation>-35.030033, 26.742111, -2.093276, 0</translation>
 								<rotation>0, 0.944234, 0, 0.329274</rotation>
 							</transform>
 							<components/>
@@ -24531,7 +24684,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>-33.845291, 27.009369, 1.924173, 0</translation>
+								<translation>-33.845291, 26.526045, 1.924173, 0</translation>
 								<rotation>0, -0.602153, 0, 0.798381</rotation>
 							</transform>
 							<components>

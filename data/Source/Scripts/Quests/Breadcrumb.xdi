@@ -228,10 +228,13 @@ function Main:_launchTrail(route)
 	if length <= TRAIL_LEAD or self.world == nil then
 		return
 	end
+
 	local entity < const > = self.world:createEntity(WISP)
 	if entity == nil then
 		return
 	end
+	self.world:addEntity(entity)
+
 	self._trail = {
 		entity = entity,
 		samples = samples,

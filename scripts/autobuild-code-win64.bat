@@ -15,6 +15,8 @@ if not exist "%TRAKTOR_HOME%\scripts\config.bat" (
 call "%TRAKTOR_HOME%\scripts\config.bat"
 echo Traktor in "%TRAKTOR_HOME%".
 
+set SOLUTIONBUILDER=%TRAKTOR_HOME%\bin\win64\releasestatic\Traktor.SolutionBuilder.App
+
 pushd %GAME_HOME%
 %SOLUTIONBUILDER% -f=msvc "-p=$(TRAKTOR_HOME)\resources\build\configurations\msvc-2022-win64.xml" ZombieWin64.xms || goto failed
 msbuild -m "build\win64\Zombie Win64.sln" /p:Configuration=ReleaseShared /p:Platform=x64 || goto failed

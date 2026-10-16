@@ -104,6 +104,7 @@ function Grenades:resolve()
 	end
 	local held < const > = self._context.world:createEntity(GRENADE)
 	if held ~= nil then
+		self._context.world:addEntity(held)
 		held.visible = false
 		self._held = held
 	end
@@ -211,6 +212,8 @@ function Grenades:attack()
 	if entity == nil then
 		return true
 	end
+	context.world:addEntity(entity)
+
 	local T < const > = Transform(origin, Quaternion.identity)
 	entity.transform = T
 

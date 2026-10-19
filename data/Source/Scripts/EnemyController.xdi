@@ -50,6 +50,9 @@ import(traktor)
 
 EnemyController = EnemyController or class("EnemyController", Npc)
 
+-- A vector's components, free for any position this step's crowd has read (Npc:_crowd).
+local xyz < const > = Npc.xyz
+
 -- Who the horde goes for besides the player: placed characters only. Zombies do not hate
 -- zombies, so the "Enemy" list is not worth walking.
 local PREY < const > = { "Npc" }
@@ -277,6 +280,7 @@ end
 function EnemyController:investigate(x, z)
 	self._state = "investigate"
 	self._investigateTarget = Vector4(x, 0.0, z, 1.0)
+	self._investigateX, self._investigateZ = x, z
 	self._investigateTimer = INVESTIGATE_TIME
 	self._patrolTarget = nil
 	self._repathTimer = 0.0
@@ -319,8 +323,9 @@ end
 -- it is called from the re-path branch, not per frame.
 function EnemyController:_chaseAim(enemyPos, playerPos, pdist)
 	local character < const > = self._playerCharacter
+	local qx < const >, _, qz < const > = xyz(playerPos)
 	if character == nil or pdist < FRONT_COMMIT or pdist > FRONT_RANGE then
-		return playerPos.x, playerPos.z
+		return qx, qz
 	end
 
 	-- Where this zombie stands around the player, in the frame of what they are looking
@@ -329,11 +334,12 @@ function EnemyController:_chaseAim(enemyPos, playerPos, pdist)
 	local look < const > = character.headAngle
 	local fx < const > = math.sin(look)
 	local fz < const > = math.cos(look)
-	local dx < const > = enemyPos.x - playerPos.x
-	local dz < const > = enemyPos.z - playerPos.z
+	local ex < const >, _, ez < const > = xyz(enemyPos)
+	local dx < const > = ex - qx
+	local dz < const > = ez - qz
 	local d < const > = math.sqrt(dx * dx + dz * dz)
 	if d < 0.001 then
-		return playerPos.x, playerPos.z
+		return qx, qz
 	end
 	local ahead < const > = (dx * fx + dz * fz) / d
 	local side < const > = (dx * fz - dz * fx) / d
@@ -341,12 +347,12 @@ function EnemyController:_chaseAim(enemyPos, playerPos, pdist)
 	-- Committed, and staying committed until it is well round the back again.
 	if self._closing then
 		if ahead > FRONT_RELEASE_DOT then
-			return playerPos.x, playerPos.z
+			return qx, qz
 		end
 		self._closing = false
 	elseif ahead >= FRONT_DOT then
 		self._closing = true
-		return playerPos.x, playerPos.z
+		return qx, qz
 	end
 
 	-- Still coming round. Step the bearing FRONT_STEP towards the front, stopping at the
@@ -362,7 +368,7 @@ function EnemyController:_chaseAim(enemyPos, playerPos, pdist)
 	end
 	local aim < const > = look + (offset < 0.0 and -turned or turned)
 	local radius < const > = d < FRONT_RADIUS and d or FRONT_RADIUS
-	return playerPos.x + math.sin(aim) * radius, playerPos.z + math.cos(aim) * radius
+	return qx + math.sin(aim) * radius, qz + math.cos(aim) * radius
 end
 
 -- Draw the next patrol destination: a random *reachable* nav point a couple of metres off
@@ -377,10 +383,12 @@ end
 -- w component is the tell, since the engine only builds a positional (w = 1) vector on its
 -- success path and leaves w at zero otherwise.
 function EnemyController:_wanderPoint(enemyPos, playerPos)
-	local cx, cz = enemyPos.x, enemyPos.z
+	local ex < const >, ey < const >, ez < const > = xyz(enemyPos)
+	local qx < const >, _, qz < const > = xyz(playerPos)
+	local cx, cz = ex, ez
 
-	local dx < const > = playerPos.x - enemyPos.x
-	local dz < const > = playerPos.z - enemyPos.z
+	local dx < const > = qx - ex
+	local dz < const > = qz - ez
 	local d < const > = math.sqrt(dx * dx + dz * dz)
 	if d > PATROL_LEASH then
 		local pull = (d - PATROL_LEASH) / PATROL_PULL
@@ -394,7 +402,7 @@ function EnemyController:_wanderPoint(enemyPos, playerPos)
 
 	-- Height stays the zombie's own: there is no cheap way to ask what the ground does a
 	-- metre and a half away, and its own feet are the best guess available.
-	local point = self._navMesh:findRandomPoint(Vector4(cx, enemyPos.y, cz, 1.0), PATROL_STEP)
+	local point = self._navMesh:findRandomPoint(Vector4(cx, ey, cz, 1.0), PATROL_STEP)
 	if point ~= nil and point.w >= 0.5 then
 		return point
 	end
@@ -413,11 +421,12 @@ function EnemyController:_wanderPoint(enemyPos, playerPos)
 end
 
 function EnemyController:update(context, totalTime, deltaTime)
-	local enemy = self.owner
-	local world = self.world
+	local enemy = self._entity or self.owner
+	local world = self._world or self.world
 	if context == nil or enemy == nil or world == nil then
 		return
 	end
+	self._now = totalTime   -- which step this is, for what is shared between characters (Npc:_crowd)
 
 	-- Freeze all enemy logic once the game is over or paused (context is the Stage).
 	if context._gameOver or context._paused then
@@ -460,10 +469,12 @@ function EnemyController:update(context, totalTime, deltaTime)
 		return
 	end
 
-	local enemyPos = enemy.transform.translation
-	local playerPos = self._player.transform.translation
-	local dp = playerPos - enemyPos
-	local pdist = dp.length
+	-- Where it stands, and where the player does, as this step's crowd has them (Npc:_where,
+	-- Npc:_crowd): vectors whose numbers cost nothing more to read.
+	local enemyPos, ex, ey, ez = self:_where()
+	local playerPos = self:_positionOf(self._player)
+	local qx < const >, qy < const >, qz < const > = xyz(playerPos)
+	local pdist = math.sqrt((qx - ex) * (qx - ex) + (qy - ey) * (qy - ey) + (qz - ez) * (qz - ez))
 
 	-- What it is chasing, if that is a character rather than the player -- and once that one is
 	-- down, nothing: it goes back to the player, or to wandering, on the next sample.
@@ -490,7 +501,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 		-- horde is the one the horde reaches first.
 		local prey < const >, preyDist < const > = self:_nearestHated(context, enemyPos, self._sightRange, PREY)
 		if prey ~= nil and (not spotted or preyDist < pdist)
-			and self:_sees(context, enemyPos, prey.transform.translation) then
+			and self:_sees(context, enemyPos, self:_positionOf(prey)) then
 			if self._target ~= prey then
 				self._closing = false
 				self._repathTimer = 0.0
@@ -562,8 +573,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 			-- just seen them, and it re-paths to where they stand now rather than on the next
 			-- half-second beat. A zombie that can see the player (spotted, just refreshed
 			-- above) or is hunting (:hunt, never forgets) has nothing to gain from it.
-			local hx < const > = shot.x - enemyPos.x
-			local hz < const > = shot.z - enemyPos.z
+			local hx < const > = shot.x - ex
+			local hz < const > = shot.z - ez
 			local hd < const > = math.sqrt(hx * hx + hz * hz)
 			if self._state == "attack" then
 				if hd < HEAR_RANGE and not spotted and not self._relentless then
@@ -639,7 +650,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 		speed = self._investigateSpeed
 	end
 	if self._character ~= nil then
-		self._character.maxVelocity = self._attackSpeed
+		self:_setMaxVelocity(self._attackSpeed)
 	end
 
 	-- ---- Collect the finished path query, then choose a destination and issue the next ----
@@ -655,8 +666,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 			if target ~= nil then
 				-- After a character: straight at it. Nothing here is about being seen
 				-- coming, so the front-ring manoeuvre below is the player's alone.
-				local tp < const > = target.transform.translation
-				aimX, aimZ = tp.x, tp.z
+				local tx < const >, _, tz < const > = xyz(self:_positionOf(target))
+				aimX, aimZ = tx, tz
 			else
 				-- Where to chase to: the player, or -- while this zombie is still behind them
 				-- -- a point on the way round to their front. See :_chaseAim, which is where
@@ -679,7 +690,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 			end
 			-- Snapped onto the ground beneath the aim (Npc:_ground), so a player up a tower
 			-- or on a roof still resolves to the terrain under them.
-			self:_requestPath(enemyPos, self:_ground(aimX, aimZ, enemyPos.y))
+			self:_requestPath(enemyPos, self:_ground(aimX, aimZ, ey))
 		end
 	elseif self._state == "investigate" then
 		-- Walking to a place, not after a person: the destination was fixed when the shot
@@ -695,8 +706,8 @@ function EnemyController:update(context, totalTime, deltaTime)
 		local goal < const > = self._investigateTarget
 		local done = goal == nil or self._investigateTimer <= 0.0
 		if not done then
-			local gx < const > = goal.x - enemyPos.x
-			local gz < const > = goal.z - enemyPos.z
+			local gx < const > = self._investigateX - ex
+			local gz < const > = self._investigateZ - ez
 			done = gx * gx + gz * gz < INVESTIGATE_ARRIVE * INVESTIGATE_ARRIVE
 		end
 		if done then
@@ -710,7 +721,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 			-- a scattered point on open ground that may well have landed inside a rock or on
 			-- a roof, and searching from the zombie's own height resolves stacked surfaces to
 			-- the one it can actually walk on.
-			self:_requestPath(enemyPos, self:_ground(goal.x, goal.z, enemyPos.y))
+			self:_requestPath(enemyPos, self:_ground(self._investigateX, self._investigateZ, ey))
 		end
 	elseif self:_route(context) ~= nil then
 		-- Patrol, for a zombie placed with a `route`: walk it, waypoint to waypoint (see
@@ -721,15 +732,16 @@ function EnemyController:update(context, totalTime, deltaTime)
 			self:_dropPath()
 		elseif self._repathTimer <= 0.0 and self:_canPath() then
 			self._repathTimer = 1.5
-			self:_requestPath(enemyPos, self:_ground(point.x, point.z, enemyPos.y))
+			local rx < const >, _, rz < const > = xyz(point)
+			self:_requestPath(enemyPos, self:_ground(rx, rz, ey))
 		end
 	else
 		-- Patrol: take a fresh random nav point when we have none, on arrival, or
 		-- every few seconds (so an enemy that gets stuck re-routes).
 		local needNew = self._patrolTarget == nil
 		if not needNew then
-			local ax = self._patrolTarget.x - enemyPos.x
-			local az = self._patrolTarget.z - enemyPos.z
+			local ax = self._patrolX - ex
+			local az = self._patrolZ - ez
 			if ax * ax + az * az < 1.2 * 1.2 then
 				needNew = true
 			end
@@ -738,6 +750,10 @@ function EnemyController:update(context, totalTime, deltaTime)
 			self._repathTimer = 1.5
 			if needNew then
 				self._patrolTarget = self:_wanderPoint(enemyPos, playerPos)
+				if self._patrolTarget ~= nil then
+					-- Read the once, for the arrival test above.
+					self._patrolX, self._patrolZ = self._patrolTarget.x, self._patrolTarget.z
+				end
 			end
 			-- Guarded (in :_requestPath) because _wanderPoint can come back empty-handed: a
 			-- move query to a nil destination is not a question the nav mesh can be asked.
@@ -767,7 +783,7 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- Npc:_drive. What this brain decides is only what to face: up close, whatever it is
 	-- chasing (the player, unless _target says otherwise), and nothing at all while it is
 	-- not chasing -- a zombie that has not noticed anybody faces where it is going.
-	local tpos < const > = target ~= nil and target.transform.translation or nil
+	local tpos < const > = target ~= nil and self:_positionOf(target) or nil
 	local face = nil
 	if self._state == "attack" then
 		face = tpos or playerPos
@@ -792,7 +808,11 @@ function EnemyController:update(context, totalTime, deltaTime)
 	-- ...and whatever else it caught up with. Blows rather than a drain (Npc:_strike), at the
 	-- same reach as the bite.
 	local striking = false
-	if tpos ~= nil and (tpos - enemyPos).length < hurtRange then
+	local tx, ty, tz = 0.0, 0.0, 0.0
+	if tpos ~= nil then
+		tx, ty, tz = xyz(tpos)
+	end
+	if tpos ~= nil and (tx - ex) * (tx - ex) + (ty - ey) * (ty - ey) + (tz - ez) * (tz - ez) < hurtRange * hurtRange then
 		striking = true
 		self:_strike(context, target, deltaTime)
 	end

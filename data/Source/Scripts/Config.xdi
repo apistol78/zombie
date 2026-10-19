@@ -781,6 +781,15 @@ Config = {
 		noticeSlack = 0.5,
 		noticeTime = 4.0,
 
+		-- Thinking less far off (Human:_coast). A character going about its day further than
+		-- lodNear from the player thinks every second update, further than lodFar every fourth,
+		-- and in between only keeps walking the step it last took. In line with the engine, which
+		-- already evaluates a character's animation every second update past 20 m and less often
+		-- further out (Animation/AnimatedMeshComponent). Fighting, fleeing, being hurt or talked
+		-- to is always thought about every update.
+		lodNear = 25.0,
+		lodFar = 50.0,
+
 		-- How near a body has to be to be searched (m). A villager's body with something still on
 		-- it stays for good -- a corpse with a purse on it is a place, not an effect -- and is gone
 		-- the usual corpse.lifetime after it has been emptied.

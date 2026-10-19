@@ -109,7 +109,32 @@ local POSE_STATES < const > = {
 -- dawn count as "the zombies", and everyone placed in the scene.
 local LISTS < const > = { "Enemy", "Npc" }
 
+-- How far round a character the crowd is felt at all (m), see :_drive. Has to cover the
+-- widest of the avoidance radii -- _avoidRadius, and the _playerSpace an engaged one gets.
+local CROWD_RANGE < const > = 4.0
+
+-- Further from the player than this, a character's head is left alone (see :_lookAtEntity):
+-- the LookAtComponent stops turning it at its cullDistance from the camera (20 m on the
+-- Hunters), and the camera is the player's eye, so out here the target was never used.
+local LOOK_RANGE < const > = 25.0
+
+-- Put every method of this character's class on the instance itself. A method looked up on an
+-- instance that does not have it goes through class()'s __index -- a Lua function, with two
+-- rawgets in it -- on every single call, and a brain makes some thirty such calls a step; on
+-- the instance, each is one table lookup. Taken from the instance's own class, so a subclass's
+-- override wins exactly as it does when class() copies the base -- and as there, once, when
+-- the character is made.
+local function cacheMethods(self)
+	for name, fn in next, getmetatable(self) do
+		if type(fn) == "function" and type(name) == "string" and name ~= "new" and string.sub(name, 1, 2) ~= "__" then
+			rawset(self, name, fn)
+		end
+	end
+end
+
 function Npc:new()
+	cacheMethods(self)
+	self._resolved = false    -- everything :_resolve looks for has been found (see there)
 	self._repathTimer = 0.0
 	self._heading = nil       -- current facing (radians)
 	self._turnRate = CFG.turnRate      -- max turn speed while steering (rad/s)
@@ -143,6 +168,13 @@ function Npc:new()
 	self._grudges = {}        -- characters that have hurt this one: fought whatever the factions say
 
 	self._hurtAgo = 0.0       -- seconds since the last hit taken; see _tickRegen
+
+	-- Read every step while empty, so false rather than nil: an instance field that is nil is
+	-- not there at all, and every read of it goes through class()'s __index.
+	self._pathResult = false  -- the path query in flight (see :_requestPath)
+	self._provoked = false    -- whoever last hurt this one, until the brain has seen it (:_hurtBy)
+	self._routePoints = false -- the route being walked, once resolved (see :_route)
+	self._coastStep = false   -- the step :_drive last walked, if it walked (see Human:_coast)
 end
 
 -- ---- Who it is ----
@@ -220,7 +252,7 @@ function Npc:_stats()
 	self._name = (actor ~= nil and actor.name ~= "") and actor.name or nil
 	-- The route: an entity reference (traktor.world.PropertyEntityReference) to its entity.
 	local route < const > = self:_property("route")
-	self._routeId = (route ~= nil and type(route) ~= "string") and route.id or nil
+	self._routeId = (route ~= nil and type(route) ~= "string") and route.id or false
 
 	self._maxHealth = self:_setting("health", class)
 	if self._health == nil then
@@ -493,7 +525,7 @@ function Npc:_stagger(deltaTime)
 			self:_poseState(pulsing and "hit" or nil)
 		end
 		if self._usesWork then
-			self._pose:setParameterValue("work", false)
+			self:_poseWork(false)
 		end
 	end
 	if not pulsing then
@@ -538,8 +570,8 @@ function Npc:_stagger(deltaTime)
 	--
 	-- ...and the mesh owns the edge of it (see :_onMesh): a zombie shoved towards a cliff
 	-- or up against a rock face is carried along it rather than up it.
-	self._character.maxVelocity = speed
-	local vx < const >, vz < const > = self:_onMesh(self.owner.transform.translation, self._hitX * speed, self._hitZ * speed)
+	self:_setMaxVelocity(speed)
+	local vx < const >, vz < const > = self:_onMesh(self:_where(), self._hitX * speed, self._hitZ * speed)
 	self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
 end
 
@@ -578,6 +610,7 @@ function Npc:_enterRagDoll()
 	-- A corpse stops looking; the head goes back to the animation (the rag doll).
 	if self._lookAt then
 		self._lookAt.enable = false
+		self._lookOn = false
 	end
 end
 
@@ -585,7 +618,7 @@ end
 -- doll once and report true for ever after, so the caller stops all behaviour and the corpse is
 -- driven purely by physics (Main despawns it, or keeps it to be searched).
 function Npc:_checkDead(context)
-	if not self._dead and context._deadEnemies ~= nil and context._deadEnemies[self.owner] ~= nil then
+	if not self._dead and context._deadEnemies ~= nil and context._deadEnemies[self._entity or self.owner] ~= nil then
 		self:_enterRagDoll()
 		self._dead = true
 	end
@@ -598,20 +631,34 @@ end
 -- the face: their animated "Head" joint, so a zombie lurching or bent over a strike is followed
 -- down, or a head's height above their feet if they have none. A character without a
 -- LookAtComponent -- the horde -- just doesn't.
+--
+-- `pdist`, this character's distance from the player, puts it past LOOK_RANGE: the head is then
+-- left as it is, since nothing out there is turned anyway. The player's eye is asked of the
+-- Stage once a step for everyone (:_crowd), and the component only told to start or stop
+-- looking when that changes.
 local LOOK_HEAD_RISE < const > = Vector4(0.0, 0.1, 0.0, 0.0)   -- the "Head" joint is at the base of the skull
 local LOOK_HEAD_HEIGHT < const > = Vector4(0.0, 1.6, 0.0, 0.0)
 
-function Npc:_lookAtEntity(context, target)
+function Npc:_lookAtEntity(context, target, pdist)
 	local lookAt < const > = self._lookAt
-	if not lookAt then
+	if not lookAt or (pdist ~= nil and pdist > LOOK_RANGE) then
 		return
 	end
 	if target == nil then
-		lookAt.enable = false
+		if self._lookOn ~= false then
+			lookAt.enable = false
+			self._lookOn = false
+		end
 		return
 	end
-	if target == self._player and context.eye ~= nil then
-		lookAt.target = context:eye()
+	if rawequal(target, self._player) and context.eye ~= nil then
+		local crowd < const > = self:_crowd()
+		local eye = crowd.eye
+		if eye == nil then
+			eye = context:eye()
+			crowd.eye = eye
+		end
+		lookAt.target = eye
 	else
 		local skeleton < const > = target:getComponent(traktor.animation.SkeletonComponent)
 		local head < const > = skeleton ~= nil and skeleton:getPoseTransform("Head") or nil
@@ -622,14 +669,24 @@ function Npc:_lookAtEntity(context, target)
 			lookAt.target = (target.transform.translation + LOOK_HEAD_HEIGHT).xyz1
 		end
 	end
-	lookAt.enable = true
+	if self._lookOn ~= true then
+		lookAt.enable = true
+		self._lookOn = true
+	end
 end
 
 -- ---- Getting about ----
 
--- Resolve and cache what walking needs. Returns false until all of it is there.
+-- Resolve and cache what walking needs. Returns false until all of it is there. Once the
+-- optional parts have turned up as well there is nothing left to look for, and every later
+-- call is the one test.
 function Npc:_resolve(context)
+	if self._resolved then
+		return true
+	end
 	local world < const > = self.world
+	self._world = world
+	self._entity = self.owner
 	if self._character == nil then
 		self._character = self.owner:getComponent(traktor.physics.AiCharacterComponent)
 		if self._character ~= nil then
@@ -637,7 +694,7 @@ function Npc:_resolve(context)
 			-- clamp stops them - a couple of frames of walking - so maxVelocity, not the
 			-- impulse magnitude, is what the character actually travels at. Re-applied every
 			-- frame by the brains, to whatever pace they are going at.
-			self._character.maxVelocity = self._topSpeed or 3.0
+			self:_setMaxVelocity(self._topSpeed or 3.0)
 		end
 	end
 	if self._pose == nil then
@@ -674,7 +731,178 @@ function Npc:_resolve(context)
 	if self._heading == nil then
 		self._heading = self._character.headAngle
 	end
+	self._resolved = self._pose ~= nil and self._playerCharacter ~= nil
 	return true
+end
+
+-- The clamp the character controller holds its speed to (see :_resolve), written only when it
+-- changes: nothing but the scripts sets it, and every script write comes through here, so
+-- _maxVelocity is always what the controller has.
+function Npc:_setMaxVelocity(v)
+	if self._maxVelocity ~= v then
+		self._character.maxVelocity = v
+		self._maxVelocity = v
+	end
+end
+
+-- ---- Who is about ----
+--
+-- Where every character stands, read once a simulation step and shared by all of them. The
+-- push away from the crowd (:_drive) and the search for something to hate (:_nearestHated) are
+-- asked by every character every step, and each used to ask the world afresh: a
+-- getEntitiesWithinRange walks *every* entity in the world comparing names, and each one it
+-- found then had its transform read back across the script boundary. With the village and a
+-- full horde about that was over a hundred walks of the whole world a step. Now it is one walk
+-- per list per step, and the rest is arithmetic on plain numbers.
+--
+-- Rebuilt by the first character to ask in a step (self._now, the step's time, which each
+-- brain's update sets). A character controller moves its body in its own update, which is
+-- interleaved with the scripts', so another character's position here can be one step's
+-- walking behind -- a few centimetres, against avoidance and sight ranges measured in metres.
+-- A character's *own* entry is exact, though: every character's ScriptComponent comes before
+-- its AiCharacterComponent (the Hunters', the zombies'), so nothing has moved it between this
+-- read and its own update -- which is what :_where hands it.
+--
+-- Positions are kept as numbers as well as vectors because every call from script into the
+-- engine costs about a microsecond on a laptop, whatever it does -- a vector's x as much as a
+-- nav mesh query -- and a character used to ask for the same handful of components a dozen
+-- times a step, a function at a time. xyz(v) answers for any vector read here without asking
+-- the engine again.
+--
+-- crowd[list] holds { e, p, x, y, z, sc, faction } per character: its entity, its position
+-- (the vector, and as numbers), and its script component and faction once scriptOf and
+-- factionOf have been asked for them. crowd.of finds a character's entry by its entity;
+-- crowd.player is the player's, in the same form, and crowd.eye the player's eye once the
+-- first character to want it has asked.
+--
+-- One per world, held only as long as the world itself is (weak keys), so a stage that has
+-- ended does not keep its characters alive in here until the next one has some.
+local crowds < const > = setmetatable({}, { __mode = "k" })
+
+-- The entry behind every position vector a crowd has read, by the vector. Weak, so an old
+-- step's vectors go once nothing holds them; and entries are never rewritten, so one read a
+-- step ago and still held (:_gait's last position) still answers with what it was read as.
+local known < const > = setmetatable({}, { __mode = "k" })
+
+-- A character's script component, by its entity, once it is one (has its faction): the
+-- component's script object is the same table for the entity's life, so there is no need to
+-- ask again every step.
+local scOf < const > = setmetatable({}, { __mode = "k" })
+
+-- The components of `v`: free for a vector a crowd has read, asked of the engine for any other.
+-- Also takes a plain { x, y, z } table, which is what a brain builds for a point it works out
+-- itself rather than having the engine add two vectors for it (Human's post facing).
+local function xyz(v)
+	local c < const > = known[v]
+	if c ~= nil then
+		return c.x, c.y, c.z
+	end
+	return v.x, v.y, v.z
+end
+Npc.xyz = xyz
+
+function Npc:_crowd()
+	local world < const > = self._world
+	local now < const > = self._now
+	local crowd = crowds[world]
+	if crowd == nil then
+		crowd = {}
+		crowds[world] = crowd
+	elseif now ~= nil and crowd.time == now then
+		return crowd
+	end
+	crowd.time = now
+	local of < const > = {}
+	crowd.of = of
+	for _, list in ipairs(LISTS) do
+		local entries = crowd[list]
+		if entries == nil then
+			entries = { n = 0 }
+			crowd[list] = entries
+		end
+		local all < const > = world:getEntities(list)
+		local n < const > = all.size
+		for i = 1, n do
+			local e < const > = all:get(i - 1)
+			local p < const > = e.transform.translation
+			local c < const > = { e = e, p = p, x = p.x, y = p.y, z = p.z, sc = scOf[e] }
+			entries[i] = c
+			of[e] = c
+			known[p] = c
+		end
+		for i = n + 1, entries.n do
+			entries[i] = nil
+		end
+		entries.n = n
+	end
+	local player < const > = self._player
+	if player ~= nil then
+		local p < const > = player.transform.translation
+		local c < const > = { e = player, p = p, x = p.x, y = p.y, z = p.z }
+		known[p] = c
+		crowd.player = c
+	else
+		crowd.player = nil
+	end
+	crowd.eye = nil
+	return crowd
+end
+
+-- Where this character stands this step: the vector and its components, from the crowd (see
+-- above for why that is exact), or from the engine for one no list holds.
+function Npc:_where()
+	local c < const > = self:_crowd().of[self._entity]
+	if c ~= nil then
+		return c.p, c.x, c.y, c.z
+	end
+	local p < const > = self._entity.transform.translation
+	return p, p.x, p.y, p.z
+end
+
+-- Where `e` -- another character or the player -- stands this step, as a vector the crowd has
+-- the numbers of; read from the engine for anything else.
+function Npc:_positionOf(e)
+	local crowd < const > = self:_crowd()
+	local c < const > = crowd.of[e]
+	if c ~= nil then
+		return c.p
+	end
+	local player < const > = crowd.player
+	if player ~= nil and rawequal(e, player.e) then
+		return player.p
+	end
+	return e.transform.translation
+end
+
+-- A crowd entry's script component, looked up the first time it is wanted; nil for an entity
+-- that has none.
+local function scriptOf(c)
+	local sc = c.sc
+	if sc == nil then
+		sc = c.e:getComponent(traktor.world.ScriptComponent) or false
+		c.sc = sc
+		if sc and sc.faction ~= nil then
+			scOf[c.e] = sc
+		end
+	end
+	return sc or nil
+end
+
+-- ...and its faction, given that script component; false for one that is no character. A
+-- character's faction is settled once (Npc:_stats), so it is kept by entity, not by step.
+local factions < const > = setmetatable({}, { __mode = "k" })
+
+local function factionOf(c, sc)
+	local f = c.faction
+	if f == nil then
+		f = factions[c.e]
+		if f == nil then
+			f = (sc.faction ~= nil) and sc:faction() or false
+			factions[c.e] = f
+		end
+		c.faction = f
+	end
+	return f
 end
 
 -- Adopt the async path result once it is ready (get() blocks on wait()). Clear the slot
@@ -682,12 +910,12 @@ end
 -- a query is in flight, so a failed one parked here would stop this character from ever
 -- re-pathing again.
 function Npc:_collectPath()
-	if self._pathResult ~= nil and self._pathResult.ready then
+	if self._pathResult and self._pathResult.ready then
 		local query = self._pathResult:get()
 		if query ~= nil then
 			self._pathQuery = query
 		end
-		self._pathResult = nil
+		self._pathResult = false
 	end
 end
 
@@ -697,12 +925,12 @@ end
 -- is still in flight lets the job queue grow faster than the workers drain it -- and the
 -- backlog only ever gets worse.
 function Npc:_canPath()
-	return self._pathResult == nil
+	return not self._pathResult
 end
 
 -- Ask for a route from `from` to `to`, a point already on the mesh.
 function Npc:_requestPath(from, to)
-	if to ~= nil and self._pathResult == nil then
+	if to ~= nil and not self._pathResult then
 		self._pathResult = self._navMesh:createMoveQuery(from, to)
 	end
 end
@@ -731,8 +959,9 @@ function Npc:_steer(pos)
 	if self._pathQuery ~= nil then
 		local moveTo = self._pathQuery:update(pos, 0.5)
 		if moveTo ~= nil then
-			local dx = moveTo.x - pos.x
-			local dz = moveTo.z - pos.z
+			local px < const >, _, pz < const > = xyz(pos)
+			local dx = moveTo.x - px
+			local dz = moveTo.z - pz
 			local len = math.sqrt(dx * dx + dz * dz)
 			if len > 0.01 then
 				return dx / len, dz / len
@@ -794,13 +1023,14 @@ function Npc:_onMesh(pos, vx, vz)
 	if query == nil or v < 0.001 then
 		return vx, vz
 	end
+	local px < const >, py < const >, pz < const > = xyz(pos)
 	local k < const > = NAV_PROBE / v
-	local p < const > = query:constrain(pos, Vector4(pos.x + vx * k, pos.y, pos.z + vz * k, 1.0))
+	local p < const > = query:constrain(pos, Vector4(px + vx * k, py, pz + vz * k, 1.0))
 	if p == nil then
 		return vx, vz
 	end
 	local s < const > = v / NAV_PROBE
-	return (p.x - pos.x) * s, (p.z - pos.z) * s
+	return (p.x - px) * s, (p.z - pz) * s
 end
 
 -- Walk one frame: (dirX, dirZ) is where the route says to go, `speed` how fast. Blends in the
@@ -815,42 +1045,53 @@ end
 -- than the two and a half metres every other character gets, or nothing could ever reach
 -- anything it was fighting.
 function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, engaged, deltaTime)
-	local world < const > = self.world
+	-- Every vector's components read once: each one asked for is a call into the engine.
+	local px < const >, py < const >, pz < const > = xyz(pos)
+	local qx < const >, _, qz < const > = xyz(playerPos)
+	local toX, toY, toZ = 0.0, 0.0, 0.0   -- from here to `face`
+	if face ~= nil then
+		local fx < const >, fy < const >, fz < const > = xyz(face)
+		toX, toY, toZ = fx - px, fy - py, fz - pz
+	end
 
 	-- Up close to a character it is fighting: straight at it. The path was aimed at where it
 	-- stood at the last re-path, up to half a second ago, and against something that moves too
 	-- that points off to the side -- the two ended up circling each other.
 	local duel = false
 	if engaged ~= nil and face ~= nil then
-		local ax < const > = face.x - pos.x
-		local az < const > = face.z - pos.z
-		local al < const > = math.sqrt(ax * ax + az * az)
+		local al < const > = math.sqrt(toX * toX + toZ * toZ)
 		if al > 0.001 and al < faceRange then
-			targetX, targetZ = ax / al, az / al
+			targetX, targetZ = toX / al, toZ / al
 			duel = true
 		end
 	end
 
-	-- Collision avoidance: accumulate a push away from nearby characters (both lists) and the
-	-- player. This character is in one of the lists too, but its own delta is zero.
+	-- Collision avoidance: accumulate a push away from nearby characters (both lists, as this
+	-- step's :_crowd has them) and the player. Felt from anyone within CROWD_RANGE, measured in
+	-- all three axes so a character on a roof or a ledge above is no part of the crowd below.
 	local sepX, sepZ = 0.0, 0.0
-	local function avoid(px, pz, radius)
-		local ax = pos.x - px
-		local az = pos.z - pz
-		local d = math.sqrt(ax * ax + az * az)
-		if d > 0.001 and d < radius then
-			local w = (radius - d) / radius
-			sepX = sepX + (ax / d) * w
-			sepZ = sepZ + (az / d) * w
-		end
-	end
-
+	local crowd < const > = self:_crowd()
+	local me < const > = self._entity
+	local avoidRadius < const > = self._avoidRadius
+	local playerSpace < const > = self._playerSpace
 	for _, list in ipairs(LISTS) do
-		local near < const > = world:getEntitiesWithinRange(list, pos, 4)
-		for i = 0, near.size - 1 do
-			local other = near:get(i)
-			local p = other.transform.translation
-			avoid(p.x, p.z, other == engaged and self._playerSpace or self._avoidRadius)
+		local entries < const > = crowd[list]
+		for i = 1, entries.n do
+			local c < const > = entries[i]
+			local ax < const > = px - c.x
+			if ax < CROWD_RANGE and ax > -CROWD_RANGE then   -- most are nowhere near: one test
+				local az < const > = pz - c.z
+				local ay < const > = py - c.y
+				if ax * ax + az * az + ay * ay <= CROWD_RANGE * CROWD_RANGE and not rawequal(c.e, me) then
+					local radius < const > = rawequal(c.e, engaged) and playerSpace or avoidRadius
+					local d < const > = math.sqrt(ax * ax + az * az)
+					if d > 0.001 and d < radius then
+						local w < const > = (radius - d) / radius
+						sepX = sepX + (ax / d) * w
+						sepZ = sepZ + (az / d) * w
+					end
+				end
+			end
 		end
 	end
 
@@ -858,7 +1099,16 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 	-- same berth as another zombie is what used to hold the horde at arm's length: the
 	-- push started two and a half metres out and had beaten the approach by 1.25 m, so
 	-- they never closed to their own biting range.
-	avoid(playerPos.x, playerPos.z, self._playerSpace)
+	do
+		local ax < const > = px - qx
+		local az < const > = pz - qz
+		local d < const > = math.sqrt(ax * ax + az * az)
+		if d > 0.001 and d < playerSpace then
+			local w < const > = (playerSpace - d) / playerSpace
+			sepX = sepX + (ax / d) * w
+			sepZ = sepZ + (az / d) * w
+		end
+	end
 
 	-- Blend separation from other agents into the path direction, then renormalise to
 	-- a unit heading.
@@ -909,8 +1159,8 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 	local depth = 0.0
 	local outX, outZ = 0.0, 0.0
 	do
-		local ox < const > = pos.x - playerPos.x
-		local oz < const > = pos.z - playerPos.z
+		local ox < const > = px - qx
+		local oz < const > = pz - qz
 		local od < const > = math.sqrt(ox * ox + oz * oz)
 		if od <= 0.001 then
 			-- Dead centre, where there is no "out of" to speak of: leave along the way it is
@@ -961,12 +1211,10 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 	-- of straight into them.
 	local faceX, faceZ = targetX, targetZ
 	local facing = false
-	if face ~= nil and (face - pos).length < faceRange then
-		local ax < const > = face.x - pos.x
-		local az < const > = face.z - pos.z
-		local al < const > = math.sqrt(ax * ax + az * az)
+	if face ~= nil and toX * toX + toY * toY + toZ * toZ < faceRange * faceRange then
+		local al < const > = math.sqrt(toX * toX + toZ * toZ)
 		if al > 0.001 then
-			faceX, faceZ = ax / al, az / al
+			faceX, faceZ = toX / al, toZ / al
 			facing = true
 		end
 	end
@@ -1044,7 +1292,7 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 			back = PUSH_OUT_MAX
 		end
 		if back > speed then
-			self._character.maxVelocity = back
+			self:_setMaxVelocity(back)
 		end
 		local vx < const >, vz < const > = self:_onMesh(pos, outX * back, outZ * back)
 		self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
@@ -1074,7 +1322,9 @@ function Npc:_drive(pos, playerPos, targetX, targetZ, speed, face, faceRange, en
 		if align > 0.05 then
 			local step < const > = speed * align
 			local vx < const >, vz < const > = self:_onMesh(pos, fx * step, fz * step)
-			self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
+			local walked < const > = Vector4(vx, 0.0, vz, 0.0)
+			self._character:move(walked, false)
+			self._coastStep = walked
 			moving = vx * vx + vz * vz > (step * 0.2) * (step * 0.2)
 		end
 	end
@@ -1091,13 +1341,44 @@ end
 -- nil, none of them, is how the graph is left to finish something on its own: the stand-up a
 -- zombie rises with, the Hit reaction after its pulse, both of which hand back to Idle when their
 -- animation ends -- an Any transition would cut either short the moment its parameter came up.
+--
+-- The graph keeps a parameter at whatever it was last set to, so only a change is written:
+-- the flag let go of and the one taken up. Each write is a call into the engine that looks
+-- the name up afresh, and writing all nine every step, for every character, is what this
+-- used to cost while the answer almost never changed. The first call on a controller writes
+-- every flag, so the graph and the record start out agreeing.
 function Npc:_poseState(state)
 	local pose < const > = self._pose
 	if pose == nil then
 		return
 	end
-	for _, flag in ipairs(POSE_STATES) do
-		pose:setParameterValue(flag, flag == state)
+	if rawequal(self._poseOf, pose) then
+		local was < const > = self._poseNow
+		if was == state then
+			return
+		end
+		if was ~= nil then
+			pose:setParameterValue(was, false)
+		end
+		if state ~= nil then
+			pose:setParameterValue(state, true)
+		end
+	else
+		for _, flag in ipairs(POSE_STATES) do
+			pose:setParameterValue(flag, flag == state)
+		end
+		self._poseOf = pose
+	end
+	self._poseNow = state
+end
+
+-- The graph's "work" parameter (Human's worker at its anvil), written only when it changes,
+-- as :_poseState writes its own.
+function Npc:_poseWork(on)
+	local pose < const > = self._pose
+	if pose ~= nil and self._workNow ~= on then
+		pose:setParameterValue("work", on)
+		self._workNow = on
 	end
 end
 
@@ -1119,26 +1400,30 @@ function Npc:_applyRootMotion(deltaTime)
 	local skeleton = self._skeleton
 	if skeleton == nil then
 		skeleton = self.owner:getComponent(traktor.animation.SkeletonComponent)
+		if skeleton ~= nil and skeleton.consumeRootMotion == nil then
+			skeleton = false   -- an engine with no root motion to hand back: not asked again
+		end
 		self._skeleton = skeleton
 	end
-	if skeleton == nil or skeleton.consumeRootMotion == nil or self._character == nil then
+	if not skeleton or self._character == nil then
 		return
 	end
 	local delta < const > = skeleton:consumeRootMotion()
 	local turn < const > = delta.rotation.eulerAngles.x
 	local travel < const > = delta.translation
-	if math.abs(turn) < 0.00001 and travel.x * travel.x + travel.z * travel.z < 0.0000001 then
+	local tx < const >, tz < const > = travel.x, travel.z
+	if math.abs(turn) < 0.00001 and tx * tx + tz * tz < 0.0000001 then
 		return
 	end
 
 	local h < const > = self._heading
 	if deltaTime > 0.0 then
 		local c < const >, s < const > = math.cos(h), math.sin(h)
-		local vx < const > = (travel.x * c + travel.z * s) / deltaTime
-		local vz < const > = (-travel.x * s + travel.z * c) / deltaTime
+		local vx < const > = (tx * c + tz * s) / deltaTime
+		local vz < const > = (-tx * s + tz * c) / deltaTime
 		local velocity < const > = self._character.velocity
 		self._character.velocity = Vector4(0.0, velocity.y, 0.0, 0.0)
-		self._character.maxVelocity = math.max(self._character.maxVelocity, math.sqrt(vx * vx + vz * vz))
+		self:_setMaxVelocity(math.max(self._maxVelocity or self._character.maxVelocity, math.sqrt(vx * vx + vz * vz)))
 		self._character:move(Vector4(vx, 0.0, vz, 0.0), false)
 	end
 	self._heading = h + turn
@@ -1159,8 +1444,10 @@ function Npc:_gait(pos, deltaTime, driving)
 	if last == nil or deltaTime <= 0.0 then
 		return self._gaitMoving == true
 	end
-	local dx < const > = pos.x - last.x
-	local dz < const > = pos.z - last.z
+	local x < const >, _, z < const > = xyz(pos)
+	local lx < const >, _, lz < const > = xyz(last)
+	local dx < const > = x - lx
+	local dz < const > = z - lz
 	local v < const > = math.sqrt(dx * dx + dz * dz) / deltaTime
 	local k < const > = math.min(1.0, deltaTime * (driving and NPC.gaitSmooth or NPC.gaitSmoothStop))
 	local speed < const > = (self._gaitSpeed or 0.0) + (v - (self._gaitSpeed or 0.0)) * k
@@ -1179,25 +1466,35 @@ end
 -- the static world only: other characters are not cover (see Scripts/Spawner for what treating
 -- them as cover once did). The target's own capsule sits at the end of the ray, so a hit well
 -- before that means a wall blocks the view.
+local SIGHT_EYE < const > = Vector4(0.0, 1.6, 0.0)
+local SIGHT_CHEST < const > = Vector4(0.0, 1.2, 0.0)
+local SIGHT_FILTER < const > = physics.QueryFilter(COLLISION_DEFAULT)
+
 function Npc:_sees(context, from, to)
-	local pm < const > = context.environment.physics.physicsManager
-	local e = from + Vector4(0.0, 1.6, 0.0)
-	local t = to + Vector4(0.0, 1.2, 0.0)
+	local pm = self._physicsManager
+	if pm == nil then
+		pm = context.environment.physics.physicsManager
+		self._physicsManager = pm
+	end
+	local e = from + SIGHT_EYE
+	local t = to + SIGHT_CHEST
 	local r = t - e
 	local rl = r.length
 	if rl <= 0.01 then
 		return true
 	end
-	local hit = pm:queryRay(e, r / rl, rl, physics.QueryFilter(COLLISION_DEFAULT), true)
+	local hit = pm:queryRay(e, r / rl, rl, SIGHT_FILTER, true)
 	return hit == nil or hit.distance >= rl - 0.8
 end
 
--- Whether `e` is a character still standing.
-local function alive(context, e)
+-- Whether `e` is a character still standing. `sc`, its script component, if already to hand.
+local function alive(context, e, sc)
 	if context:isEnemyDead(e) then
 		return false
 	end
-	local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+	if sc == nil then
+		sc = e:getComponent(traktor.world.ScriptComponent)
+	end
 	return sc ~= nil and sc.faction ~= nil and not sc:isDead()
 end
 
@@ -1214,9 +1511,11 @@ end
 
 -- How much of a threat `other` -- the player or a character -- is to this one, toward its
 -- courage (Config.npc.threatPer, or its faction's own threatWeight: a zombie counts for less).
-function Npc:_threatOf(other, context)
-	if other ~= nil and other ~= context:player() then
-		local sc < const > = other:getComponent(traktor.world.ScriptComponent)
+function Npc:_threatOf(other, context, sc)
+	if other ~= nil and not rawequal(other, context:player()) then
+		if sc == nil then
+			sc = other:getComponent(traktor.world.ScriptComponent)
+		end
 		local w < const > = (sc ~= nil and sc.faction ~= nil) and NPC.threatWeight[sc:faction()] or nil
 		if w ~= nil then
 			return w
@@ -1229,21 +1528,37 @@ end
 -- seen or not, and how much of a threat the ones within `countRange` (default `range`) add up
 -- to -- the ones close enough to be a threat rather than merely about (see :_threatOf). One ray,
 -- for the nearest only, is the caller's to spend (:_sees) -- this is called a few times a second
--- per character and has to stay cheap.
+-- per character and has to stay cheap, which is why it reads this step's :_crowd rather than the
+-- world, and measures before it asks anything of a character.
 function Npc:_nearestHated(context, pos, range, lists, countRange)
 	local best, bestD, count = nil, range, 0
 	local near2 < const > = (countRange or range) * (countRange or range)
+	local px < const >, py < const >, pz < const > = xyz(pos)
+	local crowd < const > = self:_crowd()
+	local me < const > = self._entity
+	-- What :hates asks of a character, with this one's side looked up once rather than per
+	-- character, and theirs once a step (factionOf).
+	self:_stats()
+	local hated < const > = NPC.factions[self._faction]
+	local grudges < const > = self._grudges
 	for _, list in ipairs(lists or LISTS) do
-		local near < const > = self.world:getEntitiesWithinRange(list, pos, range)
-		for i = 0, near.size - 1 do
-			local other < const > = near:get(i)
-			if other ~= self.owner and alive(context, other) and self:hates(other, context) then
-				local d < const > = (other.transform.translation - pos).length
-				if d * d < near2 then
-					count = count + self:_threatOf(other, context)
-				end
-				if d < bestD then
-					best, bestD = other, d
+		local entries < const > = crowd[list]
+		for i = 1, (entries ~= nil) and entries.n or 0 do
+			local c < const > = entries[i]
+			local dx < const >, dy < const >, dz < const > = c.x - px, c.y - py, c.z - pz
+			local d2 < const > = dx * dx + dy * dy + dz * dz
+			if d2 <= range * range and not rawequal(c.e, me) then
+				local other < const > = c.e
+				local sc < const > = scriptOf(c)
+				if sc ~= nil and (grudges[other] or (hated ~= nil and hated[factionOf(c, sc)] == true))
+					and alive(context, other, sc) then
+					if d2 < near2 then
+						count = count + self:_threatOf(other, context, sc)
+					end
+					local d < const > = math.sqrt(d2)
+					if d < bestD then
+						best, bestD = other, d
+					end
 				end
 			end
 		end
@@ -1257,10 +1572,10 @@ end
 -- is asked for, or nil -- no `route` property, a name no Route answers to, or a route with no
 -- points. Joined at the waypoint nearest where the character stands, going forwards.
 function Npc:_route(context)
-	if self._routePoints ~= nil then
+	if self._routePoints then
 		return self._routePoints
 	end
-	if self._routeId == nil or self._routeMissing or context.route == nil then
+	if not self._routeId or self._routeMissing or context.route == nil then
 		return nil
 	end
 	-- Not yet: the Stage collects the routes only once the world has been through an update
@@ -1287,6 +1602,11 @@ function Npc:_route(context)
 		if d < bestD then
 			best, bestD = i, d
 		end
+		-- The waypoints never move: their numbers are read the once, and :_routeStep has them
+		-- free (xyz) every step after.
+		if known[p] == nil then
+			known[p] = { x = p.x, y = p.y, z = p.z }
+		end
 	end
 	self._routeIndex = best
 	return self._routePoints
@@ -1303,8 +1623,10 @@ function Npc:_routeStep(pos, deltaTime)
 	end
 
 	local p < const > = points[self._routeIndex]
-	local dx < const > = p.x - pos.x
-	local dz < const > = p.z - pos.z
+	local x < const >, _, z < const > = xyz(pos)
+	local px < const >, _, pz < const > = xyz(p)
+	local dx < const > = px - x
+	local dz < const > = pz - z
 	if dx * dx + dz * dz > NPC.arrive * NPC.arrive then
 		return p, false
 	end

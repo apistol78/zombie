@@ -1,52 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[
-#using {6E9AD100-0000-4000-8000-000000000010}
 import(traktor)
 
 -- Gate
 --
--- The cemetery gate: a pair of iron leaves hung in the entrance arch, locked until
--- the player turns the key in it (Main:_interact calls unlock()). This component
--- owns the whole of the gate: the two leaves and their swing, the grind raised off
--- the entity's event set as they start to move, and the barring -- an invisible
--- static box, a "GateBlocker" child in this same group, which unlock() takes out
--- of the world. The leaves themselves are never colliders, so the swing never has
--- to argue with the physics. The Stage keeps only what is around the gate: which
--- gates are locked (across a hot reload), and the key that is spent on one.
+-- A gate that stands shut until something opens it: the cemetery gate, locked until the
+-- player turns the key in it (Main:_interact calls unlock()), and the cave's doors and
+-- portcullises (Entities/Cave/Gates), opened by a key or thrown open by a Scripts/Lever.
+-- The Stage keeps only what is around the gate: which gates are locked (across a hot
+-- reload), and the key that is spent on one.
 --
--- Attach to an entity whose GroupComponent holds the blocker and two children
--- named "LeafL" and "LeafR": each the leaf mesh with its hinge edge at its own
--- origin and the panel extending +X, authored at (-HINGE_X) and (+HINGE_X, yaw pi)
--- so the pair meets in the middle. The swing recomputes exactly those transforms
--- with the opening angle added, so a still-locked gate stands precisely where it
--- was authored.
+-- Attach to an entity carrying a TheaterEntityComponent with an act named ACT, which is
+-- the whole of opening: it moves the gate's moving parts -- the "LeafL"/"LeafR" pair
+-- swung about their hinges, or a portcullis's "Grate" raised into the rock -- and carries
+-- the grind as an event key at its start, so the motion and its sound are timed together
+-- in the theater editor. Each moving part is its own collider, a kinematic box on that
+-- child entity, so the act moves the barring with the iron and there is nothing for
+-- unlock() to take out of the world.
 --
--- unlock() is idempotent and takes instant=true -- the reload-restore path, the
--- same contract as Ward:turnOn -- to snap straight to open without replaying the
--- swing or the grind.
+-- unlock() is idempotent and takes instant=true -- the reload-restore path, the same
+-- contract as Ward:turnOn -- which plays OPENED instead: a silent act that only holds the
+-- gate open. A script hot reload finds the iron already there, but a stage come back to
+-- later in the night is a fresh world whose gates are built shut.
 --
--- The cave's gates (Entities/Cave/Gates) are the same component with a few string
--- properties on their ScriptComponentData, all optional, so the cemetery gate -- which
--- has none -- behaves exactly as before:
+-- String properties on the ScriptComponentData, both optional:
 --
---   mode    "swing" (the default: two leaves) or "lift" (a portcullis: one child named
---           "Grate", raised `lift` metres straight up)
---   hinge   where the hinges stand either side of the origin (m, default HINGE_X)
---   lift    how far a grate rises (m)
 --   id      a name a Scripts/Lever can open this gate by
 --   notice  the line shown when it opens (Main falls back to the cemetery's)
 
 Gate = Gate or class("Gate", traktor.world.ScriptComponent)
 
-local SWING_ANGLE < const > = Config.gate.swingAngle   -- how far each leaf swings open (rad)
-local SWING_TIME < const > = Config.gate.swingTime     -- ...and how long the swing takes (s)
-
--- Where the hinges stand, either side of the gate's own origin (m). Authoring data
--- as much as code: it must match the leaf children's translations in
--- Entities/Cemetary/CemetaryGate, and the leaf mesh is built 2.14 m wide against
--- it so the pair meets in the middle with a hand's width of daylight.
-local HINGE_X < const > = 2.175
+local ACT < const > = "Open"       -- the act that swings or lifts the gate open, and grinds
+local OPENED < const > = "Opened"  -- ...and the silent one that only holds it open
 
 -- A string property off this component's ScriptComponentData, or nil.
 function Gate:_property(name)
@@ -61,10 +47,6 @@ function Gate:_property(name)
 	return v
 end
 
-function Gate:_number(name, default)
-	return tonumber(self:_property(name) or "") or default
-end
-
 function Gate:gateId()
 	return self:_property("id")
 end
@@ -73,114 +55,22 @@ function Gate:notice()
 	return self:_property("notice")
 end
 
+-- Play the act. A gate without it (Performance:play logs which) or without a theater
+-- component at all stays shut -- and, since its iron is what bars the way, barred.
 function Gate:unlock(instant)
 	if self._unlocked then
 		return
 	end
 	self._unlocked = true
-	self._openT = instant and 1.0 or 0.0
-	self._posed = false
 
-	-- Take the bar out of the world, for good. removeEntity clears the entity's
-	-- world pointer immediately (only membership is deferred), which is what lets
-	-- destroy() run here -- the same pair Scripts/Pickup uses, and the destroy is
-	-- what actually tears the collision down. On the restore path -- a hot reload
-	-- re-asserting an already-open gate -- the child found here is one destroyed in
-	-- an earlier life (a destroyed child stays in its group's list, component-less
-	-- and out of the world), and both calls are then safe no-ops.
-	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
-	local blocker < const > = group ~= nil and group:getEntity("GateBlocker", 0) or nil
-	if blocker ~= nil then
-		self.world:removeEntity(blocker)
-		group:removeEntity(blocker)
-		blocker:destroy()
-	end
-
-	-- The grind, skipped on the restore path: putting an already-open gate back the
-	-- way it was is not an event.
-	if not instant then
-		local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
-		if fx ~= nil then
-			fx:raise("open")
-		end
+	local performance < const > = self.owner:getComponent(traktor.theater.TheaterEntityComponent)
+	if performance ~= nil then
+		performance:play(instant and OPENED or ACT)
 	end
 end
 
 function Gate:isLocked()
 	return self._unlocked ~= true
-end
-
--- Find (once) and cache the two leaves, the same way Ward finds its switch.
-function Gate:_leaves()
-	if self._leafL ~= nil then
-		return self._leafL, self._leafR
-	end
-	local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
-	if group == nil then
-		return nil, nil
-	end
-	self._leafL = group:getEntity("LeafL", 0)
-	self._leafR = group:getEntity("LeafR", 0)
-	return self._leafL, self._leafR
-end
-
-function Gate:update(context, totalTime, deltaTime)
-	-- A locked gate's leaves stand exactly where they were authored: nothing to do.
-	-- _posed is what stops an open gate being re-written every frame forever -- the
-	-- final pose is written once, and on the instant path it is the only write.
-	if not self._unlocked or self._posed then
-		return
-	end
-	if self:_property("mode") == "lift" then
-		self:_lift(deltaTime)
-		return
-	end
-	local l < const >, r < const > = self:_leaves()
-	if l == nil or r == nil then
-		return
-	end
-	local hinge < const > = self:_number("hinge", HINGE_X)
-
-	local t = math.min(1.0, (self._openT or 0.0) + deltaTime / SWING_TIME)
-	self._openT = t
-	if t >= 1.0 then
-		self._posed = true
-	end
-
-	-- Smoothstep, so the leaves gather speed off the latch and settle against the
-	-- wall instead of stopping dead -- and the opening angle that buys.
-	local k < const > = t * t * (3.0 - 2.0 * t)
-	local a < const > = k * SWING_ANGLE
-
-	-- Rebuild each leaf's transform from the gate's own, exactly as authored plus
-	-- the swing: hinge offset along the gate's X, yaw about the hinge. The two turn
-	-- opposite ways (a and pi - a), which is what mirrors the pair through the
-	-- middle -- both free edges travel to the same side of the wall together.
-	local base < const > = self.owner.transform
-	local bt < const > = base.translation
-	local br < const > = base.rotation
-	l.transform = Transform(bt + br * Vector4(-hinge, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(a, 0.0, 0.0))
-	r.transform = Transform(bt + br * Vector4(hinge, 0.0, 0.0, 0.0), br * Quaternion.fromEulerAngles(math.pi - a, 0.0, 0.0))
-end
-
--- "lift" mode: the portcullis rises straight up out of the doorway, eased in and out
--- like the swing, into the bulkhead and the rock above it.
-function Gate:_lift(deltaTime)
-	if self._grate == nil then
-		local group < const > = self.owner:getComponent(traktor.world.GroupComponent)
-		self._grate = group ~= nil and group:getEntity("Grate", 0) or nil
-		if self._grate == nil then
-			return
-		end
-	end
-	local t = math.min(1.0, (self._openT or 0.0) + deltaTime / SWING_TIME)
-	self._openT = t
-	if t >= 1.0 then
-		self._posed = true
-	end
-	local k < const > = t * t * (3.0 - 2.0 * t)
-	local base < const > = self.owner.transform
-	self._grate.transform = Transform(base.translation + base.rotation * Vector4(0.0, k * self:_number("lift", 3.0), 0.0, 0.0), base.rotation)
 end
 ]]></text>
 </object>

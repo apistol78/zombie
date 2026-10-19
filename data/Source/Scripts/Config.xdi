@@ -579,13 +579,8 @@ Config = {
 	lever = {
 		reachRange = 1.8
 	},
-	gate = {
-		-- How far each leaf swings open (rad; ~106 deg leaves them lying along the
-		-- inside of the wall) and how long the swing takes. The grind that plays over
-		-- it is authored on the gate entity's event set, not timed here.
-		swingAngle = 1.85,
-		swingTime = 2.4
-	},
+	-- How a gate swings or lifts open is not here: it is the "Open" theater act on each
+	-- gate entity (see Scripts/Gate).
 
 	-- ---- Chests ----
 	--

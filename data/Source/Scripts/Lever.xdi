@@ -7,8 +7,8 @@ import(traktor)
 --
 -- A lever on a post that opens a gate somewhere else: the player pulls it with E
 -- (Main:_interact calls pull()), the handle swings over from leaning forward to leaning
--- back, and the gate it names opens itself (Scripts/Gate in any mode -- the cave's
--- lever gates are portcullises that lift).
+-- back, and the gate it names opens itself (Scripts/Gate -- the cave's lever gates are
+-- portcullises that lift).
 --
 -- Which gate is a property on this entity's ScriptComponentData, so each placed lever
 -- names its own:

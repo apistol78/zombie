@@ -455,10 +455,9 @@ function Main:new(params, environment)
 
 	-- The cemetery gates. One stands locked in the wall around the graveyard, and two
 	-- of the ward posts stand behind it, so what it locks away is ground the night can
-	-- be won on. The gate owns itself entirely -- the pair of leaves and their swing,
-	-- the grind, and the invisible "GateBlocker" box that does the actual barring,
-	-- which its own unlock() takes out of the world (see Scripts/Gate) -- and a key is
-	-- an item in the pack (_unlockGate spends one). This stage keeps only what is
+	-- be won on. The gate owns itself entirely -- its iron, which is also its collision,
+	-- and the swing and grind of its "Open" act (see Scripts/Gate) -- and a key is an
+	-- item in the pack (_unlockGate spends one). This stage keeps only what is
 	-- *around* the gates: where they stand, which are still locked, and how close the
 	-- player has to be for the "locked" prompt to bother saying so.
 	self._gateRange = Config.key.gateRange        -- how close to a locked gate the prompt reaches
@@ -1245,9 +1244,8 @@ function Main:resolve()
 	-- The records only know where each fixture stands and which have turned: each
 	-- ward's flame is owned by its own Ward ScriptComponent (Scripts/Ward), each
 	-- hive's opening and brood by Scripts/Hive, and everything a gate *is* -- the
-	-- leaves, the swing, the grind, the invisible blocker that does the actual
-	-- barring -- by Scripts/Gate. Gate:unlock is idempotent about the blocker, so
-	-- re-asserting one whose bar is already gone is safe.
+	-- leaves, the swing, the grind and the barring -- by Scripts/Gate. Gate:unlock
+	-- takes instant=true to re-assert an open gate without the swing or the grind.
 	if self._wards == nil then
 		self._wards = self:_collectRecords(world, "Ward", "lit", self._litWardIndex, "turnOn")
 
@@ -2287,8 +2285,8 @@ function Main:_lightWardWithRelic(ward)
 end
 
 -- Turn a key from the pack in `gate`'s lock. The key is spent for good, and the gate opens
--- itself -- the swing, the grind, and the invisible box that did the actual barring going out of
--- the world are all Gate:unlock's. What is kept here is which gates stand open, as plain data,
+-- itself -- the swing, the grind, and the barring getting out of the way are all
+-- Gate:unlock's. What is kept here is which gates stand open, as plain data,
 -- so it survives a hot reload (resolve re-asserts it).
 function Main:_unlockGate(gate)
 	if self._inventory:remove(Items.KEY, 1) <= 0 then

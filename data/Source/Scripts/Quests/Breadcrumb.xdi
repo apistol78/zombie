@@ -9,7 +9,7 @@ import(traktor)
 --
 --   * T asks the scene's nav mesh for a route from the player's feet to where the followed quest
 --     points (Main._questWaypoint, the StoryWorldComponent's waypoint). The query is the same
---     asynchronous createMoveQuery the characters walk by (Scripts/Npc/Npc), collected once it
+--     asynchronous createMoveQuery the characters walk by (zombie.NpcComponent), collected once it
 --     is ready.
 --   * The route's corners are resampled a metre apart and each sample is dropped onto the mesh
 --     beneath it, so the trail follows the ground over hills rather than cutting through them

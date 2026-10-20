@@ -1,0 +1,1216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.PropertyGroup">
+	<value>
+		<item>
+			<first>chest</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>reachRange</first>
+						<second type="traktor.PropertyFloat"><value>1.8</value></second>
+					</item>
+					<item>
+						<first>slots</first>
+						<second type="traktor.PropertyInteger"><value>8</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>corpse</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>knockback</first>
+						<second type="traktor.PropertyFloat"><value>50.0</value></second>
+					</item>
+					<item>
+						<first>knockbackLift</first>
+						<second type="traktor.PropertyFloat"><value>10.0</value></second>
+					</item>
+					<item>
+						<first>lifetime</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>cutscene</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>max</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+					<item>
+						<first>min</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>pushTime</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>radius</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>dawn</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>hold</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>max</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+					<item>
+						<first>washTime</first>
+						<second type="traktor.PropertyFloat"><value>3.5</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>enemy</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>attackMemory</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>attackSpeed</first>
+						<second type="traktor.PropertyFloat"><value>1.2</value></second>
+					</item>
+					<item>
+						<first>avoidRadius</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>chaseExactRange</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+					<item>
+						<first>closeQuarters</first>
+						<second type="traktor.PropertyFloat"><value>2.1</value></second>
+					</item>
+					<item>
+						<first>faceTurnRate</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>frontCommit</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>frontDot</first>
+						<second type="traktor.PropertyFloat"><value>0.7</value></second>
+					</item>
+					<item>
+						<first>frontRadius</first>
+						<second type="traktor.PropertyFloat"><value>5.0</value></second>
+					</item>
+					<item>
+						<first>frontRange</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+					<item>
+						<first>frontReleaseDot</first>
+						<second type="traktor.PropertyFloat"><value>-0.5</value></second>
+					</item>
+					<item>
+						<first>frontStep</first>
+						<second type="traktor.PropertyFloat"><value>1.05</value></second>
+					</item>
+					<item>
+						<first>hearRange</first>
+						<second type="traktor.PropertyFloat"><value>35.0</value></second>
+					</item>
+					<item>
+						<first>hearSpread</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>hearSpreadPerM</first>
+						<second type="traktor.PropertyFloat"><value>0.15</value></second>
+					</item>
+					<item>
+						<first>investigateArrive</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>investigateSpeed</first>
+						<second type="traktor.PropertyFloat"><value>0.85</value></second>
+					</item>
+					<item>
+						<first>investigateTime</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>overlapSpace</first>
+						<second type="traktor.PropertyFloat"><value>0.66</value></second>
+					</item>
+					<item>
+						<first>paceMin</first>
+						<second type="traktor.PropertyFloat"><value>0.8</value></second>
+					</item>
+					<item>
+						<first>paceRange</first>
+						<second type="traktor.PropertyFloat"><value>0.4</value></second>
+					</item>
+					<item>
+						<first>patrolBias</first>
+						<second type="traktor.PropertyFloat"><value>1.6</value></second>
+					</item>
+					<item>
+						<first>patrolLeash</first>
+						<second type="traktor.PropertyFloat"><value>25.0</value></second>
+					</item>
+					<item>
+						<first>patrolPull</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>patrolSpeed</first>
+						<second type="traktor.PropertyFloat"><value>0.55</value></second>
+					</item>
+					<item>
+						<first>patrolStep</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>playerSpace</first>
+						<second type="traktor.PropertyFloat"><value>1.9</value></second>
+					</item>
+					<item>
+						<first>pushOutGain</first>
+						<second type="traktor.PropertyFloat"><value>8.0</value></second>
+					</item>
+					<item>
+						<first>pushOutMax</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>separation</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>sightRange</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>spawnDelay</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>spawnHunt</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>turnCreep</first>
+						<second type="traktor.PropertyFloat"><value>0.35</value></second>
+					</item>
+					<item>
+						<first>turnRate</first>
+						<second type="traktor.PropertyFloat"><value>3.6</value></second>
+					</item>
+					<item>
+						<first>voiceCloseRange</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>voiceIntervalClose</first>
+						<second type="traktor.PropertyFloat"><value>1.2</value></second>
+					</item>
+					<item>
+						<first>voiceIntervalMax</first>
+						<second type="traktor.PropertyFloat"><value>7.0</value></second>
+					</item>
+					<item>
+						<first>voiceIntervalMin</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>voiceRange</first>
+						<second type="traktor.PropertyFloat"><value>28.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>grenade</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>blastDamage</first>
+						<second type="traktor.PropertyFloat"><value>500.0</value></second>
+					</item>
+					<item>
+						<first>blastHalf</first>
+						<second type="traktor.PropertyFloat"><value>2.2</value></second>
+					</item>
+					<item>
+						<first>blastImpulse</first>
+						<second type="traktor.PropertyFloat"><value>100.0</value></second>
+					</item>
+					<item>
+						<first>blastLift</first>
+						<second type="traktor.PropertyFloat"><value>30.0</value></second>
+					</item>
+					<item>
+						<first>blastRadius</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>fuse</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+					<item>
+						<first>interval</first>
+						<second type="traktor.PropertyFloat"><value>0.9</value></second>
+					</item>
+					<item>
+						<first>throwLift</first>
+						<second type="traktor.PropertyFloat"><value>0.35</value></second>
+					</item>
+					<item>
+						<first>throwSpeed</first>
+						<second type="traktor.PropertyFloat"><value>11.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>hive</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>brood</first>
+						<second type="traktor.PropertyInteger"><value>5</value></second>
+					</item>
+					<item>
+						<first>riseGap</first>
+						<second type="traktor.PropertyFloat"><value>1.2</value></second>
+					</item>
+					<item>
+						<first>wakeDelay</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>wakeDelayQuiet</first>
+						<second type="traktor.PropertyFloat"><value>0.8</value></second>
+					</item>
+					<item>
+						<first>wallMargin</first>
+						<second type="traktor.PropertyFloat"><value>0.4</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>inventory</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>columns</first>
+						<second type="traktor.PropertyInteger"><value>8</value></second>
+					</item>
+					<item>
+						<first>dropAhead</first>
+						<second type="traktor.PropertyFloat"><value>1.4</value></second>
+					</item>
+					<item>
+						<first>slots</first>
+						<second type="traktor.PropertyInteger"><value>16</value></second>
+					</item>
+					<item>
+						<first>start</first>
+						<second type="traktor.PropertyArray">
+							<values>
+							</values>
+						</second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>key</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>gateRange</first>
+						<second type="traktor.PropertyFloat"><value>3.5</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>lever</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>reachRange</first>
+						<second type="traktor.PropertyFloat"><value>1.8</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>machinegun</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>damage</first>
+						<second type="traktor.PropertyFloat"><value>25.0</value></second>
+					</item>
+					<item>
+						<first>fireInterval</first>
+						<second type="traktor.PropertyFloat"><value>0.08</value></second>
+					</item>
+					<item>
+						<first>headMul</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+					<item>
+						<first>mag</first>
+						<second type="traktor.PropertyInteger"><value>45</value></second>
+					</item>
+					<item>
+						<first>magSize</first>
+						<second type="traktor.PropertyInteger"><value>45</value></second>
+					</item>
+					<item>
+						<first>range</first>
+						<second type="traktor.PropertyFloat"><value>26.0</value></second>
+					</item>
+					<item>
+						<first>recoilDecay</first>
+						<second type="traktor.PropertyFloat"><value>0.35</value></second>
+					</item>
+					<item>
+						<first>recoilKick</first>
+						<second type="traktor.PropertyFloat"><value>0.012</value></second>
+					</item>
+					<item>
+						<first>recoilMax</first>
+						<second type="traktor.PropertyFloat"><value>0.055</value></second>
+					</item>
+					<item>
+						<first>reloadTime</first>
+						<second type="traktor.PropertyFloat"><value>3.1</value></second>
+					</item>
+					<item>
+						<first>spreadDecay</first>
+						<second type="traktor.PropertyFloat"><value>0.07</value></second>
+					</item>
+					<item>
+						<first>spreadMax</first>
+						<second type="traktor.PropertyFloat"><value>0.075</value></second>
+					</item>
+					<item>
+						<first>spreadMin</first>
+						<second type="traktor.PropertyFloat"><value>0.008</value></second>
+					</item>
+					<item>
+						<first>spreadPerShot</first>
+						<second type="traktor.PropertyFloat"><value>0.0075</value></second>
+					</item>
+					<item>
+						<first>tracerEvery</first>
+						<second type="traktor.PropertyInteger"><value>3</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>melee</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>damage</first>
+						<second type="traktor.PropertyFloat"><value>10.0</value></second>
+					</item>
+					<item>
+						<first>interval</first>
+						<second type="traktor.PropertyFloat"><value>0.8</value></second>
+					</item>
+					<item>
+						<first>knockback</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>pushTime</first>
+						<second type="traktor.PropertyFloat"><value>0.6</value></second>
+					</item>
+					<item>
+						<first>radius</first>
+						<second type="traktor.PropertyFloat"><value>1.0</value></second>
+					</item>
+					<item>
+						<first>range</first>
+						<second type="traktor.PropertyFloat"><value>2.2</value></second>
+					</item>
+					<item>
+						<first>stun</first>
+						<second type="traktor.PropertyFloat"><value>2.1</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>npc</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>ageCourage</first>
+						<second type="traktor.PropertyFloat"><value>0.25</value></second>
+					</item>
+					<item>
+						<first>agePace</first>
+						<second type="traktor.PropertyFloat"><value>0.3</value></second>
+					</item>
+					<item>
+						<first>arrive</first>
+						<second type="traktor.PropertyFloat"><value>1.0</value></second>
+					</item>
+					<item>
+						<first>attack</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>duration</first>
+									<second type="traktor.PropertyFloat"><value>0.47</value></second>
+								</item>
+								<item>
+									<first>hitAt</first>
+									<second type="traktor.PropertyFloat"><value>0.25</value></second>
+								</item>
+								<item>
+									<first>release</first>
+									<second type="traktor.PropertyFloat"><value>0.15</value></second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>attendTime</first>
+						<second type="traktor.PropertyFloat"><value>5.0</value></second>
+					</item>
+					<item>
+						<first>calmTime</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>chaseLeash</first>
+						<second type="traktor.PropertyFloat"><value>30.0</value></second>
+					</item>
+					<item>
+						<first>classes</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>braindead</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyFloat"><value>1.0</value></second>
+											</item>
+											<item>
+												<first>faction</first>
+												<second type="traktor.PropertyString"><value>undead</value></second>
+											</item>
+											<item>
+												<first>health</first>
+												<second type="traktor.PropertyFloat"><value>100.0</value></second>
+											</item>
+											<item>
+												<first>strikeDamage</first>
+												<second type="traktor.PropertyFloat"><value>15.0</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>merchant</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyFloat"><value>0.3</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>wanderer</first>
+									<second type="traktor.PropertyArray">
+										<values>
+										</values>
+									</second>
+								</item>
+								<item>
+									<first>worker</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>courage</first>
+												<second type="traktor.PropertyFloat"><value>0.6</value></second>
+											</item>
+											<item>
+												<first>strikeDamage</first>
+												<second type="traktor.PropertyFloat"><value>28.0</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>defaults</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>age</first>
+									<second type="traktor.PropertyInteger"><value>35</value></second>
+								</item>
+								<item>
+									<first>courage</first>
+									<second type="traktor.PropertyFloat"><value>0.5</value></second>
+								</item>
+								<item>
+									<first>faction</first>
+									<second type="traktor.PropertyString"><value>villager</value></second>
+								</item>
+								<item>
+									<first>health</first>
+									<second type="traktor.PropertyFloat"><value>250.0</value></second>
+								</item>
+								<item>
+									<first>hostility</first>
+									<second type="traktor.PropertyFloat"><value>0.0</value></second>
+								</item>
+								<item>
+									<first>mood</first>
+									<second type="traktor.PropertyString"><value>neutral</value></second>
+								</item>
+								<item>
+									<first>reach</first>
+									<second type="traktor.PropertyFloat"><value>1.4</value></second>
+								</item>
+								<item>
+									<first>runSpeed</first>
+									<second type="traktor.PropertyFloat"><value>2.6</value></second>
+								</item>
+								<item>
+									<first>strikeDamage</first>
+									<second type="traktor.PropertyFloat"><value>20.0</value></second>
+								</item>
+								<item>
+									<first>strikeInterval</first>
+									<second type="traktor.PropertyFloat"><value>1.1</value></second>
+								</item>
+								<item>
+									<first>walkSpeed</first>
+									<second type="traktor.PropertyFloat"><value>1.1</value></second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>engageRange</first>
+						<second type="traktor.PropertyFloat"><value>10.0</value></second>
+					</item>
+					<item>
+						<first>factions</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>bandit</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>player</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+											<item>
+												<first>undead</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+											<item>
+												<first>villager</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>undead</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>bandit</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+											<item>
+												<first>player</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+											<item>
+												<first>villager</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>villager</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>bandit</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+											<item>
+												<first>undead</first>
+												<second type="traktor.PropertyBoolean"><value>true</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>fleeHealth</first>
+						<second type="traktor.PropertyFloat"><value>0.8</value></second>
+					</item>
+					<item>
+						<first>fleeLeg</first>
+						<second type="traktor.PropertyFloat"><value>8.0</value></second>
+					</item>
+					<item>
+						<first>flinchDamage</first>
+						<second type="traktor.PropertyFloat"><value>40.0</value></second>
+					</item>
+					<item>
+						<first>forgetTime</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>gaitSmooth</first>
+						<second type="traktor.PropertyFloat"><value>8.0</value></second>
+					</item>
+					<item>
+						<first>gaitSmoothStop</first>
+						<second type="traktor.PropertyFloat"><value>30.0</value></second>
+					</item>
+					<item>
+						<first>gaitStart</first>
+						<second type="traktor.PropertyFloat"><value>0.25</value></second>
+					</item>
+					<item>
+						<first>gaitStop</first>
+						<second type="traktor.PropertyFloat"><value>0.1</value></second>
+					</item>
+					<item>
+						<first>hearRange</first>
+						<second type="traktor.PropertyFloat"><value>25.0</value></second>
+					</item>
+					<item>
+						<first>hostileAt</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>hostilityOnHurt</first>
+						<second type="traktor.PropertyFloat"><value>0.6</value></second>
+					</item>
+					<item>
+						<first>lodFar</first>
+						<second type="traktor.PropertyFloat"><value>50.0</value></second>
+					</item>
+					<item>
+						<first>lodNear</first>
+						<second type="traktor.PropertyFloat"><value>25.0</value></second>
+					</item>
+					<item>
+						<first>lootRange</first>
+						<second type="traktor.PropertyFloat"><value>2.2</value></second>
+					</item>
+					<item>
+						<first>moodHold</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>noticeRange</first>
+						<second type="traktor.PropertyFloat"><value>2.0</value></second>
+					</item>
+					<item>
+						<first>noticeSlack</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>noticeTime</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>oldAge</first>
+						<second type="traktor.PropertyInteger"><value>60</value></second>
+					</item>
+					<item>
+						<first>regenDelay</first>
+						<second type="traktor.PropertyFloat"><value>8.0</value></second>
+					</item>
+					<item>
+						<first>regenRate</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>sightRange</first>
+						<second type="traktor.PropertyFloat"><value>22.0</value></second>
+					</item>
+					<item>
+						<first>strayRadius</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>strikeArc</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>talkRange</first>
+						<second type="traktor.PropertyFloat"><value>1.8</value></second>
+					</item>
+					<item>
+						<first>threatPer</first>
+						<second type="traktor.PropertyFloat"><value>0.25</value></second>
+					</item>
+					<item>
+						<first>threatRange</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+					<item>
+						<first>threatWeight</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>undead</first>
+									<second type="traktor.PropertyFloat"><value>0.12</value></second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>turn180At</first>
+						<second type="traktor.PropertyFloat"><value>2.36</value></second>
+					</item>
+					<item>
+						<first>turnMin</first>
+						<second type="traktor.PropertyFloat"><value>0.8</value></second>
+					</item>
+					<item>
+						<first>turnRelease</first>
+						<second type="traktor.PropertyFloat"><value>0.15</value></second>
+					</item>
+					<item>
+						<first>turns</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>turnLeft180</first>
+									<second type="traktor.PropertyFloat"><value>1.55</value></second>
+								</item>
+								<item>
+									<first>turnLeft90</first>
+									<second type="traktor.PropertyFloat"><value>0.9</value></second>
+								</item>
+								<item>
+									<first>turnRight180</first>
+									<second type="traktor.PropertyFloat"><value>1.63</value></second>
+								</item>
+								<item>
+									<first>turnRight90</first>
+									<second type="traktor.PropertyFloat"><value>0.93</value></second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>youngAge</first>
+						<second type="traktor.PropertyInteger"><value>14</value></second>
+					</item>
+					<item>
+						<first>zombieLoot</first>
+						<second type="traktor.PropertyArray">
+							<values>
+								<item type="traktor.PropertyGroup">
+									<value>
+										<item>
+											<first>chance</first>
+											<second type="traktor.PropertyFloat"><value>0.15</value></second>
+										</item>
+										<item>
+											<first>count</first>
+											<second type="traktor.PropertyInteger"><value>4</value></second>
+										</item>
+										<item>
+											<first>item</first>
+											<second type="traktor.PropertyString"><value>rounds</value></second>
+										</item>
+									</value>
+								</item>
+								<item type="traktor.PropertyGroup">
+									<value>
+										<item>
+											<first>chance</first>
+											<second type="traktor.PropertyFloat"><value>0.1</value></second>
+										</item>
+										<item>
+											<first>count</first>
+											<second type="traktor.PropertyInteger"><value>3</value></second>
+										</item>
+										<item>
+											<first>item</first>
+											<second type="traktor.PropertyString"><value>coin</value></second>
+										</item>
+									</value>
+								</item>
+								<item type="traktor.PropertyGroup">
+									<value>
+										<item>
+											<first>chance</first>
+											<second type="traktor.PropertyFloat"><value>0.04</value></second>
+										</item>
+										<item>
+											<first>count</first>
+											<second type="traktor.PropertyInteger"><value>1</value></second>
+										</item>
+										<item>
+											<first>item</first>
+											<second type="traktor.PropertyString"><value>bread</value></second>
+										</item>
+									</value>
+								</item>
+							</values>
+						</second>
+					</item>
+					<item>
+						<first>zombieLootLifetime</first>
+						<second type="traktor.PropertyFloat"><value>30.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>orchestrator</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>burstInterval</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>events</first>
+						<second type="traktor.PropertyGroup">
+							<value>
+								<item>
+									<first>gateOpened</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>cap</first>
+												<second type="traktor.PropertyInteger"><value>12</value></second>
+											</item>
+											<item>
+												<first>duration</first>
+												<second type="traktor.PropertyFloat"><value>25.0</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>keyTaken</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>cap</first>
+												<second type="traktor.PropertyInteger"><value>10</value></second>
+											</item>
+											<item>
+												<first>duration</first>
+												<second type="traktor.PropertyFloat"><value>20.0</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>relicTaken</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>cap</first>
+												<second type="traktor.PropertyInteger"><value>12</value></second>
+											</item>
+											<item>
+												<first>duration</first>
+												<second type="traktor.PropertyFloat"><value>30.0</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+								<item>
+									<first>wardLit</first>
+									<second type="traktor.PropertyGroup">
+										<value>
+											<item>
+												<first>cap</first>
+												<second type="traktor.PropertyInteger"><value>14</value></second>
+											</item>
+											<item>
+												<first>duration</first>
+												<second type="traktor.PropertyFloat"><value>35.0</value></second>
+											</item>
+										</value>
+									</second>
+								</item>
+							</value>
+						</second>
+					</item>
+					<item>
+						<first>lullCap</first>
+						<second type="traktor.PropertyInteger"><value>3</value></second>
+					</item>
+					<item>
+						<first>lullInterval</first>
+						<second type="traktor.PropertyFloat"><value>8.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>pickup</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>reachRange</first>
+						<second type="traktor.PropertyFloat"><value>2.2</value></second>
+					</item>
+					<item>
+						<first>takeRange</first>
+						<second type="traktor.PropertyFloat"><value>1.2</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>player</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>enemyDps</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>hurtRange</first>
+						<second type="traktor.PropertyFloat"><value>1.3</value></second>
+					</item>
+					<item>
+						<first>invertPitch</first>
+						<second type="traktor.PropertyBoolean"><value>false</value></second>
+					</item>
+					<item>
+						<first>maxHealth</first>
+						<second type="traktor.PropertyFloat"><value>100.0</value></second>
+					</item>
+					<item>
+						<first>pitchMax</first>
+						<second type="traktor.PropertyFloat"><value>1.15</value></second>
+					</item>
+					<item>
+						<first>pitchMin</first>
+						<second type="traktor.PropertyFloat"><value>-1.15</value></second>
+					</item>
+					<item>
+						<first>sprintSpeed</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>stepStride</first>
+						<second type="traktor.PropertyFloat"><value>1.9</value></second>
+					</item>
+					<item>
+						<first>walkSpeed</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>props</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>bulletImpulse</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>relic</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>markerSwitchMargin</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>reachRange</first>
+						<second type="traktor.PropertyFloat"><value>2.2</value></second>
+					</item>
+					<item>
+						<first>wardRange</first>
+						<second type="traktor.PropertyFloat"><value>3.5</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>rifle</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>damage</first>
+						<second type="traktor.PropertyFloat"><value>60.0</value></second>
+					</item>
+					<item>
+						<first>fireInterval</first>
+						<second type="traktor.PropertyFloat"><value>0.4</value></second>
+					</item>
+					<item>
+						<first>headHeight</first>
+						<second type="traktor.PropertyFloat"><value>1.45</value></second>
+					</item>
+					<item>
+						<first>headMul</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+					<item>
+						<first>mag</first>
+						<second type="traktor.PropertyInteger"><value>6</value></second>
+					</item>
+					<item>
+						<first>magSize</first>
+						<second type="traktor.PropertyInteger"><value>6</value></second>
+					</item>
+					<item>
+						<first>range</first>
+						<second type="traktor.PropertyFloat"><value>40.0</value></second>
+					</item>
+					<item>
+						<first>reloadTime</first>
+						<second type="traktor.PropertyFloat"><value>1.2</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>spawner</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>aheadBias</first>
+						<second type="traktor.PropertyFloat"><value>9.0</value></second>
+					</item>
+					<item>
+						<first>behindDist</first>
+						<second type="traktor.PropertyFloat"><value>28.0</value></second>
+					</item>
+					<item>
+						<first>behindDot</first>
+						<second type="traktor.PropertyFloat"><value>-0.25</value></second>
+					</item>
+					<item>
+						<first>behindInterval</first>
+						<second type="traktor.PropertyFloat"><value>0.4</value></second>
+					</item>
+					<item>
+						<first>candidates</first>
+						<second type="traktor.PropertyInteger"><value>12</value></second>
+					</item>
+					<item>
+						<first>coverMin</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>despawnDist</first>
+						<second type="traktor.PropertyFloat"><value>60.0</value></second>
+					</item>
+					<item>
+						<first>fallbackCap</first>
+						<second type="traktor.PropertyInteger"><value>9</value></second>
+					</item>
+					<item>
+						<first>groundMinNormalY</first>
+						<second type="traktor.PropertyFloat"><value>0.7</value></second>
+					</item>
+					<item>
+						<first>maxEnemies</first>
+						<second type="traktor.PropertyInteger"><value>30</value></second>
+					</item>
+					<item>
+						<first>recedeMin</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>spawnInterval</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>spawnMax</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>spawnMin</first>
+						<second type="traktor.PropertyFloat"><value>8.0</value></second>
+					</item>
+					<item>
+						<first>velSmooth</first>
+						<second type="traktor.PropertyFloat"><value>6.0</value></second>
+					</item>
+					<item>
+						<first>wallMargin</first>
+						<second type="traktor.PropertyFloat"><value>0.72</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>ward</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>igniteRate</first>
+						<second type="traktor.PropertyFloat"><value>0.9</value></second>
+					</item>
+					<item>
+						<first>purgeRadius</first>
+						<second type="traktor.PropertyFloat"><value>15.0</value></second>
+					</item>
+					<item>
+						<first>radius</first>
+						<second type="traktor.PropertyFloat"><value>7.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+	</value>
+</object>

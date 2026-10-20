@@ -18,13 +18,14 @@
 #include "Editor/StoryValidation.h"
 #include "ItemContainerComponentData.h"
 #include "ItemPickupComponentData.h"
+#include "Npc/NpcWorldComponentData.h"
 #include "PlaceComponentData.h"
 #include "StoryWorldComponentData.h"
 
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_FACTORY_CLASS(L"zombie.StoryComponentPipeline", 1, StoryComponentPipeline, editor::IPipeline)
+T_IMPLEMENT_RTTI_FACTORY_CLASS(L"zombie.StoryComponentPipeline", 2, StoryComponentPipeline, editor::IPipeline)
 
 bool StoryComponentPipeline::create(const editor::IPipelineSettings* settings, db::Database* database)
 {
@@ -37,7 +38,7 @@ void StoryComponentPipeline::destroy()
 
 TypeInfoSet StoryComponentPipeline::getAssetTypes() const
 {
-	return makeTypeInfoSet< ActorComponentData, ItemContainerComponentData, ItemPickupComponentData, PlaceComponentData, StoryWorldComponentData >();
+	return makeTypeInfoSet< ActorComponentData, ItemContainerComponentData, ItemPickupComponentData, NpcWorldComponentData, PlaceComponentData, StoryWorldComponentData >();
 }
 
 bool StoryComponentPipeline::shouldCache() const

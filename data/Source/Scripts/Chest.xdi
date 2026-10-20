@@ -68,7 +68,7 @@ function Chest:contents()
 end
 
 -- An entity's ItemContainerComponent as a list of { kind, count }: what a chest holds, and what a
--- character carries (Scripts/Npc/Npc). `who` names the owner in a warning.
+-- character carries (zombie.NpcComponent). `who` names the owner in a warning.
 --
 -- Only the keys are read (Items.keyOf), never the items themselves: a character reads what it
 -- carries as the world is built, before the stage has bound Scripts/Items/Items to the database.

@@ -9,7 +9,7 @@ import(traktor)
 --
 -- The rifle butt: right mouse swings it. It barely hurts and costs no rounds -- it knocks
 -- *every* character in the cone in front of you two metres back and leaves them reeling for a
--- couple of seconds (Scripts/Npc/Npc:hit owns both), for Config.melee.damage each. What it is for is the moment the
+-- couple of seconds (zombie.NpcComponent:hit owns both), for Config.melee.damage each. What it is for is the moment the
 -- ammunition economy runs out: a dry rifle mid-reload with a crowd already on you used to be
 -- the end of it, and now there is one answer left that does not need ammunition.
 --
@@ -125,18 +125,18 @@ function Melee:attack()
 		--
 		-- No blood with it: a rifle butt does not open anything, and the burst is
 		-- what a round looks like. Which is also why the damage is taken straight off the
-		-- character (Npc:takeDamage) rather than through Main:damage, which would open a
+		-- character (NpcComponent:takeDamage) rather than through Main:damage, which would open a
 		-- wound -- and only handed to the Stage when it is the blow that kills. It is what
 		-- makes a villager the player clubs take it personally.
-		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-		if sc == nil or sc.hit == nil or not sc:hit(ax, az) then
+		local npc < const > = e:getComponent(zombie.NpcComponent)
+		if npc == nil or not npc:hit(ax, az) then
 			return
 		end
 		local fx < const > = e:getComponent(traktor.world.EventSetComponent)
 		if fx ~= nil then
 			fx:raise("hit")
 		end
-		if sc:takeDamage(self._damage, player, context) then
+		if npc:takeDamage(self._damage, player) then
 			local al < const > = math.sqrt(ax * ax + az * az)
 			context:killEnemy(e, (p + Vector4(0.0, 1.0, 0.0, 0.0)).xyz1,
 				context:knockbackImpulse(Vector4(ax / al, 0.0, az / al, 0.0)))

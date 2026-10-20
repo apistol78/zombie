@@ -297,6 +297,9 @@
 		<item type="zombie.StoryWorldComponentData">
 			<refreshInterval>1</refreshInterval>
 		</item>
+		<item type="zombie.NpcWorldComponentData">
+			<settings>{6E9AD100-0000-4000-8000-000000000020}</settings>
+		</item>
 	</worldComponents>
 	<layers>
 		<item type="traktor.world.EntityData" version="2">
@@ -21668,25 +21671,9 @@
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000003}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>loop</first>
-												<second type="traktor.PropertyString">
-													<value>true</value>
-												</second>
-											</item>
-											<item>
-												<first>pause</first>
-												<second type="traktor.PropertyString">
-													<value>2.5</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.RouteComponentData">
+									<loop>true</loop>
+									<pause>2.5</pause>
 								</item>
 								<item type="traktor.world.GroupComponentData">
 									<entityData>
@@ -21840,25 +21827,9 @@
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000003}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>loop</first>
-												<second type="traktor.PropertyString">
-													<value>false</value>
-												</second>
-											</item>
-											<item>
-												<first>pause</first>
-												<second type="traktor.PropertyString">
-													<value>4.0</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.RouteComponentData">
+									<loop>false</loop>
+									<pause>4</pause>
 								</item>
 								<item type="traktor.world.GroupComponentData">
 									<entityData>
@@ -22278,10 +22249,9 @@
 								<rotation>0, -0.756118, 0, 0.654435</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22314,10 +22284,9 @@
 								<rotation>0, 0.80439, 0, 0.594102</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22350,19 +22319,11 @@
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22391,19 +22352,11 @@
 								<rotation>0, 1, 0, 0.000796</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22432,10 +22385,9 @@
 								<rotation>0, 0.389418, 0, 0.921061</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22472,10 +22424,9 @@
 								<rotation>0, -0.397636, 0, 0.917543</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22508,10 +22459,9 @@
 								<rotation>0, -0.863969, 0, 0.503545</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22544,19 +22494,11 @@
 								<rotation>0, 0.479426, 0, 0.877582</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{665F99DF-D23A-4355-9AB8-36B21A98647F}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22585,19 +22527,11 @@
 								<rotation>0, 0.841471, 0, 0.540302</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22626,10 +22560,9 @@
 								<rotation>0, 0.717356, 0, 0.696707</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22662,10 +22595,9 @@
 								<rotation>0, 0.932039, 0, 0.362358</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22698,10 +22630,9 @@
 								<rotation>0, 0.932039, 0, 0.362358</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22734,10 +22665,9 @@
 								<rotation>0, 0.932039, 0, 0.362358</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22770,10 +22700,9 @@
 								<rotation>0, 0.350496, 0, 0.936564</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22806,10 +22735,9 @@
 								<rotation>0, 0.350496, 0, 0.936564</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22842,10 +22770,9 @@
 								<rotation>0, 0.350496, 0, 0.936564</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22878,10 +22805,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22914,10 +22840,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22950,10 +22875,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -22986,10 +22910,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23022,10 +22945,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23058,10 +22980,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23094,10 +23015,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23130,10 +23050,9 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties/>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route/>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23166,25 +23085,9 @@
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000003}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>loop</first>
-												<second type="traktor.PropertyString">
-													<value>false</value>
-												</second>
-											</item>
-											<item>
-												<first>pause</first>
-												<second type="traktor.PropertyString">
-													<value>4.0</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.RouteComponentData">
+									<loop>false</loop>
+									<pause>4</pause>
 								</item>
 								<item type="traktor.world.GroupComponentData">
 									<entityData>
@@ -23884,19 +23787,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23929,19 +23824,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -23974,19 +23861,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -24019,19 +23898,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -24064,19 +23935,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -24109,19 +23972,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -24154,19 +24009,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -24199,19 +24046,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
@@ -24244,19 +24083,11 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{4E9C0000-0000-4000-8000-000000000002}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>route</first>
-												<second type="traktor.world.PropertyEntityReference">
-													<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.NpcComponentData">
+									<brain>Human</brain>
+									<route type="traktor.world.PropertyEntityReference">
+										<value>{48CEA34A-56CD-A041-B82F-EC8AF562AE31}</value>
+									</route>
 								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>

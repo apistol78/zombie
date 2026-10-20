@@ -223,7 +223,7 @@ end
 -- ---- Talking ----
 
 -- E at a living character who will talk (see Main:_nearestTalker): they turn to face the player
--- (Human:talk) and the conversation opens on their actor's dialog (ActorComponent).
+-- (HumanComponent:talk) and the conversation opens on their actor's dialog (ActorComponent).
 --
 -- Not in the same update as a conversation was left in: E leaves one, and that same press would
 -- otherwise go straight on to Main:_interact and open it again.
@@ -236,7 +236,7 @@ function Main:_talkTo(rec)
 	if c == nil then
 		return
 	end
-	rec.sc:talk(self)
+	rec.human:talk()
 	self._talkingTo = rec
 	-- A talk can be over as it begins: a dialog whose every start is ruled out.
 	if c.ended then
@@ -302,7 +302,7 @@ end
 -- now; there is no buying yet. Someone with nothing on them says so instead of opening an empty
 -- window.
 function Main:_trade(rec)
-	local name < const > = rec.sc:displayName()
+	local name < const > = self:_nameOf(rec)
 	local box < const > = self:_npcBox(rec)
 	if #self:chestContents(box) == 0 then
 		self:_feed((name ~= nil) and (name .. " HAS NOTHING TO GIVE") or "THEY HAVE NOTHING TO GIVE")

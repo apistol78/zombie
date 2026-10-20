@@ -55,10 +55,9 @@
 				</item>
 			</eventData>
 		</item>
-		<item type="traktor.world.ScriptComponentData" version="2">
-			<class>{E5C0DE01-AAAA-4BBB-8CCC-DDDDEEEEFFFF}</class>
-			<properties/>
-			<editorSupport>false</editorSupport>
+		<item type="zombie.NpcComponentData">
+			<brain>Enemy</brain>
+			<route/>
 		</item>
 		<item type="traktor.animation.FootPlacementComponentData" version="1">
 			<traceInclude>

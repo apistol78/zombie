@@ -4,29 +4,21 @@
 #using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
 #using \{6E9AD100-0000-4000-8000-000000000010}
 #using \{17E40000-0000-4000-8000-000000000001}
+#using \{C4E57000-0000-4000-8000-000000000001}
 
 import(traktor)
 
--- Characters: the part of Scripts/Main that deals with the characters in the world
--- (Scripts/Npc/Npc) -- hurting them, what they deal the player, the routes they walk, what a
--- death leaves behind, and the books that lay them out again for a world the player comes back
--- to. Methods on the Main stage class, kept in a script of their own because Main is already
--- as large as one script can be: the script pipeline serializes the text on the stack, and a
--- few more kilobytes of Main took the editor down.
+-- Characters: the part of Scripts/Main that deals with the characters in the world -- the native
+-- zombie.NpcComponent (EnemyComponent, HumanComponent) and the scene's zombie.NpcWorldComponent
+-- they share -- hurting them, what they deal the player, what a death leaves behind, and the books
+-- that lay them out again for a world the player comes back to. Methods on the Main stage class,
+-- kept in a script of their own because Main is already as large as one script can be: the script
+-- pipeline serializes the text on the stack, and a few more kilobytes of Main took the editor down.
 --
 -- Defines the class if Main has not yet -- this is #using'd by Main, so it is loaded first --
 -- and Main's own `Main = Main or class(...)` then carries on with the same table.
 
 Main = Main or class("Main", Stage)
-
--- Route debug drawing (see _drawRoutes): lifted off the ground only so it does not z-fight the
--- terrain, the same reason Npc's own path drawing lifts (Npc:_drawPath). Kept visually distinct
--- from every colour EnemyController, Human and Npc draw their own dots and paths in, since a
--- route and the path a character is currently walking along it can be on screen together.
-local ROUTE_DEBUG_LIFT < const > = 0.08
-local ROUTE_DEBUG_WIDTH < const > = 1.5
-local ROUTE_DEBUG_NODE_SIZE < const > = 4.0
-local ROUTE_DEBUG_COLOUR < const > = Color4f(0.65, 0.30, 0.95, 1.0)
 
 -- The same two as Main's own (see there): a Transform as plain data, for the books.
 local function plainTransform(t)
@@ -45,13 +37,12 @@ end
 -- and dies through killEnemy once the health is gone, so there is still exactly one door.
 --
 -- A hit that does not kill opens a wound where it landed, and one at or over
--- Config.npc.flinchDamage plays the reaction (Npc:flinch). `impulse` is what the rag doll is
+-- Config.npc.flinchDamage plays the reaction (NpcComponent:flinch). `impulse` is what the rag doll is
 -- thrown with if this is the blow that kills; a blow from a character passes none, and is then
 -- given a half-strength shove away from whoever struck it.
 --
--- Something with no health to take -- a component whose script object has not been built yet,
--- in the frame it was spawned -- dies to anything, as everything did before there was health.
--- Returns whether this killed it.
+-- Something with no health to take -- an entity that is no character -- dies to anything, as
+-- everything did before there was health. Returns whether this killed it.
 function Main:damage(entity, amount, point, impulse, whole, source)
 	if entity == nil or self._deadEnemies[entity] ~= nil then
 		return false
@@ -63,13 +54,13 @@ function Main:damage(entity, amount, point, impulse, whole, source)
 		local dir < const > = (len > 0.001) and Vector4(d.x / len, 0.0, d.z / len, 0.0) or Vector4(0.0, 0.0, 1.0, 0.0)
 		impulse = self:knockbackImpulse(dir) * 0.5
 	end
-	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
-	if sc == nil or sc.takeDamage == nil or sc:takeDamage(amount, source, self) then
+	local npc < const > = entity:getComponent(zombie.NpcComponent)
+	if npc == nil or npc:takeDamage(amount, source) then
 		return self:killEnemy(entity, point, impulse, whole)
 	end
 	self:_woundEnemy(entity, point)
 	if amount >= Config.npc.flinchDamage then
-		sc:flinch()
+		npc:flinch()
 	end
 	return false
 end
@@ -94,56 +85,52 @@ function Main:hurtPlayer(amount)
 	self._incomingDamage = self._incomingDamage + amount
 end
 
--- The route whose entity has guid `id`, as { points, loop, pause } (Scripts/Npc/Route), or nil.
--- Asked by the characters that walk one; read from the world the first time, then kept.
-function Main:route(id)
-	if self._routes == nil or id == nil then
-		return nil
-	end
-	local key < const > = string.upper(id:format())
-	local route = self._routes[key]
-	if route == nil and self._routeWorld ~= nil then
-		local e < const > = self._routeWorld:getEntityById(id)
-		local sc < const > = (e ~= nil) and e:getComponent(traktor.world.ScriptComponent) or nil
-		if sc ~= nil and sc.describe ~= nil then
-			route = sc:describe()
-			self._routes[key] = route
-		end
-	end
-	return route
-end
-
--- Every Route laid out in the scene (Scripts/Npc/Route), drawn whole -- not just the stretch
--- of it a character happens to be walking, which is Npc:_drawPath's job and stays nothing but
--- the next few corners. Only while the debug layer is up (self.debug, nil otherwise -- see the
--- comment on context.debug in Scripts/EnemyController); _routes is only ever read here, never
--- written. Called once a frame by Main:update, above its early-returns, so a route stays on
--- screen through a pause or after the night is won.
-function Main:_drawRoutes()
-	local dbg < const > = self.debug
-	if dbg == nil or self._routes == nil then
+-- Tell the characters (the scene's zombie.NpcWorldComponent) how the stage stands this update --
+-- frozen, a hive being watched, where the player looks from and along, the last shot, the debug
+-- layer -- and take what they dealt the player since the last one (hurtPlayer). Called once an
+-- update by Main:update, above its early-returns, so a pause or the end of the night reaches them.
+-- The debug layer is also what has every route a character walks drawn whole.
+function Main:_updateCharacters()
+	local npcs < const > = self._npcWorld
+	if npcs == nil then
 		return
 	end
-	local lift < const > = Vector4(0.0, ROUTE_DEBUG_LIFT, 0.0, 0.0)
-	for _, route in pairs(self._routes) do
-		local points < const > = route.points
-		local n < const > = #points
-		if n > 0 then
-			dbg:point(points[1] + lift, ROUTE_DEBUG_NODE_SIZE, ROUTE_DEBUG_COLOUR)
-		end
-		for i = 2, n do
-			local from < const > = points[i - 1] + lift
-			local to < const > = points[i] + lift
-			dbg:line(from, to, ROUTE_DEBUG_WIDTH, ROUTE_DEBUG_COLOUR)
-			dbg:point(to, ROUTE_DEBUG_NODE_SIZE, ROUTE_DEBUG_COLOUR)
-		end
-		-- Closing the loop is only worth drawing past two points -- with just two, walking
-		-- it back and forth (the non-loop case) already covers the same ground, so the one
-		-- segment above is the whole route either way.
-		if route.loop and n > 2 then
-			dbg:line(points[n] + lift, points[1] + lift, ROUTE_DEBUG_WIDTH, ROUTE_DEBUG_COLOUR)
+	npcs:setFrozen(self._gameOver or self._paused)
+	local cutscene < const > = self._cutscene
+	if cutscene ~= nil then
+		npcs:setCutscene(cutscene.x, cutscene.z, cutscene.r2)
+	else
+		npcs:clearCutscene()
+	end
+	npcs:setEye(self:eye())
+	npcs:setAim(self:aimDirection())
+	local shot < const > = self._gunshot
+	if shot ~= nil then
+		npcs:setGunshot(shot.x, shot.z, shot.seq)
+	end
+	npcs:setDebug(self.debug)
+	self:hurtPlayer(npcs:consumePlayerDamage())
+end
+
+-- What a record's character is called (its actor's name), or nil for one without a name.
+function Main:_nameOf(rec)
+	local name < const > = (rec ~= nil and rec.npc ~= nil) and rec.npc.name or ""
+	return (name ~= "") and name or nil
+end
+
+-- What a character carries, as { { kind, count }, ... }: its ItemContainerComponent, as a chest
+-- lists one (Chest.listOf). A zombie the scene says nothing about -- every one the Spawner or a
+-- hive sends up -- carries whatever it died with, drawn now (Config.npc.zombieLoot).
+function Main:_lootOf(entity, npc)
+	local list < const > = Chest.listOf(entity, "Npc")
+	if #list == 0 and npc ~= nil and npc.class == "braindead" then
+		for _, roll in ipairs(Config.npc.zombieLoot) do
+			if math.random() < roll.chance then
+				table.insert(list, { kind = Items.keyOf(roll.item), count = roll.count })
+			end
 		end
 	end
+	return list
 end
 
 -- What a death leaves behind. Whatever anyone carried becomes the contents of their body,
@@ -155,12 +142,17 @@ end
 -- (_forgetBody). Not at dawn, where the light drops the whole horde at once and the night is over.
 --
 -- Anyone else is not a kill worth counting; their body stays until it is empty (see _npcBox).
+--
+-- The character itself is told first, which turns it into a rag doll on its next update.
 function Main:_afterDeath(enemy)
-	local sc < const > = enemy:getComponent(traktor.world.ScriptComponent)
-	if sc == nil or sc.faction == nil or sc:faction() == "undead" then
+	local npc < const > = enemy:getComponent(zombie.NpcComponent)
+	if npc ~= nil then
+		npc:kill()
+	end
+	if npc == nil or npc.faction == "undead" then
 		self._kills = self._kills + 1
-		if sc ~= nil and sc.loot ~= nil and not self._nightOver then
-			local carried < const > = sc:loot()
+		if npc ~= nil and not self._nightOver then
+			local carried < const > = self:_lootOf(enemy, npc)
 			if #carried > 0 then
 				self._zombieBoxes = (self._zombieBoxes or 0) + 1
 				local box < const > = "zombie:" .. tostring(self._zombieBoxes)
@@ -169,7 +161,8 @@ function Main:_afterDeath(enemy)
 					table.insert(list, { kind = entry.kind, count = entry.count })
 				end
 				self._chestContents[box] = list
-				sc._boxKey = box
+				self._bodyBoxes = self._bodyBoxes or {}
+				self._bodyBoxes[enemy] = box
 				self._deadEnemies[enemy] = math.max(self._deadEnemies[enemy], Config.npc.zombieLootLifetime)
 			end
 		end
@@ -197,18 +190,14 @@ function Main:_actorDied(rec)
 end
 
 -- What a character carries, as the container the chest window shows: _chestContents["npc:<key>"],
--- a { kind, count } list taken over from the character's `items` (Npc:loot) the first time
+-- a { kind, count } list taken over from what the character carries (_lootOf) the first time
 -- anyone looks -- the player asking, or the character dying. From then on it is the one record
 -- of what they have, so what the player took from a living villager is not on their body
 -- later, and it is saved with the chests. Returns the container's key.
 function Main:_npcBox(rec)
 	local box < const > = "npc:" .. rec.key
 	if self._chestContents[box] == nil then
-		local list = {}
-		for _, entry in ipairs(rec.sc:loot()) do
-			table.insert(list, { kind = entry.kind, count = entry.count })
-		end
-		self._chestContents[box] = list
+		self._chestContents[box] = self:_lootOf(rec.entity, rec.npc)
 	end
 	return box
 end
@@ -220,8 +209,7 @@ function Main:_boxOf(entity)
 	if key ~= nil then
 		return "npc:" .. key
 	end
-	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
-	return (sc ~= nil) and sc._boxKey or nil
+	return (self._bodyBoxes ~= nil) and self._bodyBoxes[entity] or nil
 end
 
 -- A body being cleared away (Main:update's corpse pass, just before the entity goes). A placed
@@ -237,6 +225,7 @@ function Main:_forgetBody(corpse)
 	local box < const > = self:_boxOf(corpse)
 	if box ~= nil then
 		self._chestContents[box] = nil
+		self._bodyBoxes[corpse] = nil
 	end
 end
 
@@ -266,8 +255,8 @@ end
 -- ---- The characters' books ----
 --
 -- The same promise the pickups make: a world left for another stage and come back to is laid
--- out as it was. Every placed character is named by where it was first found (kept on its
--- component as _home), and what is remembered of it is whether it is dead -- and where it fell,
+-- out as it was. Every placed character is named by where it was first found, and what is
+-- remembered of it is whether it is dead -- and where it fell,
 -- if there is still something on the body -- or else how it feels: its health, its mood and
 -- what it thinks of the player.
 
@@ -281,18 +270,17 @@ function Main:_collectNpcs(world)
 			break
 		end
 		i = i + 1
-		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and sc.faction ~= nil then
-			local key = sc._home
-			if key == nil then
-				local p < const > = e.transform.translation
-				key = string.format("npc@%.2f,%.2f,%.2f", p.x, p.y, p.z)
-				while self._npcs[key] ~= nil do
-					key = key .. "'"
-				end
-				sc._home = key
+		local npc < const > = e:getComponent(zombie.NpcComponent)
+		if npc ~= nil then
+			local p < const > = e.transform.translation
+			local key = string.format("npc@%.2f,%.2f,%.2f", p.x, p.y, p.z)
+			while self._npcs[key] ~= nil do
+				key = key .. "'"
 			end
-			self._npcs[key] = { key = key, entity = e, sc = sc, dead = self._deadEnemies[e] ~= nil }
+			self._npcs[key] = {
+				key = key, entity = e, npc = npc, human = e:getComponent(zombie.HumanComponent),
+				dead = self._deadEnemies[e] ~= nil
+			}
 			self._npcKeyOf[e] = key
 		end
 	end
@@ -318,14 +306,16 @@ function Main:_restoreNpcs(world, saved)
 					rec.at = s.at
 					rec.entity.transform = fromPlainTransform(s.at)
 					self._deadEnemies[rec.entity] = self._corpseLifetime
+					rec.npc:kill()
 				else
 					rec.gone = true
 					self._npcKeyOf[rec.entity] = nil
 					world:removeEntity(rec.entity)
 					rec.entity:destroy()
 				end
-			elseif rec.sc.restore ~= nil then
-				rec.sc:restore(s)
+			else
+				local npc < const > = rec.npc
+				npc:restore(s.health or npc.health, s.hostility or npc.hostility, s.mood or npc.mood)
 			end
 		end
 	end
@@ -338,15 +328,16 @@ function Main:_saveNpcs()
 			out[key] = { dead = true }
 		elseif rec.dead then
 			out[key] = { dead = true, at = rec.at }
-		elseif rec.sc.snapshot ~= nil then
-			out[key] = rec.sc:snapshot()
+		else
+			local npc < const > = rec.npc
+			out[key] = { health = npc.health, hostility = npc.hostility, mood = npc.mood }
 		end
 	end
 	return out
 end
 
 -- The nearest body with something left on it within `maxDist` -- a villager's or a zombie's --
--- as its container key and a record with its `sc` (whose name, if any, the window shows).
+-- as its container key and a record with its `npc` (whose name, if any, the window shows).
 -- Measured to where it fell (the entity stays there; the rag doll lies about it).
 function Main:_nearestBody(maxDist)
 	if self._humanoid == nil then
@@ -367,7 +358,7 @@ function Main:_nearestBody(maxDist)
 				local key < const > = (self._npcKeyOf ~= nil) and self._npcKeyOf[e] or nil
 				local rec = (key ~= nil) and self._npcs[key] or nil
 				if rec == nil then
-					rec = { entity = e, sc = e:getComponent(traktor.world.ScriptComponent) }
+					rec = { entity = e, npc = e:getComponent(zombie.NpcComponent) }
 				end
 				best, bestRec, bestD = box, rec, d
 			end
@@ -387,7 +378,7 @@ function Main:_nearestTalker(maxDist)
 	local aim < const > = self:aimDirection()
 	local best, bestD = nil, maxDist * maxDist
 	for _, rec in pairs(self._npcs) do
-		if not rec.gone and not rec.dead and rec.sc.canTalk ~= nil and rec.sc:canTalk(self) and self:_hasDialog(rec) then
+		if not rec.gone and not rec.dead and rec.human ~= nil and rec.human:canTalk() and self:_hasDialog(rec) then
 			local p < const > = rec.entity.transform.translation
 			local dx < const >, dz < const > = p.x - pp.x, p.z - pp.z
 			local d < const > = dx * dx + dz * dz
@@ -474,13 +465,18 @@ function Main:_applyDamage(dt)
 	end
 end
 
--- Collect the routes the characters walk, and the characters themselves -- laid out again as
--- the player left them, for a world they have been in before (see _collectNpcs). Called every
--- frame from Main:resolve; does nothing once both are collected.
+-- Find the scene's zombie.NpcWorldComponent, which puts every blow at a character through
+-- Main:damage, and collect the characters -- laid out again as the player left them, for a world
+-- they have been in before (see _collectNpcs). Called every frame from Main:resolve; does nothing
+-- once both are done.
 function Main:_resolveCharacters(world)
-	if self._routes == nil then
-		self._routes = {}             -- route entity's guid as text -> { points, loop, pause }
-		self._routeWorld = world      -- where Main:route looks them up
+	if self._npcWorld == nil then
+		self._npcWorld = world:getComponent(zombie.NpcWorldComponent)
+		if self._npcWorld ~= nil then
+			self._npcWorld:setDamageHandler(function(target, amount, at, source)
+				self:damage(target, amount, at, nil, false, source)
+			end)
+		end
 	end
 	if self._npcs == nil then
 		self:_collectNpcs(world)
@@ -553,7 +549,7 @@ function Main:_updateNameTags(dt)
 
 	for key, rec in pairs(self._npcs) do
 		local tag = tags[key]
-		local name < const > = (not rec.gone and not rec.dead) and rec.sc:displayName() or nil
+		local name < const > = (not rec.gone and not rec.dead) and self:_nameOf(rec) or nil
 		local alpha = 0.0
 		local sx, sy = 0.0, 0.0
 		if name ~= nil then
@@ -589,8 +585,8 @@ function Main:_updateNameTags(dt)
 
 		-- In combat: fighting, or its health has gone down, within the last TAG_BAR_LINGER.
 		if tag ~= nil and name ~= nil then
-			local health < const > = rec.sc:healthFraction()
-			if (rec.sc.state ~= nil and rec.sc:state() == "fight") or (tag.health ~= nil and health < tag.health) then
+			local health < const > = rec.npc.healthFraction
+			if rec.npc.state == "fight" or (tag.health ~= nil and health < tag.health) then
 				tag.combat = TAG_BAR_LINGER
 			else
 				tag.combat = math.max(0.0, (tag.combat or 0.0) - dt)
@@ -609,7 +605,7 @@ function Main:_updateNameTags(dt)
 				tag.widget:setText(name)
 				tag.size = tag.widget:getPreferredSize()
 			end
-			local c < const > = rec.sc:hatesPlayer() and C_TAG_HOSTILE or C_TAG
+			local c < const > = rec.npc:hatesPlayer() and C_TAG_HOSTILE or C_TAG
 			tag.widget:setTextColor(Color4f(c.red, c.green, c.blue, alpha))
 			-- Centred over the head, its baseline just above the point; in the HUD's own
 			-- coordinates, which start at its margin rather than the corner of the screen.

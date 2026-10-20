@@ -2,10 +2,6 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
 #using \{6E9AD100-0000-4000-8000-000000000010}
--- Scripts/Npc/Npc, for the class itself rather than for anything it does: the rifle
--- identifies what its ray hit by asking whether the struck entity's script component is one
--- (see Rifle:attack), and `isa` needs the class in scope to ask.
-#using \{4E9C0000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -47,7 +43,7 @@ local FLASH_TIME < const > = 0.05
 
 -- The two collision groups this game uses. Default is the world -- terrain, buildings,
 -- props, and the thrown grenade; Interactable is everything that walks -- the player and
--- the horde. Same values Scripts/EnemyController and Scripts/Spawner trace against, and a
+-- the horde. Same values zombie.EnemyComponent and Scripts/Spawner trace against, and a
 -- round has to be stopped by either.
 local COLLISION_DEFAULT < const > = 0x00000001
 local COLLISION_INTERACTABLE < const > = 0x00000002
@@ -286,7 +282,7 @@ end
 
 -- Fire: hitscan a ray out of the player's eye along the current aim, and hurt whatever live
 -- character it meets (Main:damage) -- two in the body or one in the head for a zombie. One
--- that dies is switched to rag doll by its own brain (Npc:_checkDead); Main despawns the
+-- that dies is switched to rag doll by its own zombie.NpcComponent; Main despawns the
 -- corpse later.
 function Rifle:attack()
 	local context < const > = self._context
@@ -342,7 +338,7 @@ function Rifle:attack()
 	-- is exactly as loud as a hit, and because the reload and rate-of-fire gates are already
 	-- behind us: a dry click and a trigger pulled faster than the rifle cycles both returned
 	-- above, so reaching this line means a round actually left the barrel. What the horde
-	-- does about it is Main's to publish and Scripts/EnemyController's to read.
+	-- does about it is Main's to publish and zombie.EnemyComponent's to read.
 	context:reportGunshot(origin.x, origin.z)
 
 	-- One ray, out of the eye along the aim, against the world and everything standing in
@@ -395,17 +391,16 @@ function Rifle:attack()
 	-- guessing from a name.
 	local struck < const > = hit.body ~= nil and hit.body.owner or nil
 
-	-- A character -- zombie or villager -- is an entity whose script component is a
-	-- Scripts/Npc/Npc. Asked of the class rather than of the entity's name, so it stays true
-	-- for anything else that ever gets one.
+	-- A character -- zombie or villager -- is an entity with a zombie.NpcComponent. Asked of the
+	-- component rather than of the entity's name, so it stays true for anything else that ever
+	-- gets one.
 	--
 	-- The player's own capsule is explicitly not a target: it is in the same collision group
 	-- as the horde and the ray starts inside it, so a stray hit on it would otherwise put a
 	-- dust puff in the player's face.
 	local enemy = nil
 	if struck ~= nil and struck ~= context:player() and isa(struck, traktor.world.Entity) then
-		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and isa(sc, Npc) then
+		if struck:getComponent(zombie.NpcComponent) ~= nil then
 			enemy = struck
 		end
 	end

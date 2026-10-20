@@ -31,6 +31,11 @@
 #	include "ItemContainerComponentData.h"
 #	include "ItemData.h"
 #	include "ItemPickupComponentData.h"
+#	include "Npc/NpcClassFactory.h"
+#	include "Npc/NpcComponentData.h"
+#	include "Npc/NpcEntityFactory.h"
+#	include "Npc/NpcWorldComponentData.h"
+#	include "Npc/RouteComponentData.h"
 #	include "Keys/EquipSlotData.h"
 #	include "Keys/EventData.h"
 #	include "Keys/FlagData.h"
@@ -38,6 +43,7 @@
 #	include "PlaceComponentData.h"
 #	include "PlaceData.h"
 #	include "QuestData.h"
+#	include "SettingsResourceFactory.h"
 #	include "Steps/FindItemStep.h"
 #	include "Steps/ReachStep.h"
 #	include "Steps/TalkStep.h"
@@ -90,6 +96,10 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(ItemData);
 	T_FORCE_LINK_REF(ItemPickupComponentData);
 	T_FORCE_LINK_REF(ItemWaypoint);
+	T_FORCE_LINK_REF(NpcClassFactory);
+	T_FORCE_LINK_REF(NpcComponentData);
+	T_FORCE_LINK_REF(NpcEntityFactory);
+	T_FORCE_LINK_REF(NpcWorldComponentData);
 	T_FORCE_LINK_REF(PlaceComponentData);
 	T_FORCE_LINK_REF(PlaceData);
 	T_FORCE_LINK_REF(PlaceWaypoint);
@@ -97,9 +107,11 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(QuestCondition);
 	T_FORCE_LINK_REF(QuestData);
 	T_FORCE_LINK_REF(ReachStep);
+	T_FORCE_LINK_REF(RouteComponentData);
 	T_FORCE_LINK_REF(ScriptCondition);
 	T_FORCE_LINK_REF(ScriptConditionData);
 	T_FORCE_LINK_REF(SetFlagAction);
+	T_FORCE_LINK_REF(SettingsResourceFactory);
 	T_FORCE_LINK_REF(StartQuestAction);
 	T_FORCE_LINK_REF(StoryClassFactory);
 	T_FORCE_LINK_REF(StoryData);

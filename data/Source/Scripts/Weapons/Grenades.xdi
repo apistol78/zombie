@@ -42,7 +42,7 @@ local GRENADE_PROJECTILE < const > = Guid("\{6E9AD100-0000-4000-8000-00000000000
 local CHEST < const > = Vector4(0.0, 1.0, 0.0, 0.0)
 
 -- The world collision group, which is the one a rag doll's limbs are in (see the collisionGroup
--- on Entities/Zombie/RDS - Zombie). Same value Scripts/Weapons/Rifle and Scripts/EnemyController
+-- on Entities/Zombie/RDS - Zombie). Same value Scripts/Weapons/Rifle and zombie.EnemyComponent
 -- trace against; each keeps its own copy rather than sharing one, as they always have.
 local COLLISION_DEFAULT < const > = 0x00000001
 
@@ -352,7 +352,7 @@ function Grenades:_explode(g)
 	-- Found by sweeping physics rather than by walking the corpses and asking each where it is,
 	-- because a corpse cannot be asked: the rag doll drives the *pose* and never the entity, and
 	-- the character controller that used to drive the entity is switched off the moment the zombie
-	-- goes down (EnemyController:_enterRagDoll) -- so its entity transform sits on the spot it
+	-- goes down (zombie.NpcComponent) -- so its entity transform sits on the spot it
 	-- died on while the body itself is metres away. The limbs are the only thing that knows, and
 	-- they are exactly what a sphere over the blast finds.
 	--

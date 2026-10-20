@@ -19,7 +19,7 @@ import(traktor)
 --     group relative to the hive's transform, so every hive instanced from
 --     Entities/Hive plays its own opening wherever in the scene it stands.
 --   * BROOD zombies rise inside the pen -- the "Spawn" child entity's VolumeComponent --
---     each one already hunting the player (EnemyController:hunt) so it walks out of the
+--     each one already hunting the player (zombie.EnemyComponent:hunt) so it walks out of the
 --     pen rather than loitering in it, and never gives up and drops back to patrol on
 --     the way.
 --
@@ -44,6 +44,9 @@ import(traktor)
 -- with an act named ACT.
 
 Hive = Hive or class("Hive", traktor.world.ScriptComponent)
+
+-- The horde's brain; named here, as the zombie being raised below is a local of the same name.
+local EnemyComponent < const > = zombie.EnemyComponent
 
 -- Two-argument atan; math.atan2 was folded into math.atan.
 local atan2 < const > = math.atan2 or math.atan
@@ -246,7 +249,7 @@ function Hive:_rise(context)
 		Quaternion.fromEulerAngles(yaw, 0.0, 0.0)
 	)
 
-	-- Straight into the hunt, and never out of it (EnemyController:hunt). It rises
+	-- Straight into the hunt, and never out of it (zombie.EnemyComponent:hunt). It rises
 	-- attacking rather than being left to notice the player: the pen walls block its
 	-- line of sight, so left to itself it would fail perception, patrol inside the pen
 	-- it just rose in, and the hive would open with nothing coming out of it. And
@@ -254,12 +257,9 @@ function Hive:_rise(context)
 	-- one may have the whole map to cross -- so it is given no memory window to run out
 	-- of on the way, rather than a generous one.
 	--
-	-- MUST come after the transform assignment above: ScriptComponent builds its Lua
-	-- object lazily in validate(), which runs on the first setTransform or update, so
-	-- calling this on a freshly created entity would find nothing to call.
-	local sc < const > = zombie:getComponent(traktor.world.ScriptComponent)
-	if sc ~= nil then
-		sc:hunt()
+	local brain < const > = zombie:getComponent(EnemyComponent)
+	if brain ~= nil then
+		brain:hunt()
 	end
 
 	table.insert(self._risen, zombie)

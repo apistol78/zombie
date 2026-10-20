@@ -10,7 +10,7 @@ import(traktor)
 -- enough for that to be noticed. The entries are interchangeable by construction rather
 -- than by convention: each is a complete EntityData named "Enemy" -- which is how Main
 -- finds anything shootable, and the one thing a new one MUST get right -- carrying its
--- own skeleton, mesh, state graph, rag doll and an EnemyController. So nothing
+-- own skeleton, mesh, state graph, rag doll and an EnemyComponent. So nothing
 -- downstream of the draw knows or cares which one it got, and adding a third kind is a
 -- line here and nothing else.
 --
@@ -464,16 +464,13 @@ function Spawner:update(context, totalTime, deltaTime)
 		-- Placing it in cover is only half the job: cover hides the player from *it* too,
 		-- so on its own it would fail perception, stay on patrol, and shuffle about within
 		-- two metres of where it rose until the player had walked past and the sight line
-		-- opened from behind. EnemyController:alertTo puts it straight into its chase state
+		-- opened from behind. zombie.EnemyComponent:alertTo puts it straight into its chase state
 		-- so it walks out of that cover towards them instead. Spawning in front of the
 		-- player is worth nothing without this.
 		--
-		-- MUST come after the transform assignment above: ScriptComponent builds its Lua
-		-- object lazily in validate(), which runs on the first setTransform or update, so
-		-- calling this on a freshly created entity would find nothing to call.
-		local sc < const > = enemy:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil then
-			sc:alertTo()
+		local brain < const > = enemy:getComponent(zombie.EnemyComponent)
+		if brain ~= nil then
+			brain:alertTo()
 		end
 	
 		table.insert(self._spawned, enemy)

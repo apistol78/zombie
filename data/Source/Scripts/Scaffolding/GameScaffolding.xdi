@@ -5,6 +5,7 @@
 #using \{17E40000-0000-4000-8000-000000000001}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
+#using \{6E9AD100-0000-4000-8000-000000000010}
 
 import(traktor)
 
@@ -69,6 +70,9 @@ function GameScaffolding:setup(frame)
 	self._shown = false
 	self._removed = false
 	self._time = 0.0
+
+	-- No runtime environment here to read the game play settings from (Scripts/Config).
+	Config.bind(self._database)
 
 	if not itemsTaught[self._resourceManager] then
 		self._resourceManager:addFactory(zombie.StoryResourceFactory())

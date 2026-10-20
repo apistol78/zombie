@@ -353,6 +353,16 @@
 								</items>
 							</item>
 							<item type="traktor.sb.Filter">
+								<name>Npc</name>
+								<items>
+									<item type="traktor.sb.File" version="1">
+										<fileName>Npc/*.*</fileName>
+										<excludeFilter/>
+										<items/>
+									</item>
+								</items>
+							</item>
+							<item type="traktor.sb.Filter">
 								<name>Steps</name>
 								<items>
 									<item type="traktor.sb.File" version="1">
@@ -417,6 +427,36 @@
 								<link>LnkYes</link>
 								<solutionFileName>$(TRAKTOR_HOME)/resources/build/TraktorLinux.xms</solutionFileName>
 								<projectName>Traktor.World</projectName>
+							</item>
+							<item type="traktor.sb.ExternalDependency" version="3">
+								<inheritIncludePaths>true</inheritIncludePaths>
+								<link>LnkYes</link>
+								<solutionFileName>$(TRAKTOR_HOME)/resources/build/TraktorLinux.xms</solutionFileName>
+								<projectName>Traktor.Ai</projectName>
+							</item>
+							<item type="traktor.sb.ExternalDependency" version="3">
+								<inheritIncludePaths>true</inheritIncludePaths>
+								<link>LnkYes</link>
+								<solutionFileName>$(TRAKTOR_HOME)/resources/build/TraktorLinux.xms</solutionFileName>
+								<projectName>Traktor.Animation</projectName>
+							</item>
+							<item type="traktor.sb.ExternalDependency" version="3">
+								<inheritIncludePaths>true</inheritIncludePaths>
+								<link>LnkYes</link>
+								<solutionFileName>$(TRAKTOR_HOME)/resources/build/TraktorLinux.xms</solutionFileName>
+								<projectName>Traktor.Physics</projectName>
+							</item>
+							<item type="traktor.sb.ExternalDependency" version="3">
+								<inheritIncludePaths>true</inheritIncludePaths>
+								<link>LnkYes</link>
+								<solutionFileName>$(TRAKTOR_HOME)/resources/build/TraktorLinux.xms</solutionFileName>
+								<projectName>Traktor.Render</projectName>
+							</item>
+							<item type="traktor.sb.ExternalDependency" version="3">
+								<inheritIncludePaths>true</inheritIncludePaths>
+								<link>LnkYes</link>
+								<solutionFileName>$(TRAKTOR_HOME)/resources/build/TraktorLinux.xms</solutionFileName>
+								<projectName>Traktor.Runtime</projectName>
 							</item>
 						</dependencies>
 					</project>

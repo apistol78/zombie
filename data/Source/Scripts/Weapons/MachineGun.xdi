@@ -3,10 +3,6 @@
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{6E9AD100-0000-4000-8000-000000000010}
--- Scripts/Npc/Npc, for the class itself rather than for anything it does: a round
--- identifies what it hit by asking whether the struck entity's script component is one (see
--- :_fireRound), and `isa` needs the class in scope to ask.
-#using \{4E9C0000-0000-4000-8000-000000000001}
 
 import(traktor)
 
@@ -55,7 +51,7 @@ local MUZZLE < const > = Vector4(0.0, 0.02, 0.68, 1.0)
 local FLASH_TIME < const > = 0.04
 
 -- The two collision groups a round has to be stopped by: the world, and everything that walks.
--- Same values Scripts/Weapons/Rifle and Scripts/EnemyController trace against.
+-- Same values Scripts/Weapons/Rifle and zombie.EnemyComponent trace against.
 local COLLISION_DEFAULT < const > = 0x00000001
 local COLLISION_INTERACTABLE < const > = 0x00000002
 
@@ -409,7 +405,7 @@ function MachineGun:_fireRound(context)
 	self._devY = dy
 
 	-- Heard, every round. That is a great deal of noise -- each one moves the record every
-	-- Scripts/EnemyController reads and walks the nearest of them over to look -- and it is meant
+	-- zombie.EnemyComponent reads and walks the nearest of them over to look -- and it is meant
 	-- to be: a machine gun tells the whole forest where you are, which is the last part of the
 	-- price for carrying one.
 	context:reportGunshot(origin.x, origin.z)
@@ -452,8 +448,7 @@ function MachineGun:_fireRound(context)
 	local struck < const > = hit.body ~= nil and hit.body.owner or nil
 	local enemy = nil
 	if struck ~= nil and struck ~= context:player() and isa(struck, traktor.world.Entity) then
-		local sc < const > = struck:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and isa(sc, Npc) then
+		if struck:getComponent(zombie.NpcComponent) ~= nil then
 			enemy = struck
 		end
 	end

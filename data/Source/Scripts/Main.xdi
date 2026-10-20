@@ -47,9 +47,7 @@
 -- way the main menu's do.
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
 
--- Scripts/Npc/Npc, what every character -- zombie or villager -- is made of. The weapons ask
--- whether what they hit is one (isa Npc), and everything that hurts one goes through damage.
-#using \{4E9C0000-0000-4000-8000-000000000001}
+-- Scripts/Npc/Characters: the characters (zombie.NpcComponent) as the stage sees them.
 #using \{4E9C0000-0000-4000-8000-000000000004}
 
 -- Scripts/Quests/Questing: talking to people, the quests they give (the journal, J), and the
@@ -61,8 +59,7 @@ import(traktor)
 -- Main
 --
 -- Every gameplay number this stage runs on comes from Scripts/Config. The fields below are
--- still the stage's own -- other scripts read them off the context (EnemyController takes
--- _hurtRange), and several are state that moves during the night -- but
+-- still the stage's own -- other scripts read them off the context, and several are state that moves during the night -- but
 -- their starting values are Config's, and the ones that never move are Config's outright.
 -- Retune the night there, not here.
 --
@@ -431,7 +428,7 @@ function Main:new(params, environment)
 	self._kills = 0
 	self._corpseLifetime = Config.corpse.lifetime   -- how long a ragdoll corpse lingers before it despawns
 
-	-- The last round fired, published to Scripts/EnemyController: { x, z, seq }. A
+	-- The last round fired, published to zombie.EnemyComponent: { x, z, seq }. A
 	-- patrolling zombie near enough to hear it walks over to have a look -- see the
 	-- hearing block there for what "near enough" and "have a look" mean.
 	--
@@ -493,7 +490,7 @@ function Main:new(params, environment)
 	-- It does *not* hold the horde off -- zombies walk over consecrated ground like any
 	-- other ground, so a lit ward is a place nothing rises, not a place nothing reaches.
 	-- (The steering that used to keep them out was removed on 2026-08-11; the note at the
-	-- top of Scripts/EnemyController says why.)
+	-- top of zombie.EnemyComponent says why.)
 	--
 	-- *Which* post is the player's call: there is no fixed order and no altar to return
 	-- to, so every relic picked up is also a decision about where the next patch of
@@ -687,7 +684,7 @@ function Main:new(params, environment)
 	self._pickupKeyOf = nil
 	self._dropped = {}
 
-	-- The characters placed in this world (Scripts/Npc/Npc, entities named "Npc"), by where each
+	-- The characters placed in this world (zombie.NpcComponent, entities named "Npc"), by where each
 	-- was first found -- the same naming the pickups use, for the same reason -- and the routes
 	-- they walk, by name. See _collectNpcs and route.
 	self._npcs = nil
@@ -837,7 +834,7 @@ end
 
 -- Enter/leave pause. Toggles the menu, takes the HUD off screen with it, frees or
 -- recaptures the mouse cursor (so it can click the menu, then return to mouse-look),
--- and flips the freeze flag that Main:update and every EnemyController honour.
+-- and flips the freeze flag that Main:update and every character honours.
 --
 -- The HUD goes because the menu is the one time the player is looking at the game
 -- rather than playing it -- the dialogs are panes now, so what is behind them is
@@ -1488,7 +1485,7 @@ function Main:knockbackImpulse(dir)
 	return dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
 end
 
--- A shot was heard, here. Published for Scripts/EnemyController: a patrolling zombie near
+-- A shot was heard, here. Published for zombie.EnemyComponent: a patrolling zombie near
 -- enough walks over to have a look. Mutated rather than replaced, and seq counts up forever
 -- -- see _gunshot in :new for why both matter.
 function Main:reportGunshot(x, z)
@@ -1799,7 +1796,7 @@ function Main:_showKept(entity, visible)
 end
 
 -- Mark one character dead: blood burst at the impact point, hand it over to its brain
--- (Scripts/Npc/Npc:_checkDead polls _deadEnemies and switches the body to rag doll), queue
+-- (_afterDeath tells its zombie.NpcComponent, which switches the body to rag doll), queue
 -- the knockback for the frame its rag doll controller goes active, and settle what it leaves
 -- behind (_afterDeath: the kill tally, a zombie's drop, a villager's searchable body).
 -- Shared by damage, the wards and the kill-all shortcut so a character only ever dies one way.
@@ -2335,7 +2332,7 @@ end
 -- This is now the *only* thing a lit ward does to the zombies that are already out there.
 -- The other rule -- the Spawner refusing to place anything inside the ward -- only covers
 -- the future, and the steering that used to hold the horde off was removed altogether
--- (see the note at the top of Scripts/EnemyController), so without this the flame would
+-- (see the note at the top of zombie.EnemyComponent), so without this the flame would
 -- catch on ground that simply stays occupied. The flare is what makes lighting a post a
 -- thing that happens rather than a thing that is true, and what makes lighting one
 -- *while* being chased a real play.
@@ -2468,7 +2465,7 @@ end
 --   * Main:update returns early, which freezes the player, the rifle, contact damage,
 --     pickups and the corpse timers.
 --   * Scripts/Spawner returns early, so nothing new rises out in the dark.
---   * Every Scripts/EnemyController returns early *unless it is inside the hive*
+--   * Every zombie.EnemyComponent returns early *unless it is inside the hive*
 --     (CUTSCENE_RADIUS of it), which is what leaves the brood -- and only the brood --
 --     moving in the shot. A zombie the player has just shot is exempt as well, since it
 --     has to be allowed to finish handing itself to the rag doll; that is the same
@@ -2651,10 +2648,10 @@ end
 -- only when a ward is lit -- wards never move, so there is nothing to do per frame.
 --
 -- _litWards is read by Scripts/Spawner alone, which will not place anything inside a lit
--- ward; every Scripts/EnemyController used to read it too and steer out of one, and that
+-- ward; every zombie.EnemyComponent used to read it too and steer out of one, and that
 -- whole rule is gone -- the horde walks over consecrated ground and only the flare that
 -- lit it ever touched them (see _purgeWard, and the note at the top of
--- Scripts/EnemyController). The count of lit wards no longer winds the night up either:
+-- zombie.EnemyComponent). The count of lit wards no longer winds the night up either:
 -- the horde is as fast and as many after the last ward as before the first.
 --
 -- Only r2 is published, since comparing squared distances is all the spawner does. The
@@ -2744,7 +2741,7 @@ function Main:_breakDawn()
 
 	-- The light takes them. Routed through the same rag doll path a shot zombie
 	-- takes, so the horde collapses in place rather than being deleted out from
-	-- under the player. EnemyController deliberately does *not* freeze on
+	-- under the player. EnemyComponent deliberately does *not* freeze on
 	-- _nightOver -- it still has to see _deadEnemies and make the switch.
 	self:_killAllEnemies()
 
@@ -3008,7 +3005,7 @@ function Main:_interact()
 		target:take(self)
 	elseif verb == "search" then
 		local _, rec < const > = self:_nearestBody(Config.npc.lootRange)
-		local name < const > = rec ~= nil and rec.sc:displayName() or nil
+		local name < const > = self:_nameOf(rec)
 		self:_setChestOpen(target, name ~= nil and ("WHAT " .. name .. " CARRIED") or nil, "BODY")
 	elseif verb == "talk" then
 		self:_talkTo(target)   -- Scripts/Npc/Characters
@@ -3039,7 +3036,7 @@ function Main:_updateHudText(dt)
 		elseif verb == "search" then
 			prompt = "E   SEARCH THE BODY"
 		elseif verb == "talk" then
-			local name < const > = target.sc:displayName()
+			local name < const > = self:_nameOf(target)
 			prompt = "E   TALK" .. (name ~= nil and (" TO " .. name) or "")
 		elseif verb == "needRelic" then
 			-- A relic in the pack is not one in hand: the line says how to get it there.
@@ -3083,10 +3080,9 @@ end
 function Main:update(info)
 	self:resolve()
 
-	-- Every Route laid out in the scene, for as long as the debug layer is up (Characters:
-	-- _drawRoutes). Above every early-return below, so a route stays visible through a pause
-	-- or after the night is won -- exactly when stopping to look one over matters most.
-	self:_drawRoutes()
+	-- The characters hear how the stage stands (Characters:_updateCharacters). Above every
+	-- early-return below, so a pause or the end of the night reaches them too.
+	self:_updateCharacters()
 
 	-- Simulation delta, not frame delta: with a physics manager present the engine
 	-- calls update() once per fixed simulation step (see Runtime/Impl/Application.cpp),

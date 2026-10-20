@@ -5,10 +5,6 @@
 	<meshType>MtInstance</meshType>
 	<materialShaders>
 		<item>
-			<first>Bone</first>
-			<second>{6FE2F8C2-E6E4-2B45-B9EA-95FF0417F4B0}</second>
-		</item>
-		<item>
 			<first>Flame</first>
 			<second>{C0538054-B629-5F45-B297-E279211F5104}</second>
 		</item>
@@ -31,6 +27,6 @@
 	<enableRaytracing>true</enableRaytracing>
 	<enableDeform>false</enableDeform>
 	<reduce>1</reduce>
-	<raytracingReduce>0.5</raytracingReduce>
+	<raytracingReduce>0.3</raytracingReduce>
 	<previewAngle>0</previewAngle>
 </object>

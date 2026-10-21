@@ -63,6 +63,7 @@ Items.RING = Guid("\{D1A10000-0000-4000-8000-00000000020A}")
 Items.LEDGER = Guid("\{D1A10000-0000-4000-8000-00000000020B}")
 Items.LOCKET = Guid("\{D1A10000-0000-4000-8000-00000000020C}")
 Items.SWORD = Guid("\{D1A10000-0000-4000-8000-00000000020D}")
+Items.CROWN = Guid("\{D1A10000-0000-4000-8000-00000000020E}")
 
 -- ---- Slots and events ----
 --
@@ -83,7 +84,8 @@ Items.EVENTS = {
 
 Items.ALL = {
 	Items.RIFLE, Items.MACHINEGUN, Items.GRENADE, Items.ROUNDS, Items.FLASK, Items.BREAD, Items.COIN,
-	Items.HELMET, Items.KEY, Items.RELIC, Items.RING, Items.LEDGER, Items.LOCKET, Items.SWORD
+	Items.HELMET, Items.KEY, Items.RELIC, Items.RING, Items.LEDGER, Items.LOCKET, Items.SWORD,
+	Items.CROWN
 }
 
 -- The binding and the entries are kept on Items itself, not in locals of this chunk: the chunk is

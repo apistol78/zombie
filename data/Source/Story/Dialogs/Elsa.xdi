@@ -15,6 +15,56 @@
 			<onEnter/>
 			<responses>
 				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{A4301185-AA2B-4B56-B878-C6FA20C68841}</id>
+					<text>YOU HAVE BEEN CRYING.</text>
+					<target>{67C70000-A298-41CC-B988-F133C09E5ED5}</target>
+					<condition type="zombie.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000104}</quest>
+						<state>NotStarted</state>
+						<step>{00000000-0000-0000-0000-000000000000}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{4B9C5D5D-0052-4BE9-A6B3-5D1DDE433CD0}</id>
+					<text>I HAVE THE BRIDAL CROWN.</text>
+					<target>{F7CB2ADF-D799-4F51-8AB9-D549E4CA8B92}</target>
+					<condition type="zombie.AllCondition">
+						<conditions>
+							<item type="zombie.HasItemCondition">
+								<item>{D1A10000-0000-4000-8000-00000000020E}</item>
+								<count>1</count>
+								<negate>false</negate>
+							</item>
+							<item type="zombie.QuestCondition" version="1">
+								<quest>{D1A20000-0000-4000-8000-000000000104}</quest>
+								<state>AtStep</state>
+								<step>{71B70B35-4BAE-4343-804C-850080FB5862}</step>
+							</item>
+						</conditions>
+					</condition>
+					<actions>
+						<item type="zombie.TakeItemAction">
+							<item>{D1A10000-0000-4000-8000-00000000020E}</item>
+							<count>1</count>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{BFD69D4F-C69E-4497-A1AF-E1E837797887}</id>
+					<text>WHERE IS THE SECOND CAVE?</text>
+					<target>{F9FD68DB-59A1-4B82-A057-1478AD25A73E}</target>
+					<condition type="zombie.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000104}</quest>
+						<state>AtStep</state>
+						<step>{7FDE444D-960D-40D5-90EC-685B0655163A}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{9B6DB887-EC3E-40DE-BDE6-84AF3193CFF8}</id>
 					<text>WHAT ARE YOU CARRYING?</text>
 					<target>{00000000-0000-0000-0000-000000000000}</target>
@@ -29,6 +79,60 @@
 				</item>
 			</responses>
 			<position>360, 0</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{67C70000-A298-41CC-B988-F133C09E5ED5}</id>
+			<name>crown</name>
+			<text><![CDATA[I WAS TO BE MARRIED ON SUNDAY, IN THE PARISH BRIDAL CROWN. THE NIGHT THE DEAD ROSE, SOMEONE TOOK IT FROM THE CHAPEL AND CARRIED IT INTO THE SECOND CAVE. NO ONE WHO WENT AFTER IT HAS COME BACK.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{9DDE59EF-E926-48BD-93E1-524897690D7A}</id>
+					<text>I WILL BRING YOUR CROWN BACK.</text>
+					<target>{F9FD68DB-59A1-4B82-A057-1478AD25A73E}</target>
+					<condition/>
+					<actions>
+						<item type="zombie.StartQuestAction">
+							<quest>{D1A20000-0000-4000-8000-000000000104}</quest>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{DE976420-2D98-4A67-A4C7-537E55B63D9C}</id>
+					<text>A CROWN IS NOT WORTH DYING FOR.</text>
+					<target>{CBF1511F-A53D-49DA-A064-F16218B9CC07}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>760, -120</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{F9FD68DB-59A1-4B82-A057-1478AD25A73E}</id>
+			<name>where</name>
+			<text><![CDATA[IT OPENS IN THE HILLSIDE EAST OF THE VILLAGE. THE LAST MAN WHO CAME OUT SAID THEY KEEP AN IDOL DOWN THERE, DEEP IN, WITH HORNS. IF ANYTHING HAS MY CROWN, IT IS THAT.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{5096E7C6-D4AF-4364-B7DE-64E7154BDB49}</id>
+					<text>I HAD ANOTHER QUESTION.</text>
+					<target>{CBF1511F-A53D-49DA-A064-F16218B9CC07}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>1160, -60</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{F7CB2ADF-D799-4F51-8AB9-D549E4CA8B92}</id>
+			<name>thanks</name>
+			<text><![CDATA[MY CROWN... YOU WENT ALL THE WAY DOWN THERE FOR IT. THEN THERE WILL BE A WEDDING, IF THERE IS A DAWN. TAKE MY DOWRY, AND MY BROTHER'S GRENADES. HE WILL NOT NEED THEM NOW.]]></text>
+			<onEnter/>
+			<responses/>
+			<position>760, 80</position>
 		</item>
 	</nodes>
 	<startPosition>0, 0</startPosition>

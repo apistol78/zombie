@@ -6060,10 +6060,24 @@
 			<analyticalLightAttenuation>1</analyticalLightAttenuation>
 			<ambientOcclusionFactor>0</ambientOcclusionFactor>
 		</item>
-		<item type="traktor.scene.EntityStreamingOperationData">
+		<item type="traktor.scene.EntityStreamingOperationData" version="1">
 			<cellSize>64</cellSize>
 			<loadDistance>50</loadDistance>
 			<unloadDistance>70</unloadDistance>
+			<residentEntities>
+				<item type="traktor.world.PropertyEntityReference">
+					<value>{80DB40C9-5CD0-E84D-AE23-E409822F874F}</value>
+				</item>
+				<item type="traktor.world.PropertyEntityReference">
+					<value>{D8117BD4-1DFC-D945-9146-476A8AD0F168}</value>
+				</item>
+				<item type="traktor.world.PropertyEntityReference">
+					<value>{202A7F43-BA3D-9F41-B029-B446196C56CD}</value>
+				</item>
+				<item type="traktor.world.PropertyEntityReference">
+					<value>{08FFC9F0-E080-2349-B0A7-6D2429A8CEF7}</value>
+				</item>
+			</residentEntities>
 		</item>
 	</operationData>
 </object>

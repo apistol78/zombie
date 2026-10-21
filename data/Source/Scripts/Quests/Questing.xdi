@@ -88,7 +88,7 @@ function Main:_initStory(carry, environment)
 	self._inventory = self._story.inventory
 	self._questLog = self._story.questLog
 	-- What the stage the player left listened to the pack with, and the relics' entities, belong
-	-- to that stage's world; this one hands its own back (_restorePickups).
+	-- to that stage's world; this one hands its own back (pickupAppeared).
 	self._inventory:removeAllListeners()
 	self._inventory:detachKept()
 end

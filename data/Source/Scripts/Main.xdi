@@ -280,7 +280,7 @@ function Main:new(params, environment)
 	-- The pack is the story's (zombie.Story, Scripts/Quests/Questing:_initStory): the night's
 	-- own, carried from stage to stage. The relics in it arrive without their entities -- those
 	-- belong to the world they were found in -- and are handed back by that world on the way into
-	-- it (_restorePickups).
+	-- it (pickupAppeared).
 	self:_initStory(carry, environment)
 
 	-- What the player has in their hands. Built before the HUD row below, because the row
@@ -458,8 +458,12 @@ function Main:new(params, environment)
 	-- *around* the gates: where they stand, which are still locked, and how close the
 	-- player has to be for the "locked" prompt to bother saying so.
 	self._gateRange = Config.key.gateRange        -- how close to a locked gate the prompt reaches
-	self._gates = nil             -- resolved off the world; index order is stable, see resolve
-	self._unlockedGateIndex = {}  -- gate index -> true; plain data, so it survives a hot reload
+	self._gates = nil             -- synced off the world by entity id, see _syncRecords
+	self._unlockedGateIndex = {}  -- gate id -> true; plain data, so it survives a hot reload
+
+	-- Every record of the fixtures below -- gates, chests, levers, wards and hives -- by the id
+	-- of its entity, which outlives the entity itself; see _syncRecords.
+	self._fixtureOf = {}
 
 	-- Chests. Each one owns its lid and its creak (its "Open" act, Scripts/Chest), and what it
 	-- held when the night began is the level's, a property on each placed chest. What this
@@ -467,12 +471,13 @@ function Main:new(params, environment)
 	-- reaches -- and one thing more: what is still in each chest once it has been opened. The
 	-- player takes from that through the chest window (Scripts/Views/ChestView, see
 	-- _setChestOpen), and what they leave is there to come back for. Plain data, keyed by chest
-	-- index, so it survives a hot reload with the rest.
+	-- id, so it survives a hot reload with the rest -- and the chest being streamed out of the
+	-- world and back in again as the player walks away and returns.
 	self._chestRange = Config.chest.reachRange
-	self._chests = nil            -- resolved off the world; index order is stable, see resolve
-	self._openedChestIndex = {}   -- chest index -> true; plain data, so it survives a hot reload
-	self._chestContents = {}      -- chest index -> { { kind, count }, ... } still inside it
-	self._chestOpen = nil         -- the index of the chest whose window is up, or nil
+	self._chests = nil            -- synced off the world by entity id, see _syncRecords
+	self._openedChestIndex = {}   -- chest id -> true; plain data, so it survives a hot reload
+	self._chestContents = {}      -- chest id -> { { kind, count }, ... } still inside it
+	self._chestOpen = nil         -- the id of the chest whose window is up, or nil
 
 	-- Levers, and the gates only a lever opens (the cave's portcullises). A lever owns
 	-- its throw and finds its own gate by id (Scripts/Lever); a lever gate is a Gate
@@ -496,10 +501,10 @@ function Main:new(params, environment)
 	-- to, so every relic picked up is also a decision about where the next patch of
 	-- cleared ground should be, and the posts are close enough together that lighting two
 	-- neighbours wastes most of the second one's radius.
-	self._wards = nil            -- resolved off the world; index order is stable, see resolve
+	self._wards = nil            -- synced off the world by entity id, see _syncRecords
 	self._wardsLit = 0
 	self._wardsNeeded = nil      -- how many have to burn to win; counted in resolve
-	self._litWardIndex = {}      -- ward index -> true; plain data, so it survives a hot reload
+	self._litWardIndex = {}      -- ward id -> true; plain data, so it survives a hot reload
 	self._litWards = {}          -- published to the Spawner
 	-- The disc the Spawner is barred from and the minimap draws, and -- a separate quantity
 	-- that only used to share its number -- how far the flare reaches when a post takes
@@ -519,8 +524,8 @@ function Main:new(params, environment)
 	-- Consecrating ground therefore costs something the player can see coming: the
 	-- safe island is bought with a hive opening somewhere else on the map, and with
 	-- more hives than wards it is also a choice about which of them stays shut.
-	self._hives = nil            -- resolved off the world; index order is stable, see resolve
-	self._awakeHiveIndex = {}    -- hive index -> true; plain data, so it survives a hot reload
+	self._hives = nil            -- synced off the world by entity id, see _syncRecords
+	self._awakeHiveIndex = {}    -- hive id -> true; plain data, so it survives a hot reload
 
 	-- The night's tempo, owned here the way the loadout is: the event sites in
 	-- _interact and _lightWard poke it (notify), update ticks it below the freeze
@@ -677,11 +682,10 @@ function Main:new(params, environment)
 	-- components that offer a prompt, resolved off the world. See _exitInReach.
 	self._exits = nil
 
-	-- Every pickup this world laid out, by where it was first found (_collectPickups), and the
-	-- stacks the player has put down in it since (dropSlot): the books that let a world left
-	-- for another stage be laid out again as the player left it.
-	self._pickups = nil
-	self._pickupKeyOf = nil
+	-- Every pickup this world laid out, by its entity's id (pickupAppeared), and the stacks the
+	-- player has put down in it since (dropSlot): the books that let a world left for another
+	-- stage, or a pickup streamed out of the world, be laid out again as the player left it.
+	self._pickups = {}
 	self._dropped = {}
 
 	-- The characters placed in this world (zombie.NpcComponent, entities named "Npc"), by where each
@@ -709,10 +713,11 @@ function Main:new(params, environment)
 		self._orchestrator:restoreState(carry.orchestrator)
 	end
 
-	-- ...and this world as they left it, if they have been here before tonight. The index
+	-- ...and this world as they left it, if they have been here before tonight. The id
 	-- tables are the same plain data a script hot reload keeps, so resolve() puts the wards,
-	-- hives, gates, chests and levers back exactly as it does after one; the pickups are
-	-- _collectPickups' to lay out again.
+	-- hives, gates, chests and levers back exactly as it does after one; the pickups lay
+	-- themselves out from their books as they appear (pickupAppeared), and the stacks put
+	-- down are resolve()'s to lay out again.
 	local here < const > = self._worlds[self._stageKey]
 	if here ~= nil then
 		self._litWardIndex = here.litWards or {}
@@ -721,7 +726,9 @@ function Main:new(params, environment)
 		self._openedChestIndex = here.openedChests or {}
 		self._chestContents = here.chestContents or {}
 		self._pulledLeverIndex = here.pulledLevers or {}
-		self._pickupState = here.pickups
+		for key, s in pairs(here.pickups or {}) do
+			self._pickups[key] = { taken = s.taken, count = s.count, carried = s.carried, visible = s.visible, at = s.at }
+		end
 		self._droppedState = here.dropped
 		self._npcState = here.npcs
 	end
@@ -1086,23 +1093,26 @@ function Main:_carry(spawn)
 	}
 end
 
--- This world's books. The index tables are the ones resolve() restores from; the pickups are
--- written out per home key (see _collectPickups) and only where something has changed: taken
+-- This world's books. The id tables are the ones resolve() restores from; the pickups are
+-- written out per entity id (see pickupAppeared) and only where something has changed: taken
 -- for good, a pile partly taken, or a keepsake -- a relic -- carried, put down or spent.
 function Main:_saveWorld()
 	local pickups = {}
-	for key, rec in pairs(self._pickups or {}) do
+	for key, rec in pairs(self._pickups) do
 		local sc < const > = rec.sc
 		if rec.taken then
 			pickups[key] = { taken = true }
-		elseif sc:isKeepsake() then
+		elseif sc ~= nil and sc:isKeepsake() then
 			pickups[key] = {
 				carried = self._inventory:holds(rec.entity),
 				visible = rec.entity.visible,
 				at = plainTransform(rec.entity.transform)
 			}
-		elseif sc._count ~= nil then
-			pickups[key] = { count = sc:itemCount() }
+		elseif rec.at ~= nil then
+			-- A keepsake not laid out yet keeps what it was saved as.
+			pickups[key] = { carried = rec.carried, visible = rec.visible, at = rec.at }
+		elseif rec.count ~= nil then
+			pickups[key] = { count = rec.count }
 		end
 	end
 	local dropped = {}
@@ -1166,52 +1176,50 @@ function Main:finalize()
 	self._frame = nil
 end
 
--- Collect every entity named `name` into one record per instance -- { entity, x, z,
--- index, [flag] } -- and restore the ones `restoredIndex` names by calling `restore`
--- on their ScriptComponents. One function because the wards, the hives and the gates
--- all keep their books the same way, and the way has two load-bearing rules:
+-- The book of a fixture that keeps none: a lever gate is reopened by its pulled lever.
+local NO_BOOK < const > = {}
+
+-- Bring `list` up to date with every entity named `name` in the world -- one record per
+-- entity, { id, entity, x, z, [flag] } -- and re-assert what `book` says on each entity that
+-- has appeared since the last call, by calling `restore` on its ScriptComponent. One
+-- function because the wards, the hives, the gates, the chests and the levers all keep their
+-- books the same way, and the way has two load-bearing rules:
 --
---   * The order is not a sequence, but it must be *stable*: a record's index in the
---     list is the key its plain-data index table remembers it by across a script hot
---     reload (the records themselves hold live entity handles and do not survive
---     one). Sorted on position rather than left in world order, so re-parenting or
---     re-adding one in the scene editor cannot renumber the ones already turned.
+--   * A record is named by its entity's id, which the scene gives it and every load of the
+--     scene keeps. The entity itself comes and goes -- a chest is streamed out of the world
+--     as the player walks away and built again from the scene when they come back, and a
+--     stage come back to is a fresh world -- but the id, the record and the book entry
+--     stay, and the record picks up the new entity here (_fixtureOf).
 --
---   * Restoring is re-asserting state that already happened, not replaying it, so
---     the component's method is called with `true` -- instantly: a mid-game reload
---     must not replay every flare, send up a second brood, or grind the gate open
---     again. A fresh night has an empty index table and restores nothing.
-function Main:_collectRecords(world, name, flag, restoredIndex, restore)
-	local list = {}
-	local i = 0
-	while true do
-		local e = world:getEntity(name, i)
-		if e == nil then
-			break
+--   * Restoring is re-asserting state that already happened, not replaying it, so the
+--     component's method is called with `true` -- instantly: a chest streamed back in, or a
+--     mid-game reload, must not replay every flare, send up a second brood, or grind the
+--     gate open again. A fresh night has an empty book and restores nothing.
+--
+-- Called every frame from resolve; an entity already seen costs only its id.
+function Main:_syncRecords(world, list, name, flag, book, restore)
+	local entities < const > = world:getEntities(name)
+	for i = 0, entities.size - 1 do
+		local e < const > = entities:get(i)
+		local id < const > = e.id:format()
+		local rec = self._fixtureOf[id]
+		if rec == nil then
+			local p < const > = e.transform.translation
+			rec = { id = id, x = p.x, z = p.z }
+			rec[flag] = book[id] == true
+			self._fixtureOf[id] = rec
+			table.insert(list, rec)
 		end
-		i = i + 1
-		local p < const > = e.transform.translation
-		local rec = { entity = e, x = p.x, z = p.z }
-		rec[flag] = false
-		table.insert(list, rec)
-	end
-	table.sort(list, function (l, r)
-		if l.x ~= r.x then
-			return l.x < r.x
-		end
-		return l.z < r.z
-	end)
-	for k, rec in ipairs(list) do
-		rec.index = k
-		if restoredIndex[k] then
-			rec[flag] = true
-			local sc < const > = rec.entity:getComponent(traktor.world.ScriptComponent)
-			if sc ~= nil then
-				sc[restore](sc, true)
+		if rec.entity ~= e then
+			rec.entity = e
+			if rec[flag] then
+				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
+				if sc ~= nil then
+					sc[restore](sc, true)
+				end
 			end
 		end
 	end
-	return list
 end
 
 -- Resolve (and cache) the humanoid entity, its character controller and the camera.
@@ -1232,11 +1240,13 @@ function Main:resolve()
 	if not self._worldUpdated then
 		return
 	end
-	-- Collect the night's fixtures once: the wards, the hives and the gates, all
-	-- through _collectRecords above -- the stable ordering and the replay-free restore
-	-- are its two rules, and the same two for all three. Each list ends up empty
-	-- (non-nil) in a scene with none of that kind, which is what stops these
-	-- re-running every frame in Scene 1.
+	-- The night's fixtures: the wards, the hives, the gates, the chests and the levers, all
+	-- through _syncRecords above -- records named by entity id and the replay-free restore
+	-- are its two rules, and the same two for all of them. Synced every frame, since a chest
+	-- or a gate is streamed out of the world and back in as the player moves about. The wards
+	-- and the hives are not: the scene keeps them resident (its EntityStreamingOperationData
+	-- lists them), since the compass, the minimap and the hives' waking want every one of
+	-- them from the first frame -- so what is counted off the wards the first time holds.
 	--
 	-- The records only know where each fixture stands and which have turned: each
 	-- ward's flame is owned by its own Ward ScriptComponent (Scripts/Ward), each
@@ -1244,7 +1254,8 @@ function Main:resolve()
 	-- leaves, the swing, the grind and the barring -- by Scripts/Gate. Gate:unlock
 	-- takes instant=true to re-assert an open gate without the swing or the grind.
 	if self._wards == nil then
-		self._wards = self:_collectRecords(world, "Ward", "lit", self._litWardIndex, "turnOn")
+		self._wards = {}
+		self:_syncRecords(world, self._wards, "Ward", "lit", self._litWardIndex, "turnOn")
 
 		local lit = 0
 		for _, w in ipairs(self._wards) do
@@ -1265,21 +1276,17 @@ function Main:resolve()
 
 		self:_publishWards()
 	end
-	if self._hives == nil then
-		self._hives = self:_collectRecords(world, "Hive", "awake", self._awakeHiveIndex, "activate")
-	end
-	if self._gates == nil then
-		self._gates = self:_collectRecords(world, "Gate", "unlocked", self._unlockedGateIndex, "unlock")
-	end
-	if self._chests == nil then
-		self._chests = self:_collectRecords(world, "Chest", "opened", self._openedChestIndex, "open")
-	end
-	if self._leverGates == nil then
-		self._leverGates = self:_collectRecords(world, "LeverGate", "unlocked", {}, "unlock")
-	end
-	if self._levers == nil then
-		self._levers = self:_collectRecords(world, "Lever", "pulled", self._pulledLeverIndex, "pull")
-	end
+	self:_syncRecords(world, self._wards, "Ward", "lit", self._litWardIndex, "turnOn")
+	self._hives = self._hives or {}
+	self:_syncRecords(world, self._hives, "Hive", "awake", self._awakeHiveIndex, "activate")
+	self._gates = self._gates or {}
+	self:_syncRecords(world, self._gates, "Gate", "unlocked", self._unlockedGateIndex, "unlock")
+	self._chests = self._chests or {}
+	self:_syncRecords(world, self._chests, "Chest", "opened", self._openedChestIndex, "open")
+	self._leverGates = self._leverGates or {}
+	self:_syncRecords(world, self._leverGates, "LeverGate", "unlocked", NO_BOOK, "unlock")
+	self._levers = self._levers or {}
+	self:_syncRecords(world, self._levers, "Lever", "pulled", self._pulledLeverIndex, "pull")
 	-- The ways out taken with E: every StageExit whose component offers a prompt. The ones that
 	-- are walked through (the cave's) see to themselves and are not listed.
 	if self._exits == nil then
@@ -1297,12 +1304,13 @@ function Main:resolve()
 			end
 		end
 	end
-	-- Every pickup lying in the world, and -- for a world the player has been in before tonight
-	-- -- laid out again as they left it. Before the humanoid is resolved below, which is what
-	-- the pickups wait on before anything can be walked over: so nothing has left the ground,
-	-- or moved off its first spot, when they are counted.
-	if self._pickups == nil then
-		self:_collectPickups(world)
+	-- The stacks the player put down in this world, for a world they have been in before
+	-- tonight; the pickups the scene placed lay themselves out as they appear (pickupAppeared).
+	if self._droppedState ~= nil then
+		for _, d in ipairs(self._droppedState) do
+			self:_putDownNew(d.kind, d.count, fromPlainTransform(d.at))
+		end
+		self._droppedState = nil
 	end
 	-- The routes the characters walk, and the characters themselves (Scripts/Npc/Characters).
 	self:_resolveCharacters(world)
@@ -1569,92 +1577,71 @@ end
 -- A pickup has gone for good, all of it into the pack (Pickup:_taken). Booked so the world can
 -- be laid out without it if the player leaves for another stage and comes back.
 function Main:pickupTaken(entity)
-	local key < const > = (self._pickupKeyOf ~= nil) and self._pickupKeyOf[entity] or nil
-	if key ~= nil then
-		self._pickups[key].taken = true
-		self._pickupKeyOf[entity] = nil
+	local rec < const > = self._pickups[entity.id:format()]
+	if rec ~= nil and rec.entity == entity then
+		rec.taken = true
 	end
 	self._dropped[entity] = nil
+end
+
+-- Some of a pile has gone into the pack and `count` is left (Pickup:collect). Booked, since the
+-- pile itself forgets it the moment it is streamed out of the world.
+function Main:pickupLeft(entity, count)
+	local rec < const > = self._pickups[entity.id:format()]
+	if rec ~= nil and rec.entity == entity then
+		rec.count = count
+	end
 end
 
 -- ---- The pickups' books ----
 --
 -- Pickup promises that nothing taken ever comes back, and a world is built afresh every time its
--- stage is loaded -- so a trip into the cave and out again would lay the whole forest out a
--- second time unless the stage remembers what was taken from it. It does that here, keyed by
--- where each pickup was first found: the scene puts every one in the same place every load, so
--- that spot is a name for it that survives the world being rebuilt (and is kept on the component
--- as _home, so a script hot reload that keeps the world finds the same names again).
+-- stage is loaded -- and a pickup again every time it is streamed back into the world as the
+-- player returns to where it lies -- so a trip into the cave and out again, or a walk away and
+-- back, would lay it out a second time unless the stage remembers what was taken. It does that
+-- here, keyed by each pickup's entity id, which the scene gives it and every load keeps. The
+-- books are plain data and outlive the entities; a pickup reports itself as it appears, and is
+-- laid out as they say.
 
--- Count every pickup in the world once, and lay out what was saved for it, if anything was.
-function Main:_collectPickups(world)
-	self._pickups = {}
-	self._pickupKeyOf = {}
-	local all < const > = world:getEntitiesWithinRange(Vector4(0.0, 0.0, 0.0, 1.0), 1.0e6)
-	for i = 0, all.size - 1 do
-		local e < const > = all:get(i)
-		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and sc.itemKind ~= nil and sc.collect ~= nil and not self._dropped[e] then
-			local key = sc._home
-			if key == nil then
-				local p < const > = e.transform.translation
-				key = string.format("%s@%.2f,%.2f,%.2f", tostring(sc:itemKind()), p.x, p.y, p.z)
-				-- Two of a kind on the very same spot would share a name; the second gets a mark.
-				while self._pickups[key] ~= nil do
-					key = key .. "'"
-				end
-				sc._home = key
-			end
-			self._pickups[key] = { entity = e, sc = sc }
-			self._pickupKeyOf[e] = key
-		end
+-- A pickup has appeared: placed by the scene, streamed back in, or rebuilt by a script hot reload
+-- (Pickup:update). Lay it out as the player left it (see _saveWorld): taken away if it was taken,
+-- cut down if part of the pile was, and a relic back where it was -- in the pack, on the ground or
+-- parked on the post it lit. Returns false when it was taken away.
+function Main:pickupAppeared(sc)
+	local e < const > = sc.owner
+	if self._dropped[e] then
+		return true
 	end
-
-	if self._pickupState ~= nil or self._droppedState ~= nil then
-		self:_restorePickups(world, self._pickupState or {}, self._droppedState or {})
-		self._pickupState = nil
-		self._droppedState = nil
+	local key < const > = e.id:format()
+	local rec = self._pickups[key]
+	if rec == nil then
+		rec = {}
+		self._pickups[key] = rec
 	end
-end
-
--- Lay the pickups out as the player left them (see _saveWorld): the ones taken taken away, the
--- piles partly taken cut down, every relic back where it was -- in the pack, on the ground or
--- parked on the post it lit -- and the stacks the player put down put back down.
-function Main:_restorePickups(world, saved, dropped)
-	local carried = {}
-	for key, s in pairs(saved) do
-		local rec < const > = self._pickups[key]
-		if rec ~= nil then
-			if s.taken then
-				rec.taken = true
-				self._pickupKeyOf[rec.entity] = nil
-				-- Same pair as Pickup:_taken: removed, then destroyed, or its components linger.
-				world:removeEntity(rec.entity)
-				rec.entity:destroy()
-			elseif s.carried then
-				-- In the pack: hidden, and handed back to it below.
-				rec.sc:show(false)
-				local kind < const > = rec.sc:itemKind()
-				carried[kind] = carried[kind] or {}
-				table.insert(carried[kind], rec.entity)
-			elseif s.at ~= nil then
-				rec.entity.transform = fromPlainTransform(s.at)
-				rec.sc:show(s.visible == true)
-			elseif s.count ~= nil then
-				rec.sc:setCount(s.count)
-			end
-		end
-	end
-	for kind, list in pairs(carried) do
+	rec.entity = e
+	rec.sc = sc
+	if rec.taken then
+		-- Same pair as Pickup:_taken: removed, then destroyed, or its components linger.
+		sc.world:removeEntity(e)
+		e:destroy()
+		return false
+	elseif rec.carried then
+		-- In the pack: hidden, and handed back to it.
+		sc:show(false)
 		local entities < const > = RefArray()
-		for _, e in ipairs(list) do
-			entities:push_back(e)
-		end
-		self._inventory:attachKept(kind, entities)
+		entities:push_back(e)
+		self._inventory:attachKept(sc:itemKind(), entities)
+	elseif rec.at ~= nil then
+		e.transform = fromPlainTransform(rec.at)
+		sc:show(rec.visible == true)
+	elseif rec.count ~= nil then
+		sc:setCount(rec.count)
 	end
-	for _, d in ipairs(dropped) do
-		self:_putDownNew(d.kind, d.count, fromPlainTransform(d.at))
-	end
+	-- Where a relic is, is its entity's from here on.
+	rec.carried = nil
+	rec.visible = nil
+	rec.at = nil
+	return true
 end
 
 -- Build a stack of `kind` fresh from its item's entity data and stand it at `transform`, told how
@@ -1968,10 +1955,11 @@ function Main:_nearestRecord(list, eligible, maxDist)
 		return nil, 0.0
 	end
 
+	-- Only what is in the world now: a chest streamed out of it is not there to be opened.
 	local pp < const > = self._humanoid.transform.translation
 	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
 	for _, rec in ipairs(list) do
-		if eligible(rec) then
+		if rec.entity.world ~= nil and eligible(rec) then
 			local dx, dz = rec.x - pp.x, rec.z - pp.z
 			local d = dx * dx + dz * dz
 			if d < bestD then
@@ -2008,7 +1996,7 @@ function Main:_nearestChest(maxDist)
 		if not c.opened then
 			return true
 		end
-		return #self:chestContents(c.index) > 0
+		return #self:chestContents(c.id) > 0
 	end, maxDist)
 end
 
@@ -2050,7 +2038,7 @@ end
 -- lever's own, else the gate's, else a generic one, since the gate may be far away.
 function Main:_pullLever(lever)
 	lever.pulled = true
-	self._pulledLeverIndex[lever.index] = true
+	self._pulledLeverIndex[lever.id] = true
 	local sc < const > = lever.entity:getComponent(traktor.world.ScriptComponent)
 	if sc == nil then
 		return
@@ -2074,17 +2062,17 @@ function Main:_openChest(chest)
 	local sc < const > = chest.entity:getComponent(traktor.world.ScriptComponent)
 	if not chest.opened then
 		chest.opened = true
-		self._openedChestIndex[chest.index] = true
-		self._chestContents[chest.index] = (sc ~= nil and sc.contents ~= nil) and sc:contents() or {}
+		self._openedChestIndex[chest.id] = true
+		self._chestContents[chest.id] = (sc ~= nil and sc.contents ~= nil) and sc:contents() or {}
 		if sc ~= nil then
 			sc:open()
 		end
 	end
-	if #self:chestContents(chest.index) == 0 then
+	if #self:chestContents(chest.id) == 0 then
 		self:_showNotice("THE CHEST IS EMPTY")
 		return
 	end
-	self:_setChestOpen(chest.index, (sc ~= nil and sc.notice ~= nil) and sc:notice() or nil)
+	self:_setChestOpen(chest.id, (sc ~= nil and sc.notice ~= nil) and sc:notice() or nil)
 end
 
 -- ---- What the chest window is given ----
@@ -2290,7 +2278,7 @@ function Main:_unlockGate(gate)
 		return false
 	end
 	gate.unlocked = true
-	self._unlockedGateIndex[gate.index] = true
+	self._unlockedGateIndex[gate.id] = true
 	local gsc < const > = gate.entity:getComponent(traktor.world.ScriptComponent)
 	if gsc ~= nil then
 		gsc:unlock()
@@ -2430,7 +2418,7 @@ function Main:_wakeHive(ward, purged)
 	end
 
 	best.awake = true
-	self._awakeHiveIndex[best.index] = true
+	self._awakeHiveIndex[best.id] = true
 	self._pendingHive = {
 		hive = best,
 		delay = ((purged or 0) > 0) and HIVE_WAKE_DELAY or HIVE_WAKE_DELAY_QUIET
@@ -2598,7 +2586,7 @@ function Main:_lightWard(ward)
 		return false, 0, nil
 	end
 	ward.lit = true
-	self._litWardIndex[ward.index] = true
+	self._litWardIndex[ward.id] = true
 	self._wardsLit = self._wardsLit + 1
 	local sc < const > = ward.entity:getComponent(traktor.world.ScriptComponent)
 	if sc ~= nil then
@@ -3623,9 +3611,11 @@ function Main:reload()
 	-- Goes with the humanoid above: it is that entity's event set, and every cue the
 	-- player owns is raised through it (_playCue), so a stale one means a silent night.
 	self._bloodEvents = nil
-	-- Ward records hold live entity handles, so they have to be re-resolved.
-	-- resolve() restores which of them burn from _litWardIndex, which survives. The
-	-- compass hold is one of those records, so it goes with them.
+	-- Ward records hold live entity handles, so they have to be re-resolved, along with
+	-- every other fixture's (_fixtureOf). resolve() restores which of them burn from
+	-- _litWardIndex, which survives. The compass hold is one of those records, so it goes
+	-- with them.
+	self._fixtureOf = {}
 	self._wards = nil
 	self._wardHold = nil
 	-- The relic shown in hand is found again from the pack on the next postUpdate. The
@@ -3653,12 +3643,10 @@ function Main:reload()
 	-- therefore costs that one hive its opening -- it stays marked awake and dormant --
 	-- which is a fair price for reload never being able to strand a stale entity.
 	self._pendingHive = nil
-	-- The pickups' books hold live entity handles too, and are counted again from whatever world
-	-- comes back (a pickup that survives keeps its name on itself, Pickup _home). What was put
-	-- down is forgotten: a stack lying in the world across a hot reload stays where it is, but is
-	-- no longer remembered if the player then leaves this stage.
-	self._pickups = nil
-	self._pickupKeyOf = nil
+	-- The pickups' books are plain data by entity id and survive; a pickup whose script is
+	-- rebuilt reports itself again (pickupAppeared). What was put down is forgotten: a stack
+	-- lying in the world across a hot reload stays where it is, but is no longer remembered if
+	-- the player then leaves this stage.
 	self._dropped = {}
 	-- ...and the characters' and routes' books likewise; a character keeps its name on itself
 	-- (Npc _home), and what is left on a body is plain data in _chestContents.

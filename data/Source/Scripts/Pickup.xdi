@@ -131,8 +131,8 @@ function Pickup:asDropped(count)
 	self._waitClear = true
 end
 
--- What is left of this pile, put back by the stage when the player returns to a world they had
--- already taken some of (Main:_restorePickups).
+-- What is left of this pile, put back by the stage when the player returns to a world, or a part
+-- of one, they had already taken some of (Main:pickupAppeared).
 function Pickup:setCount(count)
 	self._count = count
 end
@@ -160,6 +160,10 @@ function Pickup:collect(context)
 	end
 	if added < count then
 		self._count = count - added
+		-- Booked by the stage too, since this pile forgets it once streamed out (Main:pickupLeft).
+		if context.pickupLeft ~= nil then
+			context:pickupLeft(self.owner, self._count)
+		end
 		return true
 	end
 	self:_taken(context)
@@ -237,6 +241,16 @@ end
 function Pickup:update(context, totalTime, deltaTime)
 	if context == nil then
 		return
+	end
+
+	-- The first update since this came into being -- placed by the scene, streamed back into the
+	-- world or rebuilt by a hot reload: the stage lays it out as its books say, which may be gone
+	-- for good (Main:pickupAppeared).
+	if not self._appeared then
+		self._appeared = true
+		if context.pickupAppeared ~= nil and not context:pickupAppeared(self) then
+			return
+		end
 	end
 
 	-- Freeze with the rest of the game: nothing is collected through the pause menu, the

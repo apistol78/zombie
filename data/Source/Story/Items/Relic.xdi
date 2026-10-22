@@ -2,9 +2,9 @@
 <object type="zombie.ItemData">
 	<name>RELIC</name>
 	<pluralName>RELICS</pluralName>
-	<info>EQUIP IT, THEN LIGHT A WARD.</info>
+	<info><![CDATA[EQUIP IT, THEN LIGHT A WARD.]]></info>
 	<icon>relic</icon>
-	<maxStack>5</maxStack>
+	<maxStack>9999</maxStack>
 	<quest>false</quest>
 	<keep>true</keep>
 	<dropEntity>{00000000-0000-0000-0000-000000000000}</dropEntity>

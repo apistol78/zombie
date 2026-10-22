@@ -2,9 +2,9 @@
 <object type="zombie.ItemData">
 	<name>COIN</name>
 	<pluralName>COINS</pluralName>
-	<info>OLD SILVER. NOTHING TO SPEND IT ON.</info>
+	<info><![CDATA[OLD SILVER. NOTHING TO SPEND IT ON.]]></info>
 	<icon>coin</icon>
-	<maxStack>99</maxStack>
+	<maxStack>9999</maxStack>
 	<quest>false</quest>
 	<keep>false</keep>
 	<dropEntity>{17E40000-0000-4000-8000-000000000014}</dropEntity>

@@ -74,8 +74,10 @@
 		<item type="zombie.NpcWorldComponentData">
 			<settings>{6E9AD100-0000-4000-8000-000000000020}</settings>
 		</item>
-		<item type="zombie.InteractionWorldComponentData"/>
-		<item type="zombie.FixtureWorldComponentData"/>
+		<item type="zombie.InteractionWorldComponentData">
+		</item>
+		<item type="zombie.FixtureWorldComponentData">
+		</item>
 	</worldComponents>
 	<layers>
 		<item type="traktor.world.EntityData" version="2">
@@ -858,6 +860,21 @@
 							</transform>
 							<components/>
 							<entityData>{3B634822-251C-4D98-8633-3EE5EBAE0566}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{E567383C-375F-9F45-97CD-431EFCDE9D82}</id>
+							<name>Rock 05</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>190.870392, 0.826332, -5.928004, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{1BD6BA28-BEEF-4AE8-8072-ACE5383FA68E}</entityData>
 						</item>
 					</entityData>
 				</item>
@@ -2886,8 +2903,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>165.699997, 2.4491, -14, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>166.040054, -0.005921, -17.780346, 0</translation>
+								<rotation>0.813309, 0.504917, 0.217902, 0.190017</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
@@ -2931,8 +2948,8 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>169.399994, 1, -22.799999, 0</translation>
-								<rotation>0, 0, 0, 1</rotation>
+								<translation>169.466339, 0.128325, -22.123112, 0</translation>
+								<rotation>0.610106, 0.70472, 0.313178, 0.181826</rotation>
 							</transform>
 							<components/>
 							<entityData>{7AEA1812-5DEC-FD4E-ACC3-1A64634467CC}</entityData>
@@ -3204,7 +3221,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>145.695297, 0.000615, -2.410259, 0</translation>
+								<translation>149.716278, 0.000615, 0.918032, 0</translation>
 								<rotation>-0.029942, -0.059937, -0.001799, 0.997751</rotation>
 							</transform>
 							<components/>
@@ -5496,6 +5513,21 @@
 							<transform>
 								<translation>47.5, 7.76107, 1.5, 0</translation>
 								<rotation>0, 0.872936, 0, 0.487834</rotation>
+							</transform>
+							<components/>
+							<entityData>{66B2A602-74EE-F046-8DEB-64B795A2593A}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+							<id>{A0548BE5-CDF3-C548-B2AB-57672FBACB08}</id>
+							<name>Cave_Root_Thick</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+							</state>
+							<transform>
+								<translation>166.880676, 3.640743, -21.04635, 0</translation>
+								<rotation>0, -0.861532, 0, 0.507704</rotation>
 							</transform>
 							<components/>
 							<entityData>{66B2A602-74EE-F046-8DEB-64B795A2593A}</entityData>

@@ -84,11 +84,12 @@ end
 -- at the moment it chooses, calls _spawnZombies to send the brood up. Called by Main a
 -- beat after a ward takes light (Main:_openHive), through the entity's ScriptComponent.
 --
--- Idempotent, exactly like Ward:turnOn -- waking an open hive does nothing, so Main
--- can re-assert what it woke after a hot reload without replaying the act or sending
--- out a second brood. Pass instant=true for that restore path: it only re-marks the
--- hive, since the boulder is C++ state that survived the reload sitting exactly where
--- the act left it.
+-- Idempotent, exactly like Ward:turnOn -- waking an open hive does nothing, so it
+-- can re-assert that it was woken (the entity's zombie.FixtureComponent, which the world
+-- keeps) after a hot reload without replaying the act or sending out a second brood.
+-- Pass instant=true for that restore path (update, below): it only re-marks the hive,
+-- since the boulder is C++ state that survived the reload sitting exactly where the act
+-- left it.
 --
 -- Returns true when this call is what woke it.
 function Hive:activate(instant)
@@ -96,6 +97,12 @@ function Hive:activate(instant)
 		return false
 	end
 	self._active = true
+
+	local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+	if fixture ~= nil then
+		fixture.done = true
+	end
+
 	if instant then
 		return true
 	end
@@ -310,6 +317,14 @@ end
 -- once means it is never a stale handle from a previous stage.
 function Hive:update(context, totalTime, deltaTime)
 	self._stage = context
+
+	-- Woken already as far as the world is concerned.
+	if not self._active then
+		local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+		if fixture ~= nil and fixture.done then
+			self:activate(true)
+		end
+	end
 end
 ]]></text>
 </object>

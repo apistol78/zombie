@@ -10,6 +10,8 @@
 
 #include "IItemTrait.h"
 
+#include <string>
+
 // import/export mechanism.
 #undef T_DLLCLASS
 #if defined(T_NATIVE_SHARED_EXPORT)
@@ -35,10 +37,14 @@ public:
 
 	float getAmount() const { return m_amount; }
 
+	/*! What using one is called, such as eat or drink. */
+	const std::wstring& getVerb() const { return m_verb; }
+
 	virtual void serialize(ISerializer& s) override final;
 
 private:
 	float m_amount = 0.0f;
+	std::wstring m_verb;
 };
 
 }

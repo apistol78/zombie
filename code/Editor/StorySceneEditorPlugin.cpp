@@ -11,6 +11,8 @@
 #include "Editor/StoryComponentEditor.h"
 #include "Editor/StoryComponentEditorFactory.h"
 #include "Editor/StorySceneEditorUIExtension.h"
+#include "Fixtures/FixtureEntityFactory.h"
+#include "Interaction/InteractionEntityFactory.h"
 #include "StoryEntityFactory.h"
 #include "StoryResourceFactory.h"
 #include "Ui/Command.h"
@@ -43,6 +45,8 @@ void StorySceneEditorPlugin::createResourceFactories(scene::SceneEditorContext* 
 void StorySceneEditorPlugin::createEntityFactories(scene::SceneEditorContext* context, RefArray< world::IEntityFactory >& outEntityFactories) const
 {
 	outEntityFactories.push_back(new StoryEntityFactory());
+	outEntityFactories.push_back(new InteractionEntityFactory());
+	outEntityFactories.push_back(new FixtureEntityFactory());
 }
 
 void StorySceneEditorPlugin::createEntityRenderers(

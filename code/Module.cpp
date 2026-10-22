@@ -28,6 +28,18 @@
 #	include "DialogData.h"
 #	include "DialogNode.h"
 #	include "DialogResponse.h"
+#	include "Fixtures/FixtureClassFactory.h"
+#	include "Fixtures/FixtureComponentData.h"
+#	include "Fixtures/FixtureEntityFactory.h"
+#	include "Fixtures/FixtureWorldComponentData.h"
+#	include "Fixtures/LandmarkComponentData.h"
+#	include "Fixtures/StageExitComponentData.h"
+#	include "Interaction/InteractableComponentData.h"
+#	include "Interaction/InteractionClassFactory.h"
+#	include "Interaction/InteractionEntityFactory.h"
+#	include "Interaction/InteractionWorldComponentData.h"
+#	include "Interaction/LeverComponentData.h"
+#	include "Interaction/LockComponentData.h"
 #	include "ItemContainerComponentData.h"
 #	include "ItemData.h"
 #	include "ItemPickupComponentData.h"
@@ -38,6 +50,7 @@
 #	include "Npc/RouteComponentData.h"
 #	include "Keys/EquipSlotData.h"
 #	include "Keys/EventData.h"
+#	include "Keys/FixtureKindData.h"
 #	include "Keys/FlagData.h"
 #	include "Keys/ScriptConditionData.h"
 #	include "PlaceComponentData.h"
@@ -57,6 +70,7 @@
 #	include "Traits/EquipTrait.h"
 #	include "Traits/EventTrait.h"
 #	include "Traits/HealTrait.h"
+#	include "Traits/WeaponTrait.h"
 #	include "Waypoints/ActorWaypoint.h"
 #	include "Waypoints/FirstOfWaypoint.h"
 #	include "Waypoints/ItemWaypoint.h"
@@ -87,15 +101,27 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(FindItemStep);
 	T_FORCE_LINK_REF(FinishQuestAction);
 	T_FORCE_LINK_REF(FirstOfWaypoint);
+	T_FORCE_LINK_REF(FixtureClassFactory);
+	T_FORCE_LINK_REF(FixtureComponentData);
+	T_FORCE_LINK_REF(FixtureEntityFactory);
+	T_FORCE_LINK_REF(FixtureKindData);
+	T_FORCE_LINK_REF(FixtureWorldComponentData);
 	T_FORCE_LINK_REF(FlagCondition);
 	T_FORCE_LINK_REF(FlagData);
 	T_FORCE_LINK_REF(GiveItemAction);
 	T_FORCE_LINK_REF(HasItemCondition);
 	T_FORCE_LINK_REF(HealTrait);
+	T_FORCE_LINK_REF(InteractableComponentData);
+	T_FORCE_LINK_REF(InteractionClassFactory);
+	T_FORCE_LINK_REF(InteractionEntityFactory);
+	T_FORCE_LINK_REF(InteractionWorldComponentData);
 	T_FORCE_LINK_REF(ItemContainerComponentData);
 	T_FORCE_LINK_REF(ItemData);
 	T_FORCE_LINK_REF(ItemPickupComponentData);
 	T_FORCE_LINK_REF(ItemWaypoint);
+	T_FORCE_LINK_REF(LandmarkComponentData);
+	T_FORCE_LINK_REF(LeverComponentData);
+	T_FORCE_LINK_REF(LockComponentData);
 	T_FORCE_LINK_REF(NpcClassFactory);
 	T_FORCE_LINK_REF(NpcComponentData);
 	T_FORCE_LINK_REF(NpcEntityFactory);
@@ -112,6 +138,7 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(ScriptConditionData);
 	T_FORCE_LINK_REF(SetFlagAction);
 	T_FORCE_LINK_REF(SettingsResourceFactory);
+	T_FORCE_LINK_REF(StageExitComponentData);
 	T_FORCE_LINK_REF(StartQuestAction);
 	T_FORCE_LINK_REF(StoryClassFactory);
 	T_FORCE_LINK_REF(StoryData);
@@ -121,6 +148,7 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(TakeItemAction);
 	T_FORCE_LINK_REF(TalkStep);
 	T_FORCE_LINK_REF(TriggerStep);
+	T_FORCE_LINK_REF(WeaponTrait);
 }
 
 }

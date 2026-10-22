@@ -9,6 +9,7 @@
 #include "Npc/NpcClassFactory.h"
 
 #include "Core/Class/AutoRuntimeClass.h"
+#include "Core/Class/Boxes/BoxedRefArray.h"
 #include "Core/Class/Boxes/BoxedVector4.h"
 #include "Core/Class/IRuntimeClassRegistrar.h"
 #include "Core/Class/IRuntimeDelegate.h"
@@ -62,6 +63,8 @@ void NpcClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classNpcWorldComponent->addMethod("setDebug", &NpcWorldComponent::setDebug);
 	classNpcWorldComponent->addMethod("setDamageHandler", &NpcWorldComponent::setDamageHandler);
 	classNpcWorldComponent->addMethod("consumePlayerDamage", &NpcWorldComponent::consumePlayerDamage);
+	classNpcWorldComponent->addMethod("getPeople", &NpcWorldComponent::getPeople);
+	classNpcWorldComponent->addMethod("getHorde", &NpcWorldComponent::getHorde);
 	registrar->registerClass(classNpcWorldComponent);
 }
 

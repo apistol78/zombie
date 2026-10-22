@@ -9,7 +9,7 @@ import(traktor)
 --
 -- A consecrated cross. Taken with E into the pack, where relics stack, and equipped from there
 -- into the off hand -- which is what lets the player light a ward with one: E at a still-dark
--- post with a relic in hand spends it there (Main:_lightWardWithRelic calls :light).
+-- post with a relic in hand spends it there (Main:_consecrate calls :light).
 --
 -- A Pickup (see Scripts/Pickup), and the one keepsake among them (Items: `keep`): its entity is
 -- never destroyed. In the pack it is hidden and rides along with the player, so anything reading
@@ -25,22 +25,14 @@ import(traktor)
 
 Relic = Relic or class("Relic", Pickup)
 
-local REACH < const > = Config.relic.reachRange   -- how close to a relic to take it (m)
-
 function Relic:itemCount()
 	return 1
 end
 
+-- Never walked over, interactable or not: the one a lit post shows (Entities/Ward) is a relic
+-- that is not there to be taken at all.
 function Relic:pressToTake()
 	return true
-end
-
-function Relic:reach()
-	return REACH
-end
-
-function Relic:promptTake()
-	return "TAKE THE RELIC"
 end
 
 -- Light `ward` (one of Main's ward records) with this relic: park it on the post, out of sight,

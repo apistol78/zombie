@@ -306,8 +306,7 @@ function InventoryView:_refreshDetail()
 	end
 
 	if def.heal ~= nil then
-		local verb < const > = Items.is(s.kind, Items.FLASK) and "DRINK" or "EAT"
-		self._useButton:setCaption(verb):setEnable(self._context._health < self._context._maxHealth)
+		self._useButton:setCaption(def.use or "USE"):setEnable(self._context._health < self._context._maxHealth)
 	else
 		self._useButton:setCaption("USE"):setEnable(false)
 	end

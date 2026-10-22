@@ -74,6 +74,8 @@
 		<item type="zombie.NpcWorldComponentData">
 			<settings>{6E9AD100-0000-4000-8000-000000000020}</settings>
 		</item>
+		<item type="zombie.InteractionWorldComponentData"/>
+		<item type="zombie.FixtureWorldComponentData"/>
 	</worldComponents>
 	<layers>
 		<item type="traktor.world.EntityData" version="2">
@@ -3258,28 +3260,12 @@
 								<item type="traktor.world.VolumeComponentData">
 									<size>3.4, 5, 24, 0</size>
 								</item>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{7743D1EA-AA64-450B-8984-CA52017B5912}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>spawn</first>
-												<second type="traktor.PropertyString">
-													<value>CaveReturn</value>
-												</second>
-											</item>
-											<item>
-												<first>target</first>
-												<second type="traktor.PropertyString">
-													<value>TERRAIN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.PlaceComponentData">
 									<place>{D1A20000-0000-4000-8000-000000000401}</place>
+								</item>
+								<item type="zombie.StageExitComponentData">
+									<target>TERRAIN</target>
+									<arrival>{D1A20000-0000-4000-8000-000000000405}</arrival>
 								</item>
 							</components>
 							<entityData>{CC103709-631E-4E37-9A73-233D5761B478}</entityData>
@@ -3541,20 +3527,6 @@
 								<rotation>0, -0.98301, 0, 0.183555</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3566,6 +3538,13 @@
 											<count>30</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A GRENADE, WRAPPED IN OILCLOTH</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3598,20 +3577,6 @@
 								<rotation>0, 0.906702, 0, 0.421772</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3627,6 +3592,13 @@
 											<count>24</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A GRENADE, WRAPPED IN OILCLOTH</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3644,20 +3616,6 @@
 								<rotation>0.028464, -0.473827, -0.052778, 0.878574</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3673,6 +3631,13 @@
 											<count>24</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A GRENADE, WRAPPED IN OILCLOTH</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3690,20 +3655,6 @@
 								<rotation>0.05565, 0.245436, -0.065334, 0.965606</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A MACHINE GUN, OILED AND LOADED</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3715,6 +3666,13 @@
 											<count>60</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A MACHINE GUN, OILED AND LOADED</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3732,20 +3690,6 @@
 								<rotation>0, -0.98301, 0, 0.183555</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A GRENADE, WRAPPED IN OILCLOTH</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3761,6 +3705,13 @@
 											<count>36</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A GRENADE, WRAPPED IN OILCLOTH</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3808,20 +3759,6 @@
 								<rotation>0, -0.422618, 0, 0.906308</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A HUNTER&apos;S CACHE, STILL DRY</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3833,6 +3770,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A HUNTER&apos;S CACHE, STILL DRY</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3850,20 +3794,6 @@
 								<rotation>0, -1, 0, 0</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>ROUNDS IN WAXED PAPER</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3875,6 +3805,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>ROUNDS IN WAXED PAPER</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3892,20 +3829,6 @@
 								<rotation>0, -0.980785, 0, 0.19509</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>SOMEONE MEANT TO COME BACK FOR THIS</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3917,6 +3840,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>SOMEONE MEANT TO COME BACK FOR THIS</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3934,20 +3864,6 @@
 								<rotation>0, -1, 0, 0</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>ROUNDS IN WAXED PAPER</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -3959,6 +3875,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>ROUNDS IN WAXED PAPER</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -3976,20 +3899,6 @@
 								<rotation>0, -0.83147, 0, 0.55557</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A HUNTER&apos;S CACHE, STILL DRY</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4001,6 +3910,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A HUNTER&apos;S CACHE, STILL DRY</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -4018,20 +3934,6 @@
 								<rotation>0, -1, 0, 0</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>WHOEVER FELL HERE CAME ARMED</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4043,6 +3945,13 @@
 											<count>2</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>WHOEVER FELL HERE CAME ARMED</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -4060,20 +3969,6 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>SOMEONE MEANT TO COME BACK FOR THIS</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4085,6 +3980,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>SOMEONE MEANT TO COME BACK FOR THIS</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -4102,20 +4004,6 @@
 								<rotation>0, -1, 0, 0</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A BANDOLIER, HALF FULL</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4127,6 +4015,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A BANDOLIER, HALF FULL</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -4144,20 +4039,6 @@
 								<rotation>0, -1, 0, 0</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A SOLDIER&apos;S CACHE, NEVER OPENED</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4169,6 +4050,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A SOLDIER&apos;S CACHE, NEVER OPENED</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -4186,20 +4074,6 @@
 								<rotation>0, -1, 0, 0</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A SOLDIER&apos;S CACHE, NEVER OPENED</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4211,6 +4085,13 @@
 											<count>2</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A SOLDIER&apos;S CACHE, NEVER OPENED</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -4228,20 +4109,6 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>A BANDOLIER, HALF FULL</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -4253,6 +4120,13 @@
 											<count>1</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>A BANDOLIER, HALF FULL</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -5736,22 +5610,7 @@
 								<translation>60, 0, 0, 0</translation>
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
-							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{6E9AD100-0000-4000-8000-000000000025}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>THE DOOR GROANS OPEN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
-							</components>
+							<components/>
 							<entityData>{0CAF4E2C-C552-4B35-9A65-2583A2706C21}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
@@ -5766,28 +5625,7 @@
 								<translation>40, -4, -28, 0</translation>
 								<rotation>0, 0, 0, 1</rotation>
 							</transform>
-							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{6E9AD100-0000-4000-8000-000000000025}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>id</first>
-												<second type="traktor.PropertyString">
-													<value>B</value>
-												</second>
-											</item>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>THE PORTCULLIS RATTLES UP</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
-							</components>
+							<components/>
 							<entityData>{A26D782F-6FD4-462F-B890-6DB11A9B7AE2}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
@@ -5803,19 +5641,12 @@
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{6E9AD100-0000-4000-8000-000000000025}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>THE DOOR TO THE RAVINE GROANS OPEN</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.InteractableComponentData">
+									<prompt>UNLOCK THE GATE</prompt>
+									<refusal>THE GATE IS LOCKED</refusal>
+									<notice>THE DOOR TO THE RAVINE GROANS OPEN</notice>
+									<range>3.5</range>
+									<priority>40</priority>
 								</item>
 							</components>
 							<entityData>{0CAF4E2C-C552-4B35-9A65-2583A2706C21}</entityData>
@@ -5832,28 +5663,7 @@
 								<translation>164, 4, -8, 0</translation>
 								<rotation>0, -0.707107, 0, 0.707107</rotation>
 							</transform>
-							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{6E9AD100-0000-4000-8000-000000000025}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>id</first>
-												<second type="traktor.PropertyString">
-													<value>D</value>
-												</second>
-											</item>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>THE PORTCULLIS RATTLES UP</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
-							</components>
+							<components/>
 							<entityData>{A26D782F-6FD4-462F-B890-6DB11A9B7AE2}</entityData>
 						</item>
 						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
@@ -5869,25 +5679,17 @@
 								<rotation>-0.019998, 0.005397, 0.000108, 0.999786</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{A19B36EA-B5F7-40F0-B7D1-25264A60888A}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>gate</first>
-												<second type="traktor.PropertyString">
-													<value>B</value>
-												</second>
-											</item>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>SOMEWHERE BELOW, A PORTCULLIS RATTLES UP</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.InteractableComponentData">
+									<prompt>PULL THE LEVER</prompt>
+									<refusal/>
+									<notice>SOMEWHERE BELOW, A PORTCULLIS RATTLES UP</notice>
+									<range>1.8</range>
+									<priority>20</priority>
+								</item>
+								<item type="zombie.LeverComponentData">
+									<target type="traktor.world.PropertyEntityReference">
+										<value>{BEC02D5E-7B6D-6C50-FB33-9BFE7D629CAB}</value>
+									</target>
 								</item>
 							</components>
 							<entityData>{C07CE3E8-2B7E-42E4-8706-BD0F6C4A1CAA}</entityData>
@@ -5905,25 +5707,17 @@
 								<rotation>0, -0.936232, 0, 0.351383</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{A19B36EA-B5F7-40F0-B7D1-25264A60888A}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>gate</first>
-												<second type="traktor.PropertyString">
-													<value>D</value>
-												</second>
-											</item>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>FAR OFF, A PORTCULLIS RATTLES UP</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
+								<item type="zombie.InteractableComponentData">
+									<prompt>PULL THE LEVER</prompt>
+									<refusal/>
+									<notice>FAR OFF, A PORTCULLIS RATTLES UP</notice>
+									<range>1.8</range>
+									<priority>20</priority>
+								</item>
+								<item type="zombie.LeverComponentData">
+									<target type="traktor.world.PropertyEntityReference">
+										<value>{818193C5-8630-A1A0-B7F6-150488552C89}</value>
+									</target>
 								</item>
 							</components>
 							<entityData>{C07CE3E8-2B7E-42E4-8706-BD0F6C4A1CAA}</entityData>
@@ -5960,20 +5754,6 @@
 								<rotation>0, -0.19509, 0, 0.980785</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>AN IRON KEY, COLD AND HEAVY</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -5989,6 +5769,13 @@
 											<count>12</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>AN IRON KEY, COLD AND HEAVY</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>
@@ -6006,20 +5793,6 @@
 								<rotation>0, -0.980785, 0, 0.19509</rotation>
 							</transform>
 							<components>
-								<item type="traktor.world.ScriptComponentData" version="2">
-									<class>{C4E57000-0000-4000-8000-000000000001}</class>
-									<properties type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>notice</first>
-												<second type="traktor.PropertyString">
-													<value>AN IRON KEY, GREEN WITH DAMP</value>
-												</second>
-											</item>
-										</value>
-									</properties>
-									<editorSupport>false</editorSupport>
-								</item>
 								<item type="zombie.ItemContainerComponentData">
 									<entries>
 										<item>
@@ -6035,6 +5808,13 @@
 											<count>18</count>
 										</item>
 									</entries>
+								</item>
+								<item type="zombie.InteractableComponentData">
+									<prompt>OPEN THE CHEST</prompt>
+									<refusal/>
+									<notice>AN IRON KEY, GREEN WITH DAMP</notice>
+									<range>1.8</range>
+									<priority>30</priority>
 								</item>
 							</components>
 							<entityData>{C4E57000-0000-4000-8000-000000000002}</entityData>

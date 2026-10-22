@@ -19,20 +19,19 @@ import(traktor)
 --     pack has room for it. A full pack leaves it lying there for the trip back, and a nearly
 --     full one takes what fits and leaves the rest of the pile.
 --   * Taken with E (pressToTake) -- the things worth a decision: a weapon, armour, a key, a
---     relic. These are found by Main's scan of the entity names in its TAKE_NAMES and taken
---     through :collect, exactly as a walk-over one is, so there is one way into the pack.
+--     relic. These carry a zombie.InteractableComponentData, which says how near the player
+--     must be and how it ranks against whatever else E could do there (Main:_whatWouldE); E
+--     calls :interact, which takes it through :collect exactly as a walk-over one is taken, so
+--     there is one way into the pack.
 --
 -- Most pickups are this script and nothing else: the entity's ScriptComponentData names it as the
 -- class, and a zombie.ItemPickupComponentData beside it says what the pickup is -- the
--- ammo crate is 12 of Items.ROUNDS. The one string property left is how it is taken: the key has
--- { take = "press" }. A subclass is only for a pickup with behaviour of its own (Scripts/Relic).
--- Either way, this is what is asked, and where each answer comes from:
+-- ammo crate is 12 rounds. A subclass is only for a pickup with behaviour of its own
+-- (Scripts/Relic). Either way, this is what is asked, and where each answer comes from:
 --
 --   itemKind()      the pickup component's item, as its key (Scripts/Items/Items)
 --   itemCount()     the pickup component's count
---   pressToTake()   "take" property: "press" for E; anything else, or absent, is walked over
---   promptTake()    the E line, for an E item
---   reach()         how close the player must be
+--   pressToTake()   whether the entity is interactable; one that is not is walked over
 --
 -- What taking one is called to the SpawnOrchestrator -- a key run, a relic run -- is the item's
 -- (Items: `event`), and Main:giveItem sends it, so a key taken out of a chest counts exactly as
@@ -55,22 +54,6 @@ Pickup = Pickup or class("Pickup", traktor.world.ScriptComponent)
 
 -- How close the player's origin must come to a walk-over one to count as standing on it.
 local TAKE_RANGE < const > = Config.pickup.takeRange
-
--- ...and to an E one to be offered it.
-local REACH < const > = Config.pickup.reachRange
-
--- A string property off this component's ScriptComponentData, or nil.
-function Pickup:_property(name)
-	local props < const > = self.properties
-	if props == nil then
-		return nil
-	end
-	local v < const > = props:getProperty(name)
-	if type(v) ~= "string" or v == "" then
-		return nil
-	end
-	return v
-end
 
 -- ---- What it is ----
 
@@ -101,19 +84,22 @@ function Pickup:itemCount()
 end
 
 function Pickup:pressToTake()
-	return self:_property("take") == "press"
+	return self.owner:getComponent(zombie.InteractableComponent) ~= nil
 end
 
-function Pickup:reach()
-	return self:pressToTake() and REACH or TAKE_RANGE
-end
-
-function Pickup:promptTake()
+-- E's line for an E one: "TAKE THE RIFLE", "TAKE 12 ROUNDS". Said again whenever the count
+-- changes.
+function Pickup:_updatePrompt()
+	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)
+	if interactable == nil or self:itemKind() == nil then
+		return
+	end
 	local count < const > = self:itemCount()
 	if count == 1 then
-		return "TAKE THE " .. Items.describe(self:itemKind(), 1)
+		interactable.prompt = "TAKE THE " .. Items.describe(self:itemKind(), 1)
+	else
+		interactable.prompt = "TAKE " .. Items.describe(self:itemKind(), count)
 	end
-	return "TAKE " .. Items.describe(self:itemKind(), count)
 end
 
 function Pickup:isKeepsake()
@@ -129,12 +115,14 @@ end
 function Pickup:asDropped(count)
 	self._count = count
 	self._waitClear = true
+	self:_updatePrompt()
 end
 
 -- What is left of this pile, put back by the stage when the player returns to a world, or a part
 -- of one, they had already taken some of (Main:pickupAppeared).
 function Pickup:setCount(count)
 	self._count = count
+	self:_updatePrompt()
 end
 
 -- ---- Into the pack ----
@@ -160,6 +148,7 @@ function Pickup:collect(context)
 	end
 	if added < count then
 		self._count = count - added
+		self:_updatePrompt()
 		-- Booked by the stage too, since this pile forgets it once streamed out (Main:pickupLeft).
 		if context.pickupLeft ~= nil then
 			context:pickupLeft(self.owner, self._count)
@@ -168,6 +157,13 @@ function Pickup:collect(context)
 	end
 	self:_taken(context)
 	return true
+end
+
+-- E at an E one (Main:_interact): into the pack, or a line saying it does not fit.
+function Pickup:interact(context)
+	if not self:collect(context) then
+		context:packFull(self:itemKind())
+	end
 end
 
 -- All of it is in the pack. Pop the sparkle where it stood -- follow=false on the event, so the
@@ -251,6 +247,7 @@ function Pickup:update(context, totalTime, deltaTime)
 		if context.pickupAppeared ~= nil and not context:pickupAppeared(self) then
 			return
 		end
+		self:_updatePrompt()
 	end
 
 	-- Freeze with the rest of the game: nothing is collected through the pause menu, the

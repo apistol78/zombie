@@ -16,6 +16,9 @@
 #include "Editor/IPipelineDepends.h"
 #include "Editor/StoryReferences.h"
 #include "Editor/StoryValidation.h"
+#include "Fixtures/FixtureComponentData.h"
+#include "Fixtures/StageExitComponentData.h"
+#include "Interaction/LockComponentData.h"
 #include "ItemContainerComponentData.h"
 #include "ItemPickupComponentData.h"
 #include "Npc/NpcWorldComponentData.h"
@@ -25,7 +28,7 @@
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_FACTORY_CLASS(L"zombie.StoryComponentPipeline", 2, StoryComponentPipeline, editor::IPipeline)
+T_IMPLEMENT_RTTI_FACTORY_CLASS(L"zombie.StoryComponentPipeline", 4, StoryComponentPipeline, editor::IPipeline)
 
 bool StoryComponentPipeline::create(const editor::IPipelineSettings* settings, db::Database* database)
 {
@@ -38,7 +41,17 @@ void StoryComponentPipeline::destroy()
 
 TypeInfoSet StoryComponentPipeline::getAssetTypes() const
 {
-	return makeTypeInfoSet< ActorComponentData, ItemContainerComponentData, ItemPickupComponentData, NpcWorldComponentData, PlaceComponentData, StoryWorldComponentData >();
+	TypeInfoSet typeSet;
+	typeSet.insert< ActorComponentData >();
+	typeSet.insert< FixtureComponentData >();
+	typeSet.insert< ItemContainerComponentData >();
+	typeSet.insert< ItemPickupComponentData >();
+	typeSet.insert< LockComponentData >();
+	typeSet.insert< NpcWorldComponentData >();
+	typeSet.insert< PlaceComponentData >();
+	typeSet.insert< StageExitComponentData >();
+	typeSet.insert< StoryWorldComponentData >();
+	return typeSet;
 }
 
 bool StoryComponentPipeline::shouldCache() const

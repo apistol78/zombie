@@ -29,8 +29,6 @@ import(traktor)
 
 Melee = Melee or class("Melee", Weapon)
 
--- Who a swing can catch: the horde, and the characters placed in the scene.
-local LISTS < const > = { "Enemy", "Npc" }
 
 function Melee:new(context)
 	Weapon.new(self, context)
@@ -143,16 +141,12 @@ function Melee:attack()
 		end
 	end
 
-	-- The horde, and everyone else placed in the world.
-	for _, list in ipairs(LISTS) do
-		local i = 0
-		while true do
-			local e = world:getEntity(list, i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			swing(e)
+	-- The horde, and the world's own people (zombie.NpcWorldComponent).
+	local npcWorld < const > = world:getComponent(zombie.NpcWorldComponent)
+	local lists < const > = (npcWorld ~= nil) and { npcWorld:getHorde(), npcWorld:getPeople() } or {}
+	for _, list in ipairs(lists) do
+		for i = 0, list.size - 1 do
+			swing(list:get(i))
 		end
 	end
 	return true

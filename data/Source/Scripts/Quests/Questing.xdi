@@ -503,7 +503,7 @@ function Main:_updateMinimap()
 	self._minimap:setView(p.x, p.z, self._heading)
 
 	for i, w in ipairs(self._wards) do
-		self._minimap:setWard(i, w.x, w.z, w.lit)
+		self._minimap:setWard(i, w.x, w.z, w.fixture.done)
 	end
 
 	local q < const > = self._questWaypoint
@@ -514,11 +514,12 @@ function Main:_updateMinimap()
 	end
 end
 
--- Aim the objective compass at wherever the player should be walking: the nearest
--- still-dark ward while there is a relic in the pack, then a locked gate while there is
--- a key in it, and otherwise the nearest relic -- or failing that key -- still lying out
--- in the forest. Blank once the night is over, either way it ended. The followed quest's
--- waypoint, if it has one here, is a second marker beside it.
+-- Aim the objective compass at wherever the player should be walking: the nearest lock
+-- the pack holds what it spends -- a still-dark ward while there is a relic in it, a locked
+-- gate while there is a key -- and otherwise the nearest thing lying out in the forest that
+-- some lock wants, a relic before a key (their priorities). Blank once the night is over,
+-- either way it ended. The followed quest's waypoint, if it has one here, is a second marker
+-- beside it.
 --
 -- Nearest is only ever a suggestion. With no altar to return to, where a relic goes is
 -- the player's decision -- the needle picks the closest unlit post so it has something to
@@ -528,18 +529,10 @@ function Main:_updateMarker(dt)
 	local target = nil
 	local live < const > = not self._gameOver and not self._nightOver and self._humanoid ~= nil
 	if live then
-		local inv < const > = self._inventory
-		if inv:count(Items.RELIC) > 0 then
-			target = self:_wardObjective()
-		end
-		if target == nil and inv:count(Items.KEY) > 0 then
-			local gate < const > = self:_nearestLockedGate()
-			target = (gate ~= nil) and gate.entity or nil
-		end
-		if target == nil then
-			-- Nothing in the pack to take anywhere: the nearest thing worth picking up, in
-			-- priority order -- the relic run is the objective, the key run the detour.
-			target = self:_nearestLying("Relic") or self:_nearestLying("Key")
+		target = self:_lockObjective()
+		if target == nil and self._interaction ~= nil then
+			local wanted < const > = self._interaction:findWanted(self._humanoid.transform.translation, self._inventory)
+			target = (wanted ~= nil) and wanted.owner or nil
 		end
 	end
 

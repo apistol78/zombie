@@ -102,6 +102,8 @@ public:
 
 	virtual bool allowConcurrentUpdate() const override final { return true; }
 
+	world::Entity* getOwner() const { return m_owner; }
+
 	/*! What the brain is doing, for the stage to show. */
 	virtual std::wstring getState() const = 0;
 

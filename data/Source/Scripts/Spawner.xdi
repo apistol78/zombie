@@ -8,9 +8,9 @@ import(traktor)
 --
 -- A single rig across the whole forest reads as one actor cloned, and a night is long
 -- enough for that to be noticed. The entries are interchangeable by construction rather
--- than by convention: each is a complete EntityData named "Enemy" -- which is how Main
--- finds anything shootable, and the one thing a new one MUST get right -- carrying its
--- own skeleton, mesh, state graph, rag doll and an EnemyComponent. So nothing
+-- than by convention: each is a complete EntityData carrying its own skeleton, mesh, state
+-- graph, rag doll and an EnemyComponent -- and no actor, which is what makes it the horde
+-- (zombie.NpcWorldComponent:getHorde) and the one thing a new one MUST get right. So nothing
 -- downstream of the draw knows or cares which one it got, and adding a third kind is a
 -- line here and nothing else.
 --

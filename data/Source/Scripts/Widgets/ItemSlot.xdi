@@ -33,14 +33,6 @@ ItemSlot:setStyle("resource", "MC_ItemSlot")
 -- Must match tools/gen_item_icons.py.
 local S < const > = 64
 
--- Every picture the art carries. A kind added to Scripts/Items/Items without one here (and in
--- the art) simply draws no picture.
-local ICONS < const > = {
-	"rifle", "machinegun", "grenade", "rounds", "flask",
-	"bread", "coin", "helmet", "key", "relic",
-	"ring", "ledger", "locket", "sword", "crown"
-}
-
 local C_COUNT < const > = Color4f(0.92, 0.92, 0.9, 1.0)
 
 function ItemSlot:new(parent, skin)
@@ -112,12 +104,14 @@ function ItemSlot:_initialize(parent, mc)
 	self._sel_mc.visible = false
 	self._equip_mc.visible = false
 
+	-- Every item's picture (its `icon`, Scripts/Items/Items), hidden until it is the one shown. An
+	-- item whose icon the art does not carry simply draws no picture.
 	self._icons = {}
-	for _, name in ipairs(ICONS) do
-		local icon < const > = mc:getMember("icon_" .. name)
+	for _, def in ipairs(Items.all()) do
+		local icon < const > = mc:getMember("icon_" .. def.icon)
 		if icon ~= nil then
 			icon.visible = false
-			self._icons[name] = icon
+			self._icons[def.icon] = icon
 		end
 	end
 	self._kind = nil

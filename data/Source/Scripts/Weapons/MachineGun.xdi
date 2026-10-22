@@ -55,8 +55,8 @@ local FLASH_TIME < const > = 0.04
 local COLLISION_DEFAULT < const > = 0x00000001
 local COLLISION_INTERACTABLE < const > = 0x00000002
 
-function MachineGun:new(context)
-	Weapon.new(self, context)
+function MachineGun:new(context, item)
+	Weapon.new(self, context, item)
 
 	-- A belt rather than a magazine, but the same two-number economy the rifle runs on -- the
 	-- belt, and the rounds in the pack -- and rounds only move from one to the other on a reload.
@@ -109,16 +109,6 @@ end
 
 function MachineGun:slot()
 	return "machinegun"
-end
-
--- The rifle's rounds, on purpose. See the note at the top: one pile of rounds feeds both, which
--- is what keeps this from being free.
-function MachineGun:ammoItem()
-	return Items.keyOf(Items.ROUNDS)
-end
-
-function MachineGun:item()
-	return Items.keyOf(Items.MACHINEGUN)
 end
 
 function MachineGun:automatic()

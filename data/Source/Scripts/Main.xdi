@@ -40,7 +40,7 @@
 
 -- Scripts/Pickup, the base of everything lying in the world that goes into the pack. Not
 -- named in this file -- the stage only ever talks to whichever component an item holds --
--- but the E scan below (TAKE_NAMES) and the drop are the other half of its contract.
+-- but E (_interact) and the drop are the other half of its contract.
 #using \{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}
 
 -- Scripts/Widgets/MenuButton: every button on this stage's menus, so they all light the
@@ -98,18 +98,18 @@ local EYE_HEIGHT_MAX_LAG < const > = 0.3
 local EYE_HEIGHT_SNAP < const > = 2.0
 
 
--- What E can take into the pack, by entity name, in priority order: standing where two
--- are in reach, E takes the earlier one -- the relic is the night's objective, the key a
--- detour, and anything else (a weapon, a helmet: entities named "Item") comes after.
--- That is all the *scan* needs; how close is close enough, what the E line says and
--- what taking it does are asked of the item's own Pickup component (Scripts/Pickup).
---
--- The walk-over items -- rounds, food, grenades, coins -- are not on it: those notice the
--- player standing on them by themselves.
-local TAKE_NAMES < const > = { "Relic", "Key", "Item" }
+-- The kinds of fixture this stage keeps records of (Story/Fixtures): the posts a relic lights,
+-- and the hives each lit post wakes.
+local WARD < const > = Guid("\{D1A20000-0000-4000-8000-000000000700}")
+local HIVE < const > = Guid("\{D1A20000-0000-4000-8000-000000000701}")
+
+-- Where the people -- a body to search, someone to talk to -- stand among the interactables'
+-- priorities (zombie.InteractableComponentData): above the fixtures, below what is lying there
+-- to take. See _whatWouldE.
+local PEOPLE_PRIORITY < const > = Config.npc.interactPriority
 
 -- How much nearer a rival ward post has to be before the objective compass gives up the
--- one it is already pointing at; see Main:_wardObjective.
+-- one it is already pointing at; see Main:_lockObjective.
 local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
 
 -- Where the minimap sits: its own corner, clear of the prompt line in the middle and
@@ -185,21 +185,6 @@ local CUTSCENE_RADIUS < const > = Config.cutscene.radius
 -- doubles the rate on its own without a second number to tune.
 local STEP_STRIDE < const > = Config.player.stepStride
 
--- The landmarks the map marks, in the order they are drawn. Looked up by entity
--- name and quietly skipped when a scene has none of them, which is what keeps this
--- working in Scene 1 -- and is why the Altar can stay on the list: it lost its
--- gameplay role when relics moved to the ward posts, but it is still the biggest
--- monument in the cemetery and so still the thing to navigate by.
---
--- glyph names the drawing the map gives it -- a pictogram with the name lettered
--- underneath, one child sprite of MC_MapLandmark each (tools/gen_hud_svg.py). A
--- landmark without one of its own is drawn as a plain mark with no name.
-local LANDMARKS < const > = {
-	{ entity = "Chapel", glyph = "chapel" },
-	{ entity = "Tower", glyph = "tower" },
-	{ entity = "Altar", glyph = "altar" },
-}
-
 -- A Transform as plain numbers and back: position, and the rotation as Euler angles (head,
 -- pitch, bank). Everything a stage switch carries is plain data -- it is also what goes into a
 -- save (Scripts/SaveGame), which cannot store a Transform. Euler angles rather than the
@@ -230,8 +215,8 @@ function Main:new(params, environment)
 	self._stageKey = (params ~= nil and params.target) or "TERRAIN"
 	local carry < const > = (params ~= nil) and params.carry or nil
 	self._worlds = (carry ~= nil and carry.worlds) or {}
-	-- The entity to stand the player on once the world is there (resolve), or nil to leave
-	-- them wherever the scene puts its Humanoid.
+	-- The place (Story/Places, by its key) to stand the player on once the world is there
+	-- (resolve), or nil to leave them wherever the scene puts its Humanoid.
 	self._arrival = (carry ~= nil) and carry.spawn or nil
 	-- ...or, continuing a saved night, exactly where the player stood when it was saved (see
 	-- _saveGame): { x, y, z, heading }. Takes the place of the spot above.
@@ -446,48 +431,42 @@ function Main:new(params, environment)
 	-- walk, bar the sprint and take the crosshair away, and none of that is left.
 	self._handRelic = nil        -- the relic entity shown in the off hand, or nil
 
-	-- The ward the compass is holding on while there are relics in the pack; see
-	-- _wardObjective. A live record, so it is dropped in reload().
-	self._wardHold = nil
+	-- The lock the compass is holding on while the pack has what opens it; see
+	-- _lockObjective. A live component, so it is dropped in reload().
+	self._lockHold = nil
+
+	-- What E can do, and where: every interactable in the world (zombie.InteractionWorldComponent),
+	-- each saying what using it is called, how close the player must be, what it costs from the
+	-- pack and what its own script does about it (interact). Resolved off the world.
+	self._interaction = nil
 
 	-- The cemetery gates. One stands locked in the wall around the graveyard, and two
 	-- of the ward posts stand behind it, so what it locks away is ground the night can
 	-- be won on. The gate owns itself entirely -- its iron, which is also its collision,
-	-- and the swing and grind of its "Open" act (see Scripts/Gate) -- and a key is an
-	-- item in the pack (_unlockGate spends one). This stage keeps only what is
-	-- *around* the gates: where they stand, which are still locked, and how close the
-	-- player has to be for the "locked" prompt to bother saying so.
-	self._gateRange = Config.key.gateRange        -- how close to a locked gate the prompt reaches
-	self._gates = nil             -- synced off the world by entity id, see _syncRecords
-	self._unlockedGateIndex = {}  -- gate id -> true; plain data, so it survives a hot reload
+	-- the swing and grind of its "Open" act (see Scripts/Gate), and whether it stands open --
+	-- and its lock names the key it spends.
 
-	-- Every record of the fixtures below -- gates, chests, levers, wards and hives -- by the id
-	-- of its entity, which outlives the entity itself; see _syncRecords.
-	self._fixtureOf = {}
+	-- What is done with every fixture -- a gate or a chest opened, a lever pulled, a ward lit, a
+	-- hive woken -- is the world's (zombie.FixtureWorldComponent), by the id of the entity, which
+	-- outlives the entity itself: a chest streamed out and back in, or a hot reload, finds it as
+	-- it was, and each fixture restores itself from it. This world's part of the books is handed
+	-- to it once it is resolved (_fixtureState) and read back off it for the books (_saveWorld).
+	self._fixtures = nil
+	self._fixtureState = nil
 
 	-- Chests. Each one owns its lid and its creak (its "Open" act, Scripts/Chest), and what it
-	-- held when the night began is the level's, a property on each placed chest. What this
-	-- stage keeps is what the gates keep -- where they stand, which are open, how close E
-	-- reaches -- and one thing more: what is still in each chest once it has been opened. The
+	-- held when the night began is the level's, a container on each placed chest. What this
+	-- stage keeps is what is still in each chest once it has been opened. The
 	-- player takes from that through the chest window (Scripts/Views/ChestView, see
 	-- _setChestOpen), and what they leave is there to come back for. Plain data, keyed by chest
 	-- id, so it survives a hot reload with the rest -- and the chest being streamed out of the
 	-- world and back in again as the player walks away and returns.
-	self._chestRange = Config.chest.reachRange
-	self._chests = nil            -- synced off the world by entity id, see _syncRecords
-	self._openedChestIndex = {}   -- chest id -> true; plain data, so it survives a hot reload
 	self._chestContents = {}      -- chest id -> { { kind, count }, ... } still inside it
 	self._chestOpen = nil         -- the id of the chest whose window is up, or nil
 
-	-- Levers, and the gates only a lever opens (the cave's portcullises). A lever owns
-	-- its throw and finds its own gate by id (Scripts/Lever); a lever gate is a Gate
-	-- component on an entity named "LeverGate", so no key ever fits it. The books here
-	-- are the chests' again: which levers are pulled, as plain data -- a pulled lever
-	-- reopens its gate on the restore path, so the gates need no index of their own.
-	self._leverRange = Config.lever.reachRange
-	self._levers = nil
-	self._leverGates = nil
-	self._pulledLeverIndex = {}
+	-- Levers, and the gates only a lever opens (the cave's portcullises), own themselves the
+	-- same way: a lever its throw and the gate it names (zombie.LeverComponent, Scripts/Lever); a
+	-- lever gate has no lock, so no key ever fits it.
 
 	-- Wards. A relic is spent by carrying it to a ward post and setting it down there,
 	-- which lights that ward: the light kills whatever is standing on its ground at that
@@ -501,10 +480,10 @@ function Main:new(params, environment)
 	-- to, so every relic picked up is also a decision about where the next patch of
 	-- cleared ground should be, and the posts are close enough together that lighting two
 	-- neighbours wastes most of the second one's radius.
-	self._wards = nil            -- synced off the world by entity id, see _syncRecords
+	self._wards = nil            -- the ward fixtures, read off the world once; see _fixtureRecords
+	self._wardOf = nil           -- ...by entity id
 	self._wardsLit = 0
 	self._wardsNeeded = nil      -- how many have to burn to win; counted in resolve
-	self._litWardIndex = {}      -- ward id -> true; plain data, so it survives a hot reload
 	self._litWards = {}          -- published to the Spawner
 	-- The disc the Spawner is barred from and the minimap draws, and -- a separate quantity
 	-- that only used to share its number -- how far the flare reaches when a post takes
@@ -518,14 +497,13 @@ function Main:new(params, environment)
 	-- nearest still-dormant hive, which opens (a theater act sinking the boulder that
 	-- plugs it) and sends a brood of zombies out into the forest for good. The hive
 	-- itself owns all of that -- see Scripts/Hive -- so this only tracks where the
-	-- hives are and which have been woken, and wakes one by calling activate() on its
-	-- ScriptComponent, exactly as it lights a ward.
+	-- hives are, and wakes one by calling activate() on its ScriptComponent, exactly as it
+	-- lights a ward.
 	--
 	-- Consecrating ground therefore costs something the player can see coming: the
 	-- safe island is bought with a hive opening somewhere else on the map, and with
 	-- more hives than wards it is also a choice about which of them stays shut.
-	self._hives = nil            -- synced off the world by entity id, see _syncRecords
-	self._awakeHiveIndex = {}    -- hive id -> true; plain data, so it survives a hot reload
+	self._hives = nil            -- the hive fixtures, read off the world once; see _fixtureRecords
 
 	-- The night's tempo, owned here the way the loadout is: the event sites in
 	-- _interact and _lightWard poke it (notify), update ticks it below the freeze
@@ -678,17 +656,13 @@ function Main:new(params, environment)
 	-- dialog and the dawn wash: it is meant to be on screen whatever else is.
 	self._fps = FpsCounter(self._frame, environment)
 
-	-- The ways out of this stage that are taken with E (the cave mouth's): the StageExit
-	-- components that offer a prompt, resolved off the world. See _exitInReach.
-	self._exits = nil
-
 	-- Every pickup this world laid out, by its entity's id (pickupAppeared), and the stacks the
 	-- player has put down in it since (dropSlot): the books that let a world left for another
 	-- stage, or a pickup streamed out of the world, be laid out again as the player left it.
 	self._pickups = {}
 	self._dropped = {}
 
-	-- The characters placed in this world (zombie.NpcComponent, entities named "Npc"), by where each
+	-- The world's own people (zombie.NpcComponent with an actor; NpcWorldComponent:getPeople), by where each
 	-- was first found -- the same naming the pickups use, for the same reason -- and the routes
 	-- they walk, by name. See _collectNpcs and route.
 	self._npcs = nil
@@ -713,19 +687,15 @@ function Main:new(params, environment)
 		self._orchestrator:restoreState(carry.orchestrator)
 	end
 
-	-- ...and this world as they left it, if they have been here before tonight. The id
-	-- tables are the same plain data a script hot reload keeps, so resolve() puts the wards,
-	-- hives, gates, chests and levers back exactly as it does after one; the pickups lay
-	-- themselves out from their books as they appear (pickupAppeared), and the stacks put
+	-- ...and this world as they left it, if they have been here before tonight. What is done
+	-- with its fixtures goes to the world once resolve() has it, and the wards, hives, gates,
+	-- chests and levers put themselves back from that exactly as after a hot reload; the pickups
+	-- lay themselves out from their books as they appear (pickupAppeared), and the stacks put
 	-- down are resolve()'s to lay out again.
 	local here < const > = self._worlds[self._stageKey]
 	if here ~= nil then
-		self._litWardIndex = here.litWards or {}
-		self._awakeHiveIndex = here.awakeHives or {}
-		self._unlockedGateIndex = here.unlockedGates or {}
-		self._openedChestIndex = here.openedChests or {}
+		self._fixtureState = here.fixtures
 		self._chestContents = here.chestContents or {}
-		self._pulledLeverIndex = here.pulledLevers or {}
 		for key, s in pairs(here.pickups or {}) do
 			self._pickups[key] = { taken = s.taken, count = s.count, carried = s.carried, visible = s.visible, at = s.at }
 		end
@@ -911,11 +881,20 @@ end
 -- the whole map, which is the only way to count entities the world was not asked to name.
 --
 -- Delete the two call sites and this function once the question is answered.
+-- The horde of `world`: every character in it without an actor (zombie.NpcWorldComponent) --
+-- the zombies the Spawner and the hives send up -- or nil in a world without characters.
+function Main:_horde(world)
+	local npcWorld < const > = world:getComponent(zombie.NpcWorldComponent)
+	return (npcWorld ~= nil) and npcWorld:getHorde() or nil
+end
+
 function Main:_census(when)
 	local world = self.world.world
 	if world == nil then
 		return
 	end
+	local horde < const > = self:_horde(world)
+	local enemies < const > = (horde ~= nil) and horde.size or 0
 
 	local function n(t)
 		local c = 0
@@ -931,8 +910,8 @@ function Main:_census(when)
 		"| lua heap %.1f KiB",
 		when,
 		all,
-		world:getEntities("Enemy").size,
-		all - world:getEntities("Enemy").size,
+		enemies,
+		all - enemies,
 		n(self._deadEnemies),
 		-- Careful if a length is ever added here: the length operator must not start a
 		-- line. The script preprocessor trims each line and treats a leading '#' as a
@@ -1020,8 +999,8 @@ end
 
 -- Leave for another stage through the loading screen. "target" names one of the Loading
 -- stage's transitions (TERRAIN, CAVE, STARTUP; Loading falls back to STARTUP on anything
--- else), "notice" is an optional line flashed on the way out, and "spawn" the entity in the
--- destination's world to stand the player on (nil: wherever its scene puts the Humanoid).
+-- else), "notice" is an optional line flashed on the way out, and "spawn" the key of the place in
+-- the destination's world to stand the player on (nil: wherever its scene puts the Humanoid).
 -- Scripts/StageExit calls this when the player walks into its volume -- or presses E in one that
 -- offers itself (_interact) -- and it is the one hook for anything else that should take the player
 -- somewhere. Returns whether the trip started: false while another load (restart, the menus'
@@ -1123,12 +1102,8 @@ function Main:_saveWorld()
 		end
 	end
 	return {
-		litWards = self._litWardIndex,
-		awakeHives = self._awakeHiveIndex,
-		unlockedGates = self._unlockedGateIndex,
-		openedChests = self._openedChestIndex,
+		fixtures = (self._fixtures ~= nil) and self._fixtures:saveState() or self._fixtureState,
 		chestContents = self:_savedContents(),
-		pulledLevers = self._pulledLeverIndex,
 		pickups = pickups,
 		dropped = dropped,
 		npcs = self:_saveNpcs()
@@ -1176,50 +1151,20 @@ function Main:finalize()
 	self._frame = nil
 end
 
--- The book of a fixture that keeps none: a lever gate is reopened by its pulled lever.
-local NO_BOOK < const > = {}
-
--- Bring `list` up to date with every entity named `name` in the world -- one record per
--- entity, { id, entity, x, z, [flag] } -- and re-assert what `book` says on each entity that
--- has appeared since the last call, by calling `restore` on its ScriptComponent. One
--- function because the wards, the hives, the gates, the chests and the levers all keep their
--- books the same way, and the way has two load-bearing rules:
---
---   * A record is named by its entity's id, which the scene gives it and every load of the
---     scene keeps. The entity itself comes and goes -- a chest is streamed out of the world
---     as the player walks away and built again from the scene when they come back, and a
---     stage come back to is a fresh world -- but the id, the record and the book entry
---     stay, and the record picks up the new entity here (_fixtureOf).
---
---   * Restoring is re-asserting state that already happened, not replaying it, so the
---     component's method is called with `true` -- instantly: a chest streamed back in, or a
---     mid-game reload, must not replay every flare, send up a second brood, or grind the
---     gate open again. A fresh night has an empty book and restores nothing.
---
--- Called every frame from resolve; an entity already seen costs only its id.
-function Main:_syncRecords(world, list, name, flag, book, restore)
-	local entities < const > = world:getEntities(name)
-	for i = 0, entities.size - 1 do
-		local e < const > = entities:get(i)
-		local id < const > = e.id:format()
-		local rec = self._fixtureOf[id]
-		if rec == nil then
-			local p < const > = e.transform.translation
-			rec = { id = id, x = p.x, z = p.z }
-			rec[flag] = book[id] == true
-			self._fixtureOf[id] = rec
-			table.insert(list, rec)
-		end
-		if rec.entity ~= e then
-			rec.entity = e
-			if rec[flag] then
-				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-				if sc ~= nil then
-					sc[restore](sc, true)
-				end
-			end
-		end
+-- The fixtures of one kind (Story/Fixtures), as records { id, entity, fixture, x, z } in the order
+-- the world has them. Read once: the scene keeps the wards and the hives resident (its
+-- EntityStreamingOperationData lists them), since the compass, the minimap and the hives' waking
+-- want every one of them from the first frame. Whether one has turned is its fixture's (done).
+function Main:_fixtureRecords(kind)
+	local list = {}
+	local fixtures < const > = self._fixtures:getFixtures(kind)
+	for i = 0, fixtures.size - 1 do
+		local f < const > = fixtures:get(i)
+		local e < const > = f.owner
+		local p < const > = e.transform.translation
+		table.insert(list, { id = e.id:format(), entity = e, fixture = f, x = p.x, z = p.z })
 	end
+	return list
 end
 
 -- Resolve (and cache) the humanoid entity, its character controller and the camera.
@@ -1231,6 +1176,7 @@ function Main:resolve()
 	if world == nil then
 		return
 	end
+	self._interaction = self._interaction or world:getComponent(zombie.InteractionWorldComponent)
 	-- ...and not until the world has been through one update of its own. This stage's script
 	-- is updated *before* its layers are (Stage::update), and a ScriptComponent only builds its
 	-- script object on its first update or setTransform after joining the world -- so on the
@@ -1240,26 +1186,25 @@ function Main:resolve()
 	if not self._worldUpdated then
 		return
 	end
-	-- The night's fixtures: the wards, the hives, the gates, the chests and the levers, all
-	-- through _syncRecords above -- records named by entity id and the replay-free restore
-	-- are its two rules, and the same two for all of them. Synced every frame, since a chest
-	-- or a gate is streamed out of the world and back in as the player moves about. The wards
-	-- and the hives are not: the scene keeps them resident (its EntityStreamingOperationData
-	-- lists them), since the compass, the minimap and the hives' waking want every one of
-	-- them from the first frame -- so what is counted off the wards the first time holds.
-	--
-	-- The records only know where each fixture stands and which have turned: each
-	-- ward's flame is owned by its own Ward ScriptComponent (Scripts/Ward), each
-	-- hive's opening and brood by Scripts/Hive, and everything a gate *is* -- the
-	-- leaves, the swing, the grind and the barring -- by Scripts/Gate. Gate:unlock
-	-- takes instant=true to re-assert an open gate without the swing or the grind.
-	if self._wards == nil then
-		self._wards = {}
-		self:_syncRecords(world, self._wards, "Ward", "lit", self._litWardIndex, "turnOn")
-
+	-- The night's fixtures. What is done with each is the world's (zombie.FixtureWorldComponent),
+	-- handed this world's books the first time round; every ward, hive, gate, chest and lever
+	-- restores itself from it as it appears, instantly -- a chest streamed back in, or a mid-game
+	-- reload, must not replay every flare, send up a second brood, or grind the gate open again.
+	-- What is kept here is where the wards and the hives stand.
+	if self._fixtures == nil then
+		self._fixtures = world:getComponent(zombie.FixtureWorldComponent)
+		if self._fixtures ~= nil and self._fixtureState ~= nil then
+			self._fixtures:restoreState(self._fixtureState)
+		end
+		self._fixtureState = nil
+	end
+	if self._wards == nil and self._fixtures ~= nil then
+		self._wards = self:_fixtureRecords(WARD)
+		self._wardOf = {}
 		local lit = 0
 		for _, w in ipairs(self._wards) do
-			if w.lit then
+			self._wardOf[w.id] = w
+			if w.fixture.done then
 				lit = lit + 1
 			end
 		end
@@ -1271,38 +1216,14 @@ function Main:resolve()
 		-- relics is therefore what turns this into a real decision -- the player picks
 		-- which ground is worth consecrating and leaves the rest of the posts dark --
 		-- while an equal count leaves only the order to choose. Either way the scene
-		-- cannot be made unwinnable by adding a post to it.
-		self._wardsNeeded = math.min(#self._wards, world:getEntities("Relic").size)
+		-- cannot be made unwinnable by adding a post to it. The relic is whatever the
+		-- posts' lock spends.
+		local lock < const > = (#self._wards > 0) and self._wards[1].entity:getComponent(zombie.LockComponent) or nil
+		local relics < const > = (lock ~= nil and self._interaction ~= nil) and self._interaction:countPickups(lock.item) or 0
+		self._wardsNeeded = math.min(#self._wards, relics)
 
 		self:_publishWards()
-	end
-	self:_syncRecords(world, self._wards, "Ward", "lit", self._litWardIndex, "turnOn")
-	self._hives = self._hives or {}
-	self:_syncRecords(world, self._hives, "Hive", "awake", self._awakeHiveIndex, "activate")
-	self._gates = self._gates or {}
-	self:_syncRecords(world, self._gates, "Gate", "unlocked", self._unlockedGateIndex, "unlock")
-	self._chests = self._chests or {}
-	self:_syncRecords(world, self._chests, "Chest", "opened", self._openedChestIndex, "open")
-	self._leverGates = self._leverGates or {}
-	self:_syncRecords(world, self._leverGates, "LeverGate", "unlocked", NO_BOOK, "unlock")
-	self._levers = self._levers or {}
-	self:_syncRecords(world, self._levers, "Lever", "pulled", self._pulledLeverIndex, "pull")
-	-- The ways out taken with E: every StageExit whose component offers a prompt. The ones that
-	-- are walked through (the cave's) see to themselves and are not listed.
-	if self._exits == nil then
-		self._exits = {}
-		local i = 0
-		while true do
-			local e < const > = world:getEntity("StageExit", i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-			if sc ~= nil and sc.offers ~= nil and sc:prompt() ~= nil then
-				table.insert(self._exits, sc)
-			end
-		end
+		self._hives = self:_fixtureRecords(HIVE)
 	end
 	-- The stacks the player put down in this world, for a world they have been in before
 	-- tonight; the pickups the scene placed lay themselves out as they appear (pickupAppeared).
@@ -1368,7 +1289,8 @@ function Main:resolve()
 	end
 	if self._arrival ~= nil and self._character ~= nil then
 		local spot < const > = self._arrival
-		local mark < const > = world:getEntity(spot)
+		local storyWorld < const > = self:_storyWorldOf()
+		local mark < const > = (storyWorld ~= nil) and storyWorld:findPlace(spot) or nil
 		self._arrival = nil
 		if mark ~= nil then
 			self._humanoid.transform = mark.transform
@@ -1376,7 +1298,7 @@ function Main:resolve()
 			self._pitch = 0.0
 			self._eyeY = nil
 		else
-			print("Main: no arrival spot named '" .. tostring(spot) .. "' in this scene")
+			print("Main: arrival place " .. tostring(spot) .. " is not in this scene")
 		end
 	end
 	if self._poseController == nil and self._humanoid ~= nil then
@@ -1908,14 +1830,13 @@ function Main:_killAllEnemies()
 		return
 	end
 
+	local horde < const > = self:_horde(world)
+	if horde == nil then
+		return
+	end
 	local origin = self:eye()
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
+	for i = 0, horde.size - 1 do
+		local e < const > = horde:get(i)
 		local chest = e.transform.translation + Vector4(0.0, 1.0, 0.0, 0.0)
 		local away = chest - origin
 		local len = away.length
@@ -1944,110 +1865,25 @@ function Main:_setLabel(rec, text)
 	rec.widget:place((p.width - ts.width) / 2, rec.y, ts.width, ts.height)
 end
 
--- The closest record in one of the fixture lists that is still eligible, and how far
--- off it is. Measured flat, ignoring height: a ward post or a gate stands on the
--- same ground the player is walking on with its origin at its base, so all a third
--- axis would add is the player's own height on a slope. Pass maxDist to limit it
--- (the E prompt wants arm's reach); omit it for the nearest anywhere on the map,
--- which is what the objective compass asks for.
-function Main:_nearestRecord(list, eligible, maxDist)
-	if list == nil or self._humanoid == nil then
-		return nil, 0.0
-	end
-
-	-- Only what is in the world now: a chest streamed out of it is not there to be opened.
-	local pp < const > = self._humanoid.transform.translation
-	local best, bestD = nil, (maxDist ~= nil) and (maxDist * maxDist) or math.huge
-	for _, rec in ipairs(list) do
-		if rec.entity.world ~= nil and eligible(rec) then
-			local dx, dz = rec.x - pp.x, rec.z - pp.z
-			local d = dx * dx + dz * dz
-			if d < bestD then
-				best, bestD = rec, d
-			end
-		end
-	end
-	if best == nil then
-		return nil, 0.0
-	end
-	return best, math.sqrt(bestD)
+-- The line an entity's interactable says once it has been used, or nil.
+local function noticeOf(entity)
+	local interactable < const > = entity:getComponent(zombie.InteractableComponent)
+	local notice < const > = (interactable ~= nil) and interactable.notice or ""
+	return (notice ~= "") and notice or nil
 end
 
-local function stillDark(w)
-	return not w.lit
-end
-
-local function stillLocked(g)
-	return not g.unlocked
-end
-
-function Main:_nearestUnlitWard(maxDist)
-	return self:_nearestRecord(self._wards, stillDark, maxDist)
-end
-
-function Main:_nearestLockedGate(maxDist)
-	return self:_nearestRecord(self._gates, stillLocked, maxDist)
-end
-
--- The nearest chest E has anything to do with: one still shut, or one opened with something
--- still left in it. A chest emptied is done with, and the prompt stops offering it.
-function Main:_nearestChest(maxDist)
-	return self:_nearestRecord(self._chests, function(c)
-		if not c.opened then
-			return true
-		end
-		return #self:chestContents(c.id) > 0
-	end, maxDist)
-end
-
-local function notPulled(l)
-	return not l.pulled
-end
-
-function Main:_nearestUnpulledLever(maxDist)
-	return self:_nearestRecord(self._levers, notPulled, maxDist)
-end
-
--- A lever gate still barring the way: asked of the gate itself, since a lever anywhere
--- may have opened it.
-local function leverGateShut(g)
-	local sc < const > = g.entity:getComponent(traktor.world.ScriptComponent)
-	return sc ~= nil and sc.isLocked ~= nil and sc:isLocked()
-end
-
-function Main:_nearestShutLeverGate(maxDist)
-	return self:_nearestRecord(self._leverGates, leverGateShut, maxDist)
-end
-
--- The StageExit the player is standing in that offers itself to E (the cave mouth), or nil.
-function Main:_exitInReach()
-	if self._exits == nil or self._humanoid == nil then
-		return nil
-	end
-	local at < const > = self._humanoid.transform.translation
-	for _, sc in ipairs(self._exits) do
-		if sc:offers(at) then
-			return sc
-		end
-	end
-	return nil
-end
-
--- Pull a lever: the throw and the gate opening are Lever:pull's; kept here is which
--- levers are pulled (for the hot reload) and the line saying what happened -- the
--- lever's own, else the gate's, else a generic one, since the gate may be far away.
-function Main:_pullLever(lever)
-	lever.pulled = true
-	self._pulledLeverIndex[lever.id] = true
-	local sc < const > = lever.entity:getComponent(traktor.world.ScriptComponent)
+-- Pull a lever: the throw, the gate opening and that it stays pulled are Lever:pull's; kept
+-- here is the line saying what happened -- the lever's own, else the gate's, else a generic
+-- one, since the gate may be far away.
+function Main:_pullLever(entity)
+	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
 	if sc == nil then
 		return
 	end
 	local gate < const > = sc:pull(false)
-	local notice = sc:notice()
+	local notice = noticeOf(entity)
 	if notice == nil and gate ~= nil then
-		local gsc < const > = gate:getComponent(traktor.world.ScriptComponent)
-		notice = gsc ~= nil and gsc:notice() or nil
+		notice = noticeOf(gate)
 	end
 	self:_showNotice(notice or (gate ~= nil and "SOMEWHERE, A GATE GRINDS OPEN" or "THE LEVER CLUNKS OVER"))
 	if gate ~= nil then
@@ -2058,21 +1894,20 @@ end
 -- E at a chest. The first time, the lid comes up (Chest:open) and what the level put in the box
 -- becomes what is left in it (Chest:contents); every time, the chest window goes up over it --
 -- unless there is nothing in it to show, which a line says instead.
-function Main:_openChest(chest)
-	local sc < const > = chest.entity:getComponent(traktor.world.ScriptComponent)
-	if not chest.opened then
-		chest.opened = true
-		self._openedChestIndex[chest.id] = true
-		self._chestContents[chest.id] = (sc ~= nil and sc.contents ~= nil) and sc:contents() or {}
+function Main:_openChest(entity)
+	local id < const > = entity.id:format()
+	local sc < const > = entity:getComponent(traktor.world.ScriptComponent)
+	if self._chestContents[id] == nil then
+		self._chestContents[id] = (sc ~= nil and sc.contents ~= nil) and sc:contents() or {}
 		if sc ~= nil then
 			sc:open()
 		end
 	end
-	if #self:chestContents(chest.id) == 0 then
+	if #self:chestContents(id) == 0 then
 		self:_showNotice("THE CHEST IS EMPTY")
 		return
 	end
-	self:_setChestOpen(chest.id, (sc ~= nil and sc.notice ~= nil) and sc:notice() or nil)
+	self:_setChestOpen(id, noticeOf(entity))
 end
 
 -- ---- What the chest window is given ----
@@ -2131,130 +1966,51 @@ function Main:takeAllFromChest(index)
 	return any, #self:chestContents(index) > 0
 end
 
--- Flat distance from the player to one ward record, measured the same way.
-function Main:_wardDistance(w)
-	if w == nil or self._humanoid == nil then
-		return math.huge
-	end
+-- Flat distance from the player to an entity: the compass's measure, height left out.
+function Main:_flatDistance(e)
 	local pp < const > = self._humanoid.transform.translation
-	local dx < const > = w.x - pp.x
-	local dz < const > = w.z - pp.z
+	local q < const > = e.transform.translation
+	local dx < const > = q.x - pp.x
+	local dz < const > = q.z - pp.z
 	return math.sqrt(dx * dx + dz * dz)
 end
 
--- The closest thing E could take into the pack, scanning TAKE_NAMES in priority order: the
--- first name with a candidate in reach wins outright, so standing where a relic and the key are
--- both in reach, E takes the relic -- the night's objective beats the detour. Returns the entity
--- and its Pickup component. How close is close enough is each item's own (Pickup:reach).
+-- Where the compass points while the pack holds what a lock spends -- a relic for a dark post,
+-- the key for a locked gate: the nearest such lock, the highest priority first. Only ever a
+-- suggestion -- with no altar to return to, where a relic goes is the player's decision, and
+-- walking past the needle to a post that covers better ground is the whole point of the
+-- mechanic.
 --
--- "Lying here" is _isLying: visible and not in the pack. Measured in all three axes, unlike the
--- fixture scans above: an item can lie on ground the player is not standing on.
-function Main:_nearestTakeable()
-	local world = self.world.world
-	if world == nil or self._humanoid == nil then
-		return nil, nil
-	end
-
-	local pp < const > = self._humanoid.transform.translation
-	for _, name in ipairs(TAKE_NAMES) do
-		local best, bestSc, bestD = nil, nil, math.huge
-		local i = 0
-		while true do
-			local e = world:getEntity(name, i)
-			if e == nil then
-				break
-			end
-			i = i + 1
-			if self:_isLying(e) then
-				local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-				if sc ~= nil and sc.pressToTake ~= nil and sc:pressToTake() then
-					local q < const > = e.transform.translation
-					local dx, dy, dz = q.x - pp.x, q.y - pp.y, q.z - pp.z
-					local d < const > = dx * dx + dy * dy + dz * dz
-					local r < const > = sc:reach()
-					if d < r * r and d < bestD then
-						best, bestSc, bestD = e, sc, d
-					end
-				end
-			end
-		end
-		if best ~= nil then
-			return best, bestSc
-		end
-	end
-	return nil, nil
-end
-
--- Is this item lying out in the world, there to be taken? A relic spent on a post is hidden
--- (Pickup:show), so visibility rules that one out -- and keeps it from being offered as a ghost
--- with no mesh to walk up to. But a relic in the pack is not always hidden: the one equipped is
--- shown in the off hand, a visible relic within arm's reach of the player, and offering it would
--- put the same relic into the pack a second time. So the pack's own are ruled out by name.
-function Main:_isLying(e)
-	return e.visible and not self._inventory:holds(e)
-end
-
--- The nearest entity called `name` still lying in the world, anywhere on the map -- what the
--- objective compass points at when there is nothing in the pack to take anywhere.
-function Main:_nearestLying(name)
-	local world = self.world.world
-	if world == nil or self._humanoid == nil then
+-- Held on the one it already points at until a rival of the same kind is clearly nearer
+-- (MARKER_SWITCH_MARGIN), and dropped the moment that one is used, so walking the midline
+-- between two dark posts does not flip the needle back and forth -- each flip snaps and flashes
+-- it, and reads as an instruction changing rather than as jitter.
+function Main:_lockObjective()
+	if self._interaction == nil or self._humanoid == nil then
 		return nil
 	end
-	local pp < const > = self._humanoid.transform.translation
-	local best, bestD = nil, math.huge
-	local i = 0
-	while true do
-		local e = world:getEntity(name, i)
-		if e == nil then
-			break
-		end
-		i = i + 1
-		if self:_isLying(e) then
-			local q < const > = e.transform.translation
-			local dx, dz = q.x - pp.x, q.z - pp.z
-			local d < const > = dx * dx + dz * dz
-			if d < bestD then
-				best, bestD = e, d
-			end
-		end
+	local lock = self._interaction:findSpendable(self._humanoid.transform.translation, self._inventory)
+	local held < const > = self._lockHold
+	if held ~= nil and lock ~= nil and held ~= lock and held.enabled and held.owner ~= nil and held.owner.world ~= nil
+		and held.priority == lock.priority
+		and self:_flatDistance(held.owner) <= self:_flatDistance(lock.owner) + MARKER_SWITCH_MARGIN then
+		lock = held
 	end
-	return best
+	self._lockHold = lock
+	return lock ~= nil and lock.owner or nil
 end
 
--- Where the compass points while there are relics in the pack: the nearest still-dark post.
--- Only ever a suggestion -- with no altar to return to, where a relic goes is the player's
--- decision, and walking past the needle to a post that covers better ground is the whole point
--- of the mechanic.
---
--- Held on the post it already points at until a rival is clearly nearer (MARKER_SWITCH_MARGIN),
--- and dropped the moment that post is lit, so walking the midline between two dark posts does
--- not flip the needle back and forth -- each flip snaps and flashes it, and reads as an
--- instruction changing rather than as jitter.
-function Main:_wardObjective()
-	local ward, wd = self:_nearestUnlitWard()
-	local held < const > = self._wardHold
-	if held ~= nil and not held.lit and ward ~= nil and ward ~= held then
-		if self:_wardDistance(held) <= wd + MARKER_SWITCH_MARGIN then
-			ward = held
-		end
-	end
-	self._wardHold = ward
-	return ward ~= nil and ward.entity or nil
-end
-
--- Light `ward` with a relic out of the pack -- which has to be in the off hand, the caller has
--- checked. One comes out of the pack and the relic itself does the rest (Relic:light): it is
--- parked on the post, the post takes light, and the night answers.
+-- Light the ward post `entity` with `relic`, the one its lock took out of the pack (_interact).
+-- The relic itself does the rest (Relic:light): it is parked on the post, the post takes
+-- light, and the night answers.
 --
 -- The relic that comes out is the last one in the pack, so with several carried the one shown
 -- in hand stays there until it is the only one left.
-function Main:_lightWardWithRelic(ward)
-	if self._inventory:count(Items.RELIC) <= 0 then
-		return false
+function Main:_consecrate(entity, relic)
+	local ward < const > = (self._wardOf ~= nil) and self._wardOf[entity.id:format()] or nil
+	if ward == nil then
+		return
 	end
-	local out < const > = self._inventory:removeKept(Items.RELIC, 1)
-	local relic < const > = (out.size > 0) and out:get(0) or nil
 	local sc < const > = (relic ~= nil) and relic:getComponent(traktor.world.ScriptComponent) or nil
 	if sc ~= nil and sc.light ~= nil then
 		sc:light(self, ward)
@@ -2266,29 +2022,18 @@ function Main:_lightWardWithRelic(ward)
 			self:_circleClosed()
 		end
 	end
-	return true
 end
 
--- Turn a key from the pack in `gate`'s lock. The key is spent for good, and the gate opens
--- itself -- the swing, the grind, and the barring getting out of the way are all
--- Gate:unlock's. What is kept here is which gates stand open, as plain data,
--- so it survives a hot reload (resolve re-asserts it).
-function Main:_unlockGate(gate)
-	if self._inventory:remove(Items.KEY, 1) <= 0 then
-		return false
-	end
-	gate.unlocked = true
-	self._unlockedGateIndex[gate.id] = true
-	local gsc < const > = gate.entity:getComponent(traktor.world.ScriptComponent)
+-- A gate whose lock took its key (_interact) opens itself -- the swing, the grind, the
+-- barring getting out of the way and that it stays open are all Gate:unlock's.
+function Main:_unlockGate(entity)
+	local gsc < const > = entity:getComponent(traktor.world.ScriptComponent)
 	if gsc ~= nil then
 		gsc:unlock()
 	end
-	-- Each gate may say its own line (the cave's do, as a property); the cemetery's is the
-	-- default.
-	self:_showNotice((gsc ~= nil and gsc.notice ~= nil and gsc:notice()) or "THE CEMETERY GATE GRINDS OPEN")
+	self:_showNotice(noticeOf(entity) or "THE GATE GRINDS OPEN")
 	-- Ground the night was keeping opens up, and the night notices.
 	self._orchestrator:notify("gateOpened")
-	return true
 end
 
 -- Stand something on whatever is underneath a point, so a relic put down on a
@@ -2340,15 +2085,14 @@ function Main:_purgeWard(ward)
 		return 0
 	end
 
+	local horde < const > = self:_horde(world)
+	if horde == nil then
+		return 0
+	end
 	local r2 < const > = self._purgeRadius * self._purgeRadius
 	local killed = 0
-	local i = 0
-	while true do
-		local e = world:getEntity("Enemy", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
+	for i = 0, horde.size - 1 do
+		local e < const > = horde:get(i)
 		local p < const > = e.transform.translation
 		local dx < const > = p.x - ward.x
 		local dz < const > = p.z - ward.z
@@ -2404,7 +2148,7 @@ function Main:_wakeHive(ward, purged)
 
 	local best, bestD = nil, math.huge
 	for _, h in ipairs(self._hives) do
-		if not h.awake then
+		if not h.fixture.done and not h.waking then
 			local dx < const > = h.x - ward.x
 			local dz < const > = h.z - ward.z
 			local d2 < const > = dx * dx + dz * dz
@@ -2417,8 +2161,9 @@ function Main:_wakeHive(ward, purged)
 		return nil
 	end
 
-	best.awake = true
-	self._awakeHiveIndex[best.id] = true
+	-- Woken when its moment comes (_openHive, Hive:activate, which keeps it so); until then
+	-- it is spoken for.
+	best.waking = true
 	self._pendingHive = {
 		hive = best,
 		delay = ((purged or 0) > 0) and HIVE_WAKE_DELAY or HIVE_WAKE_DELAY_QUIET
@@ -2484,8 +2229,8 @@ end
 -- Called when the shot ends, and by the two things that end the night out from under it
 -- -- dawn breaking and the player dying -- both of which own the camera afterwards. Also
 -- drops a hive that was armed but has not opened yet, since every caller that wants the
--- camera back wants that too: a hive is not worth opening into a Game Over menu. It stays
--- marked in _awakeHiveIndex, so nothing else will pick it up either.
+-- camera back wants that too: a hive is not worth opening into a Game Over menu. Its record
+-- stays spoken for (waking), so nothing else will pick it up either.
 function Main:_endCutscene()
 	self._cutscene = nil
 	self._pendingHive = nil
@@ -2582,11 +2327,10 @@ end
 -- happened, not consecrating ground, and should not re-purge the forest or open a
 -- second hive.
 function Main:_lightWard(ward)
-	if ward == nil or ward.lit then
+	if ward == nil or ward.fixture.done then
 		return false, 0, nil
 	end
-	ward.lit = true
-	self._litWardIndex[ward.id] = true
+	ward.fixture.done = true
 	self._wardsLit = self._wardsLit + 1
 	local sc < const > = ward.entity:getComponent(traktor.world.ScriptComponent)
 	if sc ~= nil then
@@ -2649,7 +2393,7 @@ function Main:_publishWards()
 	local lit = {}
 	if self._wards ~= nil then
 		for _, w in ipairs(self._wards) do
-			if w.lit then
+			if w.fixture.done then
 				table.insert(lit, {
 					x = w.x,
 					z = w.z,
@@ -2796,19 +2540,28 @@ end
 -- Give the minimap its markers. Once only, off the world. The map is the ground around
 -- the player (Scripts/Widgets/Minimap), so there is nothing to fit: only what to draw.
 --
--- Returns false in a scene with nothing to map -- no relics, wards or landmarks -- which
--- leaves the widget hidden and stops _updateMinimap doing anything.
+-- The landmarks are whatever in the world says it is one (zombie.LandmarkComponent): the
+-- chapel, the towers, the altar -- which lost its gameplay role when relics moved to the ward
+-- posts, but is still the biggest monument in the cemetery and so still the thing to navigate
+-- by. Its glyph names the drawing the map gives it -- a pictogram with the name lettered
+-- underneath, one child sprite of MC_MapLandmark each (tools/gen_hud_svg.py); a landmark
+-- without one of its own is drawn as a plain mark with no name.
+--
+-- Returns false in a scene with nothing to map -- no wards or landmarks -- which leaves the
+-- widget hidden and stops _updateMinimap doing anything.
 function Main:_buildMinimap(world)
 	local marks = {}
-	for _, l in ipairs(LANDMARKS) do
-		local e = world:getEntity(l.entity)
-		if e ~= nil then
+	local entities < const > = world:getEntities()
+	for i = 0, entities.size - 1 do
+		local e < const > = entities:get(i)
+		local landmark < const > = e:getComponent(zombie.LandmarkComponent)
+		if landmark ~= nil then
 			local p < const > = e.transform.translation
-			table.insert(marks, { x = p.x, z = p.z, glyph = l.glyph })
+			table.insert(marks, { x = p.x, z = p.z, glyph = landmark.glyph })
 		end
 	end
 
-	if world:getEntity("Relic", 0) == nil and #self._wards == 0 and #marks == 0 then
+	if #self._wards == 0 and #marks == 0 then
 		return false
 	end
 
@@ -2903,29 +2656,29 @@ end
 
 -- What E would do right now, as one answer for both the press (_interact) and the prompt
 -- line (_updateHudText), so the promise and the press can never disagree. Returns a verb --
--- "take", "light", "unlock", "chest", "lever", "exit", or one of the refusals "needRelic", "noBudge",
--- "locked" that only explain -- and whatever it would be done to.
+-- "use", "search", "talk", or "refused" that only explains -- and whatever it would be done to.
 --
+-- What there is to use are the world's interactables (zombie.InteractionWorldComponent), each
+-- saying how near is near enough, how it ranks against the others and what its lock spends.
 -- In this order, and each for a reason:
 --
 --   * Something lying in reach goes into the pack first, so a relic beside a dark post is taken
 --     before the one in hand is spent.
---   * A dark ward in reach takes the relic in the off hand. Only one *equipped* lights it: a
---     relic in the pack is something the player has decided to carry, and one in hand is one
---     they have decided to spend -- which is the whole of what equipping it means.
---   * A locked gate takes a key straight out of the pack; keys are never equipped.
---   * Then a chest -- shut, or opened with something left in it -- and the levers.
---   * Then a way out of the stage -- the cave mouth -- whose line is the exit's own prompt.
+--   * Then the people (PEOPLE_PRIORITY): a body with something on it, and someone to talk to
+--     (Scripts/Npc). Above the fixtures -- a villager standing by a chest is the one being
+--     spoken to.
+--   * Then the fixtures. A dark ward takes the relic in the off hand: its lock wants it
+--     equipped, since a relic in hand is one the player has decided to spend. A locked gate
+--     takes a key straight out of the pack; then a chest, the levers, a way out of the stage.
 --   * Last, the lines that only say why nothing happens: a relic carried but not in hand at a
 --     dark post, a lever gate no key fits, a locked gate with no key.
 function Main:_whatWouldE()
-	local e < const >, item < const > = self:_nearestTakeable()
-	if item ~= nil then
-		return "take", item
+	local at < const > = (self._humanoid ~= nil) and self._humanoid.transform.translation or nil
+	local usable < const > = (self._interaction ~= nil and at ~= nil) and self._interaction:findUsable(at, self._inventory) or nil
+	if usable ~= nil and usable.priority > PEOPLE_PRIORITY then
+		return "use", usable
 	end
 
-	-- A body with something on it, and someone to talk to (Scripts/Npc). Above the fixtures:
-	-- both are people, and a villager standing by a chest is the one being spoken to.
 	local body < const > = self:_nearestBody(Config.npc.lootRange)
 	if body ~= nil then
 		return "search", body
@@ -2935,70 +2688,49 @@ function Main:_whatWouldE()
 		return "talk", talker
 	end
 
-	local inv < const > = self._inventory
-	local ward < const > = self:_nearestUnlitWard(Config.relic.wardRange)
-	if ward ~= nil and Items.is(inv:getEquipped(Items.HAND), Items.RELIC) then
-		return "light", ward
+	if usable ~= nil then
+		return "use", usable
 	end
-
-	local gate < const > = self:_nearestLockedGate(self._gateRange)
-	if gate ~= nil and inv:count(Items.KEY) > 0 then
-		return "unlock", gate
-	end
-
-	local chest < const > = self:_nearestChest(self._chestRange)
-	if chest ~= nil then
-		return "chest", chest
-	end
-
-	local lever < const > = self:_nearestUnpulledLever(self._leverRange)
-	if lever ~= nil then
-		return "lever", lever
-	end
-
-	local exit < const > = self:_exitInReach()
-	if exit ~= nil then
-		return "exit", exit
-	end
-
-	if ward ~= nil and inv:count(Items.RELIC) > 0 then
-		return "needRelic", ward
-	end
-	if self:_nearestShutLeverGate(self._gateRange) ~= nil then
-		return "noBudge", nil
-	end
-	if gate ~= nil then
-		return "locked", gate
+	local refused < const > = (self._interaction ~= nil and at ~= nil) and self._interaction:findRefused(at, self._inventory) or nil
+	if refused ~= nil then
+		return "refused", refused
 	end
 	return nil, nil
 end
 
--- E, edge triggered. See _whatWouldE for what it does and in which order; the pack, the
--- wards, the gates, the chests and the levers each own what doing it means.
+-- Spend one of `item` out of the pack, for a lock (_interact). A kept one comes out as itself --
+-- the relic -- and is handed back, since what it is spent on puts it somewhere.
+function Main:_spend(item)
+	local def < const > = Items.get(item)
+	if def ~= nil and def.keep then
+		local out < const > = self._inventory:removeKept(item, 1)
+		return (out.size > 0) and out:get(0) or nil
+	end
+	self._inventory:remove(item, 1)
+	return nil
+end
+
+-- E, edge triggered. See _whatWouldE for what it does and in which order. Using an interactable
+-- spends what its lock takes out of the pack, then hands over to the entity's own script
+-- (interact): the pickups, the wards, the gates, the chests, the levers and the exits each own
+-- what doing it means.
 function Main:_interact()
 	local verb < const >, target < const > = self:_whatWouldE()
-	if verb == "take" then
-		if not target:collect(self) then
-			self:packFull(target:itemKind())
+	if verb == "use" then
+		local lock < const > = target.owner:getComponent(zombie.LockComponent)
+		local spent < const > = (lock ~= nil) and self:_spend(lock.item) or nil
+		local sc < const > = target.owner:getComponent(traktor.world.ScriptComponent)
+		if sc ~= nil and sc.interact ~= nil then
+			sc:interact(self, spent)
 		end
-	elseif verb == "light" then
-		self:_lightWardWithRelic(target)
-	elseif verb == "unlock" then
-		self:_unlockGate(target)
-	elseif verb == "chest" then
-		self:_openChest(target)
-	elseif verb == "lever" then
-		self:_pullLever(target)
-	elseif verb == "exit" then
-		target:take(self)
 	elseif verb == "search" then
 		local _, rec < const > = self:_nearestBody(Config.npc.lootRange)
 		local name < const > = self:_nameOf(rec)
 		self:_setChestOpen(target, name ~= nil and ("WHAT " .. name .. " CARRIED") or nil, "BODY")
 	elseif verb == "talk" then
 		self:_talkTo(target)   -- Scripts/Npc/Characters
-	elseif verb == "needRelic" then
-		self:_feed("EQUIP A RELIC TO LIGHT THE WARD   TAB")
+	elseif verb == "refused" then
+		self:_feed(target:getRefusal(self._inventory))
 	end
 end
 
@@ -3008,34 +2740,16 @@ function Main:_updateHudText(dt)
 	local prompt = ""
 	if not self._gameOver and not self._nightOver then
 		local verb < const >, target < const > = self:_whatWouldE()
-		if verb == "take" then
-			prompt = "E   " .. target:promptTake()
-		elseif verb == "light" then
-			prompt = "E   LIGHT THE WARD"
-		elseif verb == "unlock" then
-			prompt = "E   UNLOCK THE GATE"
-		elseif verb == "chest" then
-			-- Shut, or opened before with something left in it.
-			prompt = target.opened and "E   SEARCH THE CHEST" or "E   OPEN THE CHEST"
-		elseif verb == "lever" then
-			prompt = "E   PULL THE LEVER"
-		elseif verb == "exit" then
-			prompt = "E   " .. target:prompt()
+		if verb == "use" then
+			prompt = "E   " .. target.prompt
 		elseif verb == "search" then
 			prompt = "E   SEARCH THE BODY"
 		elseif verb == "talk" then
 			local name < const > = self:_nameOf(target)
 			prompt = "E   TALK" .. (name ~= nil and (" TO " .. name) or "")
-		elseif verb == "needRelic" then
-			-- A relic in the pack is not one in hand: the line says how to get it there.
-			prompt = "TAB   EQUIP A RELIC TO LIGHT THE WARD"
-		elseif verb == "noBudge" then
-			-- No key opens it; the line hints that something else does.
-			prompt = "THE GATE WON'T BUDGE"
-		elseif verb == "locked" then
-			-- Not an E: standing at the locked gate with nothing to open it with, the
-			-- line says what is missing rather than offering a press.
-			prompt = "THE GATE IS LOCKED"
+		elseif verb == "refused" then
+			-- Not an E: what stands in the way, said rather than offered as a press.
+			prompt = target:getRefusal(self._inventory)
 		end
 	end
 	self:_setLabel(self._prompt, prompt)
@@ -3547,13 +3261,15 @@ function Main:postUpdate(info)
 	end
 
 	-- Which relic is in the off hand, settled before the view models are placed, since they
-	-- make room for one (Main:isCarrying). The first relic in the pack while one is equipped
-	-- there, nothing otherwise; the one it replaces goes back out of sight -- unless it has left
-	-- the pack, put down or spent, when whatever left it with has already decided whether it
-	-- shows.
+	-- make room for one (Main:isCarrying). The first of the kept item equipped there -- a relic
+	-- is its own entity -- and nothing otherwise; the one it replaces goes back out of sight --
+	-- unless it has left the pack, put down or spent, when whatever left it with has already
+	-- decided whether it shows.
 	if self._humanoid ~= nil then
 		local inv < const > = self._inventory
-		local want < const > = Items.is(inv:getEquipped(Items.HAND), Items.RELIC) and inv:first(Items.RELIC) or nil
+		local held < const > = inv:getEquipped(Items.HAND)
+		local def < const > = Items.get(held)
+		local want < const > = (def ~= nil and def.keep) and inv:first(held) or nil
 		if want ~= self._handRelic then
 			local old < const > = self._handRelic
 			if old ~= nil and inv:holds(old) then
@@ -3611,28 +3327,19 @@ function Main:reload()
 	-- Goes with the humanoid above: it is that entity's event set, and every cue the
 	-- player owns is raised through it (_playCue), so a stale one means a silent night.
 	self._bloodEvents = nil
-	-- Ward records hold live entity handles, so they have to be re-resolved, along with
-	-- every other fixture's (_fixtureOf). resolve() restores which of them burn from
-	-- _litWardIndex, which survives. The compass hold is one of those records, so it goes
-	-- with them.
-	self._fixtureOf = {}
+	-- Ward records hold live entity handles, so they have to be re-resolved, along with the
+	-- world's fixtures; which of them burn is the world's (zombie.FixtureWorldComponent), which
+	-- survives, and every fixture restores itself from it. The compass hold and the
+	-- interactables are live components of the old world, so they go with them.
+	self._fixtures = nil
 	self._wards = nil
-	self._wardHold = nil
+	self._wardOf = nil
+	self._lockHold = nil
+	self._interaction = nil
 	-- The relic shown in hand is found again from the pack on the next postUpdate. The
 	-- pack keeps its relics' entities, exactly as the old off hand kept the one it held.
 	self._handRelic = nil
-	-- Gate records likewise hold live entity handles, so they are re-resolved too.
-	-- resolve() restores which are open from _unlockedGateIndex, which survives, and
-	-- Gate:unlock is safe to re-assert on a gate whose bar is already gone.
-	self._gates = nil
-	-- Chest records too; resolve() restores which stand open from _openedChestIndex, and
-	-- Chest:open(true) snaps the lid back up without putting a second item in the box.
-	self._chests = nil
-	self._levers = nil
-	self._leverGates = nil
-	self._exits = nil
-	-- Hive records likewise; resolve() restores which of them are open from
-	-- _awakeHiveIndex, which survives. A cutscene in flight holds one of those records,
+	-- Hive records likewise. A cutscene in flight holds one of those records,
 	-- so it goes too -- reloading mid-shot cuts back to the player rather than leaving
 	-- the camera pointed at a stale entity, and the hive it was watching carries on
 	-- opening without it.
@@ -3640,8 +3347,8 @@ function Main:reload()
 	self._cutscene = nil
 	-- ...as does a hive still counting down to open, for the same reason: its record is
 	-- one of the ones about to be re-resolved. Reloading in that half-second window
-	-- therefore costs that one hive its opening -- it stays marked awake and dormant --
-	-- which is a fair price for reload never being able to strand a stale entity.
+	-- therefore leaves that one hive dormant, to be woken by the next post lit -- a fair
+	-- price for reload never being able to strand a stale entity.
 	self._pendingHive = nil
 	-- The pickups' books are plain data by entity id and survive; a pickup whose script is
 	-- rebuilt reports itself again (pickupAppeared). What was put down is forgotten: a stack

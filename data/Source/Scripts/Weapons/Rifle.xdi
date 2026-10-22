@@ -48,8 +48,8 @@ local FLASH_TIME < const > = 0.05
 local COLLISION_DEFAULT < const > = 0x00000001
 local COLLISION_INTERACTABLE < const > = 0x00000002
 
-function Rifle:new(context)
-	Weapon.new(self, context)
+function Rifle:new(context, item)
+	Weapon.new(self, context, item)
 
 	-- Ammunition. The rifle holds a magazine, the pack holds the spare rounds, and rounds only
 	-- move from one to the other on a reload. Spent in :attack; the pack is topped up by crates
@@ -67,14 +67,6 @@ end
 
 function Rifle:slot()
 	return "rifle"
-end
-
-function Rifle:item()
-	return Items.keyOf(Items.RIFLE)
-end
-
-function Rifle:ammoItem()
-	return Items.keyOf(Items.ROUNDS)
 end
 
 -- The rifle is a child entity of the player (via GroupComponent). Cache it and its event

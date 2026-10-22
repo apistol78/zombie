@@ -14,22 +14,7 @@
 	<components>
 		<item type="traktor.world.ScriptComponentData" version="2">
 			<class>{6E9AD100-0000-4000-8000-000000000025}</class>
-			<properties type="traktor.PropertyGroup">
-				<value>
-				<item>
-					<first>id</first>
-					<second type="traktor.PropertyString">
-						<value></value>
-					</second>
-				</item>
-				<item>
-					<first>notice</first>
-					<second type="traktor.PropertyString">
-						<value>THE PORTCULLIS RATTLES UP</value>
-					</second>
-				</item>
-				</value>
-			</properties>
+			<properties/>
 			<editorSupport>false</editorSupport>
 		</item>
 		<item type="traktor.world.GroupComponentData">
@@ -226,6 +211,16 @@
 				</tracks>
 			</item>
 			</acts>
+		</item>
+		<item type="zombie.InteractableComponentData">
+			<prompt/>
+			<refusal>THE GATE WON&apos;T BUDGE</refusal>
+			<notice>THE PORTCULLIS RATTLES UP</notice>
+			<range>3.5</range>
+			<priority>45</priority>
+		</item>
+		<item type="zombie.FixtureComponentData">
+			<kind>{00000000-0000-0000-0000-000000000000}</kind>
 		</item>
 	</components>
 </object>

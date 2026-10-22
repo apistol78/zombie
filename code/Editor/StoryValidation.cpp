@@ -29,6 +29,9 @@
 #include "Editor/DialogAsset.h"
 #include "Editor/IPipelineCommon.h"
 #include "Editor/StoryReferences.h"
+#include "Fixtures/FixtureComponentData.h"
+#include "Fixtures/StageExitComponentData.h"
+#include "Interaction/LockComponentData.h"
 #include "ItemContainerComponentData.h"
 #include "ItemData.h"
 #include "ItemPickupComponentData.h"
@@ -36,6 +39,7 @@
 #include "Scene/Editor/SceneAsset.h"
 #include "Steps/FindItemStep.h"
 #include "Steps/TalkStep.h"
+#include "Traits/WeaponTrait.h"
 #include "StoryData.h"
 #include "Waypoints/FirstOfWaypoint.h"
 #include "World/Entity/ExternalEntityData.h"
@@ -61,7 +65,11 @@ bool isOptional(const ISerializable* object, const std::wstring& member)
 		{ type_of< QuestCondition >(), L"step" },				// Only AtStep needs one; checked there.
 		{ type_of< AdvanceQuestAction >(), L"step" },			// Whichever step the quest is at.
 		{ type_of< TalkStep >(), L"line" },						// Any talk.
-		{ type_of< ItemData >(), L"dropEntity" }				// Not dropped.
+		{ type_of< ItemData >(), L"dropEntity" },				// Not dropped.
+		{ type_of< LockComponentData >(), L"slot" },			// Carrying it is enough.
+		{ type_of< WeaponTrait >(), L"ammo" },					// Carries nothing spare.
+		{ type_of< FixtureComponentData >(), L"kind" },			// Not kept track of.
+		{ type_of< StageExitComponentData >(), L"arrival" }		// Where its scene puts the player.
 	};
 	for (const auto& optional : c_optional)
 	{
@@ -232,6 +240,16 @@ public:
 		}
 		else if (auto firstOfWaypoint = dynamic_type_cast< const FirstOfWaypoint* >(object))
 			checkEntries(firstOfWaypoint->getCandidates(), where, L"FirstOfWaypoint candidate");
+		else if (auto container = dynamic_type_cast< const ItemContainerComponentData* >(object))
+		{
+			// A kept item is its own entity, so nothing can hold one.
+			for (const auto& entry : container->getEntries())
+			{
+				Ref< const ItemData > itemData = read< ItemData >(entry.item);
+				if (itemData && itemData->isKeep())
+					error(where, L"ItemContainerComponentData holds " + nameOf(entry.item) + L", which is kept as its own entity.");
+			}
+		}
 
 		if (auto questStep = dynamic_type_cast< const QuestStep* >(object))
 			checkEntries(questStep->getOnComplete(), where, L"action");

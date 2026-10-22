@@ -6,9 +6,9 @@ import(traktor)
 -- Items
 --
 -- How the code asks about an item. The items themselves are zombie.ItemData instances in
--- data/Source/Story/Items (tools/gen_story_items.py), named by the guid of their instance -- the ones the
--- code itself refers to are the constants below: Items.RIFLE is the rifle. The pack is a native
--- zombie.Inventory (the story's, Scripts/Quests/Questing), which reads the same instances.
+-- data/Source/Story/Items (tools/gen_story_items.py), named by the guid of their instance, and the
+-- story (Story/Story) lists every one there is. The pack is a native zombie.Inventory (the story's,
+-- Scripts/Quests/Questing), which reads the same instances.
 --
 -- Lua keeps an item by its key -- the guid as upper-case text, "{D1A10000-...-000000000200}" for
 -- the rifle -- wherever it is plain data or a table key: a chest's contents, what a character
@@ -22,9 +22,9 @@ import(traktor)
 --   Items.all()                    every item, ordered by name
 --   Items.describe(item, count)    "RIFLE", "12 ROUNDS"
 --
--- Only what Items.ALL lists is an item, so asking about anything else is a plain nil rather than
+-- Only what the story lists is an item, so asking about anything else is a plain nil rather than
 -- a failed look-up in the database. A new item is an instance in data/Source/Story/Items and a line
--- here.
+-- in the story's list; what the scripts do with one is its traits', not a constant here.
 --
 -- An entry is a plain table made once out of the ItemData -- what the scripts read, with the
 -- traits flattened:
@@ -32,8 +32,10 @@ import(traktor)
 --   name, plural, info, icon   the text and the picture (Scripts/Widgets/ItemSlot)
 --   stack                      how many share one slot (maxStack)
 --   heal                       HealTrait: health one restores, eaten or drunk from the pack
+--   use                        HealTrait: what doing so is called, "EAT" or "DRINK"
 --   armor                      ArmorTrait: the share of contact damage taken while worn
 --   equip                      EquipTrait: the key of its slot, Items.WEAPON, Items.HAND or Items.BODY
+--   ammo                       WeaponTrait: the key of what it loads from the pack, or nil
 --   event                      EventTrait: what one coming into the pack is called to the
 --                              SpawnOrchestrator (Items.EVENTS)
 --   drop                       the EntityData a dropped one is rebuilt from, or nil
@@ -43,27 +45,9 @@ import(traktor)
 
 Items = Items or {}
 
--- ---- The items ----
---
--- Escaped guids: that is what takes every item into the build, those only ever handed over in a
--- dialog included.
-
-Items.RIFLE = Guid("\{D1A10000-0000-4000-8000-000000000200}")
-Items.MACHINEGUN = Guid("\{D1A10000-0000-4000-8000-000000000201}")
-Items.GRENADE = Guid("\{D1A10000-0000-4000-8000-000000000202}")
-Items.ROUNDS = Guid("\{D1A10000-0000-4000-8000-000000000203}")
-Items.FLASK = Guid("\{D1A10000-0000-4000-8000-000000000204}")
-Items.BREAD = Guid("\{D1A10000-0000-4000-8000-000000000205}")
-Items.COIN = Guid("\{D1A10000-0000-4000-8000-000000000206}")
-Items.HELMET = Guid("\{D1A10000-0000-4000-8000-000000000207}")
-Items.KEY = Guid("\{D1A10000-0000-4000-8000-000000000208}")
-Items.RELIC = Guid("\{D1A10000-0000-4000-8000-000000000209}")
--- One of a kind, for the quests (data/Source/Story/Quests).
-Items.RING = Guid("\{D1A10000-0000-4000-8000-00000000020A}")
-Items.LEDGER = Guid("\{D1A10000-0000-4000-8000-00000000020B}")
-Items.LOCKET = Guid("\{D1A10000-0000-4000-8000-00000000020C}")
-Items.SWORD = Guid("\{D1A10000-0000-4000-8000-00000000020D}")
-Items.CROWN = Guid("\{D1A10000-0000-4000-8000-00000000020E}")
+-- The story whose list says what the items are. Escaped: that is what takes every item into the
+-- build, those only ever handed over in a dialog included.
+local STORY < const > = Guid("\{D1A20000-0000-4000-8000-000000000001}")
 
 -- ---- Slots and events ----
 --
@@ -82,30 +66,35 @@ Items.EVENTS = {
 	["{D1A20000-0000-4000-8000-000000000502}"] = "keyTaken"      -- Events/Key Taken
 }
 
-Items.ALL = {
-	Items.RIFLE, Items.MACHINEGUN, Items.GRENADE, Items.ROUNDS, Items.FLASK, Items.BREAD, Items.COIN,
-	Items.HELMET, Items.KEY, Items.RELIC, Items.RING, Items.LEDGER, Items.LOCKET, Items.SWORD,
-	Items.CROWN
-}
-
--- The binding and the entries are kept on Items itself, not in locals of this chunk: the chunk is
--- run again whenever another script that uses it is loaded, and that would start them over --
--- the stage's binding lost to the next pickup whose script comes in.
+-- The binding, the story's list and the entries are kept on Items itself, not in locals of this
+-- chunk: the chunk is run again whenever another script that uses it is loaded, and that would
+-- start them over -- the stage's binding lost to the next pickup whose script comes in.
 Items._entries = Items._entries or {}   -- key -> entry, made on first look-up
-
-local known = nil       -- key -> true, for every item in Items.ALL
 
 local function textOf(guid)
 	return string.upper(guid:format())
 end
 
+-- key -> true for every item the story lists, read once per binding.
 local function knownKeys()
-	if known == nil then
-		known = {}
-		for _, guid in ipairs(Items.ALL) do
-			known[textOf(guid)] = true
+	if Items._known ~= nil then
+		return Items._known
+	end
+	local resourceManager < const > = Items._resourceManager
+	if resourceManager == nil then
+		return {}
+	end
+	local known = {}
+	local handle < const > = resourceManager:bind(zombie.StoryData, STORY)
+	local story < const > = (handle ~= nil) and handle:get() or nil
+	if story == nil then
+		print("Items: no story to say what the items are")
+	else
+		for i = 0, story.itemCount - 1 do
+			known[textOf(story:getItem(i))] = true
 		end
 	end
+	Items._known = known
 	return known
 end
 
@@ -129,6 +118,7 @@ local function entryOf(key)
 	local equip < const > = data:getTrait(zombie.EquipTrait)
 	local heal < const > = data:getTrait(zombie.HealTrait)
 	local armor < const > = data:getTrait(zombie.ArmorTrait)
+	local weapon < const > = data:getTrait(zombie.WeaponTrait)
 	local event < const > = data:getTrait(zombie.EventTrait)
 	e = {
 		id = id,
@@ -140,8 +130,10 @@ local function entryOf(key)
 		icon = data.icon,
 		stack = data.maxStack,
 		heal = (heal ~= nil) and heal.amount or nil,
+		use = (heal ~= nil and heal.verb ~= "") and heal.verb or nil,
 		armor = (armor ~= nil) and armor.fraction or nil,
 		equip = (equip ~= nil and equip.slot ~= nil) and textOf(equip.slot) or nil,
+		ammo = (weapon ~= nil and weapon.ammo ~= nil) and textOf(weapon.ammo) or nil,
 		event = (event ~= nil and event.event ~= nil) and Items.EVENTS[textOf(event.event)] or nil,
 		drop = data.dropEntity,
 		keep = data.keep,
@@ -155,6 +147,7 @@ function Items.bind(resourceManager)
 	if resourceManager ~= Items._resourceManager then
 		Items._resourceManager = resourceManager
 		Items._entries = {}
+		Items._known = nil
 	end
 end
 

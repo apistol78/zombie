@@ -377,5 +377,20 @@
 			</item>
 			</acts>
 		</item>
+		<item type="zombie.InteractableComponentData">
+			<prompt>UNLOCK THE GATE</prompt>
+			<refusal>THE GATE IS LOCKED</refusal>
+			<notice>THE CEMETERY GATE GRINDS OPEN</notice>
+			<range>3.5</range>
+			<priority>40</priority>
+		</item>
+		<item type="zombie.LockComponentData">
+			<item>{D1A10000-0000-4000-8000-000000000208}</item>
+			<slot>{00000000-0000-0000-0000-000000000000}</slot>
+			<unequippedRefusal/>
+		</item>
+		<item type="zombie.FixtureComponentData">
+			<kind>{00000000-0000-0000-0000-000000000000}</kind>
+		</item>
 	</components>
 </object>

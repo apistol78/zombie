@@ -40,22 +40,7 @@
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
 			<class>{A19B36EA-B5F7-40F0-B7D1-25264A60888A}</class>
-			<properties type="traktor.PropertyGroup">
-				<value>
-				<item>
-					<first>gate</first>
-					<second type="traktor.PropertyString">
-						<value></value>
-					</second>
-				</item>
-				<item>
-					<first>notice</first>
-					<second type="traktor.PropertyString">
-						<value></value>
-					</second>
-				</item>
-				</value>
-			</properties>
+			<properties/>
 			<editorSupport>false</editorSupport>
 		</item>
 		<item type="traktor.world.EventSetComponentData">
@@ -92,6 +77,19 @@
 					</components>
 				</item>
 			</entityData>
+		</item>
+		<item type="zombie.InteractableComponentData">
+			<prompt>PULL THE LEVER</prompt>
+			<refusal/>
+			<notice/>
+			<range>1.8</range>
+			<priority>20</priority>
+		</item>
+		<item type="zombie.LeverComponentData">
+			<target/>
+		</item>
+		<item type="zombie.FixtureComponentData">
+			<kind>{00000000-0000-0000-0000-000000000000}</kind>
 		</item>
 	</components>
 </object>

@@ -21,7 +21,7 @@
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.StoryData", 1, StoryData, ISerializable)
+T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.StoryData", 2, StoryData, ISerializable)
 
 void StoryData::serialize(ISerializer& s)
 {
@@ -32,6 +32,8 @@ void StoryData::serialize(ISerializer& s)
 		s >> resource::Member< DialogData >(L"defaultDialog", defaultDialog);
 	}
 	s >> MemberAlignedVector< ItemStack, MemberComposite< ItemStack > >(L"startKit", m_startKit);
+	if (s.getVersion< StoryData >() >= 2)
+		s >> MemberAlignedVector< resource::Id< ItemData >, resource::Member< ItemData > >(L"items", m_items);
 }
 
 void StoryData::ItemStack::serialize(ISerializer& s)

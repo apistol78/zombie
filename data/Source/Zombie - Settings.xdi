@@ -6,10 +6,6 @@
 			<second type="traktor.PropertyGroup">
 				<value>
 					<item>
-						<first>reachRange</first>
-						<second type="traktor.PropertyFloat"><value>1.8</value></second>
-					</item>
-					<item>
 						<first>slots</first>
 						<second type="traktor.PropertyInteger"><value>8</value></second>
 					</item>
@@ -336,28 +332,6 @@
 							<values>
 							</values>
 						</second>
-					</item>
-				</value>
-			</second>
-		</item>
-		<item>
-			<first>key</first>
-			<second type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>gateRange</first>
-						<second type="traktor.PropertyFloat"><value>3.5</value></second>
-					</item>
-				</value>
-			</second>
-		</item>
-		<item>
-			<first>lever</first>
-			<second type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>reachRange</first>
-						<second type="traktor.PropertyFloat"><value>1.8</value></second>
 					</item>
 				</value>
 			</second>
@@ -734,6 +708,10 @@
 						<second type="traktor.PropertyFloat"><value>0.6</value></second>
 					</item>
 					<item>
+						<first>interactPriority</first>
+						<second type="traktor.PropertyInteger"><value>75</value></second>
+					</item>
+					<item>
 						<first>lodFar</first>
 						<second type="traktor.PropertyFloat"><value>50.0</value></second>
 					</item>
@@ -1000,10 +978,6 @@
 			<second type="traktor.PropertyGroup">
 				<value>
 					<item>
-						<first>reachRange</first>
-						<second type="traktor.PropertyFloat"><value>2.2</value></second>
-					</item>
-					<item>
 						<first>takeRange</first>
 						<second type="traktor.PropertyFloat"><value>1.2</value></second>
 					</item>
@@ -1071,14 +1045,6 @@
 					<item>
 						<first>markerSwitchMargin</first>
 						<second type="traktor.PropertyFloat"><value>4.0</value></second>
-					</item>
-					<item>
-						<first>reachRange</first>
-						<second type="traktor.PropertyFloat"><value>2.2</value></second>
-					</item>
-					<item>
-						<first>wardRange</first>
-						<second type="traktor.PropertyFloat"><value>3.5</value></second>
 					</item>
 				</value>
 			</second>

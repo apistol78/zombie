@@ -51,8 +51,9 @@ import(traktor)
 
 Weapon = Weapon or class("Weapon")
 
-function Weapon:new(context)
+function Weapon:new(context, item)
 	self._context = context
+	self._item = Items.keyOf(item)   -- the item in the pack that is this weapon; see :item
 	self._interval = 0.0   -- minimum seconds between uses; the subclass sets it
 	self._cooldown = 0.0   -- ...and counts down to the next one being allowed
 	self._infiniteAmmo = false   -- the H cheat; see :setInfiniteAmmo
@@ -65,17 +66,18 @@ function Weapon:slot()
 	return "weapon"
 end
 
--- Which item in the pack *is* this weapon, as its key (Items.keyOf(Items.RIFLE)). Having one in
--- the pack is owning the weapon, and equipping it is drawing it -- the loadout asks nothing else.
--- Every weapon in the loadout says which; one that is not an item at all answers nil.
+-- Which item in the pack *is* this weapon, as its key: the one the loadout made it with
+-- (Scripts/Weapons/Loadout). Having one in the pack is owning the weapon, and equipping it is
+-- drawing it -- the loadout asks nothing else. One that is not an item at all answers nil.
 function Weapon:item()
-	return nil
+	return self._item
 end
 
--- The item this weapon loads from the pack -- "rounds" for both firearms -- or nil for one that
--- carries nothing spare. Only read by :reserve and :_takeFromPack below.
+-- The item this weapon loads from the pack -- rounds for both firearms, as their items' WeaponTrait
+-- says -- or nil for one that carries nothing spare. Only read by :reserve and :_takeFromPack below.
 function Weapon:ammoItem()
-	return nil
+	local def < const > = Items.get(self._item)
+	return (def ~= nil) and def.ammo or nil
 end
 
 -- How many spare rounds are in the pack for this weapon: what the HUD writes after the slash,

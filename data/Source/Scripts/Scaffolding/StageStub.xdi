@@ -25,6 +25,11 @@ import(traktor)
 StageStub = StageStub or class("StageStub")
 
 -- The game's story, as Scripts/Quests/Questing has it.
+-- The sample items (data/Source/Story/Items).
+local RIFLE < const > = Guid("{D1A10000-0000-4000-8000-000000000200}")
+local GRENADE < const > = Guid("{D1A10000-0000-4000-8000-000000000202}")
+local ROUNDS < const > = Guid("{D1A10000-0000-4000-8000-000000000203}")
+
 local STORY < const > = Guid("\{D1A20000-0000-4000-8000-000000000001}")
 
 -- The pack's stack in slot `i`, counted from 1 as the cells are (the pack itself counts from 0),
@@ -48,9 +53,9 @@ end
 -- A pack with something in it to preview against: a weapon, its rounds and a grenade. The
 -- night itself starts empty-handed (Config.inventory.start), which would leave nothing to look at.
 local SAMPLE_KIT < const > = {
-	{ Items.RIFLE, 1 },
-	{ Items.ROUNDS, 24 },
-	{ Items.GRENADE, 1 }
+	{ RIFLE, 1 },
+	{ ROUNDS, 24 },
+	{ GRENADE, 1 }
 }
 
 -- Start the story again, the pack holding the sample kit and no quest given. A new Story rather

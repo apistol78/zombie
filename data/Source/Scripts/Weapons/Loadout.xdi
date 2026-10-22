@@ -26,9 +26,10 @@ import(traktor)
 --     and if it was the one in hand the trigger is handed to the next weapon owned.
 --   * A weapon that arrives while the hands are empty is drawn.
 --
--- Adding a weapon is a Weapon subclass, one entry in the list below and its item in
--- Scripts/Items/Items: it gets a place in the wheel, a HUD seat, its frames ticked and its view
--- model placed and stowed, with nothing to change in Main or the HUD layout.
+-- Adding a weapon is a Weapon subclass, one entry in the list below naming its item (with a
+-- WeaponTrait saying what it loads), and the item in the story's list: it gets a place in the
+-- wheel, a HUD seat, its frames ticked and its view model placed and stowed, with nothing to
+-- change in Main or the HUD layout.
 --
 -- Two rules here are deliberate and worth keeping:
 --
@@ -41,6 +42,11 @@ import(traktor)
 
 Loadout = Loadout or class("Loadout")
 
+-- The item each weapon is (data/Source/Story/Items).
+local RIFLE < const > = Guid("\{D1A10000-0000-4000-8000-000000000200}")
+local MACHINEGUN < const > = Guid("\{D1A10000-0000-4000-8000-000000000201}")
+local GRENADE < const > = Guid("\{D1A10000-0000-4000-8000-000000000202}")
+
 function Loadout:new(context)
 	self._context = context
 
@@ -48,9 +54,9 @@ function Loadout:new(context)
 	-- because it is what the night starts in the player's hands, then the two things that
 	-- answer a crowd rather than a target. Only the ones in the pack are on the wheel.
 	self._weapons = {
-		Rifle(context),
-		MachineGun(context),
-		Grenades(context)
+		Rifle(context, RIFLE),
+		MachineGun(context, MACHINEGUN),
+		Grenades(context, GRENADE)
 	}
 
 	-- Not a weapon of its own: the alternate the right button always reaches, whatever is drawn.

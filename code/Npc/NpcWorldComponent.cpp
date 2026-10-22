@@ -8,6 +8,7 @@
  */
 #include "Npc/NpcWorldComponent.h"
 
+#include "ActorComponent.h"
 #include "Animation/SkeletonComponent.h"
 #include "Core/Class/Boxes/BoxedVector4.h"
 #include "Core/Class/IRuntimeDelegate.h"
@@ -53,6 +54,7 @@ void NpcWorldComponent::destroy()
 	m_damageHandler = nullptr;
 	m_blows.clear();
 	m_player = nullptr;
+	m_npcs.clear();
 	m_crowd.clear();
 	m_crowdIndex.clear();
 	m_playerMember = Member();
@@ -70,8 +72,17 @@ void NpcWorldComponent::update(world::World* world, const world::UpdateParams& u
 
 	m_crowd.resize(0);
 	m_crowdIndex.reset();
-	gather(L"Enemy", false);
-	gather(L"Npc", true);
+	for (auto npc : m_npcs)
+	{
+		world::Entity* entity = npc->getOwner();
+		if (!entity)
+			continue;
+
+		Member& member = m_crowd.push_back();
+		snapshot(entity, member);
+		member.placed = entity->getComponent< ActorComponent >() != nullptr;
+		m_crowdIndex[entity] = (uint32_t)(m_crowd.size() - 1);
+	}
 
 	m_playerMember = Member();
 	if (m_player)
@@ -83,6 +94,16 @@ void NpcWorldComponent::update(world::World* world, const world::UpdateParams& u
 		if (!m_frozen)
 			drawCharacters();
 	}
+}
+
+void NpcWorldComponent::add(NpcComponent* npc)
+{
+	m_npcs.push_back(npc);
+}
+
+void NpcWorldComponent::remove(NpcComponent* npc)
+{
+	m_npcs.remove(npc);
 }
 
 const PropertyGroup* NpcWorldComponent::getSettings() const
@@ -199,6 +220,30 @@ RouteComponent* NpcWorldComponent::findRoute(const Guid& id)
 	return route;
 }
 
+RefArray< world::Entity > NpcWorldComponent::getPeople() const
+{
+	RefArray< world::Entity > people;
+	for (auto npc : m_npcs)
+	{
+		world::Entity* entity = npc->getOwner();
+		if (entity && entity->getComponent< ActorComponent >() != nullptr)
+			people.push_back(entity);
+	}
+	return people;
+}
+
+RefArray< world::Entity > NpcWorldComponent::getHorde() const
+{
+	RefArray< world::Entity > horde;
+	for (auto npc : m_npcs)
+	{
+		world::Entity* entity = npc->getOwner();
+		if (entity && entity->getComponent< ActorComponent >() == nullptr)
+			horde.push_back(entity);
+	}
+	return horde;
+}
+
 void NpcWorldComponent::dealBlows()
 {
 	AlignedVector< Blow > blows;
@@ -214,17 +259,6 @@ void NpcWorldComponent::dealBlows()
 	{
 		const Any argv[] = { Any::fromObject(blow.target), Any::fromFloat(blow.amount), CastAny< Vector4 >::set(blow.at), Any::fromObject(blow.source) };
 		m_damageHandler->call(sizeof_array(argv), argv);
-	}
-}
-
-void NpcWorldComponent::gather(const wchar_t* list, bool placed)
-{
-	for (auto entity : m_world->getEntities(list))
-	{
-		Member& member = m_crowd.push_back();
-		snapshot(entity, member);
-		member.placed = placed;
-		m_crowdIndex[entity] = (uint32_t)(m_crowd.size() - 1);
 	}
 }
 

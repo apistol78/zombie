@@ -21,6 +21,10 @@ import(traktor)
 
 DialogViewScaffolding = DialogViewScaffolding or class("DialogViewScaffolding", GameScaffolding)
 
+-- The sample items (data/Source/Story/Items).
+local COIN < const > = Guid("{D1A10000-0000-4000-8000-000000000206}")
+local RING < const > = Guid("{D1A10000-0000-4000-8000-00000000020A}")
+
 local REOPEN < const > = 1.0   -- how long the window stays closed (s)
 
 -- The actors (data/Source/Story/Actors) and the quests (Story/Quests) the scenes are about.
@@ -70,12 +74,12 @@ function DialogViewScaffolding:show()
 	local log < const > = stage:questLog()
 	if scene.ring then
 		log:start(RING_QUEST)
-		stage:inventory():add(Items.RING, 1)
+		stage:inventory():add(RING, 1)
 		stage:story():update()
 	end
 	if scene.locket then
 		log:start(LOCKET_QUEST)
-		stage:inventory():add(Items.COIN, 3)
+		stage:inventory():add(COIN, 3)
 	end
 
 	local c < const > = stage:story():talk(scene.actor)

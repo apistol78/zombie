@@ -51,11 +51,9 @@ local COLLISION_DEFAULT < const > = 0x00000001
 -- what is in it -- terrain, gravestones, walls.
 local QUERY_DYNAMIC < const > = 2
 
--- Who a blast catches: the horde, and the characters placed in the scene.
-local LISTS < const > = { "Enemy", "Npc" }
 
-function Grenades:new(context)
-	Weapon.new(self, context)
+function Grenades:new(context, item)
+	Weapon.new(self, context, item)
 
 	self._interval = Config.grenade.interval  -- minimum seconds between throws
 	self._live = {}                           -- thrown and still in the air or ticking
@@ -81,13 +79,9 @@ function Grenades:slot()
 	return "grenades"
 end
 
-function Grenades:item()
-	return Items.keyOf(Items.GRENADE)
-end
-
 -- How many are in the pack.
 function Grenades:_count()
-	return self._context:inventory():count(Items.GRENADE)
+	return self._context:inventory():count(self:item())
 end
 
 -- The grenade in the player's hand: the same entity the throw builds, kept aside as a view
@@ -152,11 +146,11 @@ end
 -- pack has no room to put them back, in which case it runs out like any other.
 function Grenades:_topUp()
 	local count < const > = self:_count()
-	local full < const > = Items.get(Items.GRENADE).stack
+	local full < const > = Items.get(self:item()).stack
 	if count <= 0 or count >= full then
 		return
 	end
-	self._context:inventory():add(Items.GRENADE, full - count)
+	self._context:inventory():add(self:item(), full - count)
 end
 
 -- There is an aim worth a reticle for as long as there is something to throw at it.
@@ -192,7 +186,7 @@ function Grenades:attack()
 	-- one, what hands the trigger to the next weapon owned. The rest of the throw goes on
 	-- regardless: the grenade has left the hand.
 	self._cooldown = self._interval
-	self._context:inventory():remove(Items.GRENADE, 1)
+	self._context:inventory():remove(self:item(), 1)
 
 	context:kickCrosshair()
 
@@ -320,16 +314,14 @@ function Grenades:_explode(g)
 	-- script but not `length2`, and one square root per zombie per explosion is not worth
 	-- unpacking the components by hand to avoid.
 	--
-	-- The horde and the characters placed in the scene alike: a blast does not ask whose side
-	-- anyone is on. Who threw it does count, though -- a villager caught in it knows who to blame.
-	for _, list in ipairs(LISTS) do
-		local i = 0
-		while true do
-			local e = world:getEntity(list, i)
-			if e == nil then
-				break
-			end
-			i = i + 1
+	-- The horde and the world's own people alike (zombie.NpcWorldComponent): a blast does not ask
+	-- whose side anyone is on. Who threw it does count, though -- a villager caught in it knows who
+	-- to blame.
+	local npcWorld < const > = world:getComponent(zombie.NpcWorldComponent)
+	local lists < const > = (npcWorld ~= nil) and { npcWorld:getHorde(), npcWorld:getPeople() } or {}
+	for _, list in ipairs(lists) do
+		for i = 0, list.size - 1 do
+			local e < const > = list:get(i)
 			if not context:isEnemyDead(e) then
 				local p < const > = e.transform.translation
 				local d < const > = (p - centre).length

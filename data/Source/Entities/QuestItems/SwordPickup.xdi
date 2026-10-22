@@ -33,21 +33,19 @@
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
 			<class>{8ED12B6C-86D0-4AD1-AC4A-7B5B60AB4AF0}</class>
-			<properties type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>take</first>
-						<second type="traktor.PropertyString">
-							<value>press</value>
-						</second>
-					</item>
-				</value>
-			</properties>
+			<properties/>
 			<editorSupport>false</editorSupport>
 		</item>
 		<item type="zombie.ItemPickupComponentData">
 			<item>{D1A10000-0000-4000-8000-00000000020D}</item>
 			<count>1</count>
+		</item>
+		<item type="zombie.InteractableComponentData">
+			<prompt/>
+			<refusal/>
+			<notice/>
+			<range>2.2</range>
+			<priority>100</priority>
 		</item>
 	</components>
 </object>

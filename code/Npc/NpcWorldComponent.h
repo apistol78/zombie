@@ -14,6 +14,7 @@
 #include "Core/Thread/Semaphore.h"
 #include "Core/Math/Vector4.h"
 #include "Core/Ref.h"
+#include "Core/RefArray.h"
 #include "Resource/Proxy.h"
 #include "World/IWorldComponent.h"
 
@@ -79,7 +80,7 @@ public:
 		NpcComponent* npc = nullptr;
 		Vector4 position = Vector4::zero();
 		Vector4 head = Vector4::zero();
-		bool placed = false;
+		bool placed = false;	//!< With an actor; one of the world's own people rather than the horde.
 	};
 
 	explicit NpcWorldComponent(const resource::Proxy< PropertyGroup >& settings, physics::PhysicsManager* physicsManager);
@@ -87,6 +88,10 @@ public:
 	virtual void destroy() override final;
 
 	virtual void update(world::World* world, const world::UpdateParams& update) override final;
+
+	void add(NpcComponent* npc);
+
+	void remove(NpcComponent* npc);
 
 	/*! Game play settings, null until bound. */
 	const PropertyGroup* getSettings() const;
@@ -139,7 +144,7 @@ public:
 
 	world::Entity* getPlayer() const { return m_player; }
 
-	/*! Every character of the world, in the "Enemy" and "Npc" lists. */
+	/*! Every character of the world, as this step began. */
 	const AlignedVector< Member >& getCrowd() const { return m_crowd; }
 
 	/*! Character, or the player, of entity; null if neither. */
@@ -147,6 +152,12 @@ public:
 
 	/*! Route of entity id, null if it has none. */
 	RouteComponent* findRoute(const Guid& id);
+
+	/*! Characters with an actor; the world's own people. */
+	RefArray< world::Entity > getPeople() const;
+
+	/*! Characters without an actor; the horde. */
+	RefArray< world::Entity > getHorde() const;
 
 private:
 	struct Blow
@@ -178,6 +189,7 @@ private:
 	AlignedVector< Blow > m_blows;
 	float m_playerDamage = 0.0f;
 	Ref< world::Entity > m_player;
+	RefArray< NpcComponent > m_npcs;
 	AlignedVector< Member > m_crowd;
 	SmallMap< const world::Entity*, uint32_t > m_crowdIndex;
 	Member m_playerMember;
@@ -185,7 +197,6 @@ private:
 
 	void dealBlows();
 
-	void gather(const wchar_t* list, bool placed);
 
 	void snapshot(world::Entity* entity, Member& outMember) const;
 

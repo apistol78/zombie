@@ -19,17 +19,16 @@ import(traktor)
 --
 -- What a chest holds is the level designer's: a zombie.ItemContainerComponentData on the
 -- placed chest, so each chest in a scene can hold something different -- the scene's
--- ExternalEntityData wrapper carries it next to its own ScriptComponentData (class Scripts/Chest).
--- No container, or an empty one: the chest is empty, which is a thing worth placing too. A relic
--- cannot go in a chest -- relics are their own entities out in the world (Items: `keep`) -- and is
--- left out with a warning, as is anything that is no item.
+-- ExternalEntityData wrapper carries it. No container, or an empty one: the chest is empty,
+-- which is a thing worth placing too. A relic cannot go in a chest -- relics are their own
+-- entities out in the world (Items: `keep`), and the build refuses a container holding one --
+-- and anything that is no item is left out with a warning.
 --
--- What the ScriptComponentData's properties still say:
+-- What E says at it, and a line of its own shown under the chest window's title -- "THE
+-- SEXTON'S KEY", say -- are its zombie.InteractableComponentData (prompt, notice); a wrapper
+-- with a line of its own carries its own. E calls interact() (Main:_interact).
 --
---   notice  (string, optional) a line of its own, shown under the chest window's title --
---           "THE SEXTON'S KEY", say.
---
--- Attach to an entity named "Chest" (the name is what Main collects them by, as for wards and
+-- Attach to an entity named "Chest" (the name is what Main keeps its books by, as for wards and
 -- gates) carrying a TheaterEntityComponent with an act named ACT. In Entities/Chest/Chest that
 -- act pitches the GroupComponent's "Lid" child (the lid mesh, origin on the hinge, extending
 -- +Z) back about the hinge, and carries the creak as an event key at its start, so the swing
@@ -37,28 +36,16 @@ import(traktor)
 -- the chest window has the game paused (that pause is only the scripts' _paused flag), so the
 -- lid is seen coming up behind it. Models: tools/gen_chest.py.
 --
--- open() is idempotent and takes instant=true -- the reload-restore path, the same contract as
--- Gate:unlock -- which plays OPENED instead: a silent act that only holds the lid open. A script
--- hot reload finds the lid already there, but a stage come back to later in the night is a fresh
--- world whose chests are built shut, and replaying ACT would creak them again.
+-- open() is idempotent and takes instant=true -- the restore path, the same contract as
+-- Gate:unlock -- which plays OPENED instead: a silent act that only holds the lid open. Open is
+-- kept by the world (the entity's zombie.FixtureComponent): a script hot reload finds the lid
+-- already there, but a chest streamed back in, or a stage come back to later in the night, is
+-- built shut, opens itself again from what the world says, and must not creak doing it.
 
 Chest = Chest or class("Chest", traktor.world.ScriptComponent)
 
 local ACT < const > = "Open"       -- the act that swings the lid up and creaks the hinges
 local OPENED < const > = "Opened"  -- ...and the silent one that only holds it open
-
--- A string property off this component's ScriptComponentData, or nil.
-function Chest:_property(name)
-	local props < const > = self.properties
-	if props == nil then
-		return nil
-	end
-	local v < const > = props:getProperty(name)
-	if type(v) ~= "string" or v == "" then
-		return nil
-	end
-	return v
-end
 
 -- What the level put in the box (its ItemContainerComponent), as a fresh list of { kind, count }
 -- in the order it was written. A new list every call: the Stage takes one when the chest is first
@@ -83,18 +70,11 @@ function Chest.listOf(entity, who)
 		local key < const > = Items.keyOf(item)
 		if key == nil then
 			print(who .. ": " .. ((item ~= nil) and item:format() or "nothing") .. " is no item; left out.")
-		elseif Items.is(key, Items.RELIC) then
-			print(who .. ": a relic cannot be kept by anyone; left out.")
 		elseif box:getCount(i) > 0 then
 			table.insert(list, { kind = key, count = box:getCount(i) })
 		end
 	end
 	return list
-end
-
--- The level's own line for this chest, or nil.
-function Chest:notice()
-	return self:_property("notice")
 end
 
 -- Play the act, which is the whole of opening: the lid and the creak are both on it. A chest
@@ -106,6 +86,17 @@ function Chest:open(instant)
 	end
 	self._opened = true
 
+	local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+	if fixture ~= nil then
+		fixture.done = true
+	end
+
+	-- Opened once, it is searched from then on.
+	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)
+	if interactable ~= nil then
+		interactable.prompt = "SEARCH THE CHEST"
+	end
+
 	local performance < const > = self.owner:getComponent(traktor.theater.TheaterEntityComponent)
 	if performance ~= nil then
 		performance:play(instant and OPENED or ACT)
@@ -114,6 +105,30 @@ end
 
 function Chest:isOpen()
 	return self._opened == true
+end
+
+-- E at the chest: the stage opens it and puts up the window (Main:_openChest).
+function Chest:interact(context)
+	context:_openChest(self.owner)
+end
+
+-- Offered to E while there is anything to do here: shut, or opened with something still in it
+-- (Main:chestContents, which leaves out what a quest has not asked for yet).
+function Chest:update(context, totalTime, deltaTime)
+	-- Opened already as far as the world is concerned.
+	if not self._opened then
+		local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+		if fixture ~= nil and fixture.done then
+			self:open(true)
+		end
+	end
+	if context == nil or context.chestContents == nil or not self._opened then
+		return
+	end
+	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)
+	if interactable ~= nil then
+		interactable.enabled = #context:chestContents(self.owner.id:format()) > 0
+	end
 end
 ]]></text>
 </object>

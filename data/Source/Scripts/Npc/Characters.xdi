@@ -263,13 +263,10 @@ end
 function Main:_collectNpcs(world)
 	self._npcs = {}
 	self._npcKeyOf = {}
-	local i = 0
-	while true do
-		local e < const > = world:getEntity("Npc", i)
-		if e == nil then
-			break
-		end
-		i = i + 1
+	local npcWorld < const > = world:getComponent(zombie.NpcWorldComponent)
+	local people < const > = (npcWorld ~= nil) and npcWorld:getPeople() or nil
+	for i = 0, ((people ~= nil) and people.size or 0) - 1 do
+		local e < const > = people:get(i)
 		local npc < const > = e:getComponent(zombie.NpcComponent)
 		if npc ~= nil then
 			local p < const > = e.transform.translation

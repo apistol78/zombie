@@ -143,5 +143,20 @@
 			<eventCollide/>
 			<transformFilter>0</transformFilter>
 		</item>
+		<item type="zombie.InteractableComponentData">
+			<prompt>LIGHT THE WARD</prompt>
+			<refusal/>
+			<notice/>
+			<range>3.5</range>
+			<priority>50</priority>
+		</item>
+		<item type="zombie.LockComponentData">
+			<item>{D1A10000-0000-4000-8000-000000000209}</item>
+			<slot>{D1A10000-0000-4000-8000-000000000601}</slot>
+			<unequippedRefusal>TAB   EQUIP A RELIC TO LIGHT THE WARD</unequippedRefusal>
+		</item>
+		<item type="zombie.FixtureComponentData">
+			<kind>{D1A20000-0000-4000-8000-000000000700}</kind>
+		</item>
 	</components>
 </object>

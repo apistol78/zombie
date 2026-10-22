@@ -39,9 +39,10 @@ SaveGame = SaveGame or {}
 -- written by a different version is ignored rather than fed to a game it no longer fits: 4 since
 -- the pack and the quests became a native zombie.Story, which saves itself; 5 since the
 -- story saves equip slots, steps and said responses by guid; 6 since the world books key
--- fixtures and pickups by entity id.
+-- fixtures and pickups by entity id; 7 since the world keeps what is done with its fixtures
+-- (zombie.FixtureWorldComponent) and an exit's arrival is a place.
 local SAVE_ID < const > = "night"
-local VERSION < const > = 6
+local VERSION < const > = 7
 
 local function saveData(environment)
 	if environment == nil then

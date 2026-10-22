@@ -6,64 +6,45 @@ import(traktor)
 -- StageExit
 --
 -- A way out of the stage. When the player walks into this entity's VolumeComponent the
--- stage is asked to leave for the destination named by the "target" property, through
--- the loading screen (Main:leaveStage). "target" is one of the Loading stage's own
--- transitions -- TERRAIN, CAVE or STARTUP -- and anything else lands on STARTUP, since
--- Loading falls back to it.
+-- stage is asked to leave for where its zombie.StageExitComponentData leads, through the
+-- loading screen (Main:leaveStage):
+--
+--   target     one of the Loading stage's own transitions -- TERRAIN, CAVE or STARTUP -- and
+--              anything else lands on STARTUP, since Loading falls back to it.
+--   arrival    the place (Story/Places) to stand the player on in the destination's world --
+--              facing the way the entity there faces -- or none, to arrive wherever that scene
+--              puts its Humanoid. The cave's exit leads to Scene 2's CAVE RETURN, in front of
+--              the cave mouth.
 --
 -- Placed per scene as an ExternalEntityData of Entities/Cave/Stage Exit, whose wrapper
--- carries its own VolumeComponentData (the size of the trigger) and ScriptComponentData
--- (this class with "target" and an optional "notice" line shown on the way out):
+-- carries its own VolumeComponentData (the size of the trigger) and StageExitComponentData:
 -- ResolveExternal swaps both in for the referenced entity's, so one asset serves every
 -- exit. The cave's sits on the ledge outside Cave_Entrance (tools/gen_cave_layout.py).
 --
--- Two more properties, both optional:
---
---   prompt     Offered rather than taken: standing in the volume puts "E   <prompt>" on the
---              prompt line like any other interaction, and only pressing E leaves -- Main
---              finds the exits that offer (:offers) in its E scan (_whatWouldE) and takes one
---              through :take. Scene 2's cave mouth offers ("ENTER THE CAVE"); the way out of
---              the cave does not, it is walked through.
---   spawn      The name of an entity in the destination's world to stand the player on when
---              they arrive -- facing the way it faces. Without it they arrive wherever that
---              scene puts its Humanoid. The cave's exit names Scene 2's "CaveReturn", in
---              front of the cave mouth.
+-- An exit whose wrapper also carries a zombie.InteractableComponentData is offered rather
+-- than taken: near enough, "E   <prompt>" goes on the prompt line like any other
+-- interaction, and only pressing E leaves (interact). Its notice is the line shown on the
+-- way out. Scene 2's cave mouths offer ("ENTER THE CAVE"); the ways out of the caves do
+-- not, they are walked through.
 --
 -- Whatever the player carries goes with them, and the world they leave is remembered for
 -- when they come back: see Main:leaveStage.
 
 StageExit = StageExit or class("StageExit", traktor.world.ScriptComponent)
 
--- A string property off this component's ScriptComponentData, or nil.
-function StageExit:_property(name)
-	local props < const > = self.properties
-	if props == nil then
-		return nil
-	end
-	local v < const > = props:getProperty(name)
-	if type(v) ~= "string" or v == "" then
-		return nil
-	end
-	return v
-end
-
--- The E line this exit offers, or nil for one that is walked through.
-function StageExit:prompt()
-	return self:_property("prompt")
-end
-
--- Is `point` (the player) standing where this exit offers itself? Never for a walked-through one.
-function StageExit:offers(point)
-	if self:prompt() == nil then
-		return false
-	end
-	local volume < const > = self:_volume()
-	return volume ~= nil and volume:inside(point)
-end
-
--- Leave through this exit: what E does at one that offers. Returns whether the trip started.
+-- Leave through this exit. Returns whether the trip started.
 function StageExit:take(context)
-	return context:leaveStage(self:_property("target") or "TERRAIN", self:_property("notice"), self:_property("spawn"))
+	local exit < const > = self.owner:getComponent(zombie.StageExitComponent)
+	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)
+	local notice < const > = (interactable ~= nil and interactable.notice ~= "") and interactable.notice or nil
+	local target < const > = (exit ~= nil and exit.target ~= "") and exit.target or "TERRAIN"
+	local arrival < const > = (exit ~= nil and exit.arrival ~= nil) and string.upper(exit.arrival:format()) or nil
+	return context:leaveStage(target, notice, arrival)
+end
+
+-- E at an exit that offers itself (Main:_interact).
+function StageExit:interact(context)
+	self:take(context)
 end
 
 function StageExit:_volume()
@@ -75,7 +56,7 @@ end
 
 function StageExit:update(context, totalTime, deltaTime)
 	-- One that offers waits for E (Main:_interact); only a walked-through one acts on its own.
-	if context == nil or self._left or self:prompt() ~= nil then
+	if context == nil or self._left or self.owner:getComponent(zombie.InteractableComponent) ~= nil then
 		return
 	end
 	-- Not while the game is frozen or already over: a body sliding into the trigger

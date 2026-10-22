@@ -164,8 +164,15 @@ void NpcComponent::setOwner(world::Entity* owner)
 
 void NpcComponent::setWorld(world::World* world)
 {
+	if (m_npcWorld)
+		m_npcWorld->remove(this);
+
 	m_world = world;
-	m_npcWorld = nullptr;
+	m_npcWorld = world ? world->getComponent< NpcWorldComponent >() : nullptr;
+
+	if (m_npcWorld)
+		m_npcWorld->add(this);
+
 	m_resolved = false;
 	readStats();
 }

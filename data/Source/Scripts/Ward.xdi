@@ -8,7 +8,9 @@ import(traktor)
 --
 -- A consecration ward: a stone pillar that stands bare and dark until the player
 -- carries a relic to this post and spends it here, at which point Main calls
--- turnOn() on this component.
+-- turnOn() on this component. What E does at the post, and that it takes a relic in
+-- the off hand, is the entity's zombie.InteractableComponentData and LockComponentData;
+-- E calls interact() with the relic the lock took (Main:_interact).
 --
 -- Everything a lit ward *shows* hangs off a "Switch" child entity: the relic set at
 -- the post ("SpentRelic") and the flame above it ("Flame", a point LightComponent),
@@ -30,10 +32,10 @@ Ward = Ward or class("Ward", traktor.world.ScriptComponent)
 
 local IGNITE_RATE < const > = Config.ward.igniteRate   -- how fast the flame catches once lit (1/s)
 
--- Light it. Idempotent: turning on an already-lit ward does nothing, so Main can
--- re-assert its lit wards after a hot reload without re-flaring them. Pass
--- instant=true to snap straight to full (the reload-restore path); omit it for the
--- flare-up a fresh consecration earns.
+-- Light it. Idempotent: turning on an already-lit ward does nothing. Pass instant=true to
+-- snap straight to full (the restore path, below); omit it for the flare-up a fresh
+-- consecration earns. Lit is kept by the world (the entity's zombie.FixtureComponent), so a
+-- post the player comes back to, or a hot reload, finds it burning.
 function Ward:turnOn(instant)
 	if self._lit then
 		return
@@ -41,10 +43,26 @@ function Ward:turnOn(instant)
 	self._lit = true
 	self._ignite = instant and 1.0 or 0.0
 	self._flare = not instant
+
+	local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+	if fixture ~= nil then
+		fixture.done = true
+	end
+
+	-- A lit post takes no more relics.
+	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)
+	if interactable ~= nil then
+		interactable.enabled = false
+	end
 end
 
 function Ward:isOn()
 	return self._lit == true
+end
+
+-- E at the dark post, with `relic` out of the pack: the stage lights it (Main:_consecrate).
+function Ward:interact(context, relic)
+	context:_consecrate(self.owner, relic)
 end
 
 -- Find (once) and cache the "Switch" child: the entity whose facade holds everything
@@ -121,6 +139,14 @@ function Ward:_reveal()
 end
 
 function Ward:update(context, totalTime, deltaTime)
+	-- Lit already as far as the world is concerned: light it again, without the flare.
+	if not self._lit then
+		local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+		if fixture ~= nil and fixture.done then
+			self:turnOn(true)
+		end
+	end
+
 	self:_reveal()
 
 	local light = self:_resolveLight()

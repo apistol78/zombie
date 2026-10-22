@@ -44,16 +44,7 @@
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
 			<class>{C4E57000-0000-4000-8000-000000000001}</class>
-			<properties type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>notice</first>
-						<second type="traktor.PropertyString">
-							<value/>
-						</second>
-					</item>
-				</value>
-			</properties>
+			<properties/>
 			<editorSupport>false</editorSupport>
 		</item>
 		<item type="zombie.ItemContainerComponentData">
@@ -205,5 +196,15 @@
 					</item>
 				</acts>
 			</item>
+		<item type="zombie.InteractableComponentData">
+			<prompt>OPEN THE CHEST</prompt>
+			<refusal/>
+			<notice/>
+			<range>1.8</range>
+			<priority>30</priority>
+		</item>
+		<item type="zombie.FixtureComponentData">
+			<kind>{00000000-0000-0000-0000-000000000000}</kind>
+		</item>
 		</components>
 	</object>

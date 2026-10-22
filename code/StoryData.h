@@ -28,7 +28,7 @@ using namespace traktor;
 class ItemData;
 class QuestData;
 
-/*! Story; every quest and the start kit of a playthrough.
+/*! Story; every quest, every item and the start kit of a playthrough.
  * \ingroup Zombie
  */
 class T_DLLCLASS StoryData : public ISerializable
@@ -52,11 +52,17 @@ public:
 
 	AlignedVector< ItemStack >& getStartKit() { return m_startKit; }
 
+	/*! Every item there is. */
+	const AlignedVector< resource::Id< ItemData > >& getItems() const { return m_items; }
+
+	AlignedVector< resource::Id< ItemData > >& getItems() { return m_items; }
+
 	virtual void serialize(ISerializer& s) override final;
 
 private:
 	AlignedVector< resource::Id< QuestData > > m_quests;
 	AlignedVector< ItemStack > m_startKit;
+	AlignedVector< resource::Id< ItemData > > m_items;
 };
 
 }

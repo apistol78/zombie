@@ -6,24 +6,23 @@ import(traktor)
 -- Lever
 --
 -- A lever on a post that opens a gate somewhere else: the player pulls it with E
--- (Main:_interact calls pull()), the handle swings over from leaning forward to leaning
--- back, and the gate it names opens itself (Scripts/Gate -- the cave's lever gates are
--- portcullises that lift).
+-- (Main:_interact calls interact()), the handle swings over from leaning forward to
+-- leaning back, and the gate it names opens itself (Scripts/Gate -- the cave's lever gates
+-- are portcullises that lift).
 --
--- Which gate is a property on this entity's ScriptComponentData, so each placed lever
--- names its own:
---
---   gate    the `id` property of the gate to open; the gate entity is named
---           "LeverGate" (not "Gate", so a key never fits it)
---   notice  optional line shown when pulled (else the gate's own, else a generic one)
+-- Which gate is the entity's zombie.LeverComponentData, a reference to the gate entity
+-- picked in the scene editor, so each placed lever names its own. What E says at it, and
+-- the line shown when it is pulled, is its zombie.InteractableComponentData (else the
+-- gate's line, else a generic one).
 --
 -- Attach to an entity whose GroupComponent holds a child named "Handle": the handle
 -- mesh with its pivot on its own origin, extending +Y, authored PIVOT_Y above the
 -- lever's origin. The post's front, where the player stands, is +Z.
 --
--- pull() is idempotent and takes instant=true -- the reload-restore path, the same
--- contract as Gate:unlock -- to snap straight to pulled, opening the gate instantly
--- and silently. It returns the gate entity it opened, or nil.
+-- pull() is idempotent and takes instant=true -- the restore path, the same contract as
+-- Gate:unlock -- to snap straight to pulled, opening the gate instantly and silently. It
+-- returns the gate entity it opened, or nil. Pulled is kept by the world (the entity's
+-- zombie.FixtureComponent), and a lever pulled before puts itself back that way.
 
 Lever = Lever or class("Lever", traktor.world.ScriptComponent)
 
@@ -31,44 +30,18 @@ local SWING < const > = 0.75      -- handle pitch either side of upright (rad)
 local PULL_TIME < const > = 0.55  -- how long the throw takes (s)
 local PIVOT_Y < const > = 0.9     -- the pivot's height above the lever's origin (m)
 
-function Lever:_property(name)
-	local props < const > = self.properties
-	if props == nil then
-		return nil
-	end
-	local v < const > = props:getProperty(name)
-	if type(v) ~= "string" or v == "" then
-		return nil
-	end
-	return v
-end
-
 function Lever:isPulled()
 	return self._pulled == true
 end
 
-function Lever:notice()
-	return self:_property("notice")
-end
-
--- The gate this lever opens: the LeverGate whose Gate component has the matching id.
+-- The gate this lever opens, and its Gate component; nil while it is not in the world.
 function Lever:target()
-	local id < const > = self:_property("gate")
-	if id == nil then
+	local lever < const > = self.owner:getComponent(zombie.LeverComponent)
+	local e < const > = (lever ~= nil) and self.world:getEntityById(lever.target) or nil
+	if e == nil then
 		return nil, nil
 	end
-	local i = 0
-	while true do
-		local e < const > = self.world:getEntity("LeverGate", i)
-		if e == nil then
-			return nil, nil
-		end
-		i = i + 1
-		local sc < const > = e:getComponent(traktor.world.ScriptComponent)
-		if sc ~= nil and sc:gateId() == id then
-			return e, sc
-		end
-	end
+	return e, e:getComponent(traktor.world.ScriptComponent)
 end
 
 function Lever:pull(instant)
@@ -78,12 +51,24 @@ function Lever:pull(instant)
 	self._pulled = true
 	self._t = instant and 1.0 or 0.0
 	self._posed = false
+
+	local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+	if fixture ~= nil then
+		fixture.done = true
+	end
 	if not instant then
 		local fx < const > = self.owner:getComponent(traktor.world.EventSetComponent)
 		if fx ~= nil then
 			fx:raise("pull")
 		end
 	end
+
+	-- Pulled is pulled: E has nothing more to do here.
+	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)
+	if interactable ~= nil then
+		interactable.enabled = false
+	end
+
 	local gate < const >, gsc < const > = self:target()
 	if gsc ~= nil then
 		gsc:unlock(instant)
@@ -91,7 +76,19 @@ function Lever:pull(instant)
 	return gate
 end
 
+-- E at the lever: the stage pulls it and keeps the book (Main:_pullLever).
+function Lever:interact(context)
+	context:_pullLever(self.owner)
+end
+
 function Lever:update(context, totalTime, deltaTime)
+	-- Pulled already as far as the world is concerned.
+	if not self._pulled then
+		local fixture < const > = self.owner:getComponent(zombie.FixtureComponent)
+		if fixture ~= nil and fixture.done then
+			self:pull(true)
+		end
+	end
 	if self._posed then
 		return
 	end

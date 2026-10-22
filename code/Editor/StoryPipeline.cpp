@@ -17,6 +17,7 @@
 #include "Editor/StoryValidation.h"
 #include "Keys/EquipSlotData.h"
 #include "Keys/EventData.h"
+#include "Keys/FixtureKindData.h"
 #include "Keys/FlagData.h"
 #include "Keys/ScriptConditionData.h"
 #include "PlaceData.h"
@@ -25,12 +26,12 @@
 
 namespace zombie
 {
-T_IMPLEMENT_RTTI_FACTORY_CLASS(L"zombie.StoryPipeline", 1, StoryPipeline, editor::DefaultPipeline)
+T_IMPLEMENT_RTTI_FACTORY_CLASS(L"zombie.StoryPipeline", 2, StoryPipeline, editor::DefaultPipeline)
 
 TypeInfoSet StoryPipeline::getAssetTypes() const
 {
 	TypeInfoSet types = makeTypeInfoSet< ActorData, PlaceData, QuestData, StoryData >();
-	const TypeInfoSet keys = makeTypeInfoSet< FlagData, EventData, EquipSlotData, ScriptConditionData >();
+	const TypeInfoSet keys = makeTypeInfoSet< FlagData, EventData, EquipSlotData, FixtureKindData, ScriptConditionData >();
 	types.insert(keys.begin(), keys.end());
 	return types;
 }

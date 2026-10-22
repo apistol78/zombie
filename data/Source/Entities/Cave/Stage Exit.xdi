@@ -17,17 +17,12 @@
 		</item>
 		<item type="traktor.world.ScriptComponentData" version="2">
 			<class>{7743D1EA-AA64-450B-8984-CA52017B5912}</class>
-			<properties type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>target</first>
-						<second type="traktor.PropertyString">
-							<value>TERRAIN</value>
-						</second>
-					</item>
-				</value>
-			</properties>
+			<properties/>
 			<editorSupport>false</editorSupport>
+		</item>
+		<item type="zombie.StageExitComponentData">
+			<target>TERRAIN</target>
+			<arrival>{00000000-0000-0000-0000-000000000000}</arrival>
 		</item>
 	</components>
 </object>

@@ -44,6 +44,7 @@
 #include "Traits/EquipTrait.h"
 #include "Traits/EventTrait.h"
 #include "Traits/HealTrait.h"
+#include "Traits/WeaponTrait.h"
 #include "Waypoints/ActorWaypoint.h"
 #include "Waypoints/FirstOfWaypoint.h"
 #include "Waypoints/ItemWaypoint.h"
@@ -147,6 +148,16 @@ bool Inventory_unequip(Inventory* self, const Any& slot)
 Any EquipTrait_getSlot(EquipTrait* self) { return guidOrNil(self->getSlot()); }
 
 Any EventTrait_getEvent(EventTrait* self) { return guidOrNil(self->getEvent()); }
+
+Any WeaponTrait_getAmmo(WeaponTrait* self) { return guidOrNil(self->getAmmo()); }
+
+int32_t StoryData_getItemCount(StoryData* self) { return (int32_t)self->getItems().size(); }
+
+Any StoryData_getItem(StoryData* self, int32_t index)
+{
+	const auto& items = self->getItems();
+	return (index >= 0 && index < (int32_t)items.size()) ? guidOrNil(items[index]) : Any();
+}
 
 Any QuestStep_getId(QuestStep* self) { return guidOrNil(self->getId()); }
 
@@ -301,11 +312,16 @@ void StoryClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 
 	auto classHealTrait = new AutoRuntimeClass< HealTrait >();
 	classHealTrait->addProperty("amount", &HealTrait::getAmount);
+	classHealTrait->addProperty("verb", &HealTrait::getVerb);
 	registrar->registerClass(classHealTrait);
 
 	auto classArmorTrait = new AutoRuntimeClass< ArmorTrait >();
 	classArmorTrait->addProperty("fraction", &ArmorTrait::getFraction);
 	registrar->registerClass(classArmorTrait);
+
+	auto classWeaponTrait = new AutoRuntimeClass< WeaponTrait >();
+	classWeaponTrait->addProperty("ammo", &WeaponTrait_getAmmo);
+	registrar->registerClass(classWeaponTrait);
 
 	auto classEventTrait = new AutoRuntimeClass< EventTrait >();
 	classEventTrait->addProperty("event", &EventTrait_getEvent);
@@ -322,6 +338,11 @@ void StoryClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classItemData->addProperty("dropEntity", &ItemData_getDropEntity);
 	classItemData->addMethod("getTrait", &ItemData_getTrait);
 	registrar->registerClass(classItemData);
+
+	auto classStoryData = new AutoRuntimeClass< StoryData >();
+	classStoryData->addProperty("itemCount", &StoryData_getItemCount);
+	classStoryData->addMethod("getItem", &StoryData_getItem);
+	registrar->registerClass(classStoryData);
 
 	auto classStoryResourceFactory = new AutoRuntimeClass< StoryResourceFactory >();
 	classStoryResourceFactory->addConstructor();

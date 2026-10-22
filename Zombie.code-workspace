@@ -1,7 +1,12 @@
 {
 	"folders": [
 		{
+			"name": "zombie",
 			"path": "."
+		},
+		{
+			"name": "traktor",
+			"path": "../traktor"
 		}
 	],
 	"settings": {
@@ -81,13 +86,13 @@
 				"request": "launch",
 
 				"type": "cppdbg",
-				"program": "${workspaceFolder}/../traktor/bin/latest/linux/releaseshared/Traktor.Editor.App",
-				"args": [ "${workspaceFolder}/Zombie.workspace" ],
+				"program": "${workspaceFolder:traktor}/bin/latest/linux/releaseshared/Traktor.Editor.App",
+				"args": [ "${workspaceFolder:zombie}/Zombie.workspace" ],
 				"stopAtEntry": false,
-				"cwd": "${workspaceFolder}/../traktor",
+				"cwd": "${workspaceFolder:traktor}",
 				"environment": [
-					{ "name": "TRAKTOR_HOME", "value": "${workspaceFolder}/../traktor" },
-					{ "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/../traktor/bin/latest/linux/releaseshared" },
+					{ "name": "TRAKTOR_HOME", "value": "${workspaceFolder:traktor}" },
+					{ "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder:traktor}/bin/latest/linux/releaseshared" },
 					{ "name": "GSETTINGS_SCHEMA_DIR", "value": "/usr/share/glib-2.0/schemas" },
 					{ "name": "XDG_DATA_DIRS", "value": "/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop" },
 					{ "name": "GTK_PATH", "value": "" },
@@ -109,11 +114,11 @@
 
 				"windows": {
 					"type": "cppvsdbg",
-					"program": "${workspaceFolder}/../traktor/bin/latest/win64/releaseshared/Traktor.Editor.App.exe",
-					"args": [ "${workspaceFolder}/Zombie.workspace" ],
+					"program": "${workspaceFolder:traktor}/bin/latest/win64/releaseshared/Traktor.Editor.App.exe",
+					"args": [ "${workspaceFolder:zombie}/Zombie.workspace" ],
 					"stopAtEntry": false,
-					"cwd": "${workspaceFolder}/../traktor",
-					"environment": [ { "name": "TRAKTOR_HOME", "value": "${workspaceFolder}/../traktor" } ],
+					"cwd": "${workspaceFolder:traktor}",
+					"environment": [ { "name": "TRAKTOR_HOME", "value": "${workspaceFolder:traktor}" } ],
 					"externalConsole": false
 				}
 			}

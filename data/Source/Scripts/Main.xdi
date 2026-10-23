@@ -54,6 +54,10 @@
 -- compass and the map that point the way -- more of this class, in a script of its own.
 #using \{D1A10000-0000-4000-8000-000000000006}
 
+-- Scripts/StreamHold: the stage held still behind a LOADING panel until the world around the
+-- player has streamed in.
+#using \{A1BC462F-A3FB-42F4-AFDD-0B0D098E4440}
+
 import(traktor)
 
 -- Main
@@ -705,6 +709,9 @@ function Main:new(params, environment)
 
 	environment.input.inputSystem:setExclusive(true)
 	environment.render.renderView:hideCursor()
+
+	-- Held until the ground under the player is there (Scripts/StreamHold).
+	self:_initStreamHold()
 end
 
 -- Write the cheat line: one row naming whatever is currently on, and blank when nothing is.
@@ -2865,6 +2872,11 @@ function Main:update(info)
 		return
 	end
 
+	-- Arriving: nothing moves until the world around the player has streamed in.
+	if self:_updateStreamHold(dt) then
+		return
+	end
+
 	-- Night won: freeze the player for the sunrise. Deliberately does not freeze the
 	-- enemies -- every one of them was just handed to the rag doll path, and their
 	-- controllers have to keep running to make the switch. Their corpses are never
@@ -3225,6 +3237,11 @@ function Main:postUpdate(info)
 	self._worldUpdated = true
 	self:_updateNameTags(info.simulationDeltaTime)   -- Scripts/Npc/Characters
 	self:_updateQuestBeacon(info.simulationDeltaTime) -- Scripts/Quests/Questing
+
+	-- Arriving: only the camera, at the eye, which is what the world streams around.
+	if self:_postUpdateStreamHold(info.simulationDeltaTime) then
+		return
+	end
 
 	if self._gameOver or self._paused then
 		return

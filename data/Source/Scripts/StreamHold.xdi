@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{720C0A68-B608-2F40-8EBA-F7E42EB27F61}
+
+import(traktor)
+
+-- StreamHold: the part of Scripts/Main that holds a stage still until the world around the
+-- player has streamed in. Methods on the Main stage class, kept in a script of their own because
+-- Main is already as large as one script can be (see Scripts/Npc/Characters).
+--
+-- The scene's traktor.world.EntityStreamingComponent creates every cell in range of its focus at
+-- once on its first update, and each cell after that on a background job, one at a time. The
+-- focus is the layer's camera, which on that first update is still wherever the scene left
+-- Camera0: resolve() only puts the player where they arrive a world update later, and postUpdate
+-- the camera at their eye after that. Until the streaming has caught up with the eye, the ground
+-- under the player may not be there, so the player is held -- the character controller off and
+-- _paused for everything else -- behind the same LOADING panel Scripts/Loading shows, and let go
+-- once the streaming has nothing left to load.
+--
+-- Defines the class if Main has not yet -- this is #using'd by Main, so it is loaded first --
+-- and Main's own `Main = Main or class(...)` then carries on with the same table.
+
+Main = Main or class("Main", Stage)
+
+-- Fill-or-drain sweeps per second of the activity bar, as on Scripts/Loading.
+local PULSE_RATE < const > = 0.7
+
+-- Start held. Last in Main:new, so the cover is in front of everything the stage puts up.
+function Main:_initStreamHold()
+	self._streamHold = { placed = false, focused = false, pulse = 0.0 }
+	self._paused = true
+
+	-- Black over the whole frame; placed by _updateStreamHold, since the frame follows the window.
+	local cover < const > = Panel(self._frame, FloodLayout())
+	cover.__layout = ILayout.FLOAT
+	cover:setColor(Color4f(0.0, 0.0, 0.0, 1.0))
+	self._streamCover = cover
+
+	-- The panel Scripts/Loading had up, so the hand-over from it does not show.
+	local dialog < const > = Dialog(self._frame, TableLayout({ 0 }, { 0, 0 }, 24, 24, 0, 16))
+	local title < const > = Static(dialog, "LOADING")
+	title:setTextSize(40)
+	title:setHorizontalAlign(Widget.ALIGN_CENTER)
+	title:setTextColor(Color4f(1.0, 1.0, 1.0, 1.0))
+	local bar < const > = ProgressBar(dialog)
+	bar:setBackColor(Color4f(0.16, 0.16, 0.16, 0.8))
+	bar:setFrontColor(Color4f(0.88, 0.88, 0.85, 1.0))
+	self._streamDialog = dialog
+	self._streamBar = bar
+
+	self._frame:update()
+	dialog:show()
+end
+
+-- The stage's update while held: true for as long as it is, and the rest of the update waits.
+function Main:_updateStreamHold(dt)
+	local hold < const > = self._streamHold
+	if hold == nil then
+		return false
+	end
+
+	local pl < const > = self._frame:getPlacement()
+	self._streamCover:place(0, 0, pl.width, pl.height)
+	hold.pulse = (hold.pulse + dt * PULSE_RATE) % 2.0
+	self._streamBar:setValue((hold.pulse <= 1.0) and hold.pulse or (2.0 - hold.pulse))
+
+	-- Off until let go: a controller left on falls through ground that is not there yet.
+	if self._character ~= nil then
+		self._character.enabled = false
+	end
+
+	-- Nothing to go by until the layer has streamed with the camera at the eye (_postUpdateStreamHold).
+	if not hold.focused then
+		return true
+	end
+	local world < const > = self.world.world
+	local streaming < const > = (world ~= nil) and world:getComponent(traktor.world.EntityStreamingComponent) or nil
+	if streaming ~= nil and not streaming.idle then
+		return true
+	end
+
+	self._streamHold = nil
+	self._paused = false
+	self._character.enabled = true
+	self._streamDialog:hide()
+	self._streamDialog:remove()
+	self._streamDialog = nil
+	self._streamBar = nil
+	self._streamCover:remove()
+	self._streamCover = nil
+	return false
+end
+
+-- The postUpdate while held: true for as long as it is. Only the camera is placed, at the eye,
+-- since that is what the layer focuses the streaming on.
+function Main:_postUpdateStreamHold(dt)
+	local hold < const > = self._streamHold
+	if hold == nil then
+		return false
+	end
+
+	-- Not before resolve() has put the player where they arrive.
+	if self._camera == nil or self._character == nil or self._arrival ~= nil or self._arrivalPlace ~= nil then
+		return true
+	end
+	self:_followEyeHeight(dt)
+	local eye < const > = self:eye()
+	self._camera.transform = Transform.lookAt(eye, eye + self:aimDirection(), Vector4(0.0, 1.0, 0.0, 0.0))
+
+	-- The layer streams around the camera in the world update after this one.
+	hold.focused = hold.placed
+	hold.placed = true
+	return true
+end
+
+	]]></text>
+</object>

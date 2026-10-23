@@ -40,7 +40,6 @@ import(traktor)
 --                              SpawnOrchestrator (Items.EVENTS)
 --   drop                       the EntityData a dropped one is rebuilt from, or nil
 --   keep                       the item is its entity (the relic; Scripts/Pickup)
---   quest                      one of a kind, wanted by a quest
 --   id, key, data              its Guid, its key and the ItemData itself
 
 Items = Items or {}
@@ -136,8 +135,7 @@ local function entryOf(key)
 		ammo = (weapon ~= nil and weapon.ammo ~= nil) and textOf(weapon.ammo) or nil,
 		event = (event ~= nil and event.event ~= nil) and Items.EVENTS[textOf(event.event)] or nil,
 		drop = data.dropEntity,
-		keep = data.keep,
-		quest = data.quest
+		keep = data.keep
 	}
 	Items._entries[key] = e
 	return e

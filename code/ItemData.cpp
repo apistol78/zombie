@@ -19,7 +19,7 @@
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.ItemData", 0, ItemData, ISerializable)
+T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.ItemData", 1, ItemData, ISerializable)
 
 const IItemTrait* ItemData::getTrait(const TypeInfo& traitType) const
 {
@@ -38,7 +38,11 @@ void ItemData::serialize(ISerializer& s)
 	s >> Member< std::wstring >(L"info", m_info, AttributeMultiLine());
 	s >> Member< std::wstring >(L"icon", m_icon);
 	s >> Member< int32_t >(L"maxStack", m_maxStack, AttributeRange(1));
-	s >> Member< bool >(L"quest", m_quest);
+	if (s.getVersion< ItemData >() < 1)
+	{
+		bool quest = false;
+		s >> Member< bool >(L"quest", quest);
+	}
 	s >> Member< bool >(L"keep", m_keep);
 	s >> resource::Member< world::EntityData >(L"dropEntity", m_dropEntity);
 	s >> MemberRefArray< IItemTrait >(L"traits", m_traits);

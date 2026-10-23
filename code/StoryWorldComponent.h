@@ -91,7 +91,7 @@ private:
 	SmallMap< Guid, Ref< world::Entity > > m_places;
 	RefArray< ItemPickupComponent > m_pickups;
 	RefArray< ItemContainerComponent > m_containers;
-	SmallSet< Guid > m_wanted;
+	SmallSet< Guid > m_holdBack;
 	uint32_t m_shownSerial = ~0U;
 	bool m_haveWaypoint = false;
 	Vector4 m_waypoint = Vector4::origo();

@@ -3,13 +3,15 @@
 	<title>THE BURIAL LEDGER</title>
 	<info>BANDITS TOOK THE CHAPEL'S BURIAL LEDGER. BROTHER ANSELM SAYS THE DEAD WITH NO NAMES DO NOT SLEEP.</info>
 	<steps>
-		<item type="zombie.FindItemStep" version="1">
+		<item type="zombie.FindItemStep" version="3">
 			<id>{02B1CB0D-A001-4CF3-B1E9-37E5AFCBB945}</id>
 			<name>find</name>
 			<text>TAKE THE LEDGER BACK FROM BELLA, THE BANDITS' LEADER, ON THE WEST RIDGE</text>
 			<waypoint/>
+			<failWhen/>
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020B}</item>
+			<holdBack>true</holdBack>
 		</item>
 		<item type="zombie.TalkStep" version="1">
 			<id>{615C4DC3-32DC-4BB6-B748-9C2FC767E043}</id>

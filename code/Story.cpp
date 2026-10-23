@@ -52,6 +52,19 @@ Ref< Story > Story::create(resource::IResourceManager* resourceManager, const Gu
 	for (const auto& stack : story->m_data->getStartKit())
 		story->m_inventory->add(stack.item, stack.count);
 
+	// Every item some quest finds; noted as found whenever it is in the inventory.
+	for (const auto& quest : story->m_data->getQuests())
+	{
+		const QuestData* questData = story->getQuest(quest);
+		if (!questData)
+			continue;
+		for (auto step : questData->getSteps())
+		{
+			if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
+				story->m_sought.insert(findItemStep->getItem());
+		}
+	}
+
 	return story;
 }
 
@@ -121,7 +134,7 @@ bool Story::isHeldBack(const Guid& item) const
 		for (int32_t i = 0; i < (int32_t)questData->getSteps().size(); ++i)
 		{
 			const FindItemStep* findItemStep = dynamic_type_cast< const FindItemStep* >(questData->getSteps()[i]);
-			if (findItemStep == nullptr || item != findItemStep->getItem())
+			if (findItemStep == nullptr || !findItemStep->isHoldBack() || item != findItemStep->getItem())
 				continue;
 
 			// A quest at or past the step has asked for the item; it is not held back from anyone.
@@ -134,12 +147,33 @@ bool Story::isHeldBack(const Guid& item) const
 	return wanted;
 }
 
+bool Story::isWanted(const Guid& item) const
+{
+	for (const auto& quest : m_data->getQuests())
+	{
+		if (!m_questLog->isActive(quest))
+			continue;
+
+		const QuestData* questData = getQuest(quest);
+		if (!questData)
+			continue;
+
+		for (auto step : questData->getSteps())
+		{
+			const FindItemStep* findItemStep = dynamic_type_cast< const FindItemStep* >(step);
+			if (findItemStep != nullptr && item == findItemStep->getItem())
+				return true;
+		}
+	}
+	return false;
+}
+
 void Story::update()
 {
 	for (int32_t i = 0; i < m_inventory->getCapacity(); ++i)
 	{
 		const InventorySlot* slot = m_inventory->getSlot(i);
-		if (slot != nullptr && slot->getItemData() != nullptr && slot->getItemData()->isQuest())
+		if (slot != nullptr && m_sought.find(slot->getItem()) != m_sought.end())
 			m_questLog->found(slot->getItem());
 	}
 	m_questLog->update();

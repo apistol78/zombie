@@ -3,7 +3,7 @@
 	<title>THE SWORD OF VILLINGE</title>
 	<info>ÅKE'S GRANDFATHER FORGED THE SWORD OF VILLINGE. IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.</info>
 	<steps>
-		<item type="zombie.FindItemStep" version="1">
+		<item type="zombie.FindItemStep" version="3">
 			<id>{774FB29E-D4D6-4BC4-9214-42840046EBC1}</id>
 			<name>find</name>
 			<text>FIND THE SWORD OF VILLINGE IN THE DEEPEST TUNNEL OF THE CAVE</text>
@@ -17,8 +17,10 @@
 					</item>
 				</candidates>
 			</waypoint>
+			<failWhen/>
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020D}</item>
+			<holdBack>true</holdBack>
 		</item>
 		<item type="zombie.TalkStep" version="1">
 			<id>{B5CAAD3F-B78E-4D8D-BBC7-F81743D8EE00}</id>

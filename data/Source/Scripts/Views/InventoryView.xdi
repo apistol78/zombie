@@ -25,7 +25,8 @@ import(traktor)
 --   context:useItem(kind)         eat or drink it
 --   context:dropSlot(index)       put the whole stack down in front of the player
 --
--- ...and it reads the pack (context:inventory()) to show what is in it, redrawing whenever the
+-- ...and it reads the pack (context:inventory()) to show what is in it, and the story
+-- (context:story()) to say what a quest wants, redrawing whenever the
 -- pack's serial moves (update), so a change made from anywhere -- the stage refusing a drop, an
 -- equip handing the trigger on -- is what the screen shows rather than what the click assumed.
 --
@@ -294,7 +295,7 @@ function InventoryView:_refreshDetail()
 		end
 	elseif def.armor ~= nil then
 		effect = "TAKES " .. tostring(math.floor(def.armor * 100.0 + 0.5)) .. "% OF EVERY BITE"
-	elseif def.quest then
+	elseif self._context:story():isWanted(s.kind) then
 		effect = "WANTED FOR A QUEST -- J FOR THE JOURNAL"
 	end
 	setText(self._effect, effect)
@@ -311,8 +312,8 @@ function InventoryView:_refreshDetail()
 		self._useButton:setCaption("USE"):setEnable(false)
 	end
 
-	-- A quest item cannot be put down (Items: `quest`); the stage would refuse it anyway.
-	self._dropButton:setEnable(not def.quest)
+	-- What has no entity to be rebuilt from cannot be put down; the stage would refuse it anyway.
+	self._dropButton:setEnable(def.keep or def.drop ~= nil)
 end
 
 function InventoryView:_select(index)

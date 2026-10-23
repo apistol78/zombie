@@ -56,9 +56,6 @@ public:
 	/*! How many share one inventory slot. */
 	int32_t getMaxStack() const { return m_maxStack; }
 
-	/*! One of a kind, wanted by a quest. */
-	bool isQuest() const { return m_quest; }
-
 	/*! The item is its entity; the entity rides along in the inventory rather than being destroyed. */
 	bool isKeep() const { return m_keep; }
 
@@ -80,8 +77,6 @@ public:
 
 	void setMaxStack(int32_t maxStack) { m_maxStack = maxStack; }
 
-	void setQuest(bool quest) { m_quest = quest; }
-
 	void setKeep(bool keep) { m_keep = keep; }
 
 	void addTrait(IItemTrait* trait) { m_traits.push_back(trait); }
@@ -94,7 +89,6 @@ private:
 	std::wstring m_info;
 	std::wstring m_icon;
 	int32_t m_maxStack = 1;
-	bool m_quest = false;
 	bool m_keep = false;
 	resource::Id< world::EntityData > m_dropEntity;
 	RefArray< IItemTrait > m_traits;

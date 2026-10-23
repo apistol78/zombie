@@ -16,13 +16,15 @@
 			<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
 			<line>{2D2CB228-05AF-4BA2-961F-E43D4AF1588D}</line>
 		</item>
-		<item type="zombie.FindItemStep" version="1">
+		<item type="zombie.FindItemStep" version="3">
 			<id>{84425CCC-A002-43A6-A7A6-1A1F94FE35F2}</id>
 			<name>find</name>
 			<text>SEARCH THE OLD CHEST BY THE CHAPEL FOR THE LOCKET</text>
 			<waypoint/>
+			<failWhen/>
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020C}</item>
+			<holdBack>true</holdBack>
 		</item>
 		<item type="zombie.TalkStep" version="1">
 			<id>{600BA235-9E5F-4405-AA3A-9F0521EDB226}</id>

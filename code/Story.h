@@ -10,6 +10,7 @@
 
 #include "Core/Containers/AlignedVector.h"
 #include "Core/Containers/SmallMap.h"
+#include "Core/Containers/SmallSet.h"
 #include "Core/Guid.h"
 #include "Core/Object.h"
 #include "Core/Ref.h"
@@ -92,10 +93,13 @@ public:
 	/*! Start a conversation with actor; null if the actor has no dialog. Ended at once if no start holds. */
 	Ref< Conversation > talk(const Guid& actor);
 
-	/*! Item a find step waits for but no quest has reached yet; held back from pickups and containers. */
+	/*! Item a find step holds back and no quest has reached yet; held back from pickups and containers. */
 	bool isHeldBack(const Guid& item) const;
 
-	/*! Note quest items in the inventory as found, and complete steps already met. */
+	/*! Item a find step of a quest under way looks for, found or not. */
+	bool isWanted(const Guid& item) const;
+
+	/*! Note items find steps look for in the inventory as found, and complete steps already met. */
 	void update();
 
 	/*! Add to inventory; announced as "itemGiven". */
@@ -136,6 +140,7 @@ private:
 	Ref< const StoryData > m_data;
 	Ref< Inventory > m_inventory;
 	Ref< QuestLog > m_questLog;
+	SmallSet< Guid > m_sought;
 	mutable SmallMap< Guid, Ref< resource::ResourceHandle > > m_bound;
 	Ref< IRuntimeDelegate > m_eventHandler;
 	Ref< IRuntimeDelegate > m_conditionHandler;

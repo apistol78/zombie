@@ -130,6 +130,7 @@ const Guid c_altar(L"{5A0F0000-0000-4000-8000-000000000030}");
 const Guid c_ringQuest(L"{5A0F0000-0000-4000-8000-000000000040}");
 const Guid c_prayQuest(L"{5A0F0000-0000-4000-8000-000000000041}");
 const Guid c_askQuest(L"{5A0F0000-0000-4000-8000-000000000042}");
+const Guid c_tollQuest(L"{5A0F0000-0000-4000-8000-000000000043}");
 const Guid c_klaraDialog(L"{5A0F0000-0000-4000-8000-000000000050}");
 const Guid c_findStep(L"{5A0F0000-0000-4000-8000-000000000060}");
 const Guid c_returnStep(L"{5A0F0000-0000-4000-8000-000000000061}");
@@ -166,7 +167,6 @@ Ref< FakeResourceManager > createStory()
 
 	Ref< ItemData > ring = new ItemData();
 	ring->setName(L"RING");
-	ring->setQuest(true);
 	rm->add(c_ring, ring);
 
 	Ref< ItemData > coin = new ItemData();
@@ -195,6 +195,7 @@ Ref< FakeResourceManager > createStory()
 		find->setId(c_findStep);
 		find->setName(L"find");
 		find->setItem(resource::Id< ItemData >(c_ring));
+		find->setHoldBack(true);
 		ringQuest->getSteps().push_back(find);
 
 		Ref< TalkStep > talk = new TalkStep();
@@ -234,6 +235,20 @@ Ref< FakeResourceManager > createStory()
 	}
 	rm->add(c_askQuest, askQuest);
 
+	// Toll: find a coin, holding none back; then reach the altar.
+	Ref< QuestData > tollQuest = new QuestData();
+	tollQuest->setTitle(L"TOLL");
+	{
+		Ref< FindItemStep > find = new FindItemStep();
+		find->setItem(resource::Id< ItemData >(c_coin));
+		tollQuest->getSteps().push_back(find);
+
+		Ref< ReachStep > reach = new ReachStep();
+		reach->setPlace(resource::Id< PlaceData >(c_altar));
+		tollQuest->getSteps().push_back(reach);
+	}
+	rm->add(c_tollQuest, tollQuest);
+
 	// Klara: 0 hello, 1 ring, 2 thanks.
 	Ref< DialogData > klaraDialog = new DialogData();
 	{
@@ -263,6 +278,7 @@ Ref< FakeResourceManager > createStory()
 	storyData->getQuests().push_back(resource::Id< QuestData >(c_ringQuest));
 	storyData->getQuests().push_back(resource::Id< QuestData >(c_prayQuest));
 	storyData->getQuests().push_back(resource::Id< QuestData >(c_askQuest));
+	storyData->getQuests().push_back(resource::Id< QuestData >(c_tollQuest));
 	storyData->getStartKit().push_back({ resource::Id< ItemData >(c_coin), 2 });
 	rm->add(c_story, storyData);
 
@@ -301,6 +317,7 @@ void CaseStory::run()
 		QuestLog* questLog = story->getQuestLog();
 		CASE_ASSERT_EQUAL(inventory->count(c_coin), 2);
 		CASE_ASSERT(story->isHeldBack(c_ring));
+		CASE_ASSERT(!story->isWanted(c_ring));
 
 		Ref< Conversation > c = story->talk(c_klara);
 		CASE_ASSERT(!c->hasEnded());
@@ -315,6 +332,7 @@ void CaseStory::run()
 		CASE_ASSERT(questLog->getCurrentStepId(c_ringQuest) == c_findStep);
 		CASE_ASSERT_EQUAL(events->started, 1);
 		CASE_ASSERT(!story->isHeldBack(c_ring));
+		CASE_ASSERT(story->isWanted(c_ring));
 		CASE_ASSERT(findResponse(c, L"YOU LOOK TROUBLED.") == nullptr);
 
 		inventory->add(c_ring, 1);
@@ -326,6 +344,7 @@ void CaseStory::run()
 		CASE_ASSERT(questLog->isActive(c_ringQuest));
 		CASE_ASSERT(c2->choose(findResponse(c2, L"I FOUND YOUR RING.")));
 		CASE_ASSERT(questLog->isDone(c_ringQuest));
+		CASE_ASSERT(!story->isWanted(c_ring));
 		CASE_ASSERT_EQUAL(inventory->count(c_ring), 0);
 		CASE_ASSERT_EQUAL(inventory->count(c_coin), 17);
 		CASE_ASSERT_EQUAL(events->completed, 1);
@@ -356,6 +375,18 @@ void CaseStory::run()
 		CASE_ASSERT(story->getQuestLog()->start(c_ringQuest));
 		CASE_ASSERT(story->getQuestLog()->getCurrentStepId(c_ringQuest) == c_returnStep);
 		CASE_ASSERT(!story->getQuestLog()->start(c_ringQuest));
+	}
+
+	// A find step holding nothing back: its item is never held back, and one carried from the start completes it.
+	{
+		Ref< Story > story = Story::create(rm, c_story, 8);
+		CASE_ASSERT(!story->isHeldBack(c_coin));
+		CASE_ASSERT(!story->isWanted(c_coin));
+		story->update();
+		CASE_ASSERT(story->getQuestLog()->start(c_tollQuest));
+		CASE_ASSERT_EQUAL(story->getQuestLog()->getStepIndex(c_tollQuest), 1);
+		CASE_ASSERT(story->isWanted(c_coin));
+		CASE_ASSERT(!story->isHeldBack(c_coin));
 	}
 
 	// Reach steps are completed by the distance handler.

@@ -69,7 +69,6 @@ public:
 	const std::wstring& getInfo() const;
 	const std::wstring& getIcon() const;           // icon id in the game's HUD art
 	int32_t getMaxStack() const;
-	bool isQuest() const;                          // one of a kind, wanted by a quest
 	bool isKeep() const;                           // the item is its entity (a relic)
 	const resource::Id< world::EntityData >& getDropEntity() const;  // null = cannot be put down
 
@@ -112,7 +111,8 @@ Prototype → asset mapping:
 | `event`                             | `EventTrait`                                  |
 | `equip`                             | `EquipTrait`                                  |
 | `drop`                              | `dropEntity`                                  |
-| `quest`, `keep`                     | `flags`                                       |
+| `quest`                             | gone: the find steps that want it (`holdBack`) |
+| `keep`                              | `keep`                                        |
 | `entityId`                          | gone: an `ItemPickupComponentData` in the scene says where it lies |
 
 ### 2.3 Actors and places
@@ -158,7 +158,7 @@ class T_DLLCLASS QuestStep : public ISerializable     // abstract
 	RefArray< IAction > m_onComplete;
 };
 
-class FindItemStep : public QuestStep { resource::Id< ItemData > m_item; int32_t m_count = 1; };
+class FindItemStep : public QuestStep { resource::Id< ItemData > m_item; int32_t m_count = 1; bool m_holdBack = false; };
 class TalkStep     : public QuestStep { resource::Id< ActorData > m_actor; Guid m_line; };   // a line of the actor's dialog
 class ReachStep    : public QuestStep { resource::Id< PlaceData > m_place; float m_radius = 4.0f; };
 class TriggerStep  : public QuestStep { };          // completed only by an AdvanceQuestAction
@@ -167,8 +167,8 @@ class TriggerStep  : public QuestStep { };          // completed only by an Adva
 Rules carried over from the prototype:
 - A find step is done once the item has entered the pack, however it got there. The story
   remembers items found.
-- Until a quest reaches a find step, its item is held back. A pickup is hidden, and a container
-  leaves it out of what it shows and gives.
+- Until a quest reaches a find step that holds its item back (`holdBack`), the item is held back.
+  A pickup is hidden, and a container leaves it out of what it shows and gives.
 - At most one quest is active, and only the active quest's current step has a waypoint.
 
 Waypoints:
@@ -513,7 +513,7 @@ Where it differs from the sketch above:
   once on `refresh()`; an entity no longer in the world is skipped;
 - completes reach steps from the player's position, so the story's distance handler is no longer
   used by the game;
-- shows or hides the pickups of items a quest finds (`Story::isHeldBack`), whenever the quest log
+- shows or hides the pickups of items a quest holds back (`Story::isHeldBack`), whenever the quest log
   moves or the world is indexed again;
 - resolves the followed step's `waypoint` and `talkTarget` each update: the step's own waypoint,
   else the actor, the place, or the nearest visible pickup or container holding the item.
@@ -627,6 +627,15 @@ greeting, which the game passed in to fill lines with no text, is gone:
   empty line. Actors without a dialog got their own, copied from the old default dialog: the
   greeting and the trade response. The stock lines by mood went too.
 - `Main:_nearestTalker` only offers characters whose actor has a dialog.
+
+**Quest items are the steps' (2026-10-23).** `ItemData` has no `quest` flag (version 1), so a find
+step can want any item, a generic one included:
+
+- The story notes an item as found when any find step looks for it (`Story::update`).
+- `FindItemStep::holdBack` (version 3) holds its item back until a quest reaches the step. It is
+  off by default, and on in Zombie's five quests.
+- `Story::isWanted` says whether a quest under way has a find step for the item. The inventory
+  shows its hint from that, and allows a drop when the item has a drop entity or is kept.
 
 ---
 

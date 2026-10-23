@@ -3,7 +3,7 @@
 	<title>THE BRIDAL CROWN</title>
 	<info><![CDATA[ELSA WAS TO BE MARRIED IN THE PARISH BRIDAL CROWN. THE NIGHT THE DEAD ROSE, SOMEONE TOOK IT FROM THE CHAPEL AND CARRIED IT INTO THE SECOND CAVE, EAST OF THE VILLAGE.]]></info>
 	<steps>
-		<item type="zombie.FindItemStep" version="2">
+		<item type="zombie.FindItemStep" version="3">
 			<id>{7FDE444D-960D-40D5-90EC-685B0655163A}</id>
 			<name>find</name>
 			<text><![CDATA[FIND THE BRIDAL CROWN DEEP IN THE SECOND CAVE, EAST OF THE VILLAGE]]></text>
@@ -23,6 +23,7 @@
 			<failWhen/>
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020E}</item>
+			<holdBack>true</holdBack>
 		</item>
 		<item type="zombie.TalkStep" version="2">
 			<id>{71B70B35-4BAE-4343-804C-850080FB5862}</id>

@@ -76,8 +76,8 @@ void StoryWorldComponent::setStory(Story* story)
 	m_story = story;
 	m_shownSerial = ~0U;
 
-	// Every item some quest finds; only their pickups are shown and hidden.
-	m_wanted.clear();
+	// Every item some quest holds back; only their pickups are shown and hidden.
+	m_holdBack.clear();
 	if (m_story)
 	{
 		for (const auto& quest : m_story->getQuests())
@@ -87,8 +87,9 @@ void StoryWorldComponent::setStory(Story* story)
 				continue;
 			for (auto step : questData->getSteps())
 			{
-				if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
-					m_wanted.insert(findItemStep->getItem());
+				auto findItemStep = dynamic_type_cast< const FindItemStep* >(step);
+				if (findItemStep != nullptr && findItemStep->isHoldBack())
+					m_holdBack.insert(findItemStep->getItem());
 			}
 		}
 	}
@@ -218,7 +219,7 @@ void StoryWorldComponent::updateHeldBack()
 	for (auto pickup : m_pickups)
 	{
 		world::Entity* owner = pickup->getOwner();
-		if (!inWorld(owner) || m_wanted.find(pickup->getItem()) == m_wanted.end())
+		if (!inWorld(owner) || m_holdBack.find(pickup->getItem()) == m_holdBack.end())
 			continue;
 
 		const bool show = !m_story->isHeldBack(pickup->getItem());

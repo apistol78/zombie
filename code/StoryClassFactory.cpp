@@ -279,6 +279,8 @@ Ref< Conversation > Story_talk(Story* self, const Any& actor) { return self->tal
 
 bool Story_isHeldBack(Story* self, const Any& item) { return self->isHeldBack(itemOf(item)); }
 
+bool Story_isWanted(Story* self, const Any& item) { return self->isWanted(itemOf(item)); }
+
 int32_t Story_giveItem(Story* self, const Any& item, int32_t count) { return self->giveItem(itemOf(item), count); }
 
 int32_t Story_takeItem(Story* self, const Any& item, int32_t count) { return self->takeItem(itemOf(item), count); }
@@ -333,7 +335,6 @@ void StoryClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classItemData->addProperty("info", &ItemData::getInfo);
 	classItemData->addProperty("icon", &ItemData::getIcon);
 	classItemData->addProperty("maxStack", &ItemData::getMaxStack);
-	classItemData->addProperty("quest", &ItemData::isQuest);
 	classItemData->addProperty("keep", &ItemData::isKeep);
 	classItemData->addProperty("dropEntity", &ItemData_getDropEntity);
 	classItemData->addMethod("getTrait", &ItemData_getTrait);
@@ -477,6 +478,7 @@ void StoryClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classStory->addMethod("getPlace", &Story_getPlace);
 	classStory->addMethod("talk", &Story_talk);
 	classStory->addMethod("isHeldBack", &Story_isHeldBack);
+	classStory->addMethod("isWanted", &Story_isWanted);
 	classStory->addMethod("update", &Story::update);
 	classStory->addMethod("giveItem", &Story_giveItem);
 	classStory->addMethod("takeItem", &Story_takeItem);

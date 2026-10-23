@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="zombie.ItemData">
+<object type="zombie.ItemData" version="1">
 	<name>FLASK</name>
 	<pluralName>FLASKS</pluralName>
 	<info><![CDATA[SOMETHING RED. DRINK IT TO HEAL.]]></info>
 	<icon>flask</icon>
 	<maxStack>9999</maxStack>
-	<quest>false</quest>
 	<keep>false</keep>
 	<dropEntity>{35AF8D8E-4A87-8640-AD0A-6241ED882A3D}</dropEntity>
 	<traits>

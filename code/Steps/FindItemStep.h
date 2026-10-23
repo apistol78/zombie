@@ -28,8 +28,6 @@ class ItemData;
 
 /*! Find an item; done once the item has entered the inventory, however it got there.
  * \ingroup Zombie
- *
- * Until a quest reaches the step the item is held back (Story::isHeldBack).
  */
 class T_DLLCLASS FindItemStep : public QuestStep
 {
@@ -38,12 +36,18 @@ class T_DLLCLASS FindItemStep : public QuestStep
 public:
 	const resource::Id< ItemData >& getItem() const { return m_item; }
 
+	/*! Until a quest reaches the step the item is held back (Story::isHeldBack). */
+	bool isHoldBack() const { return m_holdBack; }
+
 	void setItem(const resource::Id< ItemData >& item) { m_item = item; }
+
+	void setHoldBack(bool holdBack) { m_holdBack = holdBack; }
 
 	virtual void serialize(ISerializer& s) override final;
 
 private:
 	resource::Id< ItemData > m_item;
+	bool m_holdBack = false;
 };
 
 }

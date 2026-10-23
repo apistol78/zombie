@@ -16,12 +16,14 @@
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.FindItemStep", 2, FindItemStep, QuestStep)
+T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.FindItemStep", 3, FindItemStep, QuestStep)
 
 void FindItemStep::serialize(ISerializer& s)
 {
 	QuestStep::serialize(s);
 	s >> resource::Member< ItemData >(L"item", m_item);
+	if (s.getVersion< FindItemStep >() >= 3)
+		s >> Member< bool >(L"holdBack", m_holdBack);
 }
 
 }

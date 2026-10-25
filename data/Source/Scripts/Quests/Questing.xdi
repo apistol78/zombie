@@ -373,7 +373,7 @@ function Main:_updateQuests(dt)
 		self._journalView:update(dt)
 	end
 
-	local playing < const > = not (self._gameOver or self._nightOver or self._paused) and self._cutscene == nil
+	local playing < const > = not (self._gameOver or self._paused) and self._cutscene == nil
 	if playing and self._humanoid ~= nil then
 		-- Steps waited on rather than told: an item come into the pack, a place reached.
 		self._story:update()
@@ -449,7 +449,7 @@ function Main:_updateQuestBeacon(dt)
 	local rec < const > = self._questTalkTo
 	local alpha = 0.0
 	if rec ~= nil and not rec.gone and not rec.dead and self._humanoid ~= nil and self._camera ~= nil
-		and not (self._gameOver or self._paused or self._nightOver or self._dawnPlaying) and self._cutscene == nil then
+		and not (self._gameOver or self._paused) and self._cutscene == nil then
 		-- A point, not a direction: an entity's translation comes back with w = 0.
 		local head < const > = (rec.entity.transform.translation + Vector4(0.0, BEACON_HEIGHT, 0.0, 0.0)).xyz1
 		local dist < const > = (head - self:eye()).length
@@ -477,22 +477,21 @@ end
 -- gets a marker of its own on each (Scripts/Widgets/ObjectiveMarker:setQuest, Minimap:setQuest).
 
 -- Push the map's moving parts: where the player is, which the whole map is drawn
--- around, then which ward posts burn and the followed quest's waypoint. The relics are
--- not drawn (see Scripts/Widgets/Minimap).
+-- around, then the followed quest's waypoint.
 function Main:_updateMinimap()
 	if not self._minimapMapped then
 		return
 	end
 
-	-- Hidden once the night is decided, so neither the victory card nor the Game
-	-- Over menu has a map sitting in the corner behind it -- and while paused, with
+	-- Hidden once the player is dead, so the Game Over menu has no map sitting in
+	-- the corner behind it -- and while paused, with
 	-- the rest of the HUD. Widget:setVisible is already a no-op when the state has
 	-- not changed, so this needs no latch.
 	--
 	-- The pause flag belongs here rather than in _showHud because this runs above the
 	-- freeze returns: anything hidden from outside would be shown again by the very
 	-- next frame of a paused game.
-	local show < const > = not self._gameOver and not self._nightOver and not self._paused
+	local show < const > = not self._gameOver and not self._paused
 		and self._humanoid ~= nil
 	self._minimap:setVisible(show)
 	if not show then
@@ -501,10 +500,6 @@ function Main:_updateMinimap()
 
 	local p < const > = self._humanoid.transform.translation
 	self._minimap:setView(p.x, p.z, self._heading)
-
-	for i, w in ipairs(self._wards) do
-		self._minimap:setWard(i, w.x, w.z, w.fixture.done)
-	end
 
 	local q < const > = self._questWaypoint
 	if q ~= nil then
@@ -517,17 +512,11 @@ end
 -- Aim the objective compass at wherever the player should be walking: the nearest lock
 -- the pack holds what it spends -- a still-dark ward while there is a relic in it, a locked
 -- gate while there is a key -- and otherwise the nearest thing lying out in the forest that
--- some lock wants, a relic before a key (their priorities). Blank once the night is over,
--- either way it ended. The followed quest's waypoint, if it has one here, is a second marker
--- beside it.
---
--- Nearest is only ever a suggestion. With no altar to return to, where a relic goes is
--- the player's decision -- the needle picks the closest unlit post so it has something to
--- say, and walking past it to a post that covers better ground is the whole point of the
--- mechanic.
+-- some lock wants, a relic before a key (their priorities). Blank once the player is dead.
+-- The followed quest's waypoint, if it has one here, is a second marker beside it.
 function Main:_updateMarker(dt)
 	local target = nil
-	local live < const > = not self._gameOver and not self._nightOver and self._humanoid ~= nil
+	local live < const > = not self._gameOver and self._humanoid ~= nil
 	if live then
 		target = self:_lockObjective()
 		if target == nil and self._interaction ~= nil then

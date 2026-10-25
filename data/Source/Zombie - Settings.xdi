@@ -55,25 +55,6 @@
 			</second>
 		</item>
 		<item>
-			<first>dawn</first>
-			<second type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>hold</first>
-						<second type="traktor.PropertyFloat"><value>4.0</value></second>
-					</item>
-					<item>
-						<first>max</first>
-						<second type="traktor.PropertyFloat"><value>12.0</value></second>
-					</item>
-					<item>
-						<first>washTime</first>
-						<second type="traktor.PropertyFloat"><value>3.5</value></second>
-					</item>
-				</value>
-			</second>
-		</item>
-		<item>
 			<first>enemy</first>
 			<second type="traktor.PropertyGroup">
 				<value>
@@ -294,14 +275,6 @@
 					<item>
 						<first>riseGap</first>
 						<second type="traktor.PropertyFloat"><value>1.2</value></second>
-					</item>
-					<item>
-						<first>wakeDelay</first>
-						<second type="traktor.PropertyFloat"><value>2.0</value></second>
-					</item>
-					<item>
-						<first>wakeDelayQuiet</first>
-						<second type="traktor.PropertyFloat"><value>0.8</value></second>
 					</item>
 					<item>
 						<first>wallMargin</first>
@@ -929,36 +902,6 @@
 										</value>
 									</second>
 								</item>
-								<item>
-									<first>relicTaken</first>
-									<second type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>cap</first>
-												<second type="traktor.PropertyInteger"><value>12</value></second>
-											</item>
-											<item>
-												<first>duration</first>
-												<second type="traktor.PropertyFloat"><value>30.0</value></second>
-											</item>
-										</value>
-									</second>
-								</item>
-								<item>
-									<first>wardLit</first>
-									<second type="traktor.PropertyGroup">
-										<value>
-											<item>
-												<first>cap</first>
-												<second type="traktor.PropertyInteger"><value>14</value></second>
-											</item>
-											<item>
-												<first>duration</first>
-												<second type="traktor.PropertyFloat"><value>35.0</value></second>
-											</item>
-										</value>
-									</second>
-								</item>
 							</value>
 						</second>
 					</item>
@@ -1166,14 +1109,6 @@
 					<item>
 						<first>igniteRate</first>
 						<second type="traktor.PropertyFloat"><value>0.9</value></second>
-					</item>
-					<item>
-						<first>purgeRadius</first>
-						<second type="traktor.PropertyFloat"><value>15.0</value></second>
-					</item>
-					<item>
-						<first>radius</first>
-						<second type="traktor.PropertyFloat"><value>7.0</value></second>
 					</item>
 				</value>
 			</second>

@@ -251,8 +251,8 @@ function Pickup:update(context, totalTime, deltaTime)
 	end
 
 	-- Freeze with the rest of the game: nothing is collected through the pause menu, the
-	-- inventory or a chest's window, after death, or once the night is already won.
-	if context._gameOver or context._paused or context._nightOver then
+	-- inventory or a chest's window, or after death.
+	if context._gameOver or context._paused then
 		return
 	end
 

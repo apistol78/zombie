@@ -83,10 +83,10 @@ end
 -- ---- T ----
 
 -- Ask for the way to the followed quest's waypoint. Refused over a window, in a cutscene or
--- once the night is decided; a press while the route is still being found is let go, and one
+-- once the player is dead; a press while the route is still being found is let go, and one
 -- while a wisp is in flight sends a new one from where the player stands now.
 function Main:_showTrail()
-	if self._gameOver or self._nightOver or self._paused or self._cutscene ~= nil or self._humanoid == nil
+	if self._gameOver or self._paused or self._cutscene ~= nil or self._humanoid == nil
 		or self._dialogOpen or self._journalOpen or self._inventoryOpen or self._chestOpen ~= nil then
 		return
 	end

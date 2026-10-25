@@ -61,7 +61,7 @@ function StageExit:update(context, totalTime, deltaTime)
 	end
 	-- Not while the game is frozen or already over: a body sliding into the trigger
 	-- behind a Game Over screen must not whisk the stage away from under its menu.
-	if context._gameOver or context._paused or context._nightOver or context._cutscene ~= nil then
+	if context._gameOver or context._paused or context._cutscene ~= nil then
 		return
 	end
 	-- Nor before the stage has found the player. Until then the Humanoid is still where the

@@ -12,11 +12,11 @@ import(traktor)
 -- for the spawner to obey.
 --
 -- The shape it is after is a rhythm rather than weather. Every event the player
--- causes -- taking a relic, lighting a ward, opening the cemetery gate -- is the
+-- causes -- taking a key, opening the cemetery gate -- is the
 -- night noticing, and the forest surges for a while; between surges the allowance
 -- collapses to a trickle small enough that the player can very nearly clear the
 -- ground around them. That near-quiet is the point: it is what makes picking a
--- relic up *feel* like pulling a trigger, and it hands the player the pacing --
+-- key up *feel* like pulling a trigger, and it hands the player the pacing --
 -- nothing surges until they act.
 --
 -- Owned by Main the way the Loadout is: constructed in Main:new, poked by the event
@@ -26,10 +26,7 @@ import(traktor)
 -- and mutated in place rather than replaced: plain data, so the whole arrangement
 -- survives a hot reload -- mid-burst state included -- with nothing to restore.
 --
--- The hive broods are deliberately outside it. A lit ward is a burst *and* a brood:
--- the brood is the theatrical half of the answer (five rising out of one hole, on
--- camera), the burst is the forest around it quietly worsening, and the two read as
--- one event.
+-- The hive broods are deliberately outside it.
 
 -- Tuning. See the orchestrator block in Config for what the numbers mean. The caps
 -- are clamped against the spawner's ceiling, which is a performance figure this
@@ -68,7 +65,7 @@ end
 -- guessed at, so an event site can be added before its tuning is.
 --
 -- Overlapping events run to whichever ends later and hold the bigger crowd, rather
--- than adding up: lighting a ward seconds after opening the gate is one bad night,
+-- than adding up: taking a key seconds after opening the gate is one bad night,
 -- not two stacked ones -- the ceiling stays legible, and a fast player cannot chain
 -- events into a wall no single cap ever authorised.
 function SpawnOrchestrator:notify(kind)
@@ -76,8 +73,8 @@ function SpawnOrchestrator:notify(kind)
 	if ev == nil then
 		return
 	end
-	-- The same event is the same burst all night long: how many wards are already lit
-	-- does not make it any bigger.
+	-- The same event is the same burst all night long: how many times it has already
+	-- happened does not make it any bigger.
 	local cap < const > = math.min(ev.cap, MAX_ENEMIES)
 	self._burst = math.max(self._burst, ev.duration)
 	self._burstCap = math.max(self._burstCap, cap)

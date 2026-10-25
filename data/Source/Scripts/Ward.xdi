@@ -7,10 +7,11 @@ import(traktor)
 -- Ward
 --
 -- A consecration ward: a stone pillar that stands bare and dark until the player
--- carries a relic to this post and spends it here, at which point Main calls
--- turnOn() on this component. What E does at the post, and that it takes a relic in
--- the off hand, is the entity's zombie.InteractableComponentData and LockComponentData;
--- E calls interact() with the relic the lock took (Main:_interact).
+-- carries a relic to this post and spends it here, which lights it. That is all it
+-- does: a lit ward is a flame to look at, nothing more. What E does at the post, and
+-- that it takes a relic in the off hand, is the entity's
+-- zombie.InteractableComponentData and LockComponentData; E calls interact() with the
+-- relic the lock took (Main:_interact).
 --
 -- Everything a lit ward *shows* hangs off a "Switch" child entity: the relic set at
 -- the post ("SpentRelic") and the flame above it ("Flame", a point LightComponent),
@@ -20,10 +21,8 @@ import(traktor)
 -- holds. The relic the player carried is not left on the ground for this: it is put
 -- out of sight and the post shows its own (see Scripts/Relic).
 --
--- The Stage owns *which* ward lights and the no-spawn ground each one buys (see
--- Main:_publishWards); this component owns only what the post looks like. The flame
--- light's authored colour -- stored premultiplied by intensity -- is the lit target,
--- and the component blacks it out until turnOn.
+-- The flame light's authored colour -- stored premultiplied by intensity -- is the lit
+-- target, and the component blacks it out until turnOn.
 --
 -- Attach to an entity whose GroupComponent holds a child named "Switch" carrying a
 -- FacadeComponent and a GroupComponent, that group holding "Flame" and "SpentRelic".
@@ -60,9 +59,17 @@ function Ward:isOn()
 	return self._lit == true
 end
 
--- E at the dark post, with `relic` out of the pack: the stage lights it (Main:_consecrate).
+-- E at the dark post, with `relic` out of the pack: park the relic on the post, out of
+-- sight (Pickup:spend) -- the post brings up one of its own as it lights -- and light it.
+-- A relic with no entity behind it (a pack restored without its keepsakes) still lights
+-- the post; there is just nothing to park on it.
 function Ward:interact(context, relic)
-	context:_consecrate(self.owner, relic)
+	local sc < const > = (relic ~= nil) and relic:getComponent(traktor.world.ScriptComponent) or nil
+	if sc ~= nil and sc.spend ~= nil then
+		sc:spend(context, self.owner)
+	end
+	self:turnOn()
+	context:_playCue("ward")
 end
 
 -- Find (once) and cache the "Switch" child: the entity whose facade holds everything
@@ -105,8 +112,9 @@ end
 -- one call, so adding to the post in the editor needs nothing in here.
 --
 -- Driven from update rather than done in turnOn so it cannot be missed: turnOn is
--- also called from Main:resolve, while the world is still being put together, and a
--- reveal dropped there would leave a lit ward standing dark for the rest of the night.
+-- also called on the restore path, while the world may still be being put together,
+-- and a reveal dropped there would leave a lit ward standing dark for the rest of the
+-- night.
 function Ward:_reveal()
 	if not self._lit or self._revealed then
 		return

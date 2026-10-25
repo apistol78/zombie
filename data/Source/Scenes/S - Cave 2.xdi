@@ -74,8 +74,10 @@
 		<item type="zombie.NpcWorldComponentData">
 			<settings>{6E9AD100-0000-4000-8000-000000000020}</settings>
 		</item>
-		<item type="zombie.InteractionWorldComponentData"/>
-		<item type="zombie.FixtureWorldComponentData"/>
+		<item type="zombie.InteractionWorldComponentData">
+		</item>
+		<item type="zombie.FixtureWorldComponentData">
+		</item>
 	</worldComponents>
 	<layers>
 		<item type="traktor.world.EntityData" version="2">
@@ -1488,7 +1490,7 @@
 								<locked>false</locked>
 							</state>
 							<transform>
-								<translation>45.058567, 1.074479, -5.656139, 0</translation>
+								<translation>45.058567, 0.824172, -5.656139, 0</translation>
 								<rotation>0.20181, -0.630183, 0.174408, 0.729194</rotation>
 							</transform>
 							<components/>

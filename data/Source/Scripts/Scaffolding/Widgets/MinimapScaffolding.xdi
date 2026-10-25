@@ -8,29 +8,19 @@ import(traktor)
 
 -- MinimapScaffolding
 --
--- Test page for Scripts/Widgets/Minimap, built the way Main:_buildMinimap builds it -- ward
--- radius, then build() once with the counts and the landmarks -- over a made-up 100 m square:
--- five ward posts and one landmark of each kind, plus one with no drawing of its own (the plain
--- surveyor's mark). The map reaches RADIUS metres from the player, less than the square, so
--- things go off its edge.
+-- Test page for Scripts/Widgets/Minimap, built the way Main:_buildMinimap builds it -- build()
+-- once with the landmarks -- over a made-up 100 m square: one landmark of each kind, plus one
+-- with no drawing of its own (the plain surveyor's mark). The map reaches RADIUS metres from
+-- the player, less than the square, so things go off its edge.
 --
 -- Then it is driven the way Main:_updateMinimap drives it, every frame: the player walks a
 -- figure of eight, the map moving under the arrow, so markers come and go at the edge and the
--- quest pin (fixed in the square's middle) waits at the edge when it is out of reach; the wards
--- light one after another, each consecrated disc appearing under its post once it is wholly on
--- the map, and go dark again once all five are lit.
+-- quest pin (fixed in the square's middle) waits at the edge when it is out of reach.
 
 MinimapScaffolding = MinimapScaffolding or class("MinimapScaffolding", GameScaffolding)
 
 local RADIUS < const > = 35.0
 local QUEST < const > = { 50, 50 }
-local WARD_RADIUS < const > = 15.0
-local LIGHT_EVERY < const > = 4.0   -- s between wards lighting
-local DARK_AFTER < const > = 6.0    -- s all five stay lit before the loop starts again
-
-local WARDS < const > = {
-	{ 20, 25 }, { 75, 20 }, { 50, 55 }, { 25, 80 }, { 80, 78 }
-}
 
 local LANDMARKS < const > = {
 	{ x = 50, z = 88, glyph = "chapel" },
@@ -40,12 +30,11 @@ local LANDMARKS < const > = {
 }
 
 function MinimapScaffolding:build(parent)
-	self:note(parent, "MINIMAP   The player walks off both sides; wards light in turn.")
+	self:note(parent, "MINIMAP   The player walks off both sides.")
 
 	self._map = Minimap(self:row(parent, "map"))
 	self._map:setRadius(RADIUS)
-	self._map:setWardRadius(WARD_RADIUS)
-	self._map:build(#WARDS, LANDMARKS)
+	self._map:build(LANDMARKS)
 end
 
 function MinimapScaffolding:step(dt)
@@ -59,12 +48,6 @@ function MinimapScaffolding:step(dt)
 	local dz < const > = 35.0 * w * 2.0 * math.cos(t * w * 2.0)
 	self._map:setView(x, z, math.atan(dx, dz))
 
-	-- Ward i lights at i * LIGHT_EVERY into each loop.
-	local cycle < const > = LIGHT_EVERY * #WARDS + DARK_AFTER
-	local lit < const > = math.min(#WARDS, math.floor((t % cycle) / LIGHT_EVERY))
-	for i, p in ipairs(WARDS) do
-		self._map:setWard(i, p[1], p[2], i <= lit)
-	end
 	self._map:setQuest(QUEST[1], QUEST[2])
 end
 ]]></text>

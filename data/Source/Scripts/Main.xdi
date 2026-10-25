@@ -19,7 +19,7 @@
 #using \{7EA9C000-0000-4000-8000-000000000005}
 
 -- Scripts/SpawnOrchestrator, which owns the night's tempo: it turns the gameplay
--- events this stage detects (a relic taken, a ward lit, the gate opened) into bursts
+-- events this stage detects (a key taken, the gate opened) into bursts
 -- and lulls, and publishes the verdict to the Spawner as _spawnDrive on this stage.
 #using \{9F2C606F-BD26-43E1-9A3F-B108C688FB02}
 
@@ -71,19 +71,6 @@ import(traktor)
 -- Config for itself (Config.rifle, Config.melee, Config.grenade), which is the same split
 -- as the rest of this refactor -- the stage does not hold a magazine size it never looks at.
 
--- The dawn shot. Neither the framing nor the light is written down here: both halves of
--- the sunrise -- the camera flying out over the forest and the Sky entity's directional
--- light coming up under it -- are keyed in the scene as a theater act on the *world*
--- (Scene 2's TheaterWorldComponent), so all Main does is play it by name and ask the layer
--- to render through the camera it flies. Re-timing or re-framing the payoff is a scene
--- edit, exactly as re-timing a hive's opening is.
---
--- DAWN_CAMERA is a second camera entity, standing apart from the first-person "Camera0"
--- the rest of this script drives off the player's eye: the act owns one and Main owns the
--- other, so there is no pose to save and restore across the cut.
-local DAWN_ACT < const > = "Dawn"
-local DAWN_CAMERA < const > = "Camera"
-
 -- How high the player's eye rides above the Humanoid's origin. What the first person
 -- camera looks out of, and -- through Main:eye -- what every shot, swing and throw leaves
 -- from, so the weapons and the view agree by construction rather than by both spelling it
@@ -102,9 +89,7 @@ local EYE_HEIGHT_MAX_LAG < const > = 0.3
 local EYE_HEIGHT_SNAP < const > = 2.0
 
 
--- The kinds of fixture this stage keeps records of (Story/Fixtures): the posts a relic lights,
--- and the hives each lit post wakes.
-local WARD < const > = Guid("\{D1A20000-0000-4000-8000-000000000700}")
+-- The kind of fixture this stage keeps records of (Story/Fixtures): the hives.
 local HIVE < const > = Guid("\{D1A20000-0000-4000-8000-000000000701}")
 
 -- Where the people -- a body to search, someone to talk to -- stand among the interactables'
@@ -112,8 +97,8 @@ local HIVE < const > = Guid("\{D1A20000-0000-4000-8000-000000000701}")
 -- to take. See _whatWouldE.
 local PEOPLE_PRIORITY < const > = Config.npc.interactPriority
 
--- How much nearer a rival ward post has to be before the objective compass gives up the
--- one it is already pointing at; see Main:_lockObjective.
+-- How much nearer a rival lock has to be before the objective compass gives up the one it
+-- is already pointing at; see Main:_lockObjective.
 local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
 
 -- Where the minimap sits: its own corner, clear of the prompt line in the middle and
@@ -165,18 +150,6 @@ local CUTSCENE_MIN < const > = Config.cutscene.min
 -- ...and never longer than this, whatever the hive says, so nothing can strand the
 -- player behind a cutscene that will not end.
 local CUTSCENE_MAX < const > = Config.cutscene.max
-
--- How long a lit ward gets to itself before the hive it wakes opens and the camera
--- leaves for it. Lighting a post is three things at once -- the flame catches, the light
--- takes whatever was standing on the ground, and a hive answers it -- and cutting away
--- on the same frame threw the first two away: the flare and the bodies going down happen
--- in first person, where the player is standing, and they are the part they paid for.
---
--- Two lengths, because the wait is only worth having if there is something in it. A
--- purge that took nobody leaves an empty pause, so the quiet one is just long enough for
--- the flame to catch (Ward ignites over about a second) before the night answers back.
-local HIVE_WAKE_DELAY < const > = Config.hive.wakeDelay        -- ...when the light took zombies with it
-local HIVE_WAKE_DELAY_QUIET < const > = Config.hive.wakeDelayQuiet  -- ...and when it took none
 
 -- How much of the world stays awake around the hive: zombies inside this radius of it
 -- keep running (its brood, rising and walking out -- the whole subject of the shot),
@@ -305,8 +278,8 @@ function Main:new(params, environment)
 	-- MC_Crosshair export of the same UI/Hud movie the other HUD widgets use. It is not
 	-- part of the HUD row -- it is floated (ILayout.FLOAT) over the centre of the screen
 	-- and placed by hand each frame in _updateCrosshair, since the centre moves with the
-	-- window size. Parented to the frame after the HUD but before the dialogs and the
-	-- dawn wash, so those cover it; it hides itself whenever the game is not being played,
+	-- window size. Parented to the frame after the HUD but before the dialogs, so those
+	-- cover it; it hides itself whenever the game is not being played,
 	-- and whenever the weapon in hand has nothing to aim (Weapon:wantsCrosshair). A relic in
 	-- the off hand has no say in it any more.
 	self._crosshair = Crosshair(self._frame)
@@ -323,7 +296,7 @@ function Main:new(params, environment)
 	local mapSize < const > = self._minimap:getPreferredSize()
 	self._minimap:place(MAP_X, MAP_Y, mapSize.width, mapSize.height)
 	-- Hidden until it has been given its markers, so a stage with nothing to map
-	-- (Scene 1 has no relics, no wards and none of the landmarks) never shows an
+	-- (Scene 1 has none of the landmarks) never shows an
 	-- empty plate, and Scene 2 never flashes one on the frame before resolve runs.
 	self._minimap:setVisible(false)
 	self._minimapBuilt = false   -- resolve has dealt with it
@@ -354,18 +327,13 @@ function Main:new(params, environment)
 	-- clamps its text bounds to the width it was placed at, so a label whose text
 	-- changes -- and the prompt changes constantly -- gets the longer string cut
 	-- off unless it is re-placed. See _setLabel.
-	--
-	-- There was a standing objective banner above these ("WARDS 1 / 7", and "THE
-	-- WARDS ARE LIT" once the circle closed). It is gone: the count is on the minimap
-	-- as lit and unlit posts, and lighting one already reads out on the notice line
-	-- below, so the banner was saying a third time what the screen said twice.
 	self._prompt = { widget = Static(self._frame, ""), y = 84 }
 	self._prompt.widget.__layout = ILayout.FLOAT
 	self._prompt.widget:setTextSize(22)
 	self._prompt.widget:setTextColor(Color4f(0.96, 0.96, 0.94, 1.0))
 
 	-- Transient line for things that happen rather than things that are true --
-	-- currently only a ward catching light.
+	-- a gate grinding open, the game saved.
 	self._notice = { widget = Static(self._frame, ""), y = 120 }
 	self._notice.widget.__layout = ILayout.FLOAT
 	self._notice.widget:setTextSize(24)
@@ -373,7 +341,7 @@ function Main:new(params, environment)
 
 	-- ...and, smaller and quieter under it, what went into the pack or would not fit: "+ 12
 	-- ROUNDS", "THE PACK IS FULL". Its own line, because pickups happen all night and would
-	-- otherwise talk over the notices that matter -- a ward catching, a gate grinding open.
+	-- otherwise talk over the notices that matter -- a gate grinding open.
 	-- See _feed.
 	self._feedLine = { widget = Static(self._frame, ""), y = 154 }
 	self._feedLine.widget.__layout = ILayout.FLOAT
@@ -410,7 +378,7 @@ function Main:new(params, environment)
 	self._sprintSpeed = Config.player.sprintSpeed
 	self._running = false   -- true while sprinting and moving; hides the crosshair, lowers the rifle
 
-	-- The dead. Whatever killed them -- a round, a blast, a ward taking light -- every zombie
+	-- The dead. Whatever killed them -- a round, a blast -- every zombie
 	-- goes through Main:killEnemy and lands in here, so there is one corpse timer and one kill
 	-- tally however many weapons the player ends up carrying.
 	self._deadEnemies = {}       -- live set: enemy entity -> remaining corpse lifetime (s)
@@ -444,11 +412,10 @@ function Main:new(params, environment)
 	-- pack and what its own script does about it (interact). Resolved off the world.
 	self._interaction = nil
 
-	-- The cemetery gates. One stands locked in the wall around the graveyard, and two
-	-- of the ward posts stand behind it, so what it locks away is ground the night can
-	-- be won on. The gate owns itself entirely -- its iron, which is also its collision,
-	-- the swing and grind of its "Open" act (see Scripts/Gate), and whether it stands open --
-	-- and its lock names the key it spends.
+	-- The cemetery gates. One stands locked in the wall around the graveyard. The gate
+	-- owns itself entirely -- its iron, which is also its collision, the swing and grind of
+	-- its "Open" act (see Scripts/Gate), and whether it stands open -- and its lock names
+	-- the key it spends.
 
 	-- What is done with every fixture -- a gate or a chest opened, a lever pulled, a ward lit, a
 	-- hive woken -- is the world's (zombie.FixtureWorldComponent), by the id of the entity, which
@@ -472,45 +439,17 @@ function Main:new(params, environment)
 	-- same way: a lever its throw and the gate it names (zombie.LeverComponent, Scripts/Lever); a
 	-- lever gate has no lock, so no key ever fits it.
 
-	-- Wards. A relic is spent by carrying it to a ward post and setting it down there,
-	-- which lights that ward: the light kills whatever is standing on its ground at that
-	-- moment (_purgeWard) and the Spawner will not place anything inside it afterwards.
-	-- It does *not* hold the horde off -- zombies walk over consecrated ground like any
-	-- other ground, so a lit ward is a place nothing rises, not a place nothing reaches.
-	-- (The steering that used to keep them out was removed on 2026-08-11; the note at the
-	-- top of zombie.EnemyComponent says why.)
-	--
-	-- *Which* post is the player's call: there is no fixed order and no altar to return
-	-- to, so every relic picked up is also a decision about where the next patch of
-	-- cleared ground should be, and the posts are close enough together that lighting two
-	-- neighbours wastes most of the second one's radius.
-	self._wards = nil            -- the ward fixtures, read off the world once; see _fixtureRecords
-	self._wardOf = nil           -- ...by entity id
-	self._wardsLit = 0
-	self._wardsNeeded = nil      -- how many have to burn to win; counted in resolve
-	self._litWards = {}          -- published to the Spawner
-	-- The disc the Spawner is barred from and the minimap draws, and -- a separate quantity
-	-- that only used to share its number -- how far the flare reaches when a post takes
-	-- light (Main:_purgeWard). Config notes the constraint between the two.
-	self._wardRadius = Config.ward.radius            -- no-spawn radius of a lit ward (m)
-	self._purgeRadius = Config.ward.purgeRadius      -- radius of the kill when a ward takes light (m)
 	self._noticeText = ""
 	self._noticeTimer = 0.0
 
-	-- Hives. The other half of the ward trade: every post that takes light wakes the
-	-- nearest still-dormant hive, which opens (a theater act sinking the boulder that
-	-- plugs it) and sends a brood of zombies out into the forest for good. The hive
-	-- itself owns all of that -- see Scripts/Hive -- so this only tracks where the
-	-- hives are, and wakes one by calling activate() on its ScriptComponent, exactly as it
-	-- lights a ward.
-	--
-	-- Consecrating ground therefore costs something the player can see coming: the
-	-- safe island is bought with a hive opening somewhere else on the map, and with
-	-- more hives than wards it is also a choice about which of them stays shut.
+	-- Hives. A hive opens (a theater act sinking the boulder that plugs it) and sends a
+	-- brood of zombies out into the forest for good. The hive itself owns all of that --
+	-- see Scripts/Hive -- so this only tracks where the hives are, and wakes one by
+	-- calling activate() on its ScriptComponent (_openHive).
 	self._hives = nil            -- the hive fixtures, read off the world once; see _fixtureRecords
 
 	-- The night's tempo, owned here the way the loadout is: the event sites in
-	-- _interact and _lightWard poke it (notify), update ticks it below the freeze
+	-- _interact and _unlockGate poke it (notify), update ticks it below the freeze
 	-- returns, and the Spawner reads its verdict off this stage as _spawnDrive --
 	-- which its constructor publishes. The night opens in the lull, a trickle, as if
 	-- the first wave had already been fought off (see SpawnOrchestrator:new).
@@ -518,35 +457,7 @@ function Main:new(params, environment)
 
 	-- The hive cutscene: the night holds its breath while one opens. See
 	-- _beginCutscene for what freezes and what does not, and CUTSCENE_* for the shot.
-	-- _pendingHive is the beat before it -- a hive chosen and counting down, with the
-	-- game still running, so the ward the player just lit gets its own moment first.
 	self._cutscene = nil         -- the record while one is running, nil otherwise
-	self._pendingHive = nil      -- { hive, delay }: chosen, not yet open
-
-	-- The night director. There is exactly one way to win -- every ward burning -- and it
-	-- fires a sequence rather than an instant cut, so the payoff has room to land: the
-	-- horde drops where it stands, the DAWN_ACT shot plays, and the screen floods warm
-	-- into the victory card.
-	--
-	-- Only the directional light on the Sky entity carries the sunrise. SkyComponent has
-	-- no script bindings at all (nothing in Weather is registered), and the theater cannot
-	-- animate what is not bound either, so its intensity and horizon colours are out of
-	-- reach for the act as much as for this script -- hence the wash, which covers the sky
-	-- staying night-dark underneath.
-	self._nightOver = false      -- true from the moment the last relic is placed
-	self._victoryShown = false
-	-- What is left of the sequence now that the act carries the sunrise: how long the light
-	-- is held once the shot has played out, and how long the wash then takes to flood up.
-	-- The shot's own length is not among them -- it is the act's, read off the theater
-	-- component rather than copied out of it (see _updateDawn), so re-timing the act in the
-	-- editor re-times everything after it too.
-	self._dawn = 0.0             -- seconds since the last ward took light
-	self._dawnHold = Config.dawn.hold         -- standing in the light, looking at the bodies
-	self._dawnWashTime = Config.dawn.washTime    -- ...then the warm flood up to the victory card
-	self._dawnMax = Config.dawn.max           -- never wait on the act longer than this
-	self._dawnPlaying = false    -- true while the act is running, and so owns the camera
-	self._dawnEnd = nil          -- _dawn when it let go; the two timings above run from there
-	self._dawnCamera = nil       -- the entity the act flies; the layer renders through it
 
 	-- The eye's eased height above the world (see EYE_HEIGHT_RATE and Main:_followEyeHeight).
 	-- nil until the first frame with a player, which then takes the body's height outright.
@@ -629,35 +540,8 @@ function Main:new(params, environment)
 	-- The journal, and the conversation and journal windows (Scripts/Quests/Questing).
 	self:_initQuests()
 
-	-- Dawn wash: a full-screen warm panel, hidden through the night and flooded up
-	-- to opaque once it is won. FLOAT so it stays out of the frame's row layout, and
-	-- created after the HUD and the other dialogs so it covers them -- but before the
-	-- victory card below, which has to sit on top of it. Hidden rather than merely
-	-- transparent: Panel listens for mouse presses and would otherwise swallow clicks
-	-- meant for the pause menu.
-	self._flash = Panel(self._frame, FloodLayout())
-	self._flash.__layout = ILayout.FLOAT
-	self._flash:setColor(Color4f(1.0, 0.94, 0.8, 0.0))
-	self._flash:setVisible(false)
-
-	-- Victory card, raised at the end of the sunrise.
-	self._victoryDialog = Dialog(self._frame, TableLayout({ 0 }, { 0, 0, 0, 0 }, 24, 24, 0, 16))
-	local victoryTitle = Static(self._victoryDialog, "DAWN")
-	victoryTitle:setTextSize(60)
-	victoryTitle:setHorizontalAlign(Widget.ALIGN_CENTER)
-	victoryTitle:setTextColor(Color4f(0.94, 0.88, 0.7, 1.0))
-	local victorySub = Static(self._victoryDialog, "THE NIGHT IS OVER")
-	victorySub:setTextSize(22)
-	victorySub:setHorizontalAlign(Widget.ALIGN_CENTER)
-	self._victoryRestart = MenuButton(self._victoryDialog, "AGAIN")
-	self._victoryRestart:setMinimumWidth(220)
-	self._victoryRestart:setOnClick(function() self:_restart() end)
-	self._victoryExit = MenuButton(self._victoryDialog, "EXIT")
-	self._victoryExit:setMinimumWidth(220)
-	self._victoryExit:setOnClick(function() self:_exitToStartup() end)
-
 	-- Frame rate, top right. The very last thing on the Frame, so it draws over every
-	-- dialog and the dawn wash: it is meant to be on screen whatever else is.
+	-- dialog: it is meant to be on screen whatever else is.
 	self._fps = FpsCounter(self._frame, environment)
 
 	-- Every pickup this world laid out, by its entity's id (pickupAppeared), and the stacks the
@@ -758,10 +642,10 @@ end
 -- the player looks through their things. The HUD goes, as it does for the pause menu, and the
 -- cursor is handed back to click with.
 --
--- Refused over a cutscene or the dawn, which own the camera, and on top of the pause menu,
--- another window, or either of the night's ending screens.
+-- Refused over a cutscene, which owns the camera, on top of the pause menu or another
+-- window, and once the player is dead.
 function Main:_canOpenPanel()
-	return not (self._gameOver or self._nightOver or self._paused or self._cutscene ~= nil)
+	return not (self._gameOver or self._paused or self._cutscene ~= nil)
 end
 
 function Main:_holdForPanel(hold)
@@ -825,7 +709,7 @@ end
 -- meant to be seen. Nothing here needs undoing on the way out: the labels keep their
 -- text and placement while hidden, and _updateHudText carries on writing them.
 function Main:_setPaused(paused)
-	if self._gameOver or self._nightOver then
+	if self._gameOver then
 		return
 	end
 	self._paused = paused
@@ -1011,7 +895,7 @@ end
 -- Scripts/StageExit calls this when the player walks into its volume -- or presses E in one that
 -- offers itself (_interact) -- and it is the one hook for anything else that should take the player
 -- somewhere. Returns whether the trip started: false while another load (restart, the menus'
--- exit) is already in flight, or once the night is decided.
+-- exit) is already in flight, or once the player is dead.
 --
 -- The player goes as they are. What they carry -- the pack, the rounds in each weapon, their
 -- health, the cheats they had on -- rides through the Loading stage to the next one (_carry),
@@ -1020,7 +904,7 @@ end
 -- tonight therefore finds it as it was left, rather than laid out afresh to be looted twice.
 -- The horde is not kept: the dead stay dead and the living are the spawner's to raise again.
 function Main:leaveStage(target, notice, spawn)
-	if self._loader ~= nil or target == nil or self._gameOver or self._nightOver then
+	if self._loader ~= nil or target == nil or self._gameOver then
 		return false
 	end
 	if notice ~= nil then
@@ -1039,10 +923,10 @@ end
 
 -- Save the night as it stands: what a trip to another stage would carry, plus which stage this
 -- is and where the player is standing in it, so Continue (Scripts/Startup) puts them back on the
--- spot. Refused once the night is decided or while a load is already under way. Returns whether
+-- spot. Refused once the player is dead or while a load is already under way. Returns whether
 -- it was written.
 function Main:_saveGame()
-	if self._humanoid == nil or self._gameOver or self._nightOver or self._loader ~= nil then
+	if self._humanoid == nil or self._gameOver or self._loader ~= nil then
 		return false
 	end
 	local carry < const > = self:_carry(nil)
@@ -1150,18 +1034,14 @@ function Main:finalize()
 		self._gameOverDialog:remove()
 		self._gameOverDialog = nil
 	end
-	if self._victoryDialog ~= nil then
-		self._victoryDialog:remove()
-		self._victoryDialog = nil
-	end
 	self._frame:remove()
 	self._frame = nil
 end
 
 -- The fixtures of one kind (Story/Fixtures), as records { id, entity, fixture, x, z } in the order
--- the world has them. Read once: the scene keeps the wards and the hives resident (its
--- EntityStreamingOperationData lists them), since the compass, the minimap and the hives' waking
--- want every one of them from the first frame. Whether one has turned is its fixture's (done).
+-- the world has them. Read once: the scene keeps the hives resident (its
+-- EntityStreamingOperationData lists them), since opening one wants every one of them from the
+-- first frame. Whether one has turned is its fixture's (done).
 function Main:_fixtureRecords(kind)
 	local list = {}
 	local fixtures < const > = self._fixtures:getFixtures(kind)
@@ -1197,7 +1077,7 @@ function Main:resolve()
 	-- handed this world's books the first time round; every ward, hive, gate, chest and lever
 	-- restores itself from it as it appears, instantly -- a chest streamed back in, or a mid-game
 	-- reload, must not replay every flare, send up a second brood, or grind the gate open again.
-	-- What is kept here is where the wards and the hives stand.
+	-- What is kept here is where the hives stand.
 	if self._fixtures == nil then
 		self._fixtures = world:getComponent(zombie.FixtureWorldComponent)
 		if self._fixtures ~= nil and self._fixtureState ~= nil then
@@ -1205,31 +1085,7 @@ function Main:resolve()
 		end
 		self._fixtureState = nil
 	end
-	if self._wards == nil and self._fixtures ~= nil then
-		self._wards = self:_fixtureRecords(WARD)
-		self._wardOf = {}
-		local lit = 0
-		for _, w in ipairs(self._wards) do
-			self._wardOf[w.id] = w
-			if w.fixture.done then
-				lit = lit + 1
-			end
-		end
-		self._wardsLit = lit
-
-		-- How many have to burn. Deliberately *not* "all of them": a relic is spent
-		-- for good on the post it lights, so the night can only ask for as many wards
-		-- as there are relics in the world to pay for them. Authoring more posts than
-		-- relics is therefore what turns this into a real decision -- the player picks
-		-- which ground is worth consecrating and leaves the rest of the posts dark --
-		-- while an equal count leaves only the order to choose. Either way the scene
-		-- cannot be made unwinnable by adding a post to it. The relic is whatever the
-		-- posts' lock spends.
-		local lock < const > = (#self._wards > 0) and self._wards[1].entity:getComponent(zombie.LockComponent) or nil
-		local relics < const > = (lock ~= nil and self._interaction ~= nil) and self._interaction:countPickups(lock.item) or 0
-		self._wardsNeeded = math.min(#self._wards, relics)
-
-		self:_publishWards()
+	if self._hives == nil and self._fixtures ~= nil then
 		self._hives = self:_fixtureRecords(HIVE)
 	end
 	-- The stacks the player put down in this world, for a world they have been in before
@@ -1259,16 +1115,6 @@ function Main:resolve()
 		-- Assigning it here is authoritative and survives any transition.
 		if self._camera ~= nil then
 			self.world.camera = self._camera
-		end
-	end
-	-- The camera the DAWN_ACT flies. Held like the first-person one above -- a live handle,
-	-- so it is dropped in reload() and found again here -- and re-asserted as the layer's
-	-- camera if the shot was already running when the script was reloaded, since the block
-	-- above will just have bound the first-person one back over it.
-	if self._dawnCamera == nil then
-		self._dawnCamera = world:getEntity(DAWN_CAMERA)
-		if self._dawnCamera ~= nil and self._dawnPlaying then
-			self.world.camera = self._dawnCamera
 		end
 	end
 	if self._character == nil and self._humanoid ~= nil then
@@ -1323,11 +1169,11 @@ function Main:resolve()
 	-- this function is, and cheap once each of them has what it wants (Weapon:resolve).
 	self._loadout:resolve()
 
-	-- Last, because it fits itself to the wards resolved above *and* to where the
-	-- player is standing. Survives a hot reload untouched: _minimapBuilt is plain
-	-- data on the stage and the widget keeps the marker clips it already made, so
-	-- this must not run a second time and double them up.
-	if not self._minimapBuilt and self._wards ~= nil and self._humanoid ~= nil then
+	-- Last, once the world is there to read the landmarks off and the player is in it.
+	-- Survives a hot reload untouched: _minimapBuilt is plain data on the stage and the
+	-- widget keeps the marker clips it already made, so this must not run a second time
+	-- and double them up.
+	if not self._minimapBuilt and self._humanoid ~= nil then
 		self._minimapBuilt = true
 		self._minimapMapped = self:_buildMinimap(world)
 	end
@@ -1415,8 +1261,8 @@ function Main:isEnemyDead(enemy)
 end
 
 -- What a corpse is shoved with, along `dir`: the knockback, plus the lift that makes it flop
--- back rather than slide. One place, because a round, a ward's flare and the kill-all
--- shortcut all want the same shove and only Config.corpse should have a say in how hard. A
+-- back rather than slide. One place, because a round and the kill-all
+-- shortcut both want the same shove and only Config.corpse should have a say in how hard. A
 -- blast is the exception and says so itself -- it falls off with distance (Grenades:_explode).
 function Main:knockbackImpulse(dir)
 	return dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
@@ -1715,11 +1561,11 @@ end
 -- (_afterDeath tells its zombie.NpcComponent, which switches the body to rag doll), queue
 -- the knockback for the frame its rag doll controller goes active, and settle what it leaves
 -- behind (_afterDeath: the kill tally, a zombie's drop, a villager's searchable body).
--- Shared by damage, the wards and the kill-all shortcut so a character only ever dies one way.
+-- Shared by damage and the kill-all shortcut so a character only ever dies one way.
 -- Returns false if it was already dead, so a second trigger cannot double-count it.
 --
 -- `whole` picks how the rag doll takes the impulse, and the two are genuinely different
--- forces rather than a stylistic choice. Left false (a round, a ward's flare) it lands on
+-- forces rather than a stylistic choice. Left false (a round) it lands on
 -- the limb nearest `point`, which gains the spin as well as the speed and drags the rest of
 -- the body after it through its joints -- a hit with somewhere it hit. Set true (a blast)
 -- it is spread across every limb so the body's momentum changes by exactly `impulse` and
@@ -1745,8 +1591,8 @@ end
 -- position -- taken back into the zombie's own frame, and the two multiply out to exactly the
 -- place that was hit. A leg shot opens at the leg and a head shot at the head, which is the
 -- whole reason Rifle:attack passes the ray's own hit position down here instead of a guess along
--- the aim. Callers with no ray to speak of pass the middle of the body instead, so a blast or a
--- ward's flare still bursts at the chest.
+-- the aim. Callers with no ray to speak of pass the middle of the body instead, so a blast
+-- still bursts at the chest.
 --
 -- Effects/BloodSplat emits about its own origin for this to work: the lift that used to be baked
 -- into its emitters could only ever be right for one caller, and putting it here instead is what
@@ -1983,14 +1829,11 @@ function Main:_flatDistance(e)
 end
 
 -- Where the compass points while the pack holds what a lock spends -- a relic for a dark post,
--- the key for a locked gate: the nearest such lock, the highest priority first. Only ever a
--- suggestion -- with no altar to return to, where a relic goes is the player's decision, and
--- walking past the needle to a post that covers better ground is the whole point of the
--- mechanic.
+-- the key for a locked gate: the nearest such lock, the highest priority first.
 --
 -- Held on the one it already points at until a rival of the same kind is clearly nearer
 -- (MARKER_SWITCH_MARGIN), and dropped the moment that one is used, so walking the midline
--- between two dark posts does not flip the needle back and forth -- each flip snaps and flashes
+-- between two locks does not flip the needle back and forth -- each flip snaps and flashes
 -- it, and reads as an instruction changing rather than as jitter.
 function Main:_lockObjective()
 	if self._interaction == nil or self._humanoid == nil then
@@ -2005,30 +1848,6 @@ function Main:_lockObjective()
 	end
 	self._lockHold = lock
 	return lock ~= nil and lock.owner or nil
-end
-
--- Light the ward post `entity` with `relic`, the one its lock took out of the pack (_interact).
--- The relic itself does the rest (Relic:light): it is parked on the post, the post takes
--- light, and the night answers.
---
--- The relic that comes out is the last one in the pack, so with several carried the one shown
--- in hand stays there until it is the only one left.
-function Main:_consecrate(entity, relic)
-	local ward < const > = (self._wardOf ~= nil) and self._wardOf[entity.id:format()] or nil
-	if ward == nil then
-		return
-	end
-	local sc < const > = (relic ~= nil) and relic:getComponent(traktor.world.ScriptComponent) or nil
-	if sc ~= nil and sc.light ~= nil then
-		sc:light(self, ward)
-	else
-		-- A relic with no entity behind it (a pack restored without its keepsakes) still lights
-		-- the post it was carried to; there is just nothing to park on it.
-		self:_lightWard(ward)
-		if self:_wardsDone() then
-			self:_circleClosed()
-		end
-	end
 end
 
 -- A gate whose lock took its key (_interact) opens itself -- the swing, the grind, the
@@ -2066,121 +1885,7 @@ function Main:_groundAt(p)
 	return hit.position
 end
 
--- Consecrating ground clears whatever is standing on it: every zombie inside
--- _purgeRadius of the new post dies where it is.
---
--- This is now the *only* thing a lit ward does to the zombies that are already out there.
--- The other rule -- the Spawner refusing to place anything inside the ward -- only covers
--- the future, and the steering that used to hold the horde off was removed altogether
--- (see the note at the top of zombie.EnemyComponent), so without this the flame would
--- catch on ground that simply stays occupied. The flare is what makes lighting a post a
--- thing that happens rather than a thing that is true, and what makes lighting one
--- *while* being chased a real play.
---
--- Measured with the flare's own radius rather than the ward's, which are two different
--- things that only looked like one while they were the same number: the disc is ground
--- the Spawner is barred from for the rest of the night (see _wardRadius); the flare is a
--- single moment and can reach as far as it wants to.
---
--- Flat XZ test, the same way the Spawner reads a ward. They die
--- through killEnemy like everything else -- rag doll, blood, kill tally, the usual
--- corpse timer -- shoved radially out from the post, so the pile scatters off the
--- consecrated ground instead of collapsing onto it. Returns how many were taken.
-function Main:_purgeWard(ward)
-	local world = self.world.world
-	if world == nil or ward == nil then
-		return 0
-	end
-
-	local horde < const > = self:_horde(world)
-	if horde == nil then
-		return 0
-	end
-	local r2 < const > = self._purgeRadius * self._purgeRadius
-	local killed = 0
-	for i = 0, horde.size - 1 do
-		local e < const > = horde:get(i)
-		local p < const > = e.transform.translation
-		local dx < const > = p.x - ward.x
-		local dz < const > = p.z - ward.z
-		local d2 < const > = dx * dx + dz * dz
-		if d2 < r2 then
-			local d < const > = math.sqrt(d2)
-			local away
-			if d > 0.01 then
-				away = Vector4(dx / d, 0.0, dz / d, 0.0)
-			else
-				away = Vector4(0.0, 0.0, 1.0, 0.0)   -- standing on the post itself
-			end
-			local chest < const > = p + Vector4(0.0, 1.0, 0.0, 0.0)
-			if self:killEnemy(e, chest, self:knockbackImpulse(away)) then
-				killed = killed + 1
-			end
-		end
-	end
-	return killed
-end
-
--- The bill for consecrating ground: the hive nearest the post that just took light
--- opens and sends a brood out into the forest. Which hive is deliberately the
--- *nearest* one rather than the next in some order -- the pressure then rises where
--- the player has just been standing, close enough to be walked back through, so
--- lighting a post is felt as something that happened here and not as a counter going
--- up. A hive that is already open is skipped, so with fewer hives than wards the last
--- wards are simply free.
---
--- The opening and the brood are the hive's own (Scripts/Hive); this only picks which
--- one and remembers it by index so a hot reload can restore it. Returns the hive that
--- answered, or nil when there was none left to answer.
---
--- It does not open it. The hive is *chosen* here and armed to open a beat later (see
--- HIVE_WAKE_DELAY and _openHive), so the ward's own flare -- and the bodies the light
--- just took, which is what `purged` sizes the wait by -- are not cut away from on the
--- frame they happen. Marking it awake is done here rather than at the opening, so a hive
--- counting down can never also be chosen by a second ward.
-function Main:_wakeHive(ward, purged)
-	if self._hives == nil or ward == nil then
-		return nil
-	end
-
-	-- Nothing stirs for the ward that closes the circle. There is no night left for a
-	-- brood to be sent into, and the alternative is worse than pointless: _interact
-	-- lights the ward and then breaks the dawn in the same frame, so the reprisal for
-	-- winning would be a cutscene of a hive opening -- shown instead of the sunrise the
-	-- whole night was for, and running while the horde it was meant to threaten
-	-- collapses off-camera.
-	if self:_wardsDone() then
-		return nil
-	end
-
-	local best, bestD = nil, math.huge
-	for _, h in ipairs(self._hives) do
-		if not h.fixture.done and not h.waking then
-			local dx < const > = h.x - ward.x
-			local dz < const > = h.z - ward.z
-			local d2 < const > = dx * dx + dz * dz
-			if d2 < bestD then
-				best, bestD = h, d2
-			end
-		end
-	end
-	if best == nil then
-		return nil
-	end
-
-	-- Woken when its moment comes (_openHive, Hive:activate, which keeps it so); until then
-	-- it is spoken for.
-	best.waking = true
-	self._pendingHive = {
-		hive = best,
-		delay = ((purged or 0) > 0) and HIVE_WAKE_DELAY or HIVE_WAKE_DELAY_QUIET
-	}
-	return best
-end
-
--- The armed hive's moment has come: open it and go and watch. Called from update once
--- _pendingHive has counted down, which is deliberately in the *running* game -- the whole
--- point of the delay is that the frames it spans are played, not frozen.
+-- Open `hive` (one of the _hives records) and go and watch.
 function Main:_openHive(hive)
 	if hive == nil then
 		return
@@ -2194,10 +1899,9 @@ end
 
 -- Cut to the hive and hold the night still while it opens.
 --
--- A hive is the one thing in this game that happens somewhere the player is not, and it
--- is the consequence of the decision they have just made -- so it is worth being shown
--- rather than merely reported by a line of HUD text. The camera goes to the hive, and
--- everything else stops until it is done.
+-- A hive is the one thing in this game that happens somewhere the player is not, so it
+-- is worth being shown rather than merely reported by a line of HUD text. The camera
+-- goes to the hive, and everything else stops until it is done.
 --
 -- What "stops" means, precisely, is the existing freeze the pause menu already uses,
 -- extended by one flag rather than reimplemented:
@@ -2208,8 +1912,7 @@ end
 --   * Every zombie.EnemyComponent returns early *unless it is inside the hive*
 --     (CUTSCENE_RADIUS of it), which is what leaves the brood -- and only the brood --
 --     moving in the shot. A zombie the player has just shot is exempt as well, since it
---     has to be allowed to finish handing itself to the rag doll; that is the same
---     reason the dawn does not freeze them.
+--     has to be allowed to finish handing itself to the rag doll.
 --   * Scripts/Hive deliberately reads none of this, so the hive it is watching keeps
 --     playing its act and sending its brood up.
 --
@@ -2233,14 +1936,9 @@ end
 -- freezes does so by reading _cutscene, and postUpdate rebuilds the first-person camera
 -- from the player's eye every frame so there is no pose to restore.
 --
--- Called when the shot ends, and by the two things that end the night out from under it
--- -- dawn breaking and the player dying -- both of which own the camera afterwards. Also
--- drops a hive that was armed but has not opened yet, since every caller that wants the
--- camera back wants that too: a hive is not worth opening into a Game Over menu. Its record
--- stays spoken for (waking), so nothing else will pick it up either.
+-- Called when the shot ends, and by the player dying, which owns the camera afterwards.
 function Main:_endCutscene()
 	self._cutscene = nil
-	self._pendingHive = nil
 end
 
 -- Is the hive still opening? Asked of the hive itself (Hive:isOpening covers both its
@@ -2318,243 +2016,16 @@ function Main:_placeCutsceneCamera()
 	)
 end
 
--- Light one particular ward -- the one the player just set a relic at: flag it,
--- remember it by index so a hot reload can restore it, tell its Ward component to
--- catch (Scripts/Ward owns the flame itself), republish the safe ground, clear what
--- is standing on it and wake a hive with the bill. Returns false for a ward that is
--- already burning, so a double trigger cannot spend a second relic on it, and
--- otherwise true, the number of zombies the light took, and the hive it woke (nil if
--- every hive is already open, or if this ward closed the circle -- see _wakeHive).
---
--- The hive is woken after the purge, not before, so the brood it sends up inside
--- itself is never caught by the sweep that clears the ward's own ground.
---
--- Not on the hot-reload restore path in resolve, which re-lights wards by calling
--- turnOn() straight on the component: that is restoring state that already
--- happened, not consecrating ground, and should not re-purge the forest or open a
--- second hive.
-function Main:_lightWard(ward)
-	if ward == nil or ward.fixture.done then
-		return false, 0, nil
-	end
-	ward.fixture.done = true
-	self._wardsLit = self._wardsLit + 1
-	local sc < const > = ward.entity:getComponent(traktor.world.ScriptComponent)
-	if sc ~= nil then
-		sc:turnOn()
-	end
-	-- The low bell of consecration. Raised on the player rather than on the post: the
-	-- player is standing at the post when this happens, and a non-positional stinger is
-	-- the one that reads as *the night changing* rather than as a nearby object.
-	self:_playCue("ward")
-	self:_publishWards()
-	-- The forest answers. This is the quiet half of what the hive below is the
-	-- theatrical half of: the burst around the player worsens while the brood rises
-	-- somewhere else, and the two read as one event.
-	self._orchestrator:notify("wardLit")
-	local purged < const > = self:_purgeWard(ward)
-	return true, purged, self:_wakeHive(ward, purged)
-end
-
--- Is the circle closed? The win condition. False in a scene with no wards or no
--- relics (Scene 1 has neither), where the night is not winnable and never ends.
-function Main:_wardsDone()
-	local need < const > = self._wardsNeeded or 0
-	return need > 0 and self._wardsLit >= need
-end
-
--- The last ward this stage needs has just taken light. What that means depends on where it
--- burns: in the forest it is the whole night won, and the dawn breaks (_breakDawn); anywhere
--- else -- the cave -- it is only that place made safe. The cave says so, once, and that is all:
--- no sunrise, no victory card, nothing that takes the player's hands off them. They find their
--- own way back out, and the night is still waiting in the forest.
---
--- A cave cleared once stays cleared -- its lit wards are in the world books every trip and save
--- carries (_saveWorld) -- so coming back to it finds every post burning and says nothing more.
-function Main:_circleClosed()
-	if self._stageKey == "TERRAIN" then
-		self:_breakDawn()
-		return
-	end
-	if self._cleared then
-		return
-	end
-	self._cleared = true
-	self:_showNotice("CAVE IS CLEARED")
-end
-
--- Hand the world what it needs off the ward state: where consecrated ground is. Rebuilt
--- only when a ward is lit -- wards never move, so there is nothing to do per frame.
---
--- _litWards is read by Scripts/Spawner alone, which will not place anything inside a lit
--- ward; every zombie.EnemyComponent used to read it too and steer out of one, and that
--- whole rule is gone -- the horde walks over consecrated ground and only the flare that
--- lit it ever touched them (see _purgeWard, and the note at the top of
--- zombie.EnemyComponent). The count of lit wards no longer winds the night up either:
--- the horde is as fast and as many after the last ward as before the first.
---
--- Only r2 is published, since comparing squared distances is all the spawner does. The
--- plain radius went with the steering that needed it: it is _wardRadius, one field away,
--- for anything that wants it back.
-function Main:_publishWards()
-	local lit = {}
-	if self._wards ~= nil then
-		for _, w in ipairs(self._wards) do
-			if w.fixture.done then
-				table.insert(lit, {
-					x = w.x,
-					z = w.z,
-					r2 = self._wardRadius * self._wardRadius
-				})
-			end
-		end
-	end
-	self._litWards = lit
-end
-
--- The night is won. Everything after this is the payoff: the spawner is shut off,
--- the horde drops where it stands, and Main:_updateDawn runs the sunrise.
-function Main:_breakDawn()
-	if self._nightOver then
-		return
-	end
-	self._nightOver = true
-	self._dawn = 0.0
-
-	-- The night is won, so there is nothing left to continue: the saved one is forgotten, and
-	-- the menu offers New Game alone again.
-	SaveGame.clear(self.environment)
-
-	-- The HUD is done here, not when the victory card finally goes up: what is left
-	-- is the sunrise, and a health bar and an ammunition count are the wrong things to
-	-- be reading over it. The same moment the minimap already takes itself off screen
-	-- (see _updateMinimap), so the corner does not empty out in two steps.
-	--
-	-- Nothing puts it back: winning ends this stage, and Again builds a new one.
-	self:_showHud(false)
-
-	-- ...except the notice, which is the one line of HUD this moment is *for*. It is
-	-- part of the HUD the pause menu hides, so it has to be asked back explicitly, and
-	-- it takes itself away again when _noticeTimer runs out and _setLabel writes the
-	-- empty string over it.
-	self._notice.widget:setVisible(true)
-	self:_showNotice("DAWN BREAKS")
-
-	-- The bell, and the wind out from under it. The bed is the stage's own "ambience"
-	-- AudioLayer, so taking it away is a matter of asking that layer to fade -- which is
-	-- kinder than cutting it, and is what makes the last thing the player hears the bell
-	-- ringing out over a forest going quiet.
-	self:_playCue("dawn")
-	local ambience < const > = self:getLayer("ambience")
-	if ambience ~= nil then
-		ambience:fadeOff()
-	end
-
-	-- The sunrise owns the camera from here. _wakeHive already refuses to stir a hive
-	-- for the ward that closes the circle, so there should be nothing to cut away from;
-	-- this is the guard for any other route to dawn, because a cutscene left running
-	-- would hold the camera at a hive through the whole payoff -- and _updateDawn sits
-	-- above the freeze, so it would play out over the wrong shot.
-	self:_endCutscene()
-
-	-- ...and this is it taking it. The shot is the scene's DAWN_ACT -- a theater act on the
-	-- world, flying DAWN_CAMERA out over the forest while it raises the light on the Sky
-	-- entity -- so playing it and handing the layer that camera is the whole of it. The act
-	-- runs off world time, which the freeze below does not touch, so it plays out over a
-	-- frozen night exactly as a hive's opening does.
-	--
-	-- If there is no act to play, Performance:play has already logged as much and the night
-	-- is simply won without ceremony: the camera stays on the player, and _updateDawn -- which
-	-- finds nothing playing -- goes straight to the wash and the victory card. Same trade as a
-	-- hive whose opening will not play (Hive:activate); a payoff that cannot be shown must
-	-- still be reached.
-	local world < const > = self.world.world
-	local theater = nil
-	if world ~= nil then
-		theater = world:getComponent(traktor.theater.TheaterWorldComponent)
-	end
-	if theater ~= nil and self._dawnCamera ~= nil and theater:play(DAWN_ACT) then
-		self._dawnPlaying = true
-		self.world.camera = self._dawnCamera
-	end
-
-	-- The light takes them. Routed through the same rag doll path a shot zombie
-	-- takes, so the horde collapses in place rather than being deleted out from
-	-- under the player. EnemyComponent deliberately does *not* freeze on
-	-- _nightOver -- it still has to see _deadEnemies and make the switch.
-	self:_killAllEnemies()
-
-	-- Hand the mouse back, ready for the victory card.
-	self._flash:setVisible(true)
-	self.environment.input.inputSystem:setExclusive(false)
-	self.environment.render.renderView:showCursor()
-end
-
--- Run the payoff: let the DAWN_ACT shot play itself out, hold a beat in the light it
--- leaves behind, then flood the screen warm and raise the victory card.
---
--- The sunrise is not here any more -- the act carries it -- so what is left is the two
--- beats after it, and both are measured from where the act actually ended rather than from
--- a duration copied out of it. Re-timing the shot in the editor therefore re-times the hold
--- and the wash with it, and nothing here has to be kept in step by hand.
-function Main:_updateDawn(dt)
-	if not self._nightOver then
-		return
-	end
-
-	self._dawn = self._dawn + dt
-
-	-- Has the act let go? Asked of the theater component, exactly as the hive cutscene asks
-	-- the hive itself (Main:_updateCutscene), and bounded by _dawnMax for the same reason
-	-- CUTSCENE_MAX bounds that one: an act that will not end -- or one that was never there
-	-- to play -- must not be able to strand the player behind a shot with no way out of it.
-	--
-	-- _dawnEnd stamps the moment, so the beats below run from the end of the shot. Nil until
-	-- then, which is also what holds the wash off through it.
-	if self._dawnEnd == nil then
-		local playing = false
-		if self._dawnPlaying and self._dawn < self._dawnMax then
-			local world < const > = self.world.world
-			if world ~= nil then
-				local theater < const > = world:getComponent(traktor.theater.TheaterWorldComponent)
-				playing = theater ~= nil and theater.playing
-			end
-		end
-		if playing then
-			return
-		end
-		-- Cleared before the camera is left alone: postUpdate reads _dawnPlaying to know
-		-- the shot owns the view, and from here the first-person camera may move again --
-		-- the layer is still rendering through the act's, wherever the act parked it.
-		self._dawnEnd = self._dawn
-		self._dawnPlaying = false
-	end
-
-	-- Wash: holds off through the shot and the hold after it, then floods to opaque for the
-	-- card. It is what covers the sky staying night-dark through all of this, SkyComponent
-	-- being unscriptable -- by the act as much as by this script.
-	local a < const > = math.max(0.0, (self._dawn - self._dawnEnd - self._dawnHold) / self._dawnWashTime)
-	local p < const > = self._frame:getPlacement()
-	self._flash:place(0, 0, p.width, p.height)
-	self._flash:setColor(Color4f(1.0, 0.94, 0.8, math.min(1.0, a * a)))
-
-	if a >= 1.0 and not self._victoryShown then
-		self._victoryShown = true
-		self._victoryDialog:show()
-	end
-end
-
 -- Give the minimap its markers. Once only, off the world. The map is the ground around
 -- the player (Scripts/Widgets/Minimap), so there is nothing to fit: only what to draw.
 --
 -- The landmarks are whatever in the world says it is one (zombie.LandmarkComponent): the
--- chapel, the towers, the altar -- which lost its gameplay role when relics moved to the ward
--- posts, but is still the biggest monument in the cemetery and so still the thing to navigate
--- by. Its glyph names the drawing the map gives it -- a pictogram with the name lettered
+-- chapel, the towers, the altar -- the biggest monument in the cemetery and so the thing to
+-- navigate by. Its glyph names the drawing the map gives it -- a pictogram with the name lettered
 -- underneath, one child sprite of MC_MapLandmark each (tools/gen_hud_svg.py); a landmark
 -- without one of its own is drawn as a plain mark with no name.
 --
--- Returns false in a scene with nothing to map -- no wards or landmarks -- which leaves the
+-- Returns false in a scene with nothing to map -- no landmarks -- which leaves the
 -- widget hidden and stops _updateMinimap doing anything.
 function Main:_buildMinimap(world)
 	local marks = {}
@@ -2568,18 +2039,17 @@ function Main:_buildMinimap(world)
 		end
 	end
 
-	if #self._wards == 0 and #marks == 0 then
+	if #marks == 0 then
 		return false
 	end
 
-	self._minimap:setWardRadius(self._wardRadius)
-	self._minimap:build(#self._wards, marks)
+	self._minimap:build(marks)
 	return true
 end
 
 -- Place the aiming crosshair at the centre of the screen, and show it only while the
 -- player is actually sighting down a weapon: not on the run, not with nothing in hand
--- to aim, and not while the game is paused, lost or won. A relic in the off hand has no
+-- to aim, and not while the game is paused or lost. A relic in the off hand has no
 -- say in it -- it used to hide the reticle, and that rule is gone with the rest of the
 -- relic's carry penalties. Called from update above its early-returns, so those "not
 -- playing" states can hide it.
@@ -2591,7 +2061,6 @@ function Main:_updateCrosshair(dt)
 	local loaded = self._loadout:wantsCrosshair()
 
 	local show = not self._gameOver
-		and not self._nightOver
 		and not self._paused
 		and self._cutscene == nil
 		and not self._running
@@ -2611,8 +2080,8 @@ function Main:_updateCrosshair(dt)
 		return
 	end
 
-	-- Centre the widget's box on the middle of the screen -- the same coordinate space
-	-- the flash panel fills. The reticle is authored at the centre of its box, so this
+	-- Centre the widget's box on the middle of the screen, in the frame's own
+	-- coordinate space. The reticle is authored at the centre of its box, so this
 	-- lands it exactly on the point of aim.
 	local pl < const > = self._frame:getPlacement()
 	local sz < const > = self._crosshair:getPreferredSize()
@@ -2745,7 +2214,7 @@ end
 -- transient notice and the feed under them.
 function Main:_updateHudText(dt)
 	local prompt = ""
-	if not self._gameOver and not self._nightOver then
+	if not self._gameOver then
 		local verb < const >, target < const > = self:_whatWouldE()
 		if verb == "use" then
 			prompt = "E   " .. target.prompt
@@ -2855,10 +2324,6 @@ function Main:update(info)
 	-- every frame regardless of this stage's freeze -- so a ward caught on the frame
 	-- the player died still finishes catching rather than sticking at its flare.
 
-	-- The sunrise, once the night is won. Must run above the freeze below, since
-	-- that freeze is exactly what it is playing over.
-	self:_updateDawn(dt)
-
 	-- If an exit-to-startup load is in flight, switch to it the moment it is ready.
 	-- Checked before the game-over / paused early-returns below, because Exit is
 	-- triggered from the paused menu (where the rest of the frame is frozen).
@@ -2874,15 +2339,6 @@ function Main:update(info)
 
 	-- Arriving: nothing moves until the world around the player has streamed in.
 	if self:_updateStreamHold(dt) then
-		return
-	end
-
-	-- Night won: freeze the player for the sunrise. Deliberately does not freeze the
-	-- enemies -- every one of them was just handed to the rag doll path, and their
-	-- controllers have to keep running to make the switch. Their corpses are never
-	-- despawned, since the despawn pass is below this return, which is fine: nothing
-	-- happens after the victory card but a restart.
-	if self._nightOver then
 		return
 	end
 
@@ -2939,19 +2395,6 @@ function Main:update(info)
 		return
 	end
 
-	-- A hive has been chosen and is counting down to opening. Ticked here, below the
-	-- freeze returns above and *without* returning itself, because these are the frames
-	-- the delay exists to let the player play: the ward flaring at their feet and the
-	-- bodies the light took going down in front of them (see HIVE_WAKE_DELAY).
-	if self._pendingHive ~= nil then
-		self._pendingHive.delay = self._pendingHive.delay - dt
-		if self._pendingHive.delay <= 0.0 then
-			local hive < const > = self._pendingHive.hive
-			self._pendingHive = nil
-			self:_openHive(hive)
-		end
-	end
-
 	-- A hive is opening: hold everything but the hive itself and freeze the frame here.
 	-- Below the pause return above, so the menu still takes priority over it and the
 	-- shot resumes where it left off (the act plays on behind the menu -- the theater
@@ -2970,10 +2413,8 @@ function Main:update(info)
 	-- cutscene holds a surge where it stood rather than quietly spending it.
 	self._orchestrator:update(dt)
 
-	-- Cheat shortcuts: G toggles god mode, H toggles infinite ammunition, K kills every zombie
-	-- in the world, and L breaks the dawn on the spot -- the whole payoff, without having to
-	-- carry four relics across the forest first, which is what it takes to see it otherwise.
-	-- All four are edge-triggered, so holding the key fires once. Deliberately below the
+	-- Cheat shortcuts: G toggles god mode, H toggles infinite ammunition and K kills every
+	-- zombie in the world. All three are edge-triggered, so holding the key fires once. Deliberately below the
 	-- game-over and paused returns above, so none of them does anything while the frame is
 	-- frozen. Not tied to the movement block below either, since they work with or without a
 	-- character.
@@ -2996,14 +2437,6 @@ function Main:update(info)
 			end
 			if mapping:isStatePressed("STATE_KILL_ALL") then
 				self:_killAllEnemies()
-			end
-			-- Not guarded on the wards: it is the shot that is being reached for, not the
-			-- win. _breakDawn is idempotent, so leaning on the key does it once, and it is
-			-- also what the last ward calls -- so what L shows is the real thing rather than
-			-- a preview of it. No cheat label: like K, it happens once and is over, and
-			-- there is no state left switched on to name.
-			if mapping:isStatePressed("STATE_DAWN") then
-				self:_breakDawn()
 			end
 		end
 	end
@@ -3186,22 +2619,14 @@ function Main:update(info)
 
 	-- Despawn ragdoll corpses once their lifetime elapses (also frees their physics bodies).
 	--
-	-- Except at dawn, where the countdown is held: _breakDawn drops the entire horde
-	-- at once and the shot that follows then spends every second of itself, and of the
-	-- hold after it, inviting the player to look at them -- which a _corpseLifetime of six
-	-- seconds would spend deleting them one by one in plain sight. The bodies are the
-	-- payoff, so they stay for it -- the stage is being torn down at the end of this
-	-- either way.
-	--
-	-- ...and except for a body with something still on it to be searched (_hasLoot), whose
+	-- Except for a body with something still on it to be searched (_hasLoot), whose
 	-- clock is held until it has been emptied: it is a place now, not an effect.
 	do
 		local world = self.world.world
 		local remove = {}
-		local decay < const > = self._nightOver and 0.0 or dt
 		for e, life in pairs(self._deadEnemies) do
 			if not self:_hasLoot(e) then
-				life = life - decay
+				life = life - dt
 			end
 			if life <= 0.0 then
 				table.insert(remove, e)
@@ -3253,14 +2678,6 @@ function Main:postUpdate(info)
 	-- standing and out of shot.
 	if self._cutscene ~= nil then
 		self:_placeCutsceneCamera()
-		return
-	end
-
-	-- The dawn shot has the camera: the act is flying its own one out over the forest, and
-	-- everything below hangs off the player's eye -- a view nobody is looking through. The
-	-- rifle and a carried relic are left where the frame froze them, as for a hive above,
-	-- which is down at the player and well out of a shot composed twenty metres up.
-	if self._dawnPlaying then
 		return
 	end
 
@@ -3332,10 +2749,6 @@ function Main:reload()
 	self._humanoid = nil
 	self._eyeY = nil
 	self._camera = nil
-	-- The dawn shot's camera goes with it. resolve() finds it again and, if the shot was
-	-- running, re-binds it as the layer's camera -- so reloading mid-payoff does not drop
-	-- the player back into a first-person view of a frozen night.
-	self._dawnCamera = nil
 	-- Every weapon lets go of its own live handles here -- the rifle's entity, event set and
 	-- trail, the held grenade, anything thrown and still in the air -- and keeps its plain
 	-- numbers, so a reload cannot quietly resupply the player. Which of those a weapon has
@@ -3344,13 +2757,11 @@ function Main:reload()
 	-- Goes with the humanoid above: it is that entity's event set, and every cue the
 	-- player owns is raised through it (_playCue), so a stale one means a silent night.
 	self._bloodEvents = nil
-	-- Ward records hold live entity handles, so they have to be re-resolved, along with the
-	-- world's fixtures; which of them burn is the world's (zombie.FixtureWorldComponent), which
-	-- survives, and every fixture restores itself from it. The compass hold and the
-	-- interactables are live components of the old world, so they go with them.
+	-- The world's fixtures are re-resolved; what is done with each is the world's
+	-- (zombie.FixtureWorldComponent), which survives, and every fixture restores itself from
+	-- it. The compass hold and the interactables are live components of the old world, so
+	-- they go with them.
 	self._fixtures = nil
-	self._wards = nil
-	self._wardOf = nil
 	self._lockHold = nil
 	self._interaction = nil
 	-- The relic shown in hand is found again from the pack on the next postUpdate. The
@@ -3362,11 +2773,6 @@ function Main:reload()
 	-- opening without it.
 	self._hives = nil
 	self._cutscene = nil
-	-- ...as does a hive still counting down to open, for the same reason: its record is
-	-- one of the ones about to be re-resolved. Reloading in that half-second window
-	-- therefore leaves that one hive dormant, to be woken by the next post lit -- a fair
-	-- price for reload never being able to strand a stale entity.
-	self._pendingHive = nil
 	-- The pickups' books are plain data by entity id and survive; a pickup whose script is
 	-- rebuilt reports itself again (pickupAppeared). What was put down is forgotten: a stack
 	-- lying in the world across a hot reload stays where it is, but is no longer remembered if

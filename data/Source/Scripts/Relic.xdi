@@ -9,7 +9,7 @@ import(traktor)
 --
 -- A consecrated cross. Taken with E into the pack, where relics stack, and equipped from there
 -- into the off hand -- which is what lets the player light a ward with one: E at a still-dark
--- post with a relic in hand spends it there (Main:_consecrate calls :light).
+-- post with a relic in hand spends it there (Ward:interact).
 --
 -- A Pickup (see Scripts/Pickup), and the one keepsake among them (Items: `keep`): its entity is
 -- never destroyed. In the pack it is hidden and rides along with the player, so anything reading
@@ -19,9 +19,6 @@ import(traktor)
 -- What it no longer does is cost the player anything to hold. A relic in hand used to slow the
 -- walk, bar the sprint and take the crosshair away; none of that survives -- equipped or not, the
 -- player moves and aims exactly as they always do.
---
--- Everything around the item stays with the Stage, which owns it: which wards burn, and the dawn
--- that breaks.
 
 Relic = Relic or class("Relic", Pickup)
 
@@ -33,40 +30,6 @@ end
 -- that is not there to be taken at all.
 function Relic:pressToTake()
 	return true
-end
-
--- Light `ward` (one of Main's ward records) with this relic: park it on the post, out of sight,
--- and let the post take light. Safe ground opens up around wherever the player chose to spend
--- this one, whatever was standing on it dies, the forest beyond it speeds up -- and a hive opens
--- somewhere out in that forest. All three read out on the one notice line rather than replacing
--- each other, because they are one event: this is what the relic bought and what it cost.
---
--- The post takes the relic over: it brings up one of its own as it lights (see Scripts/Ward),
--- so which ground has been bought stays legible out in the dark -- which is why this one is put
--- out of sight rather than stood on the ground beside the post's.
---
--- The caller has already taken it out of the pack.
-function Relic:light(context, ward)
-	self:spend(context, ward.entity)
-
-	local lit < const >, purged < const >, hive < const > = context:_lightWard(ward)
-	if lit then
-		local notice = "A WARD IS LIT"
-		if purged > 0 then
-			notice = notice .. "   " .. tostring(purged) .. " TAKEN BY THE LIGHT"
-		end
-		if hive ~= nil then
-			notice = notice .. "   A HIVE STIRS"
-		end
-		context:_showNotice(notice)
-	end
-
-	-- Closing the circle: in the forest that ends the night, in the cave it only clears the cave
-	-- (Main:_circleClosed). Checked after the ward, so its notice is replaced by that one rather
-	-- than overwriting it.
-	if context:_wardsDone() then
-		context:_circleClosed()
-	end
 end
 
 -- Where it rides while equipped, in aim space: the off hand is the left one, so it sits clear of

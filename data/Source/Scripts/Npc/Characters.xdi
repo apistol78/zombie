@@ -139,7 +139,7 @@ end
 -- A zombie counts towards the night's tally, and its body -- if it had anything on it -- is a
 -- container of its own, "zombie:<n>", that lasts only as long as the body: zombieLootLifetime
 -- instead of the usual few seconds, and it goes with the body when that is cleared away
--- (_forgetBody). Not at dawn, where the light drops the whole horde at once and the night is over.
+-- (_forgetBody).
 --
 -- Anyone else is not a kill worth counting; their body stays until it is empty (see _npcBox).
 --
@@ -151,7 +151,7 @@ function Main:_afterDeath(enemy)
 	end
 	if npc == nil or npc.faction == "undead" then
 		self._kills = self._kills + 1
-		if npc ~= nil and not self._nightOver then
+		if npc ~= nil then
 			local carried < const > = self:_lootOf(enemy, npc)
 			if #carried > 0 then
 				self._zombieBoxes = (self._zombieBoxes or 0) + 1
@@ -524,7 +524,7 @@ function Main:_hideNameTags()
 end
 
 function Main:_updateNameTags(dt)
-	if self._gameOver or self._paused or self._nightOver or self._dawnPlaying or self._cutscene ~= nil
+	if self._gameOver or self._paused or self._cutscene ~= nil
 		or self._npcs == nil or self._humanoid == nil or self._camera == nil then
 		self:_hideNameTags()
 		return

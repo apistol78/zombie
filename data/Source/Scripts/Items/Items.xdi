@@ -61,7 +61,6 @@ Items.BODY = "{D1A10000-0000-4000-8000-000000000602}"     -- Slots/Body: worn
 
 -- Events of items coming into the pack, by what the SpawnOrchestrator calls them (Config.events).
 Items.EVENTS = {
-	["{D1A20000-0000-4000-8000-000000000501}"] = "relicTaken",   -- Events/Relic Taken
 	["{D1A20000-0000-4000-8000-000000000502}"] = "keyTaken"      -- Events/Key Taken
 }
 

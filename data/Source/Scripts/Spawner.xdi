@@ -102,23 +102,6 @@ local WALL_MARGIN < const > = Config.spawner.wallMargin
 -- a zombie could spawn standing on another zombie's head.
 local COLLISION_DEFAULT < const > = 0x00000001
 
--- Consecrated ground: nothing rises inside a lit ward. The Stage publishes the
--- list as context._litWards ({ x, z, r2 } per lit ward) and only rebuilds it when
--- one is lit, so this is a short table walk -- at most one entry per relic.
-local function inLitWard(wards, p)
-	if wards == nil then
-		return false
-	end
-	for _, w in ipairs(wards) do
-		local dx < const > = p.x - w.x
-		local dz < const > = p.z - w.z
-		if dx * dx + dz * dz < w.r2 then
-			return true
-		end
-	end
-	return false
-end
-
 -- Drop a nav-mesh point onto the surface actually underneath it.
 --
 -- The nav mesh is a voxelised stand-in for the world, not the world: its polygons are
@@ -206,10 +189,9 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 
 	-- Freeze together with the rest of the game (the Stage owns these flags).
-	-- _nightOver is the win: nothing new rises into the dawn, and _cutscene is a hive
-	-- opening -- the camera is over there and the only thing that may move is that
-	-- hive's own brood (see Main:_beginCutscene).
-	if context._gameOver or context._paused or context._nightOver or context._cutscene ~= nil then
+	-- _cutscene is a hive opening -- the camera is over there and the only thing that
+	-- may move is that hive's own brood (see Main:_beginCutscene).
+	if context._gameOver or context._paused or context._cutscene ~= nil then
 		return
 	end
 
@@ -340,7 +322,7 @@ function Spawner:update(context, totalTime, deltaTime)
 	end
 
 	-- The tempo is the orchestrator's. Scripts/SpawnOrchestrator turns gameplay events
-	-- (a relic taken, a ward lit, the gate opened) into bursts and lulls and publishes
+	-- (a key taken, the gate opened) into bursts and lulls and publishes
 	-- the verdict as context._spawnDrive -- one { cap, interval } table, mutated in
 	-- place, read here fresh every update. This spawner keeps owning *where* a zombie
 	-- rises.
@@ -354,7 +336,6 @@ function Spawner:update(context, totalTime, deltaTime)
 	--
 	-- The else-branch is a flat fallback for a stage that publishes no drive: nothing
 	-- does any more, but the spawner has no business dying over a missing table.
-	local wards < const > = context._litWards
 	local drive < const > = context._spawnDrive
 	local interval, cap
 	if drive ~= nil then
@@ -413,10 +394,8 @@ function Spawner:update(context, totalTime, deltaTime)
 				-- would spawn half inside the rock and immediately slide. Rejecting the
 				-- candidate costs nothing - there are CANDIDATES-1 more, and failing the
 				-- whole attempt just retries in SPAWN_INTERVAL seconds.
-				-- ...and reject it outright if it lands on consecrated ground, which
-				-- is what makes a lit ward mean something rather than just look warm.
 				local g, gn = traceGround(pm, p)
-				if g ~= nil and gn.y >= GROUND_MIN_NORMAL_Y and not inLitWard(wards, g) then
+				if g ~= nil and gn.y >= GROUND_MIN_NORMAL_Y then
 					-- Hidden, and hidden by something out there rather than by whatever
 					-- the player happens to be standing in: cover a hand's breadth from
 					-- the eye would otherwise make every direction qualify at once.

@@ -7,10 +7,8 @@ import(traktor)
 
 -- Hive
 --
--- A zombie hive: a pen walled off behind a boulder, dormant until the night turns
--- against the player. Lighting a ward wakes the nearest still-dormant one
--- (Main:_wakeHive), which is what consecrating ground costs -- the relic buys an
--- island of safe forest, and the hive it wakes fills the rest of the map back up.
+-- A zombie hive: a pen walled off behind a boulder, dormant until the stage wakes it
+-- (Main:_openHive).
 --
 -- Waking is two things at once:
 --
@@ -33,10 +31,10 @@ import(traktor)
 -- They come off the same roster the Spawner draws from (Spawner.pickZombie), so a brood
 -- rises mixed like the rest of the night, and everything that already deals with a
 -- zombie deals with these: the player shoots them, Main rag dolls them
--- and clears their corpses, and they steer out of lit wards. They are deliberately
+-- and clears their corpses. They are deliberately
 -- NOT part of the Spawner's managed population, so they neither count against its
 -- headcount ceiling nor are despawned once the player walks away -- a hive's brood is
--- a lasting consequence of a choice the player made, not ambient pressure. The extra
+-- a lasting consequence, not ambient pressure. The extra
 -- population is bounded: BROOD zombies, once, per hive.
 --
 -- Attach to an entity carrying a GroupComponent that holds a child named "Spawn" with
@@ -81,8 +79,8 @@ function Hive:new()
 end
 
 -- Wake the hive: play the act. That is the whole of it -- the act sinks the boulder and,
--- at the moment it chooses, calls _spawnZombies to send the brood up. Called by Main a
--- beat after a ward takes light (Main:_openHive), through the entity's ScriptComponent.
+-- at the moment it chooses, calls _spawnZombies to send the brood up. Called by Main
+-- (Main:_openHive), through the entity's ScriptComponent.
 --
 -- Idempotent, exactly like Ward:turnOn -- waking an open hive does nothing, so it
 -- can re-assert that it was woken (the entity's zombie.FixtureComponent, which the world
@@ -293,11 +291,11 @@ function Hive:_spawnZombies()
 
 	-- Freeze together with the rest of the game (the Stage owns these flags), so a hive
 	-- whose act reaches this cue on the frame the player died does not send its brood up
-	-- behind the Game Over menu, and _nightOver -- the win -- stops it for good.
+	-- behind the Game Over menu.
 	--
 	-- Deliberately not _cutscene: that one *is* the hive opening, and the whole point of
 	-- the shot is what comes out of it.
-	if context._gameOver or context._paused or context._nightOver then
+	if context._gameOver or context._paused then
 		return
 	end
 

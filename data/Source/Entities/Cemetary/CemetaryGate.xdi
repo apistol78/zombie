@@ -74,7 +74,7 @@
 					</state>
 					<transform>
 						<translation>2.175, 0, 0, 0</translation>
-						<rotation>0, 1, 0, 0</rotation>
+						<rotation>0, -1, 0, 0</rotation>
 					</transform>
 					<components>
 						<item type="traktor.mesh.MeshComponentData" version="1">
@@ -113,268 +113,268 @@
 		</item>
 		<item type="traktor.theater.TheaterEntityComponentData">
 			<acts>
-			<item type="traktor.theater.ActData">
-				<name>Open</name>
-				<duration>3</duration>
-				<tracks>
-					<item type="traktor.theater.TrackData" version="4">
-						<entityId>{6E9AD100-0000-4000-8000-000000000031}</entityId>
-						<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
-						<events>
-							<item>
-								<T>0</T>
-								<event type="traktor.spray.SoundEventData" version="1">
-									<sound>{6E9AD100-0000-4000-8000-000000000028}</sound>
-									<positional>true</positional>
-									<follow>false</follow>
-									<autoStopFar>true</autoStopFar>
-								</event>
-							</item>
-						</events>
-						<transform type="traktor.theater.PropertyPath" version="2">
-							<properties>
-								<item>
-									<componentType/>
-									<propertyName>transform</propertyName>
-								</item>
-							</properties>
-							<keys>
+				<item type="traktor.theater.ActData">
+					<name>Open</name>
+					<duration>3</duration>
+					<tracks>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{6E9AD100-0000-4000-8000-000000000031}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events>
 								<item>
 									<T>0</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>0, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
+									<event type="traktor.spray.SoundEventData" version="1">
+										<sound>{6E9AD100-0000-4000-8000-000000000028}</sound>
+										<positional>true</positional>
+										<follow>false</follow>
+										<autoStopFar>true</autoStopFar>
+									</event>
 								</item>
-								<item>
-									<T>0.4</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>0.13704, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>0.8</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>0.47963, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>1.2</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>0.925, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>1.6</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>1.37037, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>2</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>1.71296, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>2.4</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>1.85, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-							</keys>
-						</transform>
-						<properties/>
-					</item>
-					<item type="traktor.theater.TrackData" version="4">
-						<entityId>{6E9AD100-0000-4000-8000-000000000032}</entityId>
-						<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
-						<events/>
-						<transform type="traktor.theater.PropertyPath" version="2">
-							<properties>
-								<item>
-									<componentType/>
-									<propertyName>transform</propertyName>
-								</item>
-							</properties>
-							<keys>
-								<item>
-									<T>0</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>3.14159, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>0.4</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>3.00456, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>0.8</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>2.66196, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>1.2</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>2.21659, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>1.6</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>1.77122, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>2</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>1.42863, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-								<item>
-									<T>2.4</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>1.29159, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-							</keys>
-						</transform>
-						<properties/>
-					</item>
-				</tracks>
-			</item>
-			<item type="traktor.theater.ActData">
-				<name>Opened</name>
-				<duration>0.1</duration>
-				<tracks>
-					<item type="traktor.theater.TrackData" version="4">
-						<entityId>{6E9AD100-0000-4000-8000-000000000031}</entityId>
-						<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
-						<events/>
-						<transform type="traktor.theater.PropertyPath" version="2">
-							<properties>
-								<item>
-									<componentType/>
-									<propertyName>transform</propertyName>
-								</item>
-							</properties>
-							<keys>
-								<item>
-									<T>0</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>-2.175, 0, 0, 1</value>
-											<orientation>1.85, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-							</keys>
-						</transform>
-						<properties/>
-					</item>
-					<item type="traktor.theater.TrackData" version="4">
-						<entityId>{6E9AD100-0000-4000-8000-000000000032}</entityId>
-						<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
-						<events/>
-						<transform type="traktor.theater.PropertyPath" version="2">
-							<properties>
-								<item>
-									<componentType/>
-									<propertyName>transform</propertyName>
-								</item>
-							</properties>
-							<keys>
-								<item>
-									<T>0</T>
-									<tcb>0, 0, 0, 0</tcb>
-									<values>
-										<item>
-											<value>2.175, 0, 0, 1</value>
-											<orientation>1.29159, 0, 0, 0</orientation>
-										</item>
-									</values>
-									<componentData/>
-								</item>
-							</keys>
-						</transform>
-						<properties/>
-					</item>
-				</tracks>
-			</item>
+							</events>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>0, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.4</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>0.13704, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.8</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>0.47963, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>1.2</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>0.925, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>1.6</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>1.37037, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>2</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>1.71296, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>2.4</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>1.85, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties/>
+						</item>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{6E9AD100-0000-4000-8000-000000000032}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>3.14159, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.4</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>3.00456, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>0.8</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>2.66196, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>1.2</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>2.21659, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>1.6</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>1.77122, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>2</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>1.42863, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+									<item>
+										<T>2.4</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>1.29159, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties/>
+						</item>
+					</tracks>
+				</item>
+				<item type="traktor.theater.ActData">
+					<name>Opened</name>
+					<duration>0.1</duration>
+					<tracks>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{6E9AD100-0000-4000-8000-000000000031}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>-2.175, 0, 0, 1</value>
+												<orientation>1.85, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties/>
+						</item>
+						<item type="traktor.theater.TrackData" version="4">
+							<entityId>{6E9AD100-0000-4000-8000-000000000032}</entityId>
+							<lookAtEntityId>{00000000-0000-0000-0000-000000000000}</lookAtEntityId>
+							<events/>
+							<transform type="traktor.theater.PropertyPath" version="2">
+								<properties>
+									<item>
+										<componentType/>
+										<propertyName>transform</propertyName>
+									</item>
+								</properties>
+								<keys>
+									<item>
+										<T>0</T>
+										<tcb>0, 0, 0, 0</tcb>
+										<values>
+											<item>
+												<value>2.175, 0, 0, 1</value>
+												<orientation>1.29159, 0, 0, 0</orientation>
+											</item>
+										</values>
+										<componentData/>
+									</item>
+								</keys>
+							</transform>
+							<properties/>
+						</item>
+					</tracks>
+				</item>
 			</acts>
 		</item>
 		<item type="zombie.InteractableComponentData">
@@ -391,6 +391,11 @@
 		</item>
 		<item type="zombie.FixtureComponentData">
 			<kind>{00000000-0000-0000-0000-000000000000}</kind>
+		</item>
+		<item type="traktor.ai.NavMeshModifierEntityComponentData">
+		</item>
+		<item type="traktor.world.VolumeComponentData">
+			<size>5, 4, 2, 0</size>
 		</item>
 	</components>
 </object>

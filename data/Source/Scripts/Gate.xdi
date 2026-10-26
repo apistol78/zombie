@@ -35,6 +35,14 @@ Gate = Gate or class("Gate", traktor.world.ScriptComponent)
 local ACT < const > = "Open"       -- the act that swings or lifts the gate open, and grinds
 local OPENED < const > = "Opened"  -- ...and the silent one that only holds it open
 
+-- Built shut, but the nav mesh is baked with the way through open: bar it until unlock().
+function Gate:new()
+	local modifier < const > = self.owner:getComponent(traktor.ai.NavMeshModifierEntityComponent)
+	if modifier ~= nil then
+		modifier.enable = false
+	end
+end
+
 -- Play the act. A gate without it (Performance:play logs which) or without a theater
 -- component at all stays shut -- and, since its iron is what bars the way, barred.
 function Gate:unlock(instant)
@@ -57,6 +65,11 @@ function Gate:unlock(instant)
 	local performance < const > = self.owner:getComponent(traktor.theater.TheaterEntityComponent)
 	if performance ~= nil then
 		performance:play(instant and OPENED or ACT)
+	end
+
+	local modifier < const > = self.owner:getComponent(traktor.ai.NavMeshModifierEntityComponent)
+	if modifier ~= nil then
+		modifier.enable = true
 	end
 end
 

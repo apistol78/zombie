@@ -66,11 +66,6 @@ function Gate:unlock(instant)
 	if performance ~= nil then
 		performance:play(instant and OPENED or ACT)
 	end
-
-	local modifier < const > = self.owner:getComponent(traktor.ai.NavMeshModifierEntityComponent)
-	if modifier ~= nil then
-		modifier.enable = true
-	end
 end
 
 function Gate:isLocked()
@@ -92,5 +87,14 @@ function Gate:update(context, totalTime, deltaTime)
 		self:unlock(true)
 	end
 end
+
+-- Called from Theater when the gate is finished opening.
+function Gate:eventOpened()
+	local modifier < const > = self.owner:getComponent(traktor.ai.NavMeshModifierEntityComponent)
+	if modifier ~= nil then
+		modifier.enable = true
+	end
+end
+
 ]]></text>
 </object>

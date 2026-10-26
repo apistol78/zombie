@@ -130,6 +130,12 @@
 										<autoStopFar>true</autoStopFar>
 									</event>
 								</item>
+								<item>
+									<T>2.4</T>
+									<event type="traktor.world.ScriptEventData">
+										<method>eventOpened</method>
+									</event>
+								</item>
 							</events>
 							<transform type="traktor.theater.PropertyPath" version="2">
 								<properties>

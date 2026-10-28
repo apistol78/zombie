@@ -58,6 +58,7 @@
 #	include "QuestData.h"
 #	include "SettingsResourceFactory.h"
 #	include "Steps/FindItemStep.h"
+#	include "Steps/FixtureStep.h"
 #	include "Steps/ReachStep.h"
 #	include "Steps/TalkStep.h"
 #	include "Steps/TriggerStep.h"
@@ -105,6 +106,7 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(FixtureComponentData);
 	T_FORCE_LINK_REF(FixtureEntityFactory);
 	T_FORCE_LINK_REF(FixtureKindData);
+	T_FORCE_LINK_REF(FixtureStep);
 	T_FORCE_LINK_REF(FixtureWorldComponentData);
 	T_FORCE_LINK_REF(FlagCondition);
 	T_FORCE_LINK_REF(FlagData);

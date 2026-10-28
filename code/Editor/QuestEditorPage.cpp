@@ -35,6 +35,7 @@
 #include "PlaceData.h"
 #include "QuestData.h"
 #include "Steps/FindItemStep.h"
+#include "Steps/FixtureStep.h"
 #include "Steps/ReachStep.h"
 #include "Steps/TalkStep.h"
 #include "Steps/TriggerStep.h"
@@ -85,6 +86,8 @@ std::wstring kindOf(const QuestStep* step)
 		return i18n::Text(L"STORY_QUEST_KIND_TALK");
 	else if (is_a< ReachStep >(step))
 		return i18n::Text(L"STORY_QUEST_KIND_REACH");
+	else if (is_a< FixtureStep >(step))
+		return i18n::Text(L"STORY_QUEST_KIND_FIXTURE");
 	else if (is_a< TriggerStep >(step))
 		return i18n::Text(L"STORY_QUEST_KIND_TRIGGER");
 
@@ -93,7 +96,7 @@ std::wstring kindOf(const QuestStep* step)
 	return (dot != name.npos) ? name.substr(dot + 1) : name;
 }
 
-/*! What a step is about: the item, actor or place, or nothing. */
+/*! What a step is about: the item, actor, place or kind of fixture, or nothing. */
 Guid targetOf(const QuestStep* step)
 {
 	if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
@@ -102,6 +105,8 @@ Guid targetOf(const QuestStep* step)
 		return talkStep->getActor();
 	else if (auto reachStep = dynamic_type_cast< const ReachStep* >(step))
 		return reachStep->getPlace();
+	else if (auto fixtureStep = dynamic_type_cast< const FixtureStep* >(step))
+		return fixtureStep->getKind();
 	return Guid();
 }
 
@@ -151,6 +156,7 @@ bool QuestEditorPage::create(ui::Container* parent)
 	m_toolBar->addItem(new ui::ToolBarButton(i18n::Text(L"STORY_QUEST_ADD_FIND_ITEM"), ui::Command(L"Quest.Editor.AddFindItem")));
 	m_toolBar->addItem(new ui::ToolBarButton(i18n::Text(L"STORY_QUEST_ADD_TALK"), ui::Command(L"Quest.Editor.AddTalk")));
 	m_toolBar->addItem(new ui::ToolBarButton(i18n::Text(L"STORY_QUEST_ADD_REACH"), ui::Command(L"Quest.Editor.AddReach")));
+	m_toolBar->addItem(new ui::ToolBarButton(i18n::Text(L"STORY_QUEST_ADD_FIXTURE"), ui::Command(L"Quest.Editor.AddFixture")));
 	m_toolBar->addItem(new ui::ToolBarButton(i18n::Text(L"STORY_QUEST_ADD_TRIGGER"), ui::Command(L"Quest.Editor.AddTrigger")));
 	m_toolBar->addItem(new ui::ToolBarSeparator());
 	m_toolBar->addItem(new ui::ToolBarButton(i18n::Text(L"STORY_QUEST_MOVE_UP"), ui::Command(L"Quest.Editor.MoveUp")));
@@ -169,6 +175,7 @@ bool QuestEditorPage::create(ui::Container* parent)
 	m_menuPopup->add(new ui::MenuItem(ui::Command(L"Quest.Editor.AddFindItem"), i18n::Text(L"STORY_QUEST_ADD_FIND_ITEM")));
 	m_menuPopup->add(new ui::MenuItem(ui::Command(L"Quest.Editor.AddTalk"), i18n::Text(L"STORY_QUEST_ADD_TALK")));
 	m_menuPopup->add(new ui::MenuItem(ui::Command(L"Quest.Editor.AddReach"), i18n::Text(L"STORY_QUEST_ADD_REACH")));
+	m_menuPopup->add(new ui::MenuItem(ui::Command(L"Quest.Editor.AddFixture"), i18n::Text(L"STORY_QUEST_ADD_FIXTURE")));
 	m_menuPopup->add(new ui::MenuItem(ui::Command(L"Quest.Editor.AddTrigger"), i18n::Text(L"STORY_QUEST_ADD_TRIGGER")));
 	m_menuPopup->add(new ui::MenuItem(L"-"));
 	m_menuPopup->add(new ui::MenuItem(ui::Command(L"Quest.Editor.MoveUp"), i18n::Text(L"STORY_QUEST_MOVE_UP")));
@@ -253,6 +260,8 @@ bool QuestEditorPage::handleCommand(const ui::Command& command)
 		addStep(type_of< TalkStep >());
 	else if (command == L"Quest.Editor.AddReach")
 		addStep(type_of< ReachStep >());
+	else if (command == L"Quest.Editor.AddFixture")
+		addStep(type_of< FixtureStep >());
 	else if (command == L"Quest.Editor.AddTrigger")
 		addStep(type_of< TriggerStep >());
 	else if (command == L"Quest.Editor.MoveUp")
@@ -504,6 +513,8 @@ std::wstring QuestEditorPage::checkStep(int32_t index) const
 		problem(i18n::Text(L"STORY_QUEST_NO_ACTOR"));
 	else if (is_a< ReachStep >(step) && target.isNull())
 		problem(i18n::Text(L"STORY_QUEST_NO_PLACE"));
+	else if (is_a< FixtureStep >(step) && target.isNull())
+		problem(i18n::Text(L"STORY_QUEST_NO_FIXTURE_KIND"));
 	else if (target.isNotNull() && (!database || !database->getInstance(target)))
 		problem(i18n::Text(L"STORY_QUEST_TARGET_MISSING"));
 
@@ -548,6 +559,8 @@ std::wstring QuestEditorPage::describeTarget(const QuestStep* step) const
 		return i18n::Format(L"STORY_QUEST_REACH_WITHIN", nameOf(reachStep->getPlace()), str(L"%g", reachStep->getRadius())).str();
 	else if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
 		return nameOf(findItemStep->getItem());
+	else if (auto fixtureStep = dynamic_type_cast< const FixtureStep* >(step))
+		return i18n::Format(L"STORY_QUEST_EVERY_FIXTURE", nameOf(fixtureStep->getKind())).str();
 	else if (is_a< TriggerStep >(step))
 		return i18n::Text(L"STORY_QUEST_TRIGGERED");
 	return L"";

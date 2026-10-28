@@ -973,9 +973,12 @@ function Main:_saveWorld()
 		if rec.taken then
 			pickups[key] = { taken = true }
 		elseif sc ~= nil and sc:isKeepsake() then
+			-- One the story holds back is hidden by the story (zombie.StoryWorldComponent), not
+			-- taken out of play -- none can be taken before a quest asks for it -- so it is booked
+			-- as lying there, for the story to show once a quest does.
 			pickups[key] = {
 				carried = self._inventory:holds(rec.entity),
-				visible = rec.entity.visible,
+				visible = rec.entity.visible or self._story:isHeldBack(sc:itemKind()),
 				at = plainTransform(rec.entity.transform)
 			}
 		elseif rec.at ~= nil then

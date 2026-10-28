@@ -639,9 +639,25 @@ step can want any item, a generic one included:
 
 - The story notes an item as found when any find step looks for it (`Story::update`).
 - `FindItemStep::holdBack` (version 3) holds its item back until a quest reaches the step. It is
-  off by default, and on in Zombie's five quests.
+  off by default, and on in Zombie's quests.
 - `Story::isWanted` says whether a quest under way has a find step for the item. The inventory
   shows its hint from that, and allows a drop when the item has a drop entity or is kept.
+
+**Fixture steps and kept items held back (2026-10-28).** For "The Ward Circle" (Brother Anselm:
+find a relic, light every ward, come back):
+
+- `FixtureStep` (kind: a `FixtureKindData`) is done once every fixture of the kind in the world
+  is done. The `StoryWorldComponent` completes it, as it does reach steps. A world without
+  fixtures of that kind never completes it, and only fixtures in the world are counted, so a
+  kind should not be spread over streamed-out parts of a world. With no waypoint of its own, the
+  step points at the nearest fixture of the kind not done yet (`findFixture`).
+- Held back pickups no longer have their visibility forced every refresh. The component hides a
+  pickup while its item is held back, again whenever the game shows it, and once released shows
+  only what it hid itself. The game hides kept items for its own reasons (a relic in the pack or
+  spent on a ward), and the old rule showed those again as soon as the quest log moved.
+- In Zombie, `Main:_saveWorld` books a held back kept item as lying there, since only the story
+  hid it. Each ward's `SpentRelic` is only a mesh now, with no pickup or script, so neither the
+  story nor the books take it for a relic.
 
 ---
 

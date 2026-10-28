@@ -33,6 +33,7 @@
 #include "QuestLog.h"
 #include "Resource/IResourceManager.h"
 #include "Steps/FindItemStep.h"
+#include "Steps/FixtureStep.h"
 #include "Steps/ReachStep.h"
 #include "Steps/TalkStep.h"
 #include "Steps/TriggerStep.h"
@@ -203,6 +204,8 @@ std::wstring QuestStep_getKind(QuestStep* self)
 		return L"talk";
 	else if (is_a< ReachStep >(self))
 		return L"reach";
+	else if (is_a< FixtureStep >(self))
+		return L"fixture";
 	else
 		return L"trigger";
 }
@@ -212,6 +215,8 @@ Any FindItemStep_getItem(FindItemStep* self) { return guidOrNil(self->getItem())
 Any TalkStep_getActor(TalkStep* self) { return guidOrNil(self->getActor()); }
 
 Any ReachStep_getPlace(ReachStep* self) { return guidOrNil(self->getPlace()); }
+
+Any FixtureStep_getKind(FixtureStep* self) { return guidOrNil(self->getKind()); }
 
 Any ActorWaypoint_getActor(ActorWaypoint* self) { return guidOrNil(self->getActor()); }
 
@@ -402,6 +407,10 @@ void StoryClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classReachStep->addProperty("place", &ReachStep_getPlace);
 	classReachStep->addProperty("radius", &ReachStep::getRadius);
 	registrar->registerClass(classReachStep);
+
+	auto classFixtureStep = new AutoRuntimeClass< FixtureStep >();
+	classFixtureStep->addProperty("kind", &FixtureStep_getKind);
+	registrar->registerClass(classFixtureStep);
 
 	auto classTriggerStep = new AutoRuntimeClass< TriggerStep >();
 	registrar->registerClass(classTriggerStep);

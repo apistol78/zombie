@@ -26,8 +26,8 @@ function Relic:itemCount()
 	return 1
 end
 
--- Never walked over, interactable or not: the one a lit post shows (Entities/Ward) is a relic
--- that is not there to be taken at all.
+-- Never walked over, interactable or not: a relic is taken with E or not at all. (The one a lit
+-- post shows, Entities/Ward's "SpentRelic", is only a mesh: no pickup, no script.)
 function Relic:pressToTake()
 	return true
 end

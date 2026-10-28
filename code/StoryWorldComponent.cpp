@@ -10,12 +10,15 @@
 
 #include "ActorComponent.h"
 #include "Core/Math/Transform.h"
+#include "Fixtures/FixtureComponent.h"
+#include "Fixtures/FixtureWorldComponent.h"
 #include "ItemContainerComponent.h"
 #include "ItemPickupComponent.h"
 #include "PlaceComponent.h"
 #include "QuestData.h"
 #include "QuestLog.h"
 #include "Steps/FindItemStep.h"
+#include "Steps/FixtureStep.h"
 #include "Steps/ReachStep.h"
 #include "Steps/TalkStep.h"
 #include "Story.h"
@@ -27,6 +30,7 @@
 #include "World/Entity.h"
 #include "World/World.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace zombie
@@ -48,6 +52,8 @@ void StoryWorldComponent::destroy()
 	m_places.clear();
 	m_pickups.clear();
 	m_containers.clear();
+	m_heldBack.clear();
+	m_hidden.clear();
 	m_talkTarget = nullptr;
 }
 
@@ -64,6 +70,7 @@ void StoryWorldComponent::update(world::World* world, const world::UpdateParams&
 		return;
 
 	completeReachSteps();
+	completeFixtureSteps();
 	updateHeldBack();
 	updateWaypoint();
 }
@@ -74,7 +81,7 @@ void StoryWorldComponent::setStory(Story* story)
 		return;
 
 	m_story = story;
-	m_shownSerial = ~0U;
+	m_heldBackSerial = ~0U;
 
 	// Every item some quest holds back; only their pickups are shown and hidden.
 	m_holdBack.clear();
@@ -158,6 +165,34 @@ world::Entity* StoryWorldComponent::findHolder(const Guid& item) const
 	return nearest;
 }
 
+world::Entity* StoryWorldComponent::findFixture(const Guid& kind) const
+{
+	const FixtureWorldComponent* fixtures = m_world ? m_world->getComponent< FixtureWorldComponent >() : nullptr;
+	if (!fixtures)
+		return nullptr;
+
+	const Vector4 from = m_player ? m_player->getTransform().translation() : Vector4::origo();
+
+	world::Entity* nearest = nullptr;
+	Scalar nearestDistance(std::numeric_limits< float >::max());
+
+	for (auto fixture : fixtures->getFixtures(kind))
+	{
+		world::Entity* owner = fixture->getOwner();
+		if (!inWorld(owner) || fixture->isDone())
+			continue;
+
+		const Scalar distance = (owner->getTransform().translation() - from).xyz0().length2();
+		if (distance < nearestDistance)
+		{
+			nearest = owner;
+			nearestDistance = distance;
+		}
+	}
+
+	return nearest;
+}
+
 void StoryWorldComponent::index(world::World* world)
 {
 	m_world = world;
@@ -181,8 +216,14 @@ void StoryWorldComponent::index(world::World* world)
 			m_containers.push_back(container);
 	}
 
-	// Pickups found anew are shown or hidden as the story says.
-	m_shownSerial = ~0U;
+	// Only pickups still in the world can be shown again.
+	SmallSet< const ItemPickupComponent* > hidden;
+	for (auto pickup : m_pickups)
+	{
+		if (m_hidden.find(pickup) != m_hidden.end())
+			hidden.insert(pickup);
+	}
+	m_hidden = hidden;
 }
 
 void StoryWorldComponent::completeReachSteps()
@@ -209,22 +250,67 @@ void StoryWorldComponent::completeReachSteps()
 	}
 }
 
+void StoryWorldComponent::completeFixtureSteps()
+{
+	const FixtureWorldComponent* fixtures = m_world ? m_world->getComponent< FixtureWorldComponent >() : nullptr;
+	if (!fixtures)
+		return;
+
+	QuestLog* questLog = m_story->getQuestLog();
+
+	for (const auto& quest : m_story->getQuests())
+	{
+		const FixtureStep* fixtureStep = dynamic_type_cast< const FixtureStep* >(questLog->getCurrentStep(quest));
+		if (fixtureStep == nullptr)
+			continue;
+
+		// A world without fixtures of the kind cannot finish the step; the one that has them can.
+		const RefArray< FixtureComponent > ofKind = fixtures->getFixtures(fixtureStep->getKind());
+		if (ofKind.empty())
+			continue;
+
+		const bool done = std::all_of(ofKind.begin(), ofKind.end(), [](const FixtureComponent* fixture) {
+			return fixture->isDone();
+		});
+		if (done)
+			questLog->advance(quest, questLog->getCurrentStepId(quest));
+	}
+}
+
 void StoryWorldComponent::updateHeldBack()
 {
+	// Which items are held back; worked out again only as the quest log moves.
 	const uint32_t serial = m_story->getQuestLog()->getSerial();
-	if (serial == m_shownSerial)
-		return;
-	m_shownSerial = serial;
+	if (serial != m_heldBackSerial)
+	{
+		m_heldBackSerial = serial;
+		m_heldBack.clear();
+		for (const auto& item : m_holdBack)
+		{
+			if (m_story->isHeldBack(item))
+				m_heldBack.insert(item);
+		}
+	}
 
+	// A held back pickup is hidden, again whenever the game shows it. Once its item is no longer
+	// held back, only what was hidden here is shown: the game hides pickups for its own reasons,
+	// such as a keepsake in the pack or spent, and those stay hidden.
 	for (auto pickup : m_pickups)
 	{
 		world::Entity* owner = pickup->getOwner();
-		if (!inWorld(owner) || m_holdBack.find(pickup->getItem()) == m_holdBack.end())
+		if (!inWorld(owner))
 			continue;
 
-		const bool show = !m_story->isHeldBack(pickup->getItem());
-		if (owner->isVisible() != show)
-			owner->setState(show ? world::EntityState::All : world::EntityState::None, world::EntityState::Visible, true);
+		if (m_heldBack.find(pickup->getItem()) != m_heldBack.end())
+		{
+			if (owner->isVisible())
+			{
+				owner->setState(world::EntityState::None, world::EntityState::Visible, true);
+				m_hidden.insert(pickup);
+			}
+		}
+		else if (m_hidden.erase(pickup))
+			owner->setState(world::EntityState::All, world::EntityState::Visible, true);
 	}
 }
 
@@ -251,6 +337,8 @@ void StoryWorldComponent::updateWaypoint()
 		target = findActor(talkStep->getActor());
 	else if (auto reachStep = dynamic_type_cast< const ReachStep* >(step))
 		target = findPlace(reachStep->getPlace());
+	else if (auto fixtureStep = dynamic_type_cast< const FixtureStep* >(step))
+		target = findFixture(fixtureStep->getKind());
 	else if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
 	{
 		if (!questLog->hasFound(findItemStep->getItem()))

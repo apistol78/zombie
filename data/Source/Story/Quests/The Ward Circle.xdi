@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.QuestData">
+	<title>THE WARD CIRCLE</title>
+	<info><![CDATA[ELEVEN WARDS STAND DARK IN A RING PAST THE CHURCHYARD. BROTHER ANSELM SAYS THE RELICS THAT LIT THEM WERE HIDDEN AWAY WHEN THE CHAPEL FELL.]]></info>
+	<steps>
+		<item type="zombie.FindItemStep" version="3">
+			<id>{A56B6EEB-6495-4DE7-A632-25A17EF47019}</id>
+			<name>find</name>
+			<text><![CDATA[FIND THE RELICS HIDDEN IN THE FOREST AND THE CAVES]]></text>
+			<waypoint/>
+			<failWhen/>
+			<onComplete/>
+			<item>{D1A10000-0000-4000-8000-000000000209}</item>
+			<holdBack>true</holdBack>
+		</item>
+		<item type="zombie.FixtureStep" version="2">
+			<id>{A3F5EDEB-E252-4808-B2E8-F5719EAE274D}</id>
+			<name>light</name>
+			<text><![CDATA[LIGHT EVERY WARD IN THE CIRCLE, ONE RELIC TO EACH]]></text>
+			<waypoint/>
+			<failWhen/>
+			<onComplete/>
+			<kind>{D1A20000-0000-4000-8000-000000000700}</kind>
+		</item>
+		<item type="zombie.TalkStep" version="2">
+			<id>{C8026CF4-A249-4EA5-B33F-90292A363538}</id>
+			<name>return</name>
+			<text><![CDATA[TELL BROTHER ANSELM THE CIRCLE IS LIT]]></text>
+			<waypoint/>
+			<failWhen/>
+			<onComplete/>
+			<actor>{D1A20000-0000-4000-8000-000000000304}</actor>
+			<line>{91466E19-822F-4510-9154-DDB5D58C60BF}</line>
+		</item>
+	</steps>
+	<reward>
+		<item type="zombie.GiveItemAction">
+			<item>{D1A10000-0000-4000-8000-000000000206}</item>
+			<count>50</count>
+		</item>
+		<item type="zombie.GiveItemAction">
+			<item>{D1A10000-0000-4000-8000-000000000204}</item>
+			<count>3</count>
+		</item>
+	</reward>
+</object>

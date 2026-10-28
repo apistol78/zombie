@@ -81,6 +81,9 @@ public:
 	/*! Nearest entity holding item, a pickup or a container, null if none in this world. */
 	world::Entity* findHolder(const Guid& item) const;
 
+	/*! Nearest fixture of kind not yet done with, null if none in this world. */
+	world::Entity* findFixture(const Guid& kind) const;
+
 private:
 	world::World* m_world = nullptr;
 	Ref< Story > m_story;
@@ -92,7 +95,9 @@ private:
 	RefArray< ItemPickupComponent > m_pickups;
 	RefArray< ItemContainerComponent > m_containers;
 	SmallSet< Guid > m_holdBack;
-	uint32_t m_shownSerial = ~0U;
+	SmallSet< Guid > m_heldBack;
+	uint32_t m_heldBackSerial = ~0U;
+	SmallSet< const ItemPickupComponent* > m_hidden;
 	bool m_haveWaypoint = false;
 	Vector4 m_waypoint = Vector4::origo();
 	Ref< world::Entity > m_talkTarget;
@@ -100,6 +105,8 @@ private:
 	void index(world::World* world);
 
 	void completeReachSteps();
+
+	void completeFixtureSteps();
 
 	void updateHeldBack();
 

@@ -38,6 +38,7 @@ void QuestEditorPageFactory::getCommands(std::list< ui::Command >& outCommands) 
 	outCommands.push_back(ui::Command(L"Quest.Editor.AddFindItem"));
 	outCommands.push_back(ui::Command(L"Quest.Editor.AddTalk"));
 	outCommands.push_back(ui::Command(L"Quest.Editor.AddReach"));
+	outCommands.push_back(ui::Command(L"Quest.Editor.AddFixture"));
 	outCommands.push_back(ui::Command(L"Quest.Editor.AddTrigger"));
 	outCommands.push_back(ui::Command(L"Quest.Editor.MoveUp"));
 	outCommands.push_back(ui::Command(L"Quest.Editor.MoveDown"));

@@ -65,6 +65,51 @@
 					<once>false</once>
 				</item>
 				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{FBE98A79-AA33-4904-B0E0-EE129807C3C6}</id>
+					<text><![CDATA[WHAT ARE THE DARK POSTS PAST THE CHURCHYARD?]]></text>
+					<target>{8D6281BE-F64F-48E4-BB13-C30D4DBA6CCA}</target>
+					<condition type="zombie.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000105}</quest>
+						<state>NotStarted</state>
+						<step>{00000000-0000-0000-0000-000000000000}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{D556CC4E-724C-42F0-B2F9-68FAAF3ED2E9}</id>
+					<text><![CDATA[THE WARDS ARE LIT. EVERY ONE OF THEM.]]></text>
+					<target>{91466E19-822F-4510-9154-DDB5D58C60BF}</target>
+					<condition type="zombie.QuestCondition" version="1">
+						<quest>{D1A20000-0000-4000-8000-000000000105}</quest>
+						<state>AtStep</state>
+						<step>{C8026CF4-A249-4EA5-B33F-90292A363538}</step>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{D4DE91A1-51C5-4D66-89F2-012C92A1FBD1}</id>
+					<text><![CDATA[HOW ARE THE WARDS LIT?]]></text>
+					<target>{FC1C7C32-EAD9-4B6B-B029-18608DFB26F5}</target>
+					<condition type="zombie.AnyCondition">
+						<conditions>
+							<item type="zombie.QuestCondition" version="1">
+								<quest>{D1A20000-0000-4000-8000-000000000105}</quest>
+								<state>AtStep</state>
+								<step>{A56B6EEB-6495-4DE7-A632-25A17EF47019}</step>
+							</item>
+							<item type="zombie.QuestCondition" version="1">
+								<quest>{D1A20000-0000-4000-8000-000000000105}</quest>
+								<state>AtStep</state>
+								<step>{A3F5EDEB-E252-4808-B2E8-F5719EAE274D}</step>
+							</item>
+						</conditions>
+					</condition>
+					<actions/>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
 					<id>{8B776DB1-FA89-47F0-A85F-D27F28355D0E}</id>
 					<text>WHAT ARE YOU CARRYING?</text>
 					<target>{00000000-0000-0000-0000-000000000000}</target>
@@ -133,6 +178,60 @@
 				</item>
 			</responses>
 			<position>720, 162</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{8D6281BE-F64F-48E4-BB13-C30D4DBA6CCA}</id>
+			<name>wards</name>
+			<text><![CDATA[WARDS. ELEVEN POSTS IN A RING, RAISED BY THE FIRST BROTHERS AGAINST THE NIGHT, EACH ONE LIT BY A RELIC OF THIS CHAPEL. WHEN THE CHAPEL FELL WE HID THE RELICS IN THE FOREST AND THE CAVES, AND THE POSTS WENT DARK.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{F918AB69-72EC-4E06-9185-CAAB54E42A85}</id>
+					<text><![CDATA[I WILL FIND THEM AND LIGHT THE CIRCLE.]]></text>
+					<target>{FC1C7C32-EAD9-4B6B-B029-18608DFB26F5}</target>
+					<condition/>
+					<actions>
+						<item type="zombie.StartQuestAction">
+							<quest>{D1A20000-0000-4000-8000-000000000105}</quest>
+						</item>
+					</actions>
+					<once>false</once>
+				</item>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{3DC7BCF0-66F0-49EE-8E28-451E5D0AFB16}</id>
+					<text><![CDATA[NOT TONIGHT.]]></text>
+					<target>{E0741AB5-5910-4A2E-859F-57D29FBB0811}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>720, 260</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{FC1C7C32-EAD9-4B6B-B029-18608DFB26F5}</id>
+			<name>howto</name>
+			<text><![CDATA[TAKE A RELIC IN HAND AND HOLD IT TO A DARK POST. ONE RELIC TO EACH WARD. WHEN ALL ELEVEN BURN, COME BACK AND TELL ME.]]></text>
+			<onEnter/>
+			<responses>
+				<item type="zombie.DialogResponseAsset" version="2">
+					<id>{1BC15D5A-9176-451C-AD85-9C41E4B85BBD}</id>
+					<text><![CDATA[I HAD ANOTHER QUESTION.]]></text>
+					<target>{E0741AB5-5910-4A2E-859F-57D29FBB0811}</target>
+					<condition/>
+					<actions/>
+					<once>false</once>
+				</item>
+			</responses>
+			<position>1080, 260</position>
+		</item>
+		<item type="zombie.DialogNodeAsset" version="1">
+			<id>{91466E19-822F-4510-9154-DDB5D58C60BF}</id>
+			<name>blessed</name>
+			<text><![CDATA[I SAW THE RING CATCH FROM THE CHAPEL DOOR. ELEVEN FLAMES, AFTER ALL THESE YEARS. TAKE WHAT THE CHAPEL CAN SPARE, AND MY BLESSING WITH IT.]]></text>
+			<onEnter/>
+			<responses/>
+			<position>720, 360</position>
 		</item>
 	</nodes>
 	<startPosition>0, 0</startPosition>

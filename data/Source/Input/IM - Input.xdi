@@ -2,16 +2,16 @@
 <object type="traktor.input.InputMappingAsset" version="2">
 	<inputNodes>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_A</valueId>
+			<valueId>ID_STRAFE_LEFT</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_D</valueId>
+			<valueId>ID_STRAFE_RIGHT</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_W</valueId>
+			<valueId>ID_MOVE_FORWARD</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_S</valueId>
+			<valueId>ID_MOVE_BACK</valueId>
 		</item>
 		<item type="traktor.input.InCombine" version="1">
 			<entries>
@@ -44,7 +44,7 @@
 			<operator>CoAdd</operator>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_SPACE</valueId>
+			<valueId>ID_JUMP</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
 			<valueId>ID_MOUSE_X</valueId>
@@ -53,13 +53,13 @@
 			<valueId>ID_KEY_ESCAPE</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_MOUSE_BUTTON1</valueId>
+			<valueId>ID_ATTACK</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
 			<valueId>ID_MOUSE_Y</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_SHIFT</valueId>
+			<valueId>ID_SPRINT</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
 			<valueId>ID_KEY_G</valueId>
@@ -71,10 +71,10 @@
 			<valueId>ID_KEY_R</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_E</valueId>
+			<valueId>ID_INTERACT</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_MOUSE_BUTTON2</valueId>
+			<valueId>ID_CAST</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
 			<valueId>ID_MOUSE_Z</valueId>
@@ -86,10 +86,10 @@
 			<valueId>ID_KEY_L</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_TAB</valueId>
+			<valueId>ID_INVENTORY</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_I</valueId>
+			<valueId>ID_INVENTORY_ALT</valueId>
 		</item>
 		<item type="traktor.input.InCombine" version="1">
 			<entries>
@@ -107,10 +107,10 @@
 			<operator>CoAdd</operator>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_J</valueId>
+			<valueId>ID_JOURNAL</valueId>
 		</item>
 		<item type="traktor.input.InReadValue">
-			<valueId>ID_KEY_T</valueId>
+			<valueId>ID_TRAIL</valueId>
 		</item>
 	</inputNodes>
 	<positions>
@@ -464,143 +464,177 @@
 	<sourceData type="traktor.input.InputMappingSourceData">
 		<sourceData>
 			<item>
-				<first>ID_KEY_A</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyA</item>
-					</controlTypes>
+				<first>ID_STRAFE_LEFT</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyA</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_D</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyD</item>
-					</controlTypes>
+				<first>ID_STRAFE_RIGHT</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyD</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_E</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyE</item>
-					</controlTypes>
+				<first>ID_INTERACT</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyE</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
 				<first>ID_KEY_ESCAPE</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyEscape</item>
-					</controlTypes>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyEscape</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
 				<first>ID_KEY_G</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyG</item>
-					</controlTypes>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyG</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
 				<first>ID_KEY_H</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyH</item>
-					</controlTypes>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyH</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_I</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyI</item>
-					</controlTypes>
+				<first>ID_INVENTORY_ALT</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyI</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_J</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyJ</item>
-					</controlTypes>
+				<first>ID_JOURNAL</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyJ</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
 				<first>ID_KEY_K</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyK</item>
-					</controlTypes>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyK</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
 				<first>ID_KEY_L</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyL</item>
-					</controlTypes>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyL</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
 				<first>ID_KEY_R</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyR</item>
-					</controlTypes>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyR</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_S</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyS</item>
-					</controlTypes>
+				<first>ID_MOVE_BACK</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyS</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_SHIFT</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyLeftShift</item>
-					</controlTypes>
+				<first>ID_SPRINT</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyLeftShift</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_SPACE</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeySpace</item>
-					</controlTypes>
+				<first>ID_JUMP</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeySpace</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_T</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyT</item>
-					</controlTypes>
+				<first>ID_TRAIL</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyT</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_TAB</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyTab</item>
-					</controlTypes>
+				<first>ID_INVENTORY</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyTab</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_KEY_W</first>
-				<second type="traktor.input.KeyboardInputSourceData" version="1">
-					<controlTypes>
-						<item>KeyW</item>
-					</controlTypes>
+				<first>ID_MOVE_FORWARD</first>
+				<second type="traktor.input.GenericInputSourceData" version="4">
+					<category>Keyboard</category>
+					<controlType>KeyW</controlType>
+					<analogue>false</analogue>
+					<normalize>false</normalize>
+					<index>-1</index>
 				</second>
 			</item>
 			<item>
-				<first>ID_MOUSE_BUTTON1</first>
+				<first>ID_ATTACK</first>
 				<second type="traktor.input.GenericInputSourceData" version="4">
 					<category>Mouse</category>
 					<controlType>Button1</controlType>
@@ -610,7 +644,7 @@
 				</second>
 			</item>
 			<item>
-				<first>ID_MOUSE_BUTTON2</first>
+				<first>ID_CAST</first>
 				<second type="traktor.input.GenericInputSourceData" version="4">
 					<category>Mouse</category>
 					<controlType>Button2</controlType>

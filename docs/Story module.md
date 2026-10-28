@@ -603,12 +603,18 @@ entity's script properties first, then its actor's.
 dead. A quest fails when a step's `failWhen` condition holds while the quest is at that step.
 Steps are version 2; a version 1 step has no `failWhen`.
 
+A quest also fails on its own, with no `failWhen`, once an actor that the current step or any
+later step talks to has died (`QuestData::getNeededActors`, checked as `QuestLog` settles a quest).
+That covers a quest given after the death too. The quest editor marks those steps "can fail" as
+well (2026-10-28).
+
 A failed quest is neither under way nor done; `QuestEntry::isFailed` tells which. The game is told `questFailed` (quest, the step it failed at).
 A failed quest cannot be given again, and the items its later find steps want stay held back.
 
 In Zombie, the stage tells the story when a character with an actor dies, including a character
 restored dead from a save (`Main:_actorDied`). Greta raises the locket only while Tomas lives,
-and "The Lost Locket" fails if Tomas dies before he is asked. The journal shows failed quests as
+and "The Lost Locket" fails if Tomas dies before he is asked, or Greta before the locket is back.
+No quest sets a `failWhen` for this; each one relies on the talk steps. The journal shows failed quests as
 ended, marked FAILED, and the HUD notes "QUEST FAILED".
 
 **Source layout (2026-10-11).** The code follows Traktor's CLAUDE.md: one class per file, and the

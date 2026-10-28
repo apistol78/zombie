@@ -416,6 +416,21 @@ bool QuestLog::isMet(const QuestStep* step) const
 		return false;
 }
 
+bool QuestLog::needsDead(const Guid& quest) const
+{
+	const QuestData* questData = m_story->getQuest(quest);
+	const int32_t step = getStepIndex(quest);
+	if (!questData || step < 0)
+		return false;
+
+	for (const auto& actor : questData->getNeededActors(step))
+	{
+		if (hasDied(actor))
+			return true;
+	}
+	return false;
+}
+
 void QuestLog::settle(const Guid& quest)
 {
 	for (int32_t i = 0; i < c_maxSettle; ++i)
@@ -425,7 +440,7 @@ void QuestLog::settle(const Guid& quest)
 			return;
 
 		// Failing comes first; a step met and failed at once is failed.
-		if (step->getFailWhen() != nullptr && step->getFailWhen()->evaluate(m_story))
+		if (needsDead(quest) || (step->getFailWhen() != nullptr && step->getFailWhen()->evaluate(m_story)))
 		{
 			fail(quest);
 			return;

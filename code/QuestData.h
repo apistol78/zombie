@@ -8,6 +8,7 @@
  */
 #pragma once
 
+#include "Core/Containers/AlignedVector.h"
 #include "Core/Guid.h"
 #include "Core/RefArray.h"
 #include "Core/Serialization/ISerializable.h"
@@ -51,6 +52,9 @@ public:
 
 	/*! Index of the step with guid id; -1 if none. */
 	int32_t findStep(const Guid& id) const;
+
+	/*! Actors the steps from step on need alive, such as one to talk to; the quest fails if any dies. */
+	AlignedVector< Guid > getNeededActors(int32_t step) const;
 
 	const RefArray< IAction >& getReward() const { return m_reward; }
 

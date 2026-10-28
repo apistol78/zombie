@@ -3,12 +3,13 @@
 	<text><![CDATA[
 #using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
 #using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+#using \{F7011021-9DFC-1F43-B9F6-ED2BDBA687CB}
 
 import(traktor)
 
 -- OptionsView
 --
--- The game's options -- graphics quality and sound volume -- as a UiKit Container
+-- The game's options -- graphics quality, sound volume and the controls -- as a UiKit Container
 -- that builds its own rows and knows nothing about where it is being shown. Both menus in the game put the same view
 -- up: Scripts/Startup drops it into a dialog beside its main menu, and Scripts/Main
 -- into one behind the pause menu -- so the options are written once and the two
@@ -120,8 +121,19 @@ import(traktor)
 --
 -- Out of the presets for the same reason as ray tracing: tearing against latency is
 -- the player's call, not a detail level.
+--
+-- ---- The controls ----
+--
+-- A page of their own, Scripts/Views/ControlsView, behind a second tab: the graphics
+-- and sound rows already fill the height the dialog has. The two pages share one
+-- FloodLayout cell, so the dialog is as tall as the taller of them and does not change
+-- size as the tabs switch. Which page is up is remembered while the view lives, so the
+-- options open again where the player left them.
 
 OptionsView = OptionsView or class("OptionsView", Container)
+
+-- The tabs, in order; the index is the page's.
+local PAGES < const > = { "GRAPHICS & SOUND", "CONTROLS" }
 
 -- world::Quality, in the engine's own order (World/WorldTypes.h).
 local QUALITY < const > = { [0] = "Off", [1] = "Low", [2] = "Medium", [3] = "High", [4] = "Ultra" }
@@ -211,6 +223,7 @@ local VOLUME_APPLY_DELAY < const > = 0.25
 local VALUE_W < const > = 150   -- the value buttons, wide enough that a caption
 local ARROW_W < const > = 44    -- change never moves the column it is in
 local BACK_W < const > = 220
+local TAB_W < const > = 260
 local COLUMN_GAP < const > = 36 -- between the two columns of graphics rows
 
 -- How many graphics rows go in the left column, the rest going in the right. The
@@ -241,7 +254,21 @@ function OptionsView:new(parent, environment)
 	title:setTextColor(C_TITLE)
 	title:setHorizontalAlign(Widget.ALIGN_CENTER)
 
-	self:_heading("GRAPHICS")
+	-- The tabs, and the two pages they switch between in one cell (see the note above
+	-- about the controls).
+	local tabs < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, 10, 0))
+	tabs:setHorizontalAlign(Widget.ALIGN_CENTER)
+	self._tabs = {}
+	for i, caption in ipairs(PAGES) do
+		self._tabs[i] = MenuButton(tabs, caption)
+		self._tabs[i]:setMinimumWidth(TAB_W)
+		self._tabs[i]:setOnClick(function() self:_showPage(i) end)
+	end
+
+	local pages < const > = Container(self, FloodLayout())
+	local graphics < const > = Container(pages, TableLayout({ 0 }, { 0 }, 0, 0, 0, 14))
+
+	self:_heading(graphics, "GRAPHICS")
 
 	-- Two grids side by side rather than one tall one: the rows in a single column
 	-- stood taller than the window the dialog has to fit inside. A grid each, so the
@@ -255,7 +282,7 @@ function OptionsView:new(parent, environment)
 	-- into a cell narrower than its contents -- the left one would draw over the right
 	-- rather than squeeze (see TableLayout:_calculate, which leaves an auto column at
 	-- its preferred width however little room it is handed).
-	local columns < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, COLUMN_GAP, 0))
+	local columns < const > = Container(graphics, TableLayout({ 0, 0 }, { 0 }, 0, 0, COLUMN_GAP, 0))
 	local grids < const > = {}
 	for c = 1, 2 do
 		grids[c] = Container(columns, TableLayout({ 0, 0, 0, 0 }, { 0 }, 0, 0, 10, 8))
@@ -282,8 +309,8 @@ function OptionsView:new(parent, environment)
 	-- so it lines up with the graphics rows' controls, and a fixed slice for the
 	-- reading -- proportional rather than sized to the text, or the track would shift
 	-- every time "100%" became "Off".
-	self:_heading("SOUND")
-	local audio < const > = Container(self, TableLayout({ 0, 100, 30 }, { 0 }, 0, 0, 10, 8))
+	self:_heading(graphics, "SOUND")
+	local audio < const > = Container(graphics, TableLayout({ 0, 100, 30 }, { 0 }, 0, 0, 10, 8))
 
 	local volumeLabel < const > = Static(audio, "Master volume")
 	volumeLabel:setTextSize(20)
@@ -305,6 +332,9 @@ function OptionsView:new(parent, environment)
 	self._volumeValue:setHorizontalAlign(Widget.ALIGN_LEFT)
 	self._volumeValue:setVerticalAlign(Widget.ALIGN_CENTER)
 
+	self._controls = ControlsView(pages, environment)
+	self._pages = { graphics, self._controls }
+
 	local hint < const > = Static(self, "Changes apply at once and are kept for next time.")
 	hint:setTextSize(15)
 	hint:setTextColor(C_HINT)
@@ -315,6 +345,7 @@ function OptionsView:new(parent, environment)
 	back:setHorizontalAlign(Widget.ALIGN_CENTER)
 	back:setOnClick(function() self:_close() end)
 
+	self:_showPage(1)
 	self:refresh()
 end
 
@@ -344,14 +375,24 @@ function OptionsView:refresh()
 	local pct < const > = self:_getVolume()
 	self._volumeSlider:setPosition(pct, true)
 	self._volumeValue:setText(self:_volumeText(pct))
+
+	self._controls:refresh()
 	return self
 end
 
 -- Private
 
+-- Put one page up and the other away. The tab of the page that is up stays pressed.
+function OptionsView:_showPage(index)
+	for i, page in ipairs(self._pages) do
+		page:setVisible(i == index)
+		self._tabs[i]:setToggled(i == index)
+	end
+end
+
 -- A section heading, aligned with the left edge of the grid under it.
-function OptionsView:_heading(text)
-	local heading < const > = Static(self, text)
+function OptionsView:_heading(parent, text)
+	local heading < const > = Static(parent, text)
 	heading:setTextSize(16)
 	heading:setTextColor(C_HINT)
 	heading:setHorizontalAlign(Widget.ALIGN_LEFT)

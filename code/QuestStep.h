@@ -61,7 +61,7 @@ public:
 
 	void setWaypoint(IWaypoint* waypoint) { m_waypoint = waypoint; }
 
-	/*! The quest fails while at this step and this holds, such as someone to talk to having died; null never. */
+	/*! The quest fails while at this step and this holds; null never. Deaths of actors still to talk to fail it regardless. */
 	const ICondition* getFailWhen() const { return m_failWhen; }
 
 	void setFailWhen(ICondition* failWhen) { m_failWhen = failWhen; }

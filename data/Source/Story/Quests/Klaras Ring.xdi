@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="zombie.QuestData">
-	<title>KLARA'S RING</title>
-	<info>OLD KLARA DROPPED HER LATE HUSBAND'S SIGNET RING IN THE CHURCHYARD WHEN THE GRAVES OPENED. SHE DARE NOT GO BACK FOR IT.</info>
+	<title>KLARA&apos;S RING</title>
+	<info><![CDATA[OLD KLARA DROPPED HER LATE HUSBAND'S SIGNET RING IN THE CHURCHYARD WHEN THE GRAVES OPENED. SHE DARE NOT GO BACK FOR IT.]]></info>
 	<steps>
 		<item type="zombie.FindItemStep" version="3">
 			<id>{63794B10-889B-4D0D-AB70-A55ABB41FE1E}</id>
 			<name>find</name>
-			<text>FIND KLARA'S SIGNET RING BY THE CHAPEL</text>
+			<text><![CDATA[FIND KLARA'S SIGNET RING BY THE CHAPEL]]></text>
 			<waypoint/>
 			<failWhen/>
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020A}</item>
 			<holdBack>true</holdBack>
 		</item>
-		<item type="zombie.TalkStep" version="1">
+		<item type="zombie.TalkStep" version="2">
 			<id>{15001AE7-3169-4BCE-9A96-0904E1319A07}</id>
 			<name>return</name>
-			<text>BRING THE RING BACK TO KLARA</text>
+			<text><![CDATA[BRING THE RING BACK TO KLARA]]></text>
 			<waypoint/>
+			<failWhen/>
 			<onComplete/>
 			<actor>{D1A20000-0000-4000-8000-000000000307}</actor>
 			<line>{FABAC809-5FEF-41C8-9B17-C2E880B633EF}</line>

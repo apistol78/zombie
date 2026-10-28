@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="zombie.QuestData">
 	<title>THE LOST LOCKET</title>
-	<info>GRETA'S LOCKET, HER MOTHER'S, HAS GONE MISSING. SHE IS SURE HER BOY TOMAS KNOWS WHERE IT IS.</info>
+	<info><![CDATA[GRETA'S LOCKET, HER MOTHER'S, HAS GONE MISSING. SHE IS SURE HER BOY TOMAS KNOWS WHERE IT IS.]]></info>
 	<steps>
 		<item type="zombie.TalkStep" version="2">
 			<id>{8A432C0C-DC0C-4ECC-B5C7-C3D269C405D7}</id>
 			<name>ask</name>
-			<text>ASK TOMAS WHERE HE PUT HIS MOTHER'S LOCKET</text>
+			<text><![CDATA[ASK TOMAS WHERE HE PUT HIS MOTHER'S LOCKET]]></text>
 			<waypoint/>
-			<failWhen type="zombie.ActorCondition">
-				<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
-				<state>Dead</state>
-			</failWhen>
+			<failWhen/>
 			<onComplete/>
 			<actor>{D1A20000-0000-4000-8000-000000000309}</actor>
 			<line>{2D2CB228-05AF-4BA2-961F-E43D4AF1588D}</line>
@@ -19,18 +16,19 @@
 		<item type="zombie.FindItemStep" version="3">
 			<id>{84425CCC-A002-43A6-A7A6-1A1F94FE35F2}</id>
 			<name>find</name>
-			<text>SEARCH THE OLD CHEST BY THE CHAPEL FOR THE LOCKET</text>
+			<text><![CDATA[SEARCH THE OLD CHEST BY THE CHAPEL FOR THE LOCKET]]></text>
 			<waypoint/>
 			<failWhen/>
 			<onComplete/>
 			<item>{D1A10000-0000-4000-8000-00000000020C}</item>
 			<holdBack>true</holdBack>
 		</item>
-		<item type="zombie.TalkStep" version="1">
+		<item type="zombie.TalkStep" version="2">
 			<id>{600BA235-9E5F-4405-AA3A-9F0521EDB226}</id>
 			<name>return</name>
-			<text>GIVE THE LOCKET BACK TO GRETA</text>
+			<text><![CDATA[GIVE THE LOCKET BACK TO GRETA]]></text>
 			<waypoint/>
+			<failWhen/>
 			<onComplete/>
 			<actor>{D1A20000-0000-4000-8000-000000000306}</actor>
 			<line>{A2A22BAA-D60D-4089-BF52-4CF91D14CB63}</line>

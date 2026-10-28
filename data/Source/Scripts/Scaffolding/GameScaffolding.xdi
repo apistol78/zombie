@@ -163,12 +163,16 @@ end
 
 -- A stand-in for the runtime environment, for the two things in the game that take one
 -- (Scripts/Views/OptionsView, Scripts/Widgets/FpsCounter): `settings`, `render.frameRate`,
--- `render.renderSystem.supportRayTracing` and `reconfigure()`.
+-- `render.renderSystem.supportRayTracing`, `reconfigure()` and the input server that
+-- Scripts/Views/ControlsView records bindings with.
 --
 -- The settings are a plain table behind PropertyGroup's getProperty/setProperty, so what a
 -- page writes reads back and nothing reaches the editor's own settings. Every write is
 -- printed to the log with its Lua type -- an integer where the engine reads a float is
 -- exactly the mistake OptionsView's notes warn about -- and so is every reconfigure.
+--
+-- The input server describes every source by its own id and "records" by waiting a moment
+-- and leaving it as it was; recordings, applies and reverts are printed like the rest.
 function GameScaffolding.environment(rayTracing)
 	local values = {}
 	local settings = {}
@@ -181,8 +185,35 @@ function GameScaffolding.environment(rayTracing)
 		print("Scaffolding: setProperty " .. tostring(key) .. " = " .. tostring(value) .. " (" .. kind .. ")")
 	end
 
+	local source = {}
+	function source:getDescription()
+		return self.id
+	end
+	local mapping = {}
+	function mapping:getSource(id)
+		return setmetatable({ id = id }, { __index = source })
+	end
+
+	local input = { inputMapping = mapping, isFabricating = false }
+	function input:fabricateInputSource(id, category, analogue)
+		print("Scaffolding: fabricateInputSource " .. tostring(id) .. " (category " .. tostring(category) .. ")")
+		self.isFabricating = true
+		Interval(1.0, function() self.isFabricating = false end)
+		return true
+	end
+	function input:abortedFabricating()
+		return false
+	end
+	function input:apply()
+		print("Scaffolding: input apply")
+	end
+	function input:revert()
+		print("Scaffolding: input revert")
+	end
+
 	local environment = {
 		settings = settings,
+		input = input,
 		render = {
 			frameRate = 60.0,
 			renderSystem = { supportRayTracing = (rayTracing ~= false) }

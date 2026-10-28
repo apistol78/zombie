@@ -220,13 +220,12 @@ Ref< FakeResourceManager > createStory()
 	}
 	rm->add(c_prayQuest, prayQuest);
 
-	// Ask: talk to Klara, failing if she dies first; then reach the altar.
+	// Ask: talk to Klara; then reach the altar.
 	Ref< QuestData > askQuest = new QuestData();
 	askQuest->setTitle(L"ASK");
 	{
 		Ref< TalkStep > talk = new TalkStep();
 		talk->setActor(resource::Id< ActorData >(c_klara));
-		talk->setFailWhen(new ActorCondition(resource::Id< ActorData >(c_klara), ActorCondition::State::Dead));
 		askQuest->getSteps().push_back(talk);
 
 		Ref< ReachStep > reach = new ReachStep();
@@ -464,6 +463,30 @@ void CaseStory::run()
 		CASE_ASSERT_EQUAL(otherLog->getStepIndex(c_askQuest), 1);
 		otherLog->died(c_klara);
 		CASE_ASSERT(otherLog->isActive(c_askQuest));
+	}
+
+	// A step still to come talking to the dead fails the quest too; so does one given after the death.
+	{
+		Ref< Story > story = Story::create(rm, c_story, 8);
+		QuestLog* questLog = story->getQuestLog();
+		questLog->start(c_ringQuest);
+		CASE_ASSERT(questLog->getCurrentStepId(c_ringQuest) == c_findStep);
+		questLog->died(c_klara);
+		CASE_ASSERT(questLog->getEntries()[0]->isFailed());
+		CASE_ASSERT(!questLog->isActive(c_ringQuest));
+
+		Ref< Story > later = Story::create(rm, c_story, 8);
+		QuestLog* laterLog = later->getQuestLog();
+		laterLog->died(c_klara);
+		CASE_ASSERT(laterLog->start(c_askQuest));
+		CASE_ASSERT(laterLog->getEntries()[0]->isFailed());
+
+		// Someone no step talks to dying fails nothing.
+		Ref< Story > other = Story::create(rm, c_story, 8);
+		QuestLog* otherLog = other->getQuestLog();
+		otherLog->start(c_ringQuest);
+		otherLog->died(c_huntsman);
+		CASE_ASSERT(otherLog->isActive(c_ringQuest));
 	}
 }
 

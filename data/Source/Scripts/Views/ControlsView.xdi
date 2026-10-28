@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[
+#using \{FC4400A2-BDB6-BA45-9A22-12B9676E71FA}
+#using \{6D2B8F41-A7C3-4E95-B01D-3F8E5A9C2D67}
+
+import(traktor)
+
+-- ControlsView
+--
+-- The controls page of Scripts/Views/OptionsView: one row per action the player can
+-- rebind, showing what it is bound to now. Clicking a row hands it to the input server
+-- to record -- IInputServer:fabricateInputSource -- and the next key or mouse button
+-- pressed becomes that action's.
+--
+-- ---- What a row rebinds ----
+--
+-- A source in Input/IM - Input, never a state. The states (STATE_JUMP, STATE_MOVE_X
+-- and the rest) are what the game reads and they stay exactly as authored; a row only
+-- changes the key or button feeding one. That is why the sources these rows name are
+-- called after what they do -- ID_JUMP rather than ID_KEY_SPACE -- since the key is
+-- now the player's to change. The ones not offered here keep their key names: Escape
+-- (pause, and also the key that cancels a recording), the mouse axes and wheel (axes,
+-- which a key press cannot record), and the cheat keys.
+--
+-- ---- While recording ----
+--
+-- Everything is the input server's (InputServer::update). Until the recording ends it
+-- takes every input itself: the input mapping is not updated, so the stage sees no
+-- key, and SparkLayer forwards nothing, so the menu sees no click either. Escape
+-- cancels and leaves the binding as it was; Backspace clears it, leaving the action
+-- unbound. All this page does meanwhile is watch `isFabricating` every frame and
+-- refresh once it drops.
+--
+-- Every row records from the keyboard and the mouse together, so any action takes a
+-- key, a mouse button, or a chord of them held together. Recordings come back as
+-- GenericInputSourceData, the same kind as every default in IM - Input -- which is
+-- what lets a mouse button stand in for a key and the other way round.
+--
+-- Recording something already bound elsewhere unbinds the other source: the server
+-- drops any source whose recording is identical. A recording reads any keyboard or
+-- any mouse when only one is connected, which is how the defaults are authored, so a
+-- default and a recording of the same key are identical too.
+--
+-- ---- Keeping it ----
+--
+-- After each recording, `apply` puts the server's whole set of sources into the
+-- settings group as "Input.Sources", which the runtime saves with everything else as
+-- it shuts down -- the same file the graphics rows end up in. Nothing is written
+-- until the player actually changes a binding, and RESET TO DEFAULTS writes an empty
+-- object rather than a copy of the defaults: the server takes a saved set whole, so
+-- one saved now would be missing any source added to IM - Input later, while an empty
+-- one sends it back to the asset every time it starts.
+
+ControlsView = ControlsView or class("ControlsView", Container)
+
+-- One row each, left column first. Inventory has two keys by default (Tab and I), so
+-- it has two rows.
+local ACTIONS < const > = {
+	{ source = "ID_MOVE_FORWARD", label = "Move forward" },
+	{ source = "ID_MOVE_BACK", label = "Move back" },
+	{ source = "ID_STRAFE_LEFT", label = "Strafe left" },
+	{ source = "ID_STRAFE_RIGHT", label = "Strafe right" },
+	{ source = "ID_JUMP", label = "Jump" },
+	{ source = "ID_SPRINT", label = "Sprint" },
+	{ source = "ID_ATTACK", label = "Attack" },
+	{ source = "ID_CAST", label = "Cast spell" },
+	{ source = "ID_INTERACT", label = "Interact" },
+	{ source = "ID_INVENTORY", label = "Inventory" },
+	{ source = "ID_INVENTORY_ALT", label = "Inventory (alt.)" },
+	{ source = "ID_JOURNAL", label = "Journal" },
+	{ source = "ID_TRAIL", label = "Breadcrumb trail" }
+}
+local COLUMN_SPLIT < const > = 6
+
+local SOURCES_KEY < const > = "Input.Sources"
+
+local UNBOUND < const > = "Unbound"
+local NO_DEVICE < const > = "No device"
+
+local BINDING_W < const > = 260   -- the grid then spans what the graphics rows do
+local RESET_W < const > = 260
+local COLUMN_GAP < const > = 36
+
+local C_LABEL < const > = Color4f(0.58, 0.58, 0.57, 1.0)
+local C_HINT < const > = Color4f(0.4, 0.4, 0.39, 1.0)
+local C_RECORDING < const > = Color4f(0.96, 0.96, 0.94, 1.0)
+
+function ControlsView:new(parent, environment)
+	-- A column that takes the page's whole width rather than its widest row's, so the
+	-- hint and the reset button center in the dialog and not over the grid.
+	Container.new(self, parent, TableLayout({ 100 }, { 0 }, 0, 0, 0, 14))
+
+	self._input = environment.input
+	self._settings = environment.settings
+	self._recording = nil
+
+	local heading < const > = Static(self, "KEYBOARD AND MOUSE")
+	heading:setTextSize(16)
+	heading:setTextColor(C_HINT)
+	heading:setHorizontalAlign(Widget.ALIGN_LEFT)
+
+	-- Two grids side by side, as the graphics rows are and for the same reason: thirteen
+	-- rows in one column would stand taller than the window.
+	local columns < const > = Container(self, TableLayout({ 0, 0 }, { 0 }, 0, 0, COLUMN_GAP, 0))
+	local grids < const > = {}
+	for c = 1, 2 do
+		grids[c] = Container(columns, TableLayout({ 0, 0 }, { 0 }, 0, 0, 10, 8))
+		grids[c]:setVerticalAlign(Widget.ALIGN_TOP)
+	end
+
+	self._buttons = {}
+	for i, action in ipairs(ACTIONS) do
+		local grid < const > = (i <= COLUMN_SPLIT) and grids[1] or grids[2]
+
+		local caption < const > = Static(grid, action.label)
+		caption:setTextSize(20)
+		caption:setTextColor(C_LABEL)
+		caption:setHorizontalAlign(Widget.ALIGN_LEFT)
+		caption:setVerticalAlign(Widget.ALIGN_CENTER)
+
+		local button < const > = MenuButton(grid, UNBOUND)
+		button:setMinimumWidth(BINDING_W)
+		button:setHorizontalAlign(Widget.ALIGN_CENTER)
+		button:setOnClick(function() self:_record(i) end)
+		self._buttons[i] = button
+	end
+
+	-- The style's own caption colour, to go back to once a row stops recording.
+	self._valueColor = self._buttons[1]:getStyle().text
+
+	local hint < const > = Static(self, "Click an action, then press a key or mouse button. Esc cancels, Backspace unbinds.")
+	hint:setTextSize(15)
+	hint:setTextColor(C_HINT)
+	hint:setHorizontalAlign(Widget.ALIGN_CENTER)
+
+	local reset < const > = MenuButton(self, "RESET TO DEFAULTS")
+	reset:setMinimumWidth(RESET_W)
+	reset:setHorizontalAlign(Widget.ALIGN_CENTER)
+	reset:setOnClick(function() self:_resetAll() end)
+
+	-- Watched from the frame rather than from a stage's update, so the page asks nothing
+	-- of the stage it is shown in.
+	self:addEventListener(FrameEvent, self, self._onFrame)
+
+	self:refresh()
+end
+
+-- Write every row from the live input mapping, so a row always shows what the action
+-- is actually bound to -- including the ones a recording just unbound elsewhere.
+function ControlsView:refresh()
+	local mapping < const > = (self._input ~= nil) and self._input.inputMapping or nil
+	for i, button in ipairs(self._buttons) do
+		if i == self._recording then
+			button:setCaption("Press a key or button")
+			button:setTextColor(C_RECORDING)
+		else
+			button:setCaption(self:_describe(mapping, ACTIONS[i].source))
+			button:setTextColor(self._valueColor)
+		end
+	end
+	return self
+end
+
+-- Private
+
+-- What a source is bound to, in the device's own words ("Space", "Left mouse button").
+-- A recorded chord of mouse buttons comes back with a line break after each "+", which
+-- the whitespace collapse folds back into the line (a pattern spelling out the line
+-- break would lose its backslash to the script preprocessor).
+function ControlsView:_describe(mapping, sourceId)
+	local source < const > = (mapping ~= nil) and mapping:getSource(sourceId) or nil
+	if source == nil then
+		return UNBOUND
+	end
+	local text < const > = (string.gsub(source:getDescription(), "%s+", " "))
+	return (text ~= "") and text or NO_DEVICE
+end
+
+-- Start recording a row. One at a time: the server has a single recording, and a
+-- second click cannot arrive anyway while the menu hears nothing.
+function ControlsView:_record(index)
+	if self._recording ~= nil or self._input == nil then
+		return
+	end
+	-- input::InputCategory is a mask; record from either.
+	local category < const > = traktor.input.IInputDevice.Keyboard | traktor.input.IInputDevice.Mouse
+	if self._input:fabricateInputSource(ACTIONS[index].source, category, false) then
+		self._recording = index
+		self:refresh()
+	end
+end
+
+function ControlsView:_onFrame(event)
+	if self._recording ~= nil and not self._input.isFabricating then
+		self._recording = nil
+		-- Escape leaves the bindings as they were, so the settings stay as they were too.
+		if not self._input:abortedFabricating() then
+			self._input:apply()
+		end
+		self:refresh()
+	end
+	-- Never handled, so every other widget listening for the frame still gets it.
+	return false
+end
+
+-- Back to IM - Input's own bindings, every source in it -- the cheat keys a recording
+-- may have taken over as well. See the note above for why it is an empty object.
+function ControlsView:_resetAll()
+	if self._recording ~= nil or self._input == nil then
+		return
+	end
+	self._settings:setProperty(SOURCES_KEY, PropertyObject())
+	self._input:revert()
+	self:refresh()
+end
+]]></text>
+</object>

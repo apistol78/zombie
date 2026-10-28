@@ -163,6 +163,9 @@ private:
 
 	bool isMet(const QuestStep* step) const;
 
+	/*! A step from quest's current one on needs an actor who has died. */
+	bool needsDead(const Guid& quest) const;
+
 	void settle(const Guid& quest);
 
 	void completeStep(const Guid& quest);

@@ -315,7 +315,8 @@ void QuestEditorPage::rebuildGraph(const RefArray< QuestStep >& select, bool sel
 			new ui::DefaultNodeShape(ui::DefaultNodeShape::StDefault)
 		);
 		node->setData(L"STEP", const_cast< QuestStep* >(step));
-		node->setComment(describeTarget(step) + (step->getFailWhen() ? std::wstring(i18n::Text(L"STORY_QUEST_CAN_FAIL")) : std::wstring()));
+		const bool canFail = step->getFailWhen() != nullptr || !m_quest->getNeededActors(i).empty();
+		node->setComment(describeTarget(step) + (canFail ? std::wstring(i18n::Text(L"STORY_QUEST_CAN_FAIL")) : std::wstring()));
 		node->setState(checkStep(i).empty() ? 0 : 1);
 		node->setSelected(std::find(select.begin(), select.end(), step) != select.end());
 		flow.push_back(node);

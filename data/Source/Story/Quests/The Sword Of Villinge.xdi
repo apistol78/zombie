@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <object type="zombie.QuestData">
 	<title>THE SWORD OF VILLINGE</title>
-	<info>ÅKE'S GRANDFATHER FORGED THE SWORD OF VILLINGE. IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.</info>
+	<info><![CDATA[ÅKE'S GRANDFATHER FORGED THE SWORD OF VILLINGE. IT WAS LOST IN THE CAVE UNDER THE RIDGE WHEN THE DEAD FIRST CAME.]]></info>
 	<steps>
 		<item type="zombie.FindItemStep" version="3">
 			<id>{774FB29E-D4D6-4BC4-9214-42840046EBC1}</id>
 			<name>find</name>
-			<text>FIND THE SWORD OF VILLINGE IN THE DEEPEST TUNNEL OF THE CAVE</text>
+			<text><![CDATA[FIND THE SWORD OF VILLINGE IN THE DEEPEST TUNNEL OF THE CAVE]]></text>
 			<waypoint type="zombie.FirstOfWaypoint">
 				<candidates>
 					<item type="zombie.ItemWaypoint">
@@ -22,10 +22,10 @@
 			<item>{D1A10000-0000-4000-8000-00000000020D}</item>
 			<holdBack>true</holdBack>
 		</item>
-		<item type="zombie.TalkStep" version="1">
+		<item type="zombie.TalkStep" version="2">
 			<id>{B5CAAD3F-B78E-4D8D-BBC7-F81743D8EE00}</id>
 			<name>return</name>
-			<text>BRING THE SWORD BACK TO ÅKE THE SMITH</text>
+			<text><![CDATA[BRING THE SWORD BACK TO ÅKE THE SMITH]]></text>
 			<waypoint type="zombie.FirstOfWaypoint">
 				<candidates>
 					<item type="zombie.ActorWaypoint">
@@ -36,6 +36,7 @@
 					</item>
 				</candidates>
 			</waypoint>
+			<failWhen/>
 			<onComplete/>
 			<actor>{D1A20000-0000-4000-8000-000000000300}</actor>
 			<line>{10B72A45-CDDE-4A7D-B44B-AB960AB102AA}</line>

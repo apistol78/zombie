@@ -13,6 +13,9 @@
 #include "Core/Serialization/ISerializer.h"
 #include "Core/Serialization/Member.h"
 #include "Core/Serialization/MemberRefArray.h"
+#include "Steps/TalkStep.h"
+
+#include <algorithm>
 
 namespace zombie
 {
@@ -30,6 +33,17 @@ int32_t QuestData::findStep(const Guid& id) const
 			return i;
 	}
 	return -1;
+}
+
+AlignedVector< Guid > QuestData::getNeededActors(int32_t step) const
+{
+	AlignedVector< Guid > actors;
+	for (int32_t i = std::max(step, 0); i < (int32_t)m_steps.size(); ++i)
+	{
+		if (auto talkStep = dynamic_type_cast< const TalkStep* >(m_steps[i]))
+			actors.push_back(talkStep->getActor());
+	}
+	return actors;
 }
 
 void QuestData::serialize(ISerializer& s)

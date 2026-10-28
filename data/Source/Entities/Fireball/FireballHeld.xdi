@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{D9B17C50-6130-41E9-A270-6A2E8FF028C8}</id>
+	<name>FireballHeld</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{F917D2B2-A7A9-1949-BF64-7D05256BF3F7}</mesh>
+		</item>
+		<item type="traktor.spray.EffectComponentData">
+			<effect>{5B55AAAB-5874-4445-874E-74A0BE1C7D99}</effect>
+		</item>
+		<item type="traktor.world.LightComponentData" version="13">
+			<lightType>Point</lightType>
+			<color>1, 0.55, 0.2, 1</color>
+			<intensity>4</intensity>
+			<castShadow>false</castShadow>
+			<nearRange>0</nearRange>
+			<farRange>2.5</farRange>
+			<radius>1.570796</radius>
+			<flickerAmount>0.3</flickerAmount>
+			<flickerFilter>0.4</flickerFilter>
+			<bakeMode>LbmDisabled</bakeMode>
+		</item>
+	</components>
+</object>

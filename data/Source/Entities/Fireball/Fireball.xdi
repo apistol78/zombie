@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="2">
+	<id>{F52BDCBD-066A-4639-B3D0-4B41780D1C2D}</id>
+	<name>Fireball</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>true</dynamic>
+		<locked>false</locked>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{E7326921-7AE0-3E46-9E6B-35256D86AA24}</mesh>
+		</item>
+		<item type="traktor.spray.EffectComponentData">
+			<effect>{BE0E1974-8512-F649-AFAE-5860EA405EF8}</effect>
+		</item>
+		<item type="traktor.world.LightComponentData" version="13">
+			<lightType>Point</lightType>
+			<color>1, 0.55, 0.2, 1</color>
+			<intensity>60</intensity>
+			<castShadow>true</castShadow>
+			<nearRange>0</nearRange>
+			<farRange>9</farRange>
+			<radius>1.570796</radius>
+			<flickerAmount>0.25</flickerAmount>
+			<flickerFilter>0.4</flickerFilter>
+			<bakeMode>LbmDisabled</bakeMode>
+		</item>
+		<item type="traktor.world.EventSetComponentData">
+			<eventData>
+				<item>
+					<first>cast</first>
+					<second type="traktor.spray.SoundEventData" version="1">
+						<sound>{50D1B000-0000-4000-8000-00000000000A}</sound>
+						<positional>false</positional>
+						<follow>false</follow>
+						<autoStopFar>false</autoStopFar>
+					</second>
+				</item>
+				<item>
+					<first>explode</first>
+					<second type="traktor.spray.SpawnEffectEventData" version="3">
+						<effect>{A91F4F72-BDD9-B544-8491-30483E49EA35}</effect>
+						<transform>
+							<translation>0, 0, 0, 0</translation>
+							<rotation>0, 0, 0, 1</rotation>
+						</transform>
+						<follow>false</follow>
+						<useRotation>false</useRotation>
+					</second>
+				</item>
+			</eventData>
+		</item>
+	</components>
+</object>

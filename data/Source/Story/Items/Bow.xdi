@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.ItemData" version="1">
+	<name>BOW</name>
+	<pluralName/>
+	<info><![CDATA[HOLD TO DRAW, LET GO TO LOOSE. QUIET, AND REACHES FAR.]]></info>
+	<icon>bow</icon>
+	<maxStack>1</maxStack>
+	<keep>false</keep>
+	<dropEntity>{17E40000-0000-4000-8000-000000000010}</dropEntity>
+	<traits>
+		<item type="zombie.EquipTrait" version="1">
+			<slot>{D1A10000-0000-4000-8000-000000000600}</slot>
+		</item>
+		<item type="zombie.WeaponTrait">
+			<ammo>{D1A10000-0000-4000-8000-000000000203}</ammo>
+		</item>
+	</traits>
+</object>

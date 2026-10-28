@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Bow
+--
+-- The weapon the night is built around: hold the left button to draw, let go to loose. How far
+-- it was drawn is how hard the arrow leaves -- its speed, its damage and how hard it throws
+-- whatever it kills -- so a snap shot at something on top of you is possible and a patient one
+-- at something far off is worth more. There is no magazine and no reload: an arrow is nocked
+-- from the pack a moment after the last one leaves, and the pack's "arrows" are the whole of the
+-- ammunition.
+--
+-- An arrow is not a ray. It is a little projectile this file flies itself, a simulation step at
+-- a time, falling under Config.bow.gravity, traced from where it was to where it is going --
+-- so it takes time to arrive, drops over distance, and is stopped by the first thing on that
+-- segment exactly as a round was. One that hits the world stays stuck in it for a while; one
+-- that hits a character is spent in it.
+--
+-- It is quiet. Nothing here reports a shot to the horde (Main:reportGunshot), which is the
+-- other half of what the bow is for.
+--
+-- It is held in the right hand, which leaves the left for the readied spell
+-- (Scripts/Spells/Spellbook). Left alone for Config.bow.lowerAfter seconds it is lowered out of
+-- the way, and it is lowered before a spell is cast (Weapon:lower); drawing brings it back up.
+--
+-- What it looks like is an entity of its own (Entities/Bow/Bow), built into the world here and
+-- placed in front of the eye: a skinned bow whose string, limbs and nocked arrow are animated by
+-- its graph (Entities/Bow/AG - Bow, one .blend from tools/gen_bow.py). This file only says which
+-- stage the bow is at, through the graph's parameters, exactly one of them up at a time:
+--
+--   idle    an arrow on the string, undrawn
+--   draw    being drawn, and held at full draw
+--   loose   an arrow just left; the string snaps and the next arrow comes up to it
+--   last    the same with nothing left in the pack, so no next arrow
+--   empty   nothing on the string and nothing to put there
+--
+-- The draw clip lasts Config.bow.drawTime and the release clip Config.bow.nockTime.
+--
+-- Its numbers come straight from Config.bow; retune the bow there, not here.
+
+Bow = Bow or class("Bow", Weapon)
+
+-- The bow in hand and a loosed arrow (Entities/Bow), escaped so both are tracked dependencies.
+local BOW < const > = Guid("\{FA902E42-F74E-F54C-91B3-284D367D8207}")
+local ARROW < const > = Guid("\{5C646989-4289-6746-9162-EE55F273D921}")
+
+-- Nock to point of a loosed arrow (m); must match tools/gen_bow.py.
+local ARROW_LENGTH < const > = 0.76
+
+-- The graph's stages; see above.
+local STAGES < const > = { "idle", "draw", "loose", "last", "empty" }
+
+-- How the bow is held in the right hand, in the aim's own space: low and laid over to the right
+-- at rest, raised while drawn so the arrow runs parallel to the sightline and so points at the
+-- crosshair -- with the riser right of it, never across it -- and lowered all but out of shot,
+-- pointing at the ground. Offsets are the grip's place in front of the eye; a negative bank leans
+-- the top of the bow to the right.
+local REST_OFFSET < const > = Vector4(0.13, -0.19, 0.5, 0.0)
+local AIM_OFFSET < const > = Vector4(0.14, -0.07, 0.56, 0.0)
+local LOWER_OFFSET < const > = Vector4(0.24, -0.42, 0.36, 0.0)
+local REST_TURN < const > = Vector4(-0.1, 0.25, -0.55, 0.0)    -- heading, pitch, bank
+local AIM_TURN < const > = Vector4(0.0, 0.0, 0.12, 0.0)
+local LOWER_TURN < const > = Vector4(-0.3, 0.9, -0.9, 0.0)
+local RAISE_RATE < const > = 7.0                               -- how fast it comes up to aim (1/s)
+
+-- The collision groups an arrow is stopped by: the world, and everything that walks. Same values
+-- Scripts/Weapons/Grenades and zombie.EnemyComponent trace against.
+local COLLISION_DEFAULT < const > = 0x00000001
+local COLLISION_INTERACTABLE < const > = 0x00000002
+
+-- How far a stuck arrow sinks into what it hit, and how long one in flight stays hidden: the
+-- first steps of its flight are inside the player's own face.
+local EMBED < const > = 0.12
+local HIDE_FIRST < const > = 0.03
+
+local GRAVITY < const > = Vector4(0.0, -1.0, 0.0, 0.0)
+
+-- A heading and pitch that turn +Z onto `dir`, for anything pointed along a direction.
+local function lookAlong(dir)
+	local flat < const > = math.sqrt(dir.x * dir.x + dir.z * dir.z)
+	return Quaternion.fromEulerAngles(math.atan(dir.x, dir.z), math.atan(-dir.y, flat), 0.0)
+end
+
+local function lerp(a, b, t)
+	return a + (b - a) * t
+end
+
+function Bow:new(context, item)
+	Weapon.new(self, context, item)
+
+	self._interval = Config.bow.nockTime        -- the next arrow on the string
+	self._drawTime = Config.bow.drawTime        -- seconds to full draw
+	self._minDraw = Config.bow.minDraw          -- the least a release counts as
+	self._minSpeed = Config.bow.minSpeed        -- m/s at minDraw...
+	self._maxSpeed = Config.bow.maxSpeed        -- ...and at full draw
+	self._gravity = Config.bow.gravity
+	self._damage = Config.bow.damage            -- at full draw, times headMul in the head
+	self._headMul = Config.bow.headMul
+	self._flightTime = Config.bow.flightTime
+	self._stickTime = Config.bow.stickTime
+	self._maxStuck = Config.bow.maxStuck
+	self._lowers = true
+	self._lowerAfter = Config.bow.lowerAfter    -- seconds unused before it is put down
+
+	self._drawing = false   -- the button is down on a nocked arrow
+	self._draw = 0.0        -- ...and how far it has come back, 0..1
+	self._held = false      -- the button, as the last trigger saw it
+	self._raise = 0.0       -- the view model between rest (0) and aim (1); eased in :update
+
+	self._flying = {}       -- { entity, at (the point), velocity, age }
+	self._stuck = {}        -- { entity, age }, oldest first
+end
+
+function Bow:slot()
+	return "bow"
+end
+
+-- The bow in hand: built once and shown or hidden, as the held grenade is. Cached with what
+-- drives it: the graph's parameters, and the bow's "fire".
+function Bow:resolve()
+	if self._entity ~= nil or self._context.world == nil then
+		return
+	end
+	local entity < const > = self._context.world:createEntity(BOW)
+	if entity == nil then
+		return
+	end
+	self._context.world:addEntity(entity)
+	entity.visible = false
+	self._entity = entity
+	self._events = entity:getComponent(traktor.world.EventSetComponent)
+	local skeleton < const > = entity:getComponent(traktor.animation.SkeletonComponent)
+	self._graph = (skeleton ~= nil) and skeleton.poseController or nil
+end
+
+-- Live handles only. Arrows in flight or stuck belong to the world a hot reload throws away, so
+-- they are simply forgotten, as Grenades forgets its fuses.
+function Bow:reset()
+	self._entity = nil
+	self._events = nil
+	self._graph = nil
+	self._flying = {}
+	self._stuck = {}
+end
+
+-- Which stage the bow is at, for its graph.
+function Bow:_stage()
+	if self._drawing then
+		return "draw"
+	elseif not self:ready() then
+		return (self:reserve() > 0) and "loose" or "last"
+	elseif self:reserve() <= 0 then
+		return "empty"
+	end
+	return "idle"
+end
+
+function Bow:hasHud()
+	return true
+end
+
+function Bow:hudName()
+	return "BOW"
+end
+
+-- The arrows in the pack, as a bare count: there is nothing loaded behind them.
+function Bow:_pushHud()
+	if self._hud ~= nil then
+		self._hud:setAmmo(self._hudSlot, self:reserve(), nil)
+	end
+end
+
+-- Put away mid-draw, or dropped: the arrow stays on the string, undrawn.
+function Bow:selectionChanged(selected)
+	Weapon.selectionChanged(self, selected)
+	if not selected then
+		self._drawing = false
+		self._draw = 0.0
+	end
+end
+
+-- Down out of the way, the arrow left on the string undrawn, until the bow is next drawn.
+function Bow:lower()
+	Weapon.lower(self)
+	self._drawing = false
+	self._draw = 0.0
+end
+
+function Bow:lost()
+	self._drawing = false
+	self._draw = 0.0
+end
+
+-- Infinite ammunition (H): the pack never runs lower than it was when the cheat went on -- or
+-- than one arrow, so a bow with an empty pack still shoots. Every loose still takes its arrow and
+-- this puts it back before the next, the same way the other weapons' cheats work.
+function Bow:setInfiniteAmmo(on)
+	self._cheatFloor = on and math.max(1, self:reserve()) or nil
+	Weapon.setInfiniteAmmo(self, on)
+end
+
+function Bow:_topUp()
+	local floor < const > = self._cheatFloor
+	if floor == nil then
+		return
+	end
+	local count < const > = self:reserve()
+	if count < floor then
+		self._context:inventory():add(self:ammoItem(), floor - count)
+	end
+end
+
+-- An aim worth a reticle: an arrow on the string.
+function Bow:wantsCrosshair()
+	return self:ready() and self:reserve() > 0
+end
+
+-- Draw on the button, loose on its release. Started on `held` rather than `pressed`, so holding the
+-- button through the nock draws the next arrow as soon as it is on the string.
+function Bow:trigger(pressed, held)
+	self._held = held
+	if self._drawing then
+		if not held then
+			return self:_loose()
+		end
+		return false
+	end
+	if held and self:ready() and self:reserve() > 0 and self._context:player() ~= nil then
+		self._drawing = true
+		self._draw = 0.0
+		self:_used()
+		return true
+	end
+	return false
+end
+
+-- Let the arrow go: take it from the pack and put it in the air, as fast and as hard as the draw
+-- says. Its power runs from 0 for a release at minDraw or less to 1 at full draw.
+function Bow:_loose()
+	local context < const > = self._context
+	local power < const > = math.max(0.0, self._draw - self._minDraw) / math.max(0.0001, 1.0 - self._minDraw)
+	self._drawing = false
+	self._draw = 0.0
+	self:_used()
+
+	if self:_takeFromPack(1) <= 0 then
+		return false
+	end
+	self._cooldown = self._interval
+	if self._hud ~= nil then
+		self._hud:spend(self._hudSlot)
+	end
+	context:kickCrosshair()
+	if self._events ~= nil then
+		self._events:raise("fire")
+	end
+
+	local world < const > = context.world
+	if world == nil then
+		return true
+	end
+	local entity < const > = world:createEntity(ARROW)
+	if entity == nil then
+		return true
+	end
+	world:addEntity(entity)
+	entity.visible = false
+
+	-- From the eye, along the aim: the arrow on the string is a hand's width off that line, and
+	-- starting it there would put the eye and the arrow in disagreement about what is in the way.
+	table.insert(self._flying, {
+		entity = entity,
+		at = context:eye().xyz1,
+		velocity = context:aimDirection() * lerp(self._minSpeed, self._maxSpeed, power),
+		power = power,
+		age = 0.0
+	})
+	return true
+end
+
+-- One step of every arrow in the air, and the clocks of the ones stuck in the world. Ticked whether
+-- or not the bow is in hand: an arrow already loosed has left.
+function Bow:update(dt)
+	Weapon.update(self, dt)
+
+	-- In step with the graph's draw clip, which starts as the stage turns to "draw".
+	if self._drawing and self._held then
+		self._draw = math.min(1.0, self._draw + dt / self._drawTime)
+	end
+	local raise < const > = (self._drawing and self._drawn) and 1.0 or 0.0
+	self._raise = self._raise + (raise - self._raise) * math.min(1.0, dt * RAISE_RATE)
+
+	self:_tickLowering(dt, self._drawing)
+
+	if self._graph ~= nil then
+		local stage < const > = self:_stage()
+		for _, s in ipairs(STAGES) do
+			self._graph:setParameterValue(s, s == stage)
+		end
+	end
+
+	for i = #self._flying, 1, -1 do
+		local a < const > = self._flying[i]
+		if self:_fly(a, dt) then
+			table.remove(self._flying, i)
+		end
+	end
+
+	for i = #self._stuck, 1, -1 do
+		local s < const > = self._stuck[i]
+		s.age = s.age + dt
+		if s.age >= self._stickTime then
+			self:_remove(s.entity)
+			table.remove(self._stuck, i)
+		end
+	end
+end
+
+-- Move one arrow on by a step, falling as it goes, and see what the segment it crossed went
+-- through. True when it is done with -- spent in something, stuck, or given up on.
+function Bow:_fly(a, dt)
+	local context < const > = self._context
+	a.age = a.age + dt
+	if a.age > self._flightTime then
+		self:_remove(a.entity)
+		return true
+	end
+
+	local from < const > = a.at
+	local fall < const > = GRAVITY * self._gravity
+	local to < const > = from + a.velocity * dt + fall * (0.5 * dt * dt)
+	a.velocity = a.velocity + fall * dt
+
+	local hit < const > = self:_trace(from, to)
+	if hit == nil then
+		a.at = to
+		self:_point(a.entity, to, a.velocity, a.age > HIDE_FIRST)
+		return false
+	end
+
+	local dir = to - from
+	dir = dir / math.max(dir.length, 0.0001)
+	local point < const > = hit.position.xyz1
+	local struck < const > = hit.body ~= nil and hit.body.owner or nil
+
+	-- A character, alive or dead: the arrow is spent in it. Hurt where it actually arrived, so a
+	-- head shot is a head shot (Main:roundDamage), and thrown as hard as it was drawn.
+	if struck ~= nil and isa(struck, traktor.world.Entity) and struck:getComponent(zombie.NpcComponent) ~= nil then
+		self:_remove(a.entity)
+		local impulse < const > = context:knockbackImpulse(dir) * lerp(0.3, 1.0, a.power)
+		if context:isEnemyDead(struck) then
+			context:shoveCorpse(struck, point, impulse)
+		else
+			local damage < const > = self._damage * lerp(0.3, 1.0, a.power)
+			context:damage(struck, context:roundDamage(struck, point, damage, self._headMul),
+				point, impulse, false, context:player())
+		end
+		return true
+	end
+
+	-- The world: whatever is loose enough takes the arrow's momentum, a little dust comes off it,
+	-- and the arrow stays where it went in.
+	context:shoveBody(hit.body, point, dir * lerp(0.3, 1.0, a.power))
+	context:raisePlayerEffect("dust", point)
+	self:_point(a.entity, point + dir * EMBED, dir, true)
+	table.insert(self._stuck, { entity = a.entity, age = 0.0 })
+	if #self._stuck > self._maxStuck then
+		self:_remove(self._stuck[1].entity)
+		table.remove(self._stuck, 1)
+	end
+	return true
+end
+
+-- The first thing on the segment from `from` to `to`, or nil. The player's own capsule is not a
+-- target -- the first step of every arrow starts inside it -- so a hit on it is stepped through.
+function Bow:_trace(from, to)
+	local pm < const > = self._context.environment.physics.physicsManager
+	if pm == nil then
+		return nil
+	end
+	local player < const > = self._context:player()
+	local filter < const > = traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE)
+	local at = from
+	for _ = 1, 3 do
+		local span < const > = to - at
+		local length < const > = span.length
+		if length < 0.0001 then
+			return nil
+		end
+		local dir < const > = span / length
+		local hit < const > = pm:queryRay(at, dir, length, filter, true)
+		if hit == nil then
+			return nil
+		end
+		if hit.body == nil or hit.body.owner ~= player then
+			return hit
+		end
+		at = hit.position.xyz1 + dir * 0.02
+	end
+	return nil
+end
+
+-- Stand an arrow with its point at `tip`, along `dir`.
+function Bow:_point(entity, tip, dir, visible)
+	local length < const > = dir.length
+	if length < 0.0001 then
+		return
+	end
+	local d < const > = dir / length
+	entity.transform = Transform(tip - d * ARROW_LENGTH, lookAlong(d))
+	entity.visible = visible
+end
+
+-- removeEntity defers while the world updates and clears the entity's world at once, so destroy
+-- can free it now; the same pair Grenades uses.
+function Bow:_remove(entity)
+	local world < const > = self._context.world ~= nil and self._context.world.world or nil
+	if world ~= nil and entity ~= nil then
+		world:removeEntity(entity)
+		entity:destroy()
+	end
+end
+
+-- First-person view model: the bow placed in front of the eye, easing between rest, aim and
+-- lowered. What the bow itself does is its graph's.
+function Bow:place()
+	local entity < const > = self._entity
+	if entity == nil then
+		return
+	end
+	local context < const > = self._context
+	local raise < const > = self._raise
+	local lower < const > = self._lower
+
+	local offset = REST_OFFSET + (AIM_OFFSET - REST_OFFSET) * raise
+	local turn = REST_TURN + (AIM_TURN - REST_TURN) * raise
+	offset = offset + (LOWER_OFFSET - offset) * lower
+	turn = turn + (LOWER_TURN - turn) * lower
+	if context:isCarrying() then
+		offset = offset + Vector4(0.1, 0.0, 0.0, 0.0)
+	end
+	if context:isRunning() then
+		offset = offset + Vector4(-0.03, -0.12, -0.06, 0.0) * (1.0 - lower)
+		turn = turn + Vector4(0.0, 0.35, -0.2, 0.0) * (1.0 - lower)
+	end
+	local q < const > = context:aim() * Quaternion.fromEulerAngles(turn.x, turn.y, turn.z)
+	local origin < const > = context:eye() + context:aim() * offset
+	entity.transform = Transform(origin, q)
+	entity.visible = true
+end
+
+function Bow:stow()
+	if self._entity ~= nil then
+		self._entity.visible = false
+	end
+end
+]]></text>
+</object>

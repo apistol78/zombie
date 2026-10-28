@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000001}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Staff
+--
+-- Heavy ash shod in iron, held in the right hand: the left button swings it. Nothing is spent,
+-- so it never runs dry; what it costs is time, a swing every Config.staff.swingTime.
+--
+-- The swing is the animation's. The staff is an entity of its own (Entities/Staff/Staff),
+-- built into the world here and placed in front of the eye, whose graph (Entities/Staff/AG -
+-- Staff, one .blend from tools/gen_staff.py) plays the swing when its "swing" flag goes up --
+-- wound up over the right shoulder, swept across the front, through to the left. What it hits
+-- is wherever that carries the staff: while the strike is on (Config.staff.strikeFrom to
+-- strikeTo into the swing) every step traces where the "Head" joint went since the last, and
+-- the shaft from the grip to the head, and hurts what is in the way -- each character once a
+-- swing. A blow lands with the head's own direction of travel, so a body is thrown the way the
+-- swing went.
+--
+-- Like the bow it is lowered after Config.staff.lowerAfter unused and before a spell is cast
+-- (Weapon:lower); a swing brings it back up.
+
+Staff = Staff or class("Staff", Weapon)
+
+-- The staff in hand, escaped so it is a tracked dependency.
+local STAFF < const > = Guid("\{92FFBDEB-AF94-9946-8B00-15EA2BC119EF}")
+
+-- Where the right hand holds it, in the aim's own space, and where it goes when lowered; the
+-- staff's own pose about the hand is the animation's.
+local HAND_OFFSET < const > = Vector4(0.24, -0.34, 0.42, 0.0)
+local LOWER_OFFSET < const > = Vector4(0.3, -0.62, 0.32, 0.0)
+local LOWER_TURN < const > = Vector4(-0.2, 0.8, -0.5, 0.0)      -- heading, pitch, bank
+
+-- How long the graph's "swing" flag stays up for one swing: long enough that a blend cannot
+-- miss it, short enough to be down again before the swing ends.
+local SWING_FLAG < const > = 0.2
+
+-- The collision groups a blow is stopped by: the world, and everything that walks.
+local COLLISION_DEFAULT < const > = 0x00000001
+local COLLISION_INTERACTABLE < const > = 0x00000002
+
+function Staff:new(context, item)
+	Weapon.new(self, context, item)
+
+	self._interval = Config.staff.swingTime     -- the swing, start to finish
+	self._strikeFrom = Config.staff.strikeFrom  -- ...and the part of it that hits
+	self._strikeTo = Config.staff.strikeTo
+	self._damage = Config.staff.damage          -- times headMul in the head
+	self._headMul = Config.staff.headMul
+	self._lowers = true
+	self._lowerAfter = Config.staff.lowerAfter
+
+	self._swinging = false  -- a swing is playing
+	self._swingTime = 0.0   -- ...and how far into it
+	self._struck = {}       -- what this swing has hit already
+	self._thudded = false   -- ...and whether it has struck the world
+	self._head = nil        -- where the head was at the last step, in the world
+end
+
+function Staff:slot()
+	return "staff"
+end
+
+function Staff:automatic()
+	return true
+end
+
+-- The staff in hand: built once and shown or hidden, as the held grenade is. Cached with what
+-- drives it and what is read off it: its graph, and its skeleton's pose.
+function Staff:resolve()
+	if self._entity ~= nil or self._context.world == nil then
+		return
+	end
+	local entity < const > = self._context.world:createEntity(STAFF)
+	if entity == nil then
+		return
+	end
+	self._context.world:addEntity(entity)
+	entity.visible = false
+	self._entity = entity
+	self._events = entity:getComponent(traktor.world.EventSetComponent)
+	self._skeleton = entity:getComponent(traktor.animation.SkeletonComponent)
+	self._graph = (self._skeleton ~= nil) and self._skeleton.poseController or nil
+end
+
+function Staff:reset()
+	self._entity = nil
+	self._events = nil
+	self._skeleton = nil
+	self._graph = nil
+	self._head = nil
+end
+
+function Staff:hasHud()
+	return true
+end
+
+function Staff:hudName()
+	return "STAFF"
+end
+
+-- Nothing to count.
+function Staff:_pushHud()
+	if self._hud ~= nil then
+		self._hud:setAmmo(self._hudSlot, nil, nil)
+	end
+end
+
+-- Put away mid-swing: the swing is abandoned with it.
+function Staff:selectionChanged(selected)
+	Weapon.selectionChanged(self, selected)
+	if not selected then
+		self._swinging = false
+		self._head = nil
+	end
+end
+
+function Staff:attack()
+	if self._entity == nil or self._context:player() == nil or not self:ready() then
+		return false
+	end
+	self._cooldown = self._interval
+	self:_used()
+	self._swinging = true
+	self._swingTime = 0.0
+	self._struck = {}
+	self._thudded = false
+	self._head = nil
+	if self._events ~= nil then
+		self._events:raise("swing")
+	end
+	return true
+end
+
+function Staff:update(dt)
+	Weapon.update(self, dt)
+
+	if self._swinging then
+		self._swingTime = self._swingTime + dt
+		if self._swingTime >= self._interval then
+			self._swinging = false
+		elseif self._swingTime >= self._strikeFrom and self._swingTime <= self._strikeTo then
+			self:_strike()
+		else
+			self._head = nil
+		end
+	end
+	self:_tickLowering(dt, self._swinging)
+
+	if self._graph ~= nil then
+		self._graph:setParameterValue("swing", self._swinging and self._swingTime < SWING_FLAG)
+	end
+end
+
+-- Where a joint of the staff is in the world, off the pose its graph last evaluated.
+function Staff:_joint(name)
+	local pose < const > = self._skeleton:getPoseTransform(name)
+	return self._entity.transform * pose.translation.xyz1
+end
+
+-- One step of the strike: from where the head was to where it is, and down the shaft.
+function Staff:_strike()
+	if self._skeleton == nil or self._entity == nil then
+		return
+	end
+	local head < const > = self:_joint("Head")
+	local grip < const > = self:_joint("Staff")
+	local last < const > = self._head
+	self._head = head
+	if last == nil then
+		return
+	end
+	local travel = head - last
+	local length < const > = travel.length
+	if length < 0.001 then
+		return
+	end
+	travel = travel / length
+	self:_trace(last, head, travel)
+	self:_trace(grip, head, travel)
+end
+
+-- Everything on the segment from `from` to `to`, nearest first, struck by a blow travelling
+-- along `dir`; the world stops the segment.
+function Staff:_trace(from, to, dir)
+	local context < const > = self._context
+	local pm < const > = context.environment.physics.physicsManager
+	if pm == nil then
+		return
+	end
+	local player < const > = context:player()
+	local filter < const > = traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE)
+	local at = from
+	for _ = 1, 4 do
+		local span < const > = to - at
+		local length < const > = span.length
+		if length < 0.0001 then
+			return
+		end
+		local ray < const > = span / length
+		local hit < const > = pm:queryRay(at, ray, length, filter, true)
+		if hit == nil then
+			return
+		end
+		local struck < const > = hit.body ~= nil and hit.body.owner or nil
+		local point < const > = hit.position.xyz1
+		-- The player's own capsule is passed through.
+		if struck == nil or struck ~= player then
+			if struck ~= nil and isa(struck, traktor.world.Entity) and struck:getComponent(zombie.NpcComponent) ~= nil then
+				self:_blow(struck, point, dir)
+			else
+				self:_thud(hit.body, point, dir)
+				return
+			end
+		end
+		at = point + ray * 0.02
+	end
+end
+
+-- A character, once a swing: hurt where the head struck, or a corpse thrown.
+function Staff:_blow(struck, point, dir)
+	if self._struck[struck] then
+		return
+	end
+	self._struck[struck] = true
+	local context < const > = self._context
+	local impulse < const > = context:knockbackImpulse(dir)
+	if context:isEnemyDead(struck) then
+		context:shoveCorpse(struck, point, impulse)
+	else
+		context:damage(struck, context:roundDamage(struck, point, self._damage, self._headMul),
+			point, impulse, false, context:player())
+	end
+end
+
+-- The world, once a swing: a knock, dust, and whatever is loose enough takes the blow.
+function Staff:_thud(body, point, dir)
+	if self._thudded then
+		return
+	end
+	self._thudded = true
+	self._context:shoveBody(body, point, dir)
+	self._context:raisePlayerEffect("dust", point)
+	if self._events ~= nil then
+		self._events:raise("thud")
+	end
+end
+
+-- First-person view model: the hand in front of the eye, easing down when lowered; the staff's
+-- pose in it is the graph's.
+function Staff:place()
+	local entity < const > = self._entity
+	if entity == nil then
+		return
+	end
+	local context < const > = self._context
+	local lower < const > = self._lower
+	local offset = HAND_OFFSET + (LOWER_OFFSET - HAND_OFFSET) * lower
+	local turn = LOWER_TURN * lower
+	if context:isRunning() then
+		offset = offset + Vector4(0.0, -0.1, -0.05, 0.0) * (1.0 - lower)
+		turn = turn + Vector4(0.0, 0.25, 0.0, 0.0) * (1.0 - lower)
+	end
+	local aim < const > = context:aim()
+	entity.transform = Transform(context:eye() + aim * offset, aim * Quaternion.fromEulerAngles(turn.x, turn.y, turn.z))
+	entity.visible = true
+end
+
+function Staff:stow()
+	if self._entity ~= nil then
+		self._entity.visible = false
+	end
+	self._head = nil
+end
+]]></text>
+</object>

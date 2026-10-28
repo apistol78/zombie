@@ -14,15 +14,16 @@ import(traktor)
 -- stood in for by StageStub, so every click goes through the real pack.
 --
 -- The pack holds one of every kind there is -- every icon, every detail line and every button
--- state is a click away -- with the rifle drawn and the helmet worn, and the player is hurt, so
+-- state is a click away -- with the bow drawn, the fireball readied and the helmet worn, and the
+-- player is hurt, so
 -- food can be eaten. CLOSE hides the window, and it comes back a moment later.
 
 InventoryViewScaffolding = InventoryViewScaffolding or class("InventoryViewScaffolding", GameScaffolding)
 
 -- The sample items (data/Source/Story/Items).
-local RIFLE < const > = Guid("{D1A10000-0000-4000-8000-000000000200}")
-local MACHINEGUN < const > = Guid("{D1A10000-0000-4000-8000-000000000201}")
-local ROUNDS < const > = Guid("{D1A10000-0000-4000-8000-000000000203}")
+local BOW < const > = Guid("{D1A10000-0000-4000-8000-000000000200}")
+local ARROWS < const > = Guid("{D1A10000-0000-4000-8000-000000000203}")
+local FIREBALL < const > = Guid("{D1A10000-0000-4000-8000-00000000020F}")
 local FLASK < const > = Guid("{D1A10000-0000-4000-8000-000000000204}")
 local BREAD < const > = Guid("{D1A10000-0000-4000-8000-000000000205}")
 local COIN < const > = Guid("{D1A10000-0000-4000-8000-000000000206}")
@@ -37,15 +38,16 @@ function InventoryViewScaffolding:build(parent, frame)
 
 	self._stage = StageStub(self._resourceManager):setHealth(0.45)
 	local inv < const > = self._stage:inventory()
-	inv:add(MACHINEGUN, 1)
-	inv:add(ROUNDS, 90)
+	inv:add(FIREBALL, 1)
+	inv:add(ARROWS, 90)
 	inv:add(FLASK, 2)
 	inv:add(BREAD, 3)
 	inv:add(COIN, 37)
 	inv:add(HELMET, 1)
 	inv:add(KEY, 1)
 	inv:add(RELIC, 2)
-	inv:equip(RIFLE)
+	inv:equip(BOW)
+	inv:equip(FIREBALL)
 	inv:equip(HELMET)
 
 	self._dialog = Dialog(frame, TableLayout({ 0 }, { 0 }, 24, 24, 0, 0))

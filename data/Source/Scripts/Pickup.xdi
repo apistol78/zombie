@@ -8,13 +8,13 @@ import(traktor)
 -- Pickup
 --
 -- Base ScriptComponent for anything lying in the world that goes into the player's pack: a
--- crate of rounds, a flask, a grenade, a pile of coins, a weapon, a helmet, a key, a relic.
+-- bundle of arrows, a flask, a grenade, a pile of coins, a weapon, a helmet, a key, a relic.
 -- What each one *is* comes from Scripts/Items/Items; this owns only how it gets from the ground
 -- into the pack (a zombie.Inventory), and back out again.
 --
 -- Two ways of being taken:
 --
---   * Walked over (the default) -- the small things: rounds, food, grenades, coins. Noticed
+--   * Walked over (the default) -- the small things: arrows, food, grenades, coins. Noticed
 --     here, every frame, and taken the moment the player stands on one -- but only while the
 --     pack has room for it. A full pack leaves it lying there for the trip back, and a nearly
 --     full one takes what fits and leaves the rest of the pile.
@@ -26,7 +26,7 @@ import(traktor)
 --
 -- Most pickups are this script and nothing else: the entity's ScriptComponentData names it as the
 -- class, and a zombie.ItemPickupComponentData beside it says what the pickup is -- the
--- ammo crate is 12 rounds. A subclass is only for a pickup with behaviour of its own
+-- arrow bundle is 12 arrows. A subclass is only for a pickup with behaviour of its own
 -- (Scripts/Relic). Either way, this is what is asked, and where each answer comes from:
 --
 --   itemKind()      the pickup component's item, as its key (Scripts/Items/Items)
@@ -87,7 +87,7 @@ function Pickup:pressToTake()
 	return self.owner:getComponent(zombie.InteractableComponent) ~= nil
 end
 
--- E's line for an E one: "TAKE THE RIFLE", "TAKE 12 ROUNDS". Said again whenever the count
+-- E's line for an E one: "TAKE THE BOW", "TAKE 12 ARROWS". Said again whenever the count
 -- changes.
 function Pickup:_updatePrompt()
 	local interactable < const > = self.owner:getComponent(zombie.InteractableComponent)

@@ -57,17 +57,19 @@ local BUTTON_W < const > = 132
 -- Two clicks on the same cell inside this long are a double click (s).
 local DOUBLE_CLICK < const > = 0.4
 
--- The three places, in the order they are shown, and what each is called.
+-- The places, in the order they are shown, and what each is called.
 local PLACES < const > = {
 	{ place = Items.WEAPON, label = "IN HAND" },
 	{ place = Items.HAND, label = "OFF HAND" },
-	{ place = Items.BODY, label = "WORN" }
+	{ place = Items.BODY, label = "WORN" },
+	{ place = Items.SPELL, label = "SPELL" }
 }
 
 local PLACE_NAMES < const > = {
 	[Items.WEAPON] = "IN HAND",
 	[Items.HAND] = "IN THE OFF HAND",
-	[Items.BODY] = "WORN"
+	[Items.BODY] = "WORN",
+	[Items.SPELL] = "AS THE READIED SPELL"
 }
 
 -- Set a Static's text and re-place it in the cell its layout gave it. A Static clamps its text
@@ -177,7 +179,7 @@ function InventoryView:new(parent, context)
 	--
 	-- A label and a cell for each place, in one row. The cells show what is there; clicking
 	-- one selects that item in the grid, so the buttons above act on it.
-	local equipment < const > = Container(self, TableLayout({ 0, 0, 0, 0, 0, 0 }, { 0 }, 0, 0, 14, 0))
+	local equipment < const > = Container(self, TableLayout({ 0, 0, 0, 0, 0, 0, 0, 0 }, { 0 }, 0, 0, 14, 0))
 	self._places = {}
 	for _, p in ipairs(PLACES) do
 		local label < const > = Static(equipment, p.label)

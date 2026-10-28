@@ -7,18 +7,17 @@ import(traktor)
 
 -- WeaponCarousel
 --
--- One HUD tile for the whole arsenal. Three seats ride a shallow ring drawn on
+-- One HUD tile for the whole arsenal. The seats ride a shallow ring drawn on
 -- the plate: whichever weapon has the trigger sits at the front of it in a lit
 -- socket, big and bright, with its name and count written out beside it, and the
 -- others stand small and dim further round with just their number under them.
 -- Cycling spins the ring rather than moving a highlight about, so which weapon is
 -- in hand is carried by *where* it is as much as by how it is lit.
 --
--- It replaces three tiles: the rifle's ammunition counter and the plain Statics
--- the machine gun and the grenades used to hang next to it. Everything those did
--- is still here -- the count, the reload sweep, the empty warning, the kick and
--- the spent case -- but they now belong to whichever weapon is at the front, so
--- the HUD says one thing at a time instead of three at once.
+-- It replaced a tile per weapon. Everything those did is still here -- the count,
+-- the reload sweep, the empty warning and the kick -- but they now belong to
+-- whichever weapon is at the front, so the HUD says one thing at a time instead
+-- of several at once.
 --
 -- The art is the "MC_WeaponCarousel" export of the UI/Hud movie, authored in
 -- data/Assets/UI/Hud.svg (tools/gen_hud_svg.py), in the Skyrim style the rest of
@@ -32,10 +31,9 @@ import(traktor)
 --   rail         the ring the seats ride, as a faint line; static
 --   socket       the seat at the front of the ring; static
 --   socketglow   its light; kicked as a weapon arrives at the front
---   seat_rifle   ) one per weapon, each authored at the *front* of the ring and
---   seat_machinegun ) translated round to wherever its weapon currently stands
---   seat_grenades   )
---   casing       spent case; arcs away and fades on each shot
+--   seat_bow      ) one per weapon, each authored at the *front* of the ring and
+--   seat_staff    ) translated round to wherever its weapon currently stands
+--   seat_grenades )
 --   reloadtrack  channel the reload sweep runs in; shown only while reloading
 --   reload       the sweep itself; scaled horizontally by reload progress
 --   glow         white overlay; alpha kicked when a magazine comes back up
@@ -45,7 +43,7 @@ import(traktor)
 -- knows what a weapon is.
 --
 -- Not every seat is on the ring at once. Which weapons the player has is the
--- pack's, and changes through the night -- the machine gun is found, the last
+-- pack's, and changes through the night -- the bow is found, the last
 -- grenade is thrown -- so a seat can be taken off the ring and put back
 -- (setPresent), and the ring is laid out over whichever seats are on it. With
 -- none drawn at all (setSelected(nil)) the socket stands empty and the text
@@ -101,7 +99,7 @@ local C_PIP < const > = Color4f(0.52, 0.52, 0.51, 1.0)
 local C_PIP_EMPTY < const > = Color4f(0.82, 0.32, 0.26, 1.0)
 local C_NAME < const > = Color4f(0.5, 0.5, 0.49, 1.0)
 
--- Every seat, and the spent case, flattened to one silver: the colour channels are
+-- Every seat flattened to one silver: the colour channels are
 -- multiplied away and this added back, which keeps each picture's own outline and
 -- alpha and nothing else.
 local SILHOUETTE < const > = traktor.spark.ColorTransform(
@@ -123,18 +121,6 @@ local function placeAbout(mc, ax, ay, px, py, s)
 	mc.Y = py - ay * s
 end
 
--- Rotate about (px, py) and then shift by (dx, dy). setRotation takes degrees and
--- rotates about the sprite origin, so the first two terms of X/Y undo the swing
--- that puts (px, py) back where the art was authored.
-local function spinAbout(mc, px, py, deg, dx, dy)
-	local r < const > = math.rad(deg)
-	local c < const > = math.cos(r)
-	local s < const > = math.sin(r)
-	mc.rotation = deg
-	mc.X = px - (px * c - py * s) + dx
-	mc.Y = py - (px * s + py * c) + dy
-end
-
 function WeaponCarousel:new(parent, skin)
 	local mc < const > = Widget._createResource(parent, skin or self:getStyle().resource)
 	assert(mc ~= nil, "WeaponCarousel; no such movie resource, is UI/Hud in the resource kits?")
@@ -151,7 +137,7 @@ function WeaponCarousel:place(x, y, width, height)
 end
 
 -- Add a weapon to the ring, in wheel order, and get back the index it answers to.
--- `kind` names the seat art in the movie ("rifle" picks up "seat_rifle") and is
+-- `kind` names the seat art in the movie ("bow" picks up "seat_bow") and is
 -- the weapon's own slot name, so the two can never drift apart; `name` is what is
 -- written beside the ring while this weapon is the one in hand.
 --
@@ -178,12 +164,10 @@ function WeaponCarousel:addSlot(kind, name)
 		mc = seat,
 		pip = pip,
 		present = true,
+		counted = true,
 		primary = 0,
 		reserve = nil,
-		reload = nil,
-		-- Only a firearm throws brass. Grenades leave the ring the same way but
-		-- nothing comes out of them, so the casing is theirs to skip.
-		ejects = (kind ~= "grenades")
+		reload = nil
 	})
 	self:_layoutRing()
 	return #self._slots
@@ -251,17 +235,19 @@ end
 
 -- What a weapon has left: what it can fire right now, and what it has behind that
 -- (nil for a weapon that carries only the one number, like the grenades). Empty
--- means the *primary* is gone -- a rifle with a spent magazine and a full pouch is
+-- means the *primary* is gone -- a gun with a spent magazine and a full pouch is
 -- as unable to shoot as one with nothing at all, which is the moment the warning
--- is for.
+-- is for. A nil primary is a weapon with nothing to count, like the staff: no
+-- number at all, and never empty.
 function WeaponCarousel:setAmmo(index, primary, reserve)
 	local slot < const > = self._slots[index]
 	if slot == nil then
 		return self
 	end
+	slot.counted = (primary ~= nil)
 	slot.primary = primary or 0
 	slot.reserve = reserve
-	slot.pip:setText(tostring(slot.primary))
+	slot.pip:setText(slot.counted and tostring(slot.primary) or "")
 	slot.pip:setTextColor(slot.primary <= 0 and C_PIP_EMPTY or C_PIP)
 	if index == self._selected then
 		self:_refreshText()
@@ -287,18 +273,13 @@ function WeaponCarousel:setReload(index, t)
 	return self
 end
 
--- Kick the fire animation for a slot: the seat jumps, and a firearm flings a case
--- clear of the socket. Ignored for anything that is not at the front, since that
--- is the only place either would be seen.
+-- Kick the fire animation for a slot: the seat jumps. Ignored for anything that is
+-- not at the front, since that is the only place it would be seen.
 function WeaponCarousel:spend(index)
 	if index ~= self._selected then
 		return self
 	end
 	self._kick = 1.0
-	local slot < const > = self._slots[index]
-	if slot ~= nil and slot.ejects then
-		self._eject = 1.0
-	end
 	return self
 end
 
@@ -326,23 +307,10 @@ function WeaponCarousel:update(dt)
 		self:_layoutRing()
 	end
 
-	-- Shot: the seat jumps...
+	-- Shot: the seat jumps.
 	if self._kick > 0.0 then
 		self._kick = math.max(0.0, self._kick - dt * 4.5)
 		self:_layoutRing()
-	end
-
-	-- ...and the spent case tumbles out to the right, arcing up then falling.
-	if self._eject > 0.0 then
-		self._eject = math.max(0.0, self._eject - dt * 1.7)
-		local t < const > = 1.0 - self._eject
-		spinAbout(
-			self._casing_mc, SEAT_X, SEAT_Y, t * 540.0,
-			t * 34.0,
-			-24.0 * math.sin(t * math.pi * 0.85) + 30.0 * t * t
-		)
-		self._casing_mc.alpha = 1.0 - t * t
-		self._casing_mc.visible = (self._eject > 0.0)
 	end
 
 	-- Reload sweep. Never scaled to exactly zero; the bar is hidden instead.
@@ -376,7 +344,7 @@ function WeaponCarousel:_initialize(parent, mc)
 	Widget._initialize(self, parent, mc)
 
 	-- Rasterized once into the sprite atlas and thereafter drawn as a single quad.
-	-- Every animation in update is behind a condition -- spin, kick, eject, reload,
+	-- Every animation in update is behind a condition -- spin, kick, reload,
 	-- flash, dry pulse -- so a carousel nobody is turning holds its cache.
 	mc.cacheAsBitmap = true
 
@@ -389,7 +357,6 @@ function WeaponCarousel:_initialize(parent, mc)
 	self._spin = 0.0          -- which place on the ring is at the front, continuously
 	self._spinTarget = 0.0
 	self._kick = 0.0
-	self._eject = 0.0
 	self._flash = 0.0
 	self._socketFlash = 0.0
 	self._pulse = 0.0
@@ -399,15 +366,12 @@ function WeaponCarousel:_initialize(parent, mc)
 	self._socketglow_mc = mc:getMember("socketglow")
 	self._track_mc = mc:getMember("reloadtrack")
 	self._bar_mc = mc:getMember("reload")
-	self._casing_mc = mc:getMember("casing")
 	self._glow_mc = mc:getMember("glow")
 	assert(self._socketglow_mc ~= nil, "WeaponCarousel; movie resource is missing its parts")
 
 	self._warn_mc.visible = false
 	self._track_mc.visible = false
 	self._bar_mc.visible = false
-	self._casing_mc.visible = false
-	self._casing_mc.colorTransform = SILHOUETTE
 	self._glow_mc.alpha = 0.0
 	self._socketglow_mc.alpha = 0.12
 
@@ -429,7 +393,7 @@ end
 -- Show the sweep for whatever is at the front, at whatever stage its reload has got to.
 --
 -- Called on a *selection* change as well as on a reload one, and that is the point of having
--- it: every weapon in the loadout keeps running while another is in hand, so a rifle put away
+-- it: every weapon in the loadout keeps running while another is in hand, so a weapon put away
 -- half reloaded goes on reloading and has to find its sweep still there -- at the right length
 -- -- when the wheel comes back round to it. `flash` is the magazine coming back up, which is
 -- only ever a reload ending and never a weapon being drawn.
@@ -512,7 +476,7 @@ function WeaponCarousel:_layoutRing()
 		-- ...and its own number under it, hidden as it comes to the front, where the
 		-- full count beside the ring takes over -- unless nothing is drawn, when there is
 		-- no full count and every seat keeps its own.
-		if depth > PIP_HIDE and self._selected ~= nil then
+		if not slot.counted or (depth > PIP_HIDE and self._selected ~= nil) then
 			slot.pip:setVisible(false)
 		else
 			slot.pip:setVisible(true)
@@ -525,7 +489,7 @@ function WeaponCarousel:_layoutRing()
 
 	-- Draw the back of the ring first. Depth in the display list is fixed by the
 	-- order the art was authored in, so without this the grenades would pass in
-	-- front of the rifle on their way behind it. Sorted back to front and then
+	-- front of the bow on their way behind it. Sorted back to front and then
 	-- bubbled into place with swaps, which is all the display list offers -- three
 	-- seats make that a handful of compares, not a sort worth worrying about.
 	table.sort(order, function(a, b) return a.depth < b.depth end)
@@ -560,17 +524,18 @@ function WeaponCarousel:_refreshText()
 
 	self._name:setText(slot.name)
 
-	-- "--" while a magazine is out, for the same reason the machine gun's old tile
-	-- said it: a count of zero mid-reload reads as being out of ammunition, which
-	-- is the one thing it is not.
+	-- "--" while a magazine is out: a count of zero mid-reload reads as being out
+	-- of ammunition, which is the one thing it is not.
 	local primary < const > = (slot.reload ~= nil) and "--" or tostring(slot.primary)
-	if slot.reserve ~= nil then
+	if not slot.counted then
+		self._count:setText("")
+	elseif slot.reserve ~= nil then
 		self._count:setText(primary .. " / " .. tostring(slot.reserve))
 	else
 		self._count:setText(primary)
 	end
 
-	local empty < const > = (slot.primary <= 0) and (slot.reload == nil)
+	local empty < const > = slot.counted and (slot.primary <= 0) and (slot.reload == nil)
 	self._count:setTextColor(empty and C_TEXT_EMPTY or C_TEXT)
 	if empty ~= self._empty then
 		self._empty = empty

@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000010}
+#using \{6E9AD100-0000-4000-8000-000000000010}
+
+import(traktor)
+
+-- Fireball
+--
+-- The first spell: a ball of fire thrown from the left hand along the aim. It flies straight and
+-- fast, and bursts on the first thing it meets -- or in mid air once Config.fireball.flightTime
+-- is up. Whatever it struck takes Config.fireball.damage outright; everything else inside
+-- blastRadius is caught by a blast that falls off as the grenade's does, and the dead around it
+-- are thrown about.
+--
+-- It costs nothing but time: Config.fireball.interval between casts. While it is ready a small
+-- flame burns in the free hand (Entities/Fireball/FireballHeld), which is the only tell the player
+-- gets that it can be cast again. The weapon in the right hand is lowered before it goes
+-- (Loadout:cast).
+--
+-- Its numbers come from Config.fireball.
+
+Fireball = Fireball or class("Fireball", Spell)
+
+-- The thrown ball and the flame in the hand (Entities/Fireball), escaped so both are tracked
+-- dependencies.
+local FIREBALL < const > = Guid("\{308BCCFE-7C27-4D4D-A403-9474327B8163}")
+local FIREBALL_HELD < const > = Guid("\{0D870753-C391-8D45-846C-C853329A12FE}")
+
+-- Where the left hand holds it, in the aim's own space; the throw leaves from here.
+local HAND < const > = Vector4(-0.2, -0.19, 0.45, 0.0)
+
+-- Chest height above a standing character's origin: where a blast is taken to arrive.
+local CHEST < const > = Vector4(0.0, 1.0, 0.0, 0.0)
+
+-- The collision groups, and PhysicsManager::QtDynamic; see Scripts/Weapons/Grenades.
+local COLLISION_DEFAULT < const > = 0x00000001
+local COLLISION_INTERACTABLE < const > = 0x00000002
+local QUERY_DYNAMIC < const > = 2
+
+-- How far short of what it struck it bursts, so the burst is in front of a wall rather than in it.
+local STANDOFF < const > = 0.15
+
+-- How long a thrown ball stays hidden: its first steps are in the player's face.
+local HIDE_FIRST < const > = 0.04
+
+function Fireball:new(context, item)
+	Spell.new(self, context, item)
+
+	self._interval = Config.fireball.interval
+	self._speed = Config.fireball.speed
+	self._flightTime = Config.fireball.flightTime
+	self._damage = Config.fireball.damage
+	self._blastRadius = Config.fireball.blastRadius
+	self._blastDamage = Config.fireball.blastDamage
+	self._blastHalf = Config.fireball.blastHalf
+	self._blastImpulse = Config.fireball.blastImpulse
+	self._blastLift = Config.fireball.blastLift
+
+	self._live = {}   -- { entity, at, velocity, age }
+end
+
+-- The flame in the hand: built once and shown or hidden, as the held grenade is.
+function Fireball:resolve()
+	if self._held ~= nil or self._context.world == nil then
+		return
+	end
+	local held < const > = self._context.world:createEntity(FIREBALL_HELD)
+	if held ~= nil then
+		self._context.world:addEntity(held)
+		held.visible = false
+		self._held = held
+	end
+end
+
+function Fireball:reset()
+	self._held = nil
+	self._live = {}
+end
+
+function Fireball:cast()
+	local context < const > = self._context
+	local world < const > = context.world
+	if context:player() == nil or world == nil or not self:ready() then
+		return false
+	end
+	self._cooldown = self._interval
+
+	local aim < const > = context:aim()
+	local dir < const > = context:aimDirection()
+	local eye < const > = context:eye().xyz1
+	local origin = eye + aim * HAND
+
+	-- The hand may be through a wall the eye is not; a cast into a wall bursts against it.
+	local hit < const > = self:_trace(eye, origin)
+	if hit ~= nil then
+		origin = hit.position.xyz1 - (origin - eye) * (STANDOFF / (origin - eye).length)
+	end
+
+	local entity < const > = world:createEntity(FIREBALL)
+	if entity == nil then
+		return true
+	end
+	world:addEntity(entity)
+	entity.transform = Transform(origin, Quaternion.identity)
+	entity.visible = false
+	local fx < const > = entity:getComponent(traktor.world.EventSetComponent)
+	if fx ~= nil then
+		fx:raise("cast")
+	end
+
+	local ball < const > = { entity = entity, at = origin, velocity = dir * self._speed, age = 0.0 }
+	if hit ~= nil then
+		self:_burst(ball, origin, hit)
+	else
+		table.insert(self._live, ball)
+	end
+	return true
+end
+
+function Fireball:update(dt)
+	Spell.update(self, dt)
+
+	for i = #self._live, 1, -1 do
+		local b < const > = self._live[i]
+		b.age = b.age + dt
+		local to < const > = b.at + b.velocity * dt
+		local hit < const > = self:_trace(b.at, to)
+		if hit ~= nil then
+			local back < const > = b.velocity * (STANDOFF / b.velocity.length)
+			self:_burst(b, hit.position.xyz1 - back, hit)
+			table.remove(self._live, i)
+		elseif b.age >= self._flightTime then
+			self:_burst(b, to, nil)
+			table.remove(self._live, i)
+		else
+			b.at = to
+			b.entity.transform = Transform(to, Quaternion.identity)
+			b.entity.visible = b.age > HIDE_FIRST
+		end
+	end
+end
+
+-- The first thing on the segment, stepping through the player's own capsule; see Bow:_trace.
+function Fireball:_trace(from, to)
+	local pm < const > = self._context.environment.physics.physicsManager
+	if pm == nil then
+		return nil
+	end
+	local player < const > = self._context:player()
+	local filter < const > = traktor.physics.QueryFilter(COLLISION_DEFAULT + COLLISION_INTERACTABLE)
+	local at = from
+	for _ = 1, 3 do
+		local span < const > = to - at
+		local length < const > = span.length
+		if length < 0.0001 then
+			return nil
+		end
+		local dir < const > = span / length
+		local hit < const > = pm:queryRay(at, dir, length, filter, true)
+		if hit == nil then
+			return nil
+		end
+		if hit.body == nil or hit.body.owner ~= player then
+			return hit
+		end
+		at = hit.position.xyz1 + dir * 0.02
+	end
+	return nil
+end
+
+-- Burst at `centre`: the effect off the ball before it goes (it reads the ball's transform once,
+-- with follow off, so it outlives it), the one it struck hurt outright, and a falling-off blast for
+-- everything else -- living and dead, as Grenades:_explode does it.
+function Fireball:_burst(ball, centre, hit)
+	local context < const > = self._context
+	local world < const > = context.world ~= nil and context.world.world or nil
+
+	if ball.entity ~= nil then
+		ball.entity.transform = Transform(centre, Quaternion.identity)
+		local fx < const > = ball.entity:getComponent(traktor.world.EventSetComponent)
+		if fx ~= nil then
+			fx:raise("explode")
+		end
+		if world ~= nil then
+			world:removeEntity(ball.entity)
+			ball.entity:destroy()
+		end
+		ball.entity = nil
+	end
+	if world == nil then
+		return
+	end
+
+	local dir = ball.velocity
+	dir = dir / math.max(dir.length, 0.0001)
+
+	local struck = hit ~= nil and hit.body ~= nil and hit.body.owner or nil
+	if struck ~= nil and not (isa(struck, traktor.world.Entity) and struck:getComponent(zombie.NpcComponent) ~= nil) then
+		struck = nil
+	end
+	if struck ~= nil and not context:isEnemyDead(struck) then
+		local point < const > = hit.position.xyz1
+		context:damage(struck, self._damage, point, self:_shove(centre, point) + dir * self._blastImpulse * 0.5,
+			true, context:player())
+	end
+
+	local npcWorld < const > = world:getComponent(zombie.NpcWorldComponent)
+	local lists < const > = (npcWorld ~= nil) and { npcWorld:getHorde(), npcWorld:getPeople() } or {}
+	for _, list in ipairs(lists) do
+		for i = 0, list.size - 1 do
+			local e < const > = list:get(i)
+			if e ~= struck and not context:isEnemyDead(e) then
+				local p < const > = e.transform.translation.xyz1
+				local d < const > = (p - centre).length
+				if d < self._blastRadius then
+					local chest < const > = p + CHEST
+					local k < const > = d / self._blastHalf
+					context:damage(e, self._blastDamage / (1.0 + k * k), chest,
+						self:_shove(centre, chest), true, context:player())
+				end
+			end
+		end
+	end
+
+	-- The dead lying in it, found by their limbs; see Grenades:_explode for why it has to be done
+	-- this way.
+	local pm < const > = context.environment.physics.physicsManager
+	if pm == nil then
+		return
+	end
+	local bodies < const > = pm:querySphere(centre, self._blastRadius,
+		traktor.physics.QueryFilter(COLLISION_DEFAULT), QUERY_DYNAMIC)
+	local caught = {}
+	for i = 0, bodies.size - 1 do
+		local body < const > = bodies:get(i)
+		local corpse < const > = (body ~= nil) and body.owner or nil
+		if corpse ~= nil and context:isEnemyDead(corpse) then
+			local p < const > = body.transform.translation.xyz1
+			local d < const > = (p - centre).length
+			if d < self._blastRadius and (caught[corpse] == nil or d < caught[corpse].d) then
+				caught[corpse] = { at = p, d = d }
+			end
+		end
+	end
+	for corpse, c in pairs(caught) do
+		context:shoveCorpse(corpse, c.at, self:_shove(centre, c.at), true)
+	end
+end
+
+-- What the blast hands a body at `at`: out from the centre, falling off with distance, plus lift.
+function Fireball:_shove(centre, at)
+	local rel < const > = at - centre
+	local dist = rel.length
+	local dir
+	if dist > 0.01 then
+		dir = rel / dist
+	else
+		dir = Vector4(0.0, 1.0, 0.0, 0.0)
+		dist = 0.01
+	end
+	local k < const > = dist / self._blastHalf
+	local falloff < const > = 1.0 / (1.0 + k * k)
+	return dir * (self._blastImpulse * falloff) + Vector4(0.0, self._blastLift * falloff, 0.0, 0.0)
+end
+
+-- The flame in the left hand, while there is one to throw.
+function Fireball:place()
+	local held < const > = self._held
+	local context < const > = self._context
+	if held == nil or context:player() == nil then
+		return
+	end
+	local show < const > = self:ready()
+	held.visible = show
+	if not show then
+		return
+	end
+	local offset = HAND
+	if context:isRunning() then
+		offset = offset + Vector4(0.0, -0.12, -0.06, 0.0)
+	end
+	held.transform = Transform(context:eye() + context:aim() * offset, Quaternion.identity)
+end
+
+function Fireball:stow()
+	if self._held ~= nil then
+		self._held.visible = false
+	end
+end
+]]></text>
+</object>

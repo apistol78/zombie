@@ -122,6 +122,7 @@ void HumanComponent::update(const world::UpdateParams& update)
 	// Root motion over this update alone; the clips' travel since the last think is handed over now.
 	applyRootMotion(stepTime);
 	tickRegen(deltaTime);
+	tickHostility(deltaTime);
 
 	if (m_target && !standing(m_target))
 		m_target = nullptr;
@@ -131,7 +132,7 @@ void HumanComponent::update(const world::UpdateParams& update)
 	if (m_random.nextFloat() < chance)
 		perceive(position, playerPosition, pdist);
 
-	// A fight ends when the target is down, forgotten or chased too far from home.
+	// A fight ends when the target is down, forgotten, chased too far from home or a player forgiven.
 	if (m_state == State::Fight)
 	{
 		m_seenTimer -= deltaTime;
@@ -143,7 +144,7 @@ void HumanComponent::update(const world::UpdateParams& update)
 			const float hz = targetPosition.z() - m_post.z();
 			strayed = hx * hx + hz * hz > m_chaseLeash * m_chaseLeash;
 		}
-		if (!m_target || m_seenTimer <= 0.0f || strayed)
+		if (!m_target || m_seenTimer <= 0.0f || strayed || (m_target == m_player && !hatesPlayer()))
 		{
 			m_state = State::Routine;
 			m_target = nullptr;

@@ -2,6 +2,61 @@
 <object type="traktor.PropertyGroup">
 	<value>
 		<item>
+			<first>bow</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>damage</first>
+						<second type="traktor.PropertyFloat"><value>60.0</value></second>
+					</item>
+					<item>
+						<first>drawTime</first>
+						<second type="traktor.PropertyFloat"><value>0.55</value></second>
+					</item>
+					<item>
+						<first>flightTime</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+					<item>
+						<first>gravity</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>headMul</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+					<item>
+						<first>lowerAfter</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>maxSpeed</first>
+						<second type="traktor.PropertyFloat"><value>55.0</value></second>
+					</item>
+					<item>
+						<first>maxStuck</first>
+						<second type="traktor.PropertyInteger"><value>24</value></second>
+					</item>
+					<item>
+						<first>minDraw</first>
+						<second type="traktor.PropertyFloat"><value>0.25</value></second>
+					</item>
+					<item>
+						<first>minSpeed</first>
+						<second type="traktor.PropertyFloat"><value>20.0</value></second>
+					</item>
+					<item>
+						<first>nockTime</first>
+						<second type="traktor.PropertyFloat"><value>0.45</value></second>
+					</item>
+					<item>
+						<first>stickTime</first>
+						<second type="traktor.PropertyFloat"><value>12.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
 			<first>chest</first>
 			<second type="traktor.PropertyGroup">
 				<value>
@@ -222,6 +277,49 @@
 			</second>
 		</item>
 		<item>
+			<first>fireball</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>blastDamage</first>
+						<second type="traktor.PropertyFloat"><value>90.0</value></second>
+					</item>
+					<item>
+						<first>blastHalf</first>
+						<second type="traktor.PropertyFloat"><value>1.4</value></second>
+					</item>
+					<item>
+						<first>blastImpulse</first>
+						<second type="traktor.PropertyFloat"><value>50.0</value></second>
+					</item>
+					<item>
+						<first>blastLift</first>
+						<second type="traktor.PropertyFloat"><value>15.0</value></second>
+					</item>
+					<item>
+						<first>blastRadius</first>
+						<second type="traktor.PropertyFloat"><value>3.0</value></second>
+					</item>
+					<item>
+						<first>damage</first>
+						<second type="traktor.PropertyFloat"><value>120.0</value></second>
+					</item>
+					<item>
+						<first>flightTime</first>
+						<second type="traktor.PropertyFloat"><value>2.5</value></second>
+					</item>
+					<item>
+						<first>interval</first>
+						<second type="traktor.PropertyFloat"><value>1.6</value></second>
+					</item>
+					<item>
+						<first>speed</first>
+						<second type="traktor.PropertyFloat"><value>22.0</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
 			<first>grenade</first>
 			<second type="traktor.PropertyGroup">
 				<value>
@@ -310,84 +408,9 @@
 			</second>
 		</item>
 		<item>
-			<first>machinegun</first>
-			<second type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>damage</first>
-						<second type="traktor.PropertyFloat"><value>25.0</value></second>
-					</item>
-					<item>
-						<first>fireInterval</first>
-						<second type="traktor.PropertyFloat"><value>0.08</value></second>
-					</item>
-					<item>
-						<first>headMul</first>
-						<second type="traktor.PropertyFloat"><value>3.0</value></second>
-					</item>
-					<item>
-						<first>mag</first>
-						<second type="traktor.PropertyInteger"><value>45</value></second>
-					</item>
-					<item>
-						<first>magSize</first>
-						<second type="traktor.PropertyInteger"><value>45</value></second>
-					</item>
-					<item>
-						<first>range</first>
-						<second type="traktor.PropertyFloat"><value>26.0</value></second>
-					</item>
-					<item>
-						<first>recoilDecay</first>
-						<second type="traktor.PropertyFloat"><value>0.35</value></second>
-					</item>
-					<item>
-						<first>recoilKick</first>
-						<second type="traktor.PropertyFloat"><value>0.012</value></second>
-					</item>
-					<item>
-						<first>recoilMax</first>
-						<second type="traktor.PropertyFloat"><value>0.055</value></second>
-					</item>
-					<item>
-						<first>reloadTime</first>
-						<second type="traktor.PropertyFloat"><value>3.1</value></second>
-					</item>
-					<item>
-						<first>spreadDecay</first>
-						<second type="traktor.PropertyFloat"><value>0.07</value></second>
-					</item>
-					<item>
-						<first>spreadMax</first>
-						<second type="traktor.PropertyFloat"><value>0.075</value></second>
-					</item>
-					<item>
-						<first>spreadMin</first>
-						<second type="traktor.PropertyFloat"><value>0.008</value></second>
-					</item>
-					<item>
-						<first>spreadPerShot</first>
-						<second type="traktor.PropertyFloat"><value>0.0075</value></second>
-					</item>
-					<item>
-						<first>tracerEvery</first>
-						<second type="traktor.PropertyInteger"><value>3</value></second>
-					</item>
-				</value>
-			</second>
-		</item>
-		<item>
 			<first>melee</first>
 			<second type="traktor.PropertyGroup">
 				<value>
-					<item>
-						<first>damage</first>
-						<second type="traktor.PropertyFloat"><value>10.0</value></second>
-					</item>
-					<item>
-						<first>interval</first>
-						<second type="traktor.PropertyFloat"><value>0.8</value></second>
-					</item>
 					<item>
 						<first>knockback</first>
 						<second type="traktor.PropertyFloat"><value>2.0</value></second>
@@ -395,14 +418,6 @@
 					<item>
 						<first>pushTime</first>
 						<second type="traktor.PropertyFloat"><value>0.6</value></second>
-					</item>
-					<item>
-						<first>radius</first>
-						<second type="traktor.PropertyFloat"><value>1.0</value></second>
-					</item>
-					<item>
-						<first>range</first>
-						<second type="traktor.PropertyFloat"><value>2.2</value></second>
 					</item>
 					<item>
 						<first>stun</first>
@@ -669,6 +684,10 @@
 						<second type="traktor.PropertyFloat"><value>0.1</value></second>
 					</item>
 					<item>
+						<first>headHeight</first>
+						<second type="traktor.PropertyFloat"><value>1.45</value></second>
+					</item>
+					<item>
 						<first>hearRange</first>
 						<second type="traktor.PropertyFloat"><value>25.0</value></second>
 					</item>
@@ -677,8 +696,16 @@
 						<second type="traktor.PropertyFloat"><value>0.5</value></second>
 					</item>
 					<item>
+						<first>hostilityCalm</first>
+						<second type="traktor.PropertyFloat"><value>0.01</value></second>
+					</item>
+					<item>
+						<first>hostilityHold</first>
+						<second type="traktor.PropertyFloat"><value>15.0</value></second>
+					</item>
+					<item>
 						<first>hostilityOnHurt</first>
-						<second type="traktor.PropertyFloat"><value>0.6</value></second>
+						<second type="traktor.PropertyFloat"><value>0.3</value></second>
 					</item>
 					<item>
 						<first>interactPriority</first>
@@ -993,45 +1020,6 @@
 			</second>
 		</item>
 		<item>
-			<first>rifle</first>
-			<second type="traktor.PropertyGroup">
-				<value>
-					<item>
-						<first>damage</first>
-						<second type="traktor.PropertyFloat"><value>60.0</value></second>
-					</item>
-					<item>
-						<first>fireInterval</first>
-						<second type="traktor.PropertyFloat"><value>0.4</value></second>
-					</item>
-					<item>
-						<first>headHeight</first>
-						<second type="traktor.PropertyFloat"><value>1.45</value></second>
-					</item>
-					<item>
-						<first>headMul</first>
-						<second type="traktor.PropertyFloat"><value>3.0</value></second>
-					</item>
-					<item>
-						<first>mag</first>
-						<second type="traktor.PropertyInteger"><value>6</value></second>
-					</item>
-					<item>
-						<first>magSize</first>
-						<second type="traktor.PropertyInteger"><value>6</value></second>
-					</item>
-					<item>
-						<first>range</first>
-						<second type="traktor.PropertyFloat"><value>40.0</value></second>
-					</item>
-					<item>
-						<first>reloadTime</first>
-						<second type="traktor.PropertyFloat"><value>1.2</value></second>
-					</item>
-				</value>
-			</second>
-		</item>
-		<item>
 			<first>spawner</first>
 			<second type="traktor.PropertyGroup">
 				<value>
@@ -1098,6 +1086,37 @@
 					<item>
 						<first>wallMargin</first>
 						<second type="traktor.PropertyFloat"><value>0.72</value></second>
+					</item>
+				</value>
+			</second>
+		</item>
+		<item>
+			<first>staff</first>
+			<second type="traktor.PropertyGroup">
+				<value>
+					<item>
+						<first>damage</first>
+						<second type="traktor.PropertyFloat"><value>45.0</value></second>
+					</item>
+					<item>
+						<first>headMul</first>
+						<second type="traktor.PropertyFloat"><value>1.5</value></second>
+					</item>
+					<item>
+						<first>lowerAfter</first>
+						<second type="traktor.PropertyFloat"><value>4.0</value></second>
+					</item>
+					<item>
+						<first>strikeFrom</first>
+						<second type="traktor.PropertyFloat"><value>0.25</value></second>
+					</item>
+					<item>
+						<first>strikeTo</first>
+						<second type="traktor.PropertyFloat"><value>0.5</value></second>
+					</item>
+					<item>
+						<first>swingTime</first>
+						<second type="traktor.PropertyFloat"><value>0.73</value></second>
 					</item>
 				</value>
 			</second>

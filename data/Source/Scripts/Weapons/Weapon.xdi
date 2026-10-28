@@ -10,8 +10,8 @@ import(traktor)
 -- Base class for anything the player carries and uses. It exists so that the Stage does
 -- not have to know what is in the player's hands: Main routes buttons and frames at a
 -- Scripts/Weapons/Loadout, the loadout routes them at whichever Weapon is drawn, and what
--- a trigger pull actually *does* lives in the subclass -- Scripts/Weapons/Rifle,
--- Scripts/Weapons/Grenades, Scripts/Weapons/Melee.
+-- a trigger pull actually *does* lives in the subclass -- Scripts/Weapons/Bow,
+-- Scripts/Weapons/Grenades.
 --
 -- Adding a weapon is therefore a subclass, one line in the Loadout and an entry for its item
 -- in Scripts/Items/Items, with nothing to change in Main. Which weapons the player actually
@@ -30,7 +30,8 @@ import(traktor)
 --   context:isRunning()            sprinting, so a view model can drop to a low ready
 --   context:isCarrying()           a relic is held in the off hand, so a view model moves over
 --   context:inventory()            the pack (a zombie.Inventory): owning a weapon is having
---                                  its item in it, and the spare rounds are the "rounds" in it
+--                                  its item in it, and its ammunition is the item its
+--                                  WeaponTrait names -- the "arrows" for the bow
 --   context:killEnemy(e, p, i, w)  the one way anything in this game dies
 --   context:isEnemyDead(e)         ...and whether it already has
 --   context:shoveCorpse(...)       ...and what hitting one that already has does
@@ -51,6 +52,11 @@ import(traktor)
 
 Weapon = Weapon or class("Weapon")
 
+-- How fast a weapon that lowers goes down out of shot, or back up (1/s), and how far down
+-- counts as down; see :lower.
+local LOWER_RATE < const > = 10.0
+local LOWERED < const > = 0.9
+
 function Weapon:new(context, item)
 	self._context = context
 	self._item = Items.keyOf(item)   -- the item in the pack that is this weapon; see :item
@@ -58,6 +64,14 @@ function Weapon:new(context, item)
 	self._cooldown = 0.0   -- ...and counts down to the next one being allowed
 	self._infiniteAmmo = false   -- the H cheat; see :setInfiniteAmmo
 	self._drawn = false    -- whether the trigger is on this one; see :selectionChanged
+
+	-- Being put down out of the way; see :lower. A subclass that lowers sets _lowers and
+	-- _lowerAfter, ticks :_tickLowering and places its view model by _lower.
+	self._lowers = false
+	self._lowerAfter = 0.0  -- seconds in hand and unused before it goes down by itself
+	self._lowered = false   -- put down, until it is next used
+	self._lower = 0.0       -- ...and the view model on its way there, 0..1
+	self._idle = 0.0        -- seconds in hand and not used
 end
 
 -- What this weapon is called on the HUD: the carousel seat it sits in is "seat_" .. this
@@ -73,15 +87,15 @@ function Weapon:item()
 	return self._item
 end
 
--- The item this weapon loads from the pack -- rounds for both firearms, as their items' WeaponTrait
--- says -- or nil for one that carries nothing spare. Only read by :reserve and :_takeFromPack below.
+-- The item this weapon loads from the pack -- arrows for the bow, as its item's WeaponTrait says --
+-- or nil for one that carries nothing spare. Only read by :reserve and :_takeFromPack below.
 function Weapon:ammoItem()
 	local def < const > = Items.get(self._item)
 	return (def ~= nil) and def.ammo or nil
 end
 
--- How many spare rounds are in the pack for this weapon: what the HUD writes after the slash,
--- and the most a reload can load.
+-- How much of this weapon's ammunition is in the pack: what the HUD writes, and the most a
+-- reload can load.
 function Weapon:reserve()
 	local kind < const > = self:ammoItem()
 	if kind == nil then
@@ -171,6 +185,9 @@ end
 -- it would quietly spend the pack's rounds on a gun nobody is holding.
 function Weapon:selectionChanged(selected)
 	self._drawn = selected
+	if selected then
+		self:_used()
+	end
 end
 
 -- One simulation step of the weapon itself -- below Main's freeze returns, so a reload in
@@ -233,18 +250,9 @@ function Weapon:attack()
 	return false
 end
 
--- The alternate attack (right mouse). Left unanswered here, and unanswered is the normal
--- case: the loadout falls through to the shared rifle butt (Scripts/Weapons/Melee), so the
--- swing still lands with a grenade in hand. Override it only for a weapon that has an
--- alternate of its own -- an underslung launcher, a bayonet -- and return true to claim the
--- button.
-function Weapon:altAttack()
-	return false
-end
-
 -- The reload action (R). Offered to every weapon the player owns, the drawn one first,
--- because topping up a half-empty rifle with a grenade in hand is exactly the lull the key
--- exists for -- and first, because the two firearms share the pack's rounds and the one in
+-- because topping up a half-empty magazine with a grenade in hand is exactly the lull the key
+-- exists for -- and first, because weapons may share what they load and the one in
 -- hand is the one that should get them. Returns true when a reload began.
 function Weapon:beginReload()
 	return false
@@ -288,6 +296,41 @@ function Weapon:place()
 end
 
 function Weapon:stow()
+end
+
+-- Put the weapon down out of the way until it is next used. The right button asks this of the
+-- drawn weapon before a spell leaves the left hand, and casts once :isLowered says it is down
+-- (Loadout:cast). A weapon that never lowers is always down.
+function Weapon:lower()
+	if self._lowers then
+		self._lowered = true
+	end
+end
+
+function Weapon:isLowered()
+	return not self._lowers or (self._lowered and self._lower >= LOWERED)
+end
+
+-- In use: brought back up, and the clock that puts it down by itself started over.
+function Weapon:_used()
+	self._lowered = false
+	self._idle = 0.0
+end
+
+-- Left in hand for _lowerAfter without being used it goes down by itself; `busy` is it being
+-- used right now. Eases _lower towards where it is going.
+function Weapon:_tickLowering(dt, busy)
+	if not self._lowers then
+		return
+	end
+	if self._drawn and not busy and not self._lowered then
+		self._idle = self._idle + dt
+		if self._idle >= self._lowerAfter then
+			self._lowered = true
+		end
+	end
+	local target < const > = self._lowered and 1.0 or 0.0
+	self._lower = self._lower + (target - self._lower) * math.min(1.0, dt * LOWER_RATE)
 end
 ]]></text>
 </object>

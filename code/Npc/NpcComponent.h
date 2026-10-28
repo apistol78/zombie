@@ -185,6 +185,7 @@ protected:
 	std::wstring m_mood;
 	float m_moodTimer = 0.0f;
 	float m_hostility = 0.0f;
+	float m_baseHostility = 0.0f;
 	float m_reach = 1.0f;
 	float m_strikeDamage = 0.0f;
 	float m_strikeInterval = 1.0f;
@@ -216,6 +217,8 @@ protected:
 	float m_arrive = 1.0f;
 	float m_hostileAt = 0.5f;
 	float m_hostilityOnHurt = 0.0f;
+	float m_hostilityHold = 0.0f;
+	float m_hostilityCalm = 0.0f;
 	float m_moodHold = 0.0f;
 	float m_regenDelay = 0.0f;
 	float m_regenRate = 0.0f;
@@ -248,6 +251,7 @@ protected:
 	Pose m_reelPose = Pose::None;
 	bool m_usesWork = false;
 	float m_hurtAgo = 0.0f;
+	float m_hostileAgo = 0.0f;
 	float m_strikeTimer = 0.0f;
 	RefArray< world::Entity > m_grudges;
 	Ref< world::Entity > m_provoked;
@@ -284,6 +288,9 @@ protected:
 	void tickMood(float deltaTime);
 
 	void tickRegen(float deltaTime);
+
+	/*! Hostility cooling back to what it was born with, a while after the player last hurt it. */
+	void tickHostility(float deltaTime);
 
 	void stagger(float deltaTime);
 

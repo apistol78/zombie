@@ -9,7 +9,7 @@ import(traktor)
 -- CrosshairScaffolding
 --
 -- Test page for Scripts/Widgets/Crosshair: the recoil bloom at the three paces it is seen at in
--- game -- the rifle's single shots, the machine gun's bursts holding it open, and at rest.
+-- game -- single shots, a quick run of them holding it open, and at rest.
 
 CrosshairScaffolding = CrosshairScaffolding or class("CrosshairScaffolding", GameScaffolding)
 
@@ -21,7 +21,7 @@ local PACES < const > = {
 }
 
 function CrosshairScaffolding:build(parent)
-	self:note(parent, "CROSSHAIR   Kicked at the rifle's pace, in machine gun bursts, and left at rest.")
+	self:note(parent, "CROSSHAIR   Kicked shot by shot, in quick runs, and left at rest.")
 
 	self._rows = {}
 	for _, p in ipairs(PACES) do

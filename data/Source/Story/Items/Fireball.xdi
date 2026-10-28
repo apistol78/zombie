@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="zombie.ItemData" version="1">
+	<name>FIREBALL</name>
+	<pluralName/>
+	<info><![CDATA[A SPELL. RIGHT MOUSE HURLS FIRE THAT BURSTS ON WHAT IT HITS.]]></info>
+	<icon>fireball</icon>
+	<maxStack>1</maxStack>
+	<keep>false</keep>
+	<dropEntity>{00000000-0000-0000-0000-000000000000}</dropEntity>
+	<traits>
+		<item type="zombie.EquipTrait" version="1">
+			<slot>{D1A10000-0000-4000-8000-000000000603}</slot>
+		</item>
+	</traits>
+</object>

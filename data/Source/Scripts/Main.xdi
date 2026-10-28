@@ -68,7 +68,7 @@ import(traktor)
 -- Retune the night there, not here.
 --
 -- The weapons' own numbers are not among them any more: each weapon reads its section of
--- Config for itself (Config.rifle, Config.melee, Config.grenade), which is the same split
+-- Config for itself (Config.bow, Config.grenade, Config.fireball), which is the same split
 -- as the rest of this refactor -- the stage does not hold a magazine size it never looks at.
 
 -- How high the player's eye rides above the Humanoid's origin. What the first person
@@ -250,7 +250,7 @@ function Main:new(params, environment)
 	-- than the row deciding how many weapons there can be.
 	--
 	-- This is the only handle this stage has on the weapons, and it is deliberately the only
-	-- one: Main routes buttons and frames at it (update, place, attack, altAttack, reload,
+	-- one: Main routes buttons and frames at it (update, place, trigger, cast, reload,
 	-- cycle) and never asks what is in it. Which weapons there are to route at is the pack's,
 	-- and the loadout reads it there. See Scripts/Weapons/Loadout.
 	self._loadout = Loadout(self)
@@ -340,7 +340,7 @@ function Main:new(params, environment)
 	self._notice.widget:setTextColor(Color4f(0.92, 0.85, 0.64, 1.0))
 
 	-- ...and, smaller and quieter under it, what went into the pack or would not fit: "+ 12
-	-- ROUNDS", "THE PACK IS FULL". Its own line, because pickups happen all night and would
+	-- ARROWS", "THE PACK IS FULL". Its own line, because pickups happen all night and would
 	-- otherwise talk over the notices that matter -- a gate grinding open.
 	-- See _feed.
 	self._feedLine = { widget = Static(self._frame, ""), y = 154 }
@@ -376,7 +376,7 @@ function Main:new(params, environment)
 	-- character controller's velocity clamp permits it.
 	self._walkSpeed = Config.player.walkSpeed
 	self._sprintSpeed = Config.player.sprintSpeed
-	self._running = false   -- true while sprinting and moving; hides the crosshair, lowers the rifle
+	self._running = false   -- true while sprinting and moving; hides the crosshair, lowers the bow
 
 	-- The dead. Whatever killed them -- a round, a blast -- every zombie
 	-- goes through Main:killEnemy and lands in here, so there is one corpse timer and one kill
@@ -1163,9 +1163,9 @@ function Main:resolve()
 	if self._bloodEvents == nil and self._humanoid ~= nil then
 		self._bloodEvents = self._humanoid:getComponent(traktor.world.EventSetComponent)
 	end
-	-- The weapons. What each one needs off the world it finds for itself -- the rifle's own
-	-- child entity, its event set and its tracer trail; the grenade kept aside as a view
-	-- model -- so a new weapon adds nothing here. Called every frame, exactly as the rest of
+	-- The weapons. What each one needs off the world it finds for itself -- the bow's own
+	-- child entities and its event set; the grenade and the fireball's flame kept aside as
+	-- view models -- so a new weapon adds nothing here. Called every frame, exactly as the rest of
 	-- this function is, and cheap once each of them has what it wants (Weapon:resolve).
 	self._loadout:resolve()
 
@@ -1590,7 +1590,7 @@ end
 -- SpawnEffectEvent spawns at sender-transform times offset, so the offset is `point` -- a world
 -- position -- taken back into the zombie's own frame, and the two multiply out to exactly the
 -- place that was hit. A leg shot opens at the leg and a head shot at the head, which is the
--- whole reason Rifle:attack passes the ray's own hit position down here instead of a guess along
+-- whole reason Bow:_fly passes the ray's own hit position down here instead of a guess along
 -- the aim. Callers with no ray to speak of pass the middle of the body instead, so a blast
 -- still bursts at the chest.
 --
@@ -1600,8 +1600,8 @@ end
 --
 -- The zombie's event follows the sender, so the wound keeps pouring from the same spot on the
 -- body as the corpse ragdolls away, while the emitters being world-space leaves what is already
--- in the air where it was shed. "hit" is the sound of the round arriving, raised on the zombie so
--- it comes from out there where the shot landed rather than from the rifle.
+-- in the air where it was shed. "hit" is the sound of the arrow arriving, raised on the zombie so
+-- it comes from out there where the shot landed rather than from the bow.
 --
 -- Raised for a hit on a body that is already a corpse as well (shoveCorpse), which is the point
 -- of it being its own function: a round into one is still a round into meat.
@@ -2055,8 +2055,8 @@ end
 -- playing" states can hide it.
 function Main:_updateCrosshair(dt)
 	-- Whether there is an aim worth drawing a reticle for is the drawn weapon's call rather
-	-- than this stage's: the rifle hides it while the magazine is empty, because with no round
-	-- chambered there is no shot to line up, and an empty grenade pouch answers the same way.
+	-- than this stage's: the bow hides it while no arrow is on the string, because there is no
+	-- shot to line up, and an empty grenade pouch answers the same way.
 	-- See Weapon:wantsCrosshair.
 	local loaded = self._loadout:wantsCrosshair()
 
@@ -2119,8 +2119,8 @@ function Main:_feed(text, kind)
 	self._feedKind = kind
 end
 
--- "+ 12 ROUNDS", counted up across pickups of the same kind while the line is still up, so
--- walking through two crates reads as the 24 rounds it was rather than as the last 12.
+-- "+ 12 ARROWS", counted up across pickups of the same kind while the line is still up, so
+-- walking through two bundles reads as the 24 arrows it was rather than as the last 12.
 function Main:_feedCounted(kind, count)
 	if self._feedKind == kind and self._feedTimer > 0.0 then
 		self._feedCount = self._feedCount + count
@@ -2442,7 +2442,7 @@ function Main:update(info)
 	end
 
 	-- The reload action, edge triggered. Handed to the whole loadout rather than to the drawn
-	-- weapon: R is for topping up a rifle left at two rounds during a lull, and it should still
+	-- weapon: R is for topping up a half-empty magazine during a lull, and it should still
 	-- do that with a grenade in hand. Which weapons have anything to reload is their business
 	-- (Weapon:beginReload).
 	do
@@ -2555,20 +2555,19 @@ function Main:update(info)
 			end
 
 			-- The fire button, handed over as both a press and a hold rather than as one or the
-			-- other. Which of the two a weapon reads is its own business -- the rifle goes off
-			-- once per click, the machine gun runs for as long as the button is down -- and it is
-			-- precisely the sort of thing this stage should have no opinion about. See
+			-- other. Which of the two a weapon reads is its own business -- the bow draws while
+			-- the button is down and looses on its release, a grenade goes once per click -- and it
+			-- is precisely the sort of thing this stage should have no opinion about. See
 			-- Weapon:trigger.
 			self._loadout:trigger(
 				mapping:isStatePressed("STATE_FIRE"),
 				mapping:isStateDown("STATE_FIRE")
 			)
 
-			-- ...and right mouse takes the alternate, likewise one per click. That is the rifle
-			-- butt whatever is drawn, unless the drawn weapon claims the button for itself --
-			-- see Loadout:altAttack and Scripts/Weapons/Melee.
-			if mapping:isStatePressed("STATE_MELEE") then
-				self._loadout:altAttack()
+			-- ...and right mouse casts the readied spell, one per click, whatever is drawn --
+			-- see Loadout:cast and Scripts/Spells/Spellbook.
+			if mapping:isStatePressed("STATE_CAST") then
+				self._loadout:cast()
 			end
 
 			if self._poseController ~= nil then
@@ -2673,7 +2672,7 @@ function Main:postUpdate(info)
 	end
 
 	-- A hive is opening: the camera is over there, and everything below -- which all
-	-- hangs off the player's eye -- would drag it straight back. The rifle and a carried
+	-- hangs off the player's eye -- would drag it straight back. The bow and a carried
 	-- relic are left exactly where the frame froze them, which is where the player is
 	-- standing and out of shot.
 	if self._cutscene ~= nil then
@@ -2749,8 +2748,8 @@ function Main:reload()
 	self._humanoid = nil
 	self._eyeY = nil
 	self._camera = nil
-	-- Every weapon lets go of its own live handles here -- the rifle's entity, event set and
-	-- trail, the held grenade, anything thrown and still in the air -- and keeps its plain
+	-- Every weapon lets go of its own live handles here -- the bow's entities and event set,
+	-- the held grenade, anything loosed, thrown or cast and still in the air -- and keeps its plain
 	-- numbers, so a reload cannot quietly resupply the player. Which of those a weapon has
 	-- is its own business; this only says the world is about to be new. See Weapon:reset.
 	self._loadout:reset()

@@ -25,14 +25,14 @@ local REOPEN < const > = 1.0   -- how long the window stays closed (s)
 local CHEST < const > = 1      -- the chest index the stub keeps it under
 
 local CONTENTS < const > = {
-	{ kind = "rounds", count = 24 },
+	{ kind = "arrows", count = 24 },
 	{ kind = "flask", count = 2 },
 	{ kind = "grenade", count = 2 },
 	{ kind = "helmet", count = 1 },
 	{ kind = "key", count = 1 },
 	{ kind = "bread", count = 3 },
 	{ kind = "coin", count = 12 },
-	{ kind = "machinegun", count = 1 }
+	{ kind = "bow", count = 1 }
 }
 
 local SCENES < const > = {

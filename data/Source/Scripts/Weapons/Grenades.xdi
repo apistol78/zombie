@@ -10,7 +10,7 @@ import(traktor)
 -- Grenades
 --
 -- The other thing the player can throw at the night, and the only one that does not go
--- through the rifle at all: the mouse wheel swaps which weapon the left button does, and the
+-- through the bow at all: the mouse wheel swaps which weapon the left button does, and the
 -- swap is the whole interface -- there is no separate throw key.
 --
 -- A whole weapon rather than a special case, which is the point of the split: it holds a
@@ -42,7 +42,7 @@ local GRENADE_PROJECTILE < const > = Guid("\{6E9AD100-0000-4000-8000-00000000000
 local CHEST < const > = Vector4(0.0, 1.0, 0.0, 0.0)
 
 -- The world collision group, which is the one a rag doll's limbs are in (see the collisionGroup
--- on Entities/Zombie/RDS - Zombie). Same value Scripts/Weapons/Rifle and zombie.EnemyComponent
+-- on Entities/Zombie/RDS - Zombie). Same value Scripts/Weapons/Bow and zombie.EnemyComponent
 -- trace against; each keeps its own copy rather than sharing one, as they always have.
 local COLLISION_DEFAULT < const > = 0x00000001
 
@@ -89,9 +89,9 @@ end
 -- and destroyed on every swap, because the wheel is cheap to spin and building an entity is
 -- not.
 --
--- Not a child of the player like the rifle is -- it is not part of the Humanoid's own entity
+-- Not a child of the player like the bow is -- it is not part of the Humanoid's own entity
 -- data -- so it is placed in world space each frame in :place, from the same eye and aim the
--- rifle is placed from.
+-- bow is placed from.
 function Grenades:resolve()
 	if self._held ~= nil or self._context.world == nil then
 		return
@@ -350,7 +350,7 @@ function Grenades:_explode(g)
 	--
 	-- Each limb names its corpse, which is the whole reason this can be done at all: rag doll
 	-- limbs carry their owner (RagDollPoseController takes the one SkeletonComponent hands down
-	-- and stamps every limb with it), the same route the rifle uses to tell whose body a round
+	-- and stamps every limb with it), the same route the bow uses to tell whose body an arrow
 	-- struck. Only unowned or living bodies come back otherwise, and neither survives the test
 	-- below -- a living zombie's limbs are not in the world at all until it dies.
 	--
@@ -437,7 +437,7 @@ function Grenades:place()
 
 	local context < const > = self._context
 	local aim < const > = context:aim()
-	-- Where the rifle sits, a little closer in and lower -- a thing being held ready to throw
+	-- Right of where the bow sits, a little closer in and lower -- a thing being held ready to throw
 	-- rather than a thing being aimed. The throw leaves from here too, so what is seen and
 	-- what is launched agree.
 	local offset = Vector4(0.16, -0.2, 0.42, 0.0)

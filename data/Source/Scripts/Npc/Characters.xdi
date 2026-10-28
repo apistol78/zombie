@@ -33,7 +33,7 @@ end
 
 -- Hurt a character: `amount` of its health, from `source` (the player's entity, another
 -- character, or nil for the world -- a blast). Everything that hurts rather than simply kills
--- comes through here -- the rounds, the butt, a grenade, one character's blows at another --
+-- comes through here -- the arrows, a fireball, a grenade, one character's blows at another --
 -- and dies through killEnemy once the health is gone, so there is still exactly one door.
 --
 -- A hit that does not kill opens a wound where it landed, and one at or over
@@ -65,11 +65,11 @@ function Main:damage(entity, amount, point, impulse, whole, source)
 	return false
 end
 
--- What a round does to `entity`, struck at `point`: `base`, or `headMul` times it when it
--- landed above Config.rifle.headHeight off the character's feet. A character's origin is at
--- its feet, so the height is simply how far up the body the round went.
+-- What an arrow does to `entity`, struck at `point`: `base`, or `headMul` times it when it
+-- landed above Config.npc.headHeight off the character's feet. A character's origin is at
+-- its feet, so the height is simply how far up the body the arrow went.
 function Main:roundDamage(entity, point, base, headMul)
-	if point.y - entity.transform.translation.y > Config.rifle.headHeight then
+	if point.y - entity.transform.translation.y > Config.npc.headHeight then
 		return base * headMul
 	end
 	return base

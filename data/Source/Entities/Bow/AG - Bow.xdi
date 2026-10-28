@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.animation.StateGraph">
+	<states>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Idle</name>
+			<position>
+				<first>0</first>
+				<second>120</second>
+			</position>
+			<animations>
+				<item>{D6AF3F8A-55CA-F749-A980-9C33ECEF3309}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Draw</name>
+			<position>
+				<first>260</first>
+				<second>40</second>
+			</position>
+			<animations>
+				<item>{9F32C048-D60E-E947-ADD3-EE9BCF54C1D9}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Hold</name>
+			<position>
+				<first>520</first>
+				<second>40</second>
+			</position>
+			<animations>
+				<item>{0501D3FE-D351-1C48-BB0C-0283A17937F8}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Release</name>
+			<position>
+				<first>520</first>
+				<second>200</second>
+			</position>
+			<animations>
+				<item>{51A63165-DD6D-C14A-A3CF-284FC6A383A0}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Release Last</name>
+			<position>
+				<first>260</first>
+				<second>280</second>
+			</position>
+			<animations>
+				<item>{720E0D63-4ABC-1F45-BFAF-77DFAC4B1CBF}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+		<item type="traktor.animation.StateNodeAnimation" version="2">
+			<name>Empty</name>
+			<position>
+				<first>0</first>
+				<second>280</second>
+			</position>
+			<animations>
+				<item>{EB0B180D-41B6-5745-8B28-A5C59FBDBF89}</item>
+			</animations>
+			<loopDuration>0</loopDuration>
+			<transformTime/>
+		</item>
+	</states>
+	<transitions>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item"/>
+			<to ref="/object/states/item[1]"/>
+			<duration>0.08</duration>
+			<moment>Immediately</moment>
+			<condition>draw</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item[2]"/>
+			<duration>0</duration>
+			<moment>End</moment>
+			<condition/>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item[3]"/>
+			<duration>0.04</duration>
+			<moment>Immediately</moment>
+			<condition>loose</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[2]"/>
+			<to ref="/object/states/item[3]"/>
+			<duration>0.04</duration>
+			<moment>Immediately</moment>
+			<condition>loose</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item[4]"/>
+			<duration>0.04</duration>
+			<moment>Immediately</moment>
+			<condition>last</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[2]"/>
+			<to ref="/object/states/item[4]"/>
+			<duration>0.04</duration>
+			<moment>Immediately</moment>
+			<condition>last</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[1]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.25</duration>
+			<moment>Immediately</moment>
+			<condition>idle</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[2]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.25</duration>
+			<moment>Immediately</moment>
+			<condition>idle</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[3]"/>
+			<to ref="/object/states/item"/>
+			<duration>0</duration>
+			<moment>End</moment>
+			<condition/>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[4]"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0</duration>
+			<moment>End</moment>
+			<condition/>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item"/>
+			<to ref="/object/states/item[5]"/>
+			<duration>0.2</duration>
+			<moment>Immediately</moment>
+			<condition>empty</condition>
+		</item>
+		<item type="traktor.animation.StateTransition">
+			<from ref="/object/states/item[5]"/>
+			<to ref="/object/states/item"/>
+			<duration>0.35</duration>
+			<moment>Immediately</moment>
+			<condition>idle</condition>
+		</item>
+	</transitions>
+	<rootState ref="/object/states/item"/>
+	<previewSkeleton>{4CDF99AD-EFC3-9D4B-A1B9-E4F9972057DE}</previewSkeleton>
+	<previewMesh>{943B4E87-2F63-7549-8C93-E20F8740FA9A}</previewMesh>
+	<previewPosition>0.2, 0, 1.725, 1</previewPosition>
+	<previewAngles>2.024999, -0.125, 0, 0</previewAngles>
+</object>

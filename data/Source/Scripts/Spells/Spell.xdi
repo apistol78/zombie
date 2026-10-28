@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.script.Script" version="2">
+	<text><![CDATA[#using \{17E40000-0000-4000-8000-000000000001}
+
+import(traktor)
+
+-- Spell
+--
+-- Base class for what the player casts with the right mouse button. A spell is an item in the
+-- pack, like a weapon, and readying one is equipping it in the spell slot (Items.SPELL) -- which
+-- Scripts/Spells/Spellbook reads, exactly as Scripts/Weapons/Loadout reads the weapon slot. Only
+-- the readied spell is cast; every spell is ticked, so one already thrown finishes its flight.
+--
+-- `context` is the Stage, as for a Scripts/Weapons/Weapon, and a spell asks it the same things:
+-- eye, aim, player, damage and the rest.
+--
+-- Cadence is the base's: set _interval in the constructor, ask self:ready() before casting, and
+-- set self._cooldown = self._interval when you do.
+
+Spell = Spell or class("Spell")
+
+function Spell:new(context, item)
+	self._context = context
+	self._item = Items.keyOf(item)   -- the item in the pack that is this spell
+	self._interval = 0.0
+	self._cooldown = 0.0
+	self._readied = false
+end
+
+function Spell:item()
+	return self._item
+end
+
+-- Whether this is the one the right button casts. Told on a change only (Spellbook).
+function Spell:readiedChanged(readied)
+	self._readied = readied
+end
+
+function Spell:ready()
+	return self._cooldown <= 0.0
+end
+
+-- Cast it. Returns true when something happened.
+function Spell:cast()
+	return false
+end
+
+-- One simulation step, below Main's freeze returns, so a cooldown and anything in the air stop
+-- with the rest of the game.
+function Spell:update(dt)
+	if self._cooldown > 0.0 then
+		self._cooldown = math.max(0.0, self._cooldown - dt)
+	end
+end
+
+-- Live handles off the world, and letting go of them for a hot reload; see Weapon:resolve.
+function Spell:resolve()
+end
+
+function Spell:reset()
+end
+
+-- Whatever the readied spell shows in the left hand, and its going away when it is not.
+function Spell:place()
+end
+
+function Spell:stow()
+end
+]]></text>
+</object>

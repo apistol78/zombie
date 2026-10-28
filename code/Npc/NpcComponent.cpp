@@ -288,6 +288,7 @@ void NpcComponent::restore(float health, float hostility, const std::wstring& mo
 	readStats();
 	m_health = std::min(m_maxHealth, health);
 	m_hostility = hostility;
+	m_hostileAgo = 0.0f;
 	if (!mood.empty() && mood != m_baseMood)
 		setMood(mood);
 }
@@ -354,6 +355,7 @@ bool NpcComponent::readStats()
 	m_mood = m_baseMood;
 	m_moodTimer = 0.0f;
 	m_hostility = statNumber(npc, L"hostility", given);
+	m_baseHostility = m_hostility;
 
 	m_reach = statNumber(npc, L"reach", given);
 	m_strikeDamage = statNumber(npc, L"strikeDamage", given);
@@ -409,6 +411,8 @@ bool NpcComponent::readStats()
 	m_arrive = settingNumber(npc, L"arrive", 1.0f);
 	m_hostileAt = settingNumber(npc, L"hostileAt", 0.5f);
 	m_hostilityOnHurt = settingNumber(npc, L"hostilityOnHurt", 0.0f);
+	m_hostilityHold = settingNumber(npc, L"hostilityHold", 0.0f);
+	m_hostilityCalm = settingNumber(npc, L"hostilityCalm", 0.0f);
 	m_moodHold = settingNumber(npc, L"moodHold", 0.0f);
 	m_regenDelay = settingNumber(npc, L"regenDelay", 0.0f);
 	m_regenRate = settingNumber(npc, L"regenRate", 0.0f);
@@ -420,11 +424,20 @@ bool NpcComponent::readStats()
 
 void NpcComponent::hurtBy(world::Entity* source)
 {
+	// The player is only fought back once hurting it has made it hostile; others at once.
 	if (source == m_player || (m_npcWorld && source == m_npcWorld->getPlayer()))
+	{
 		m_hostility = std::min(1.0f, m_hostility + m_hostilityOnHurt);
-	else if (std::find(m_grudges.begin(), m_grudges.end(), source) == m_grudges.end())
-		m_grudges.push_back(source);
-	m_provoked = source;
+		m_hostileAgo = 0.0f;
+		if (hatesPlayer())
+			m_provoked = source;
+	}
+	else
+	{
+		if (std::find(m_grudges.begin(), m_grudges.end(), source) == m_grudges.end())
+			m_grudges.push_back(source);
+		m_provoked = source;
+	}
 	setMood(m_courage >= 0.5f ? L"angry" : L"scared");
 }
 
@@ -451,6 +464,15 @@ void NpcComponent::tickRegen(float deltaTime)
 	m_hurtAgo += deltaTime;
 	if (m_hurtAgo >= m_regenDelay)
 		m_health = std::min(m_maxHealth, m_health + m_regenRate * deltaTime);
+}
+
+void NpcComponent::tickHostility(float deltaTime)
+{
+	if (m_dead || m_hostility <= m_baseHostility)
+		return;
+	m_hostileAgo += deltaTime;
+	if (m_hostileAgo >= m_hostilityHold)
+		m_hostility = std::max(m_baseHostility, m_hostility - m_hostilityCalm * deltaTime);
 }
 
 void NpcComponent::stagger(float deltaTime)

@@ -654,6 +654,10 @@
 	<stateData type="traktor.input.InputMappingStateData">
 		<stateData>
 			<item>
+				<first>STATE_CAST</first>
+				<second ref="/object/positions/item[29]/object"/>
+			</item>
+			<item>
 				<first>STATE_CYCLE_WEAPON</first>
 				<second ref="/object/positions/item[31]/object"/>
 			</item>
@@ -700,10 +704,6 @@
 			<item>
 				<first>STATE_LOOK_Y</first>
 				<second ref="/object/positions/item[17]/object"/>
-			</item>
-			<item>
-				<first>STATE_MELEE</first>
-				<second ref="/object/positions/item[29]/object"/>
 			</item>
 			<item>
 				<first>STATE_MOVE_X</first>

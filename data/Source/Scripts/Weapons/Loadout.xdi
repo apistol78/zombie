@@ -2,8 +2,8 @@
 <object type="traktor.script.Script" version="2">
 	<text><![CDATA[#using \{7EA9C000-0000-4000-8000-000000000002}
 #using \{7EA9C000-0000-4000-8000-000000000003}
-#using \{7EA9C000-0000-4000-8000-000000000006}
-#using \{7EA9C000-0000-4000-8000-000000000004}
+#using \{7EA9C000-0000-4000-8000-000000000008}
+#using \{7EA9C000-0000-4000-8000-000000000012}
 #using \{3C7F91A6-5D24-4E8B-9A03-7B61E2D4C085}
 
 import(traktor)
@@ -11,8 +11,9 @@ import(traktor)
 -- Loadout
 --
 -- What the player has in their hands, and the only thing the Stage talks to about it. Main
--- hands it buttons and frames -- trigger, altAttack, reload, cycle, update, place -- and it
--- routes them at whichever Scripts/Weapons/Weapon is drawn.
+-- hands it buttons and frames -- trigger, cast, reload, cycle, update, place -- and it
+-- routes them at whichever Scripts/Weapons/Weapon is drawn, and the right button at the
+-- readied spell (Scripts/Spells/Spellbook).
 --
 -- Which weapons the player *has* is not decided here any more. It is the pack's
 -- (a zombie.Inventory, reached as context:inventory()): owning a weapon is having its item
@@ -33,38 +34,38 @@ import(traktor)
 --
 -- Two rules here are deliberate and worth keeping:
 --
---   * Every weapon is updated and resolved, owned or not. A reload runs on while the grenades
---     are in hand, and a grenade already in the air is nobody's weapon at all -- including after
---     the last one in the pack has been thrown.
---   * The alternate attack (right mouse) falls through to the shared Melee rather than
---     belonging to a weapon, so the butt swing still answers with a grenade in hand -- or with
---     nothing in hand at all. See Scripts/Weapons/Melee.
+--   * Every weapon is updated and resolved, owned or not. An arrow in flight and a grenade
+--     already in the air are nobody's weapon at all -- including after the last one in the pack
+--     has gone.
+--   * The right mouse button casts the readied spell rather than belonging to a weapon, so it
+--     answers whatever is drawn -- or with nothing in hand at all. See Scripts/Spells/Spellbook.
 
 Loadout = Loadout or class("Loadout")
 
 -- The item each weapon is (data/Source/Story/Items).
-local RIFLE < const > = Guid("\{D1A10000-0000-4000-8000-000000000200}")
-local MACHINEGUN < const > = Guid("\{D1A10000-0000-4000-8000-000000000201}")
+local BOW < const > = Guid("\{D1A10000-0000-4000-8000-000000000200}")
+local STAFF < const > = Guid("\{D1A10000-0000-4000-8000-000000000210}")
 local GRENADE < const > = Guid("\{D1A10000-0000-4000-8000-000000000202}")
 
 function Loadout:new(context)
 	self._context = context
 
-	-- The wheel's order, and the order the seats stand on the HUD's carousel. The rifle first
-	-- because it is what the night starts in the player's hands, then the two things that
-	-- answer a crowd rather than a target. Only the ones in the pack are on the wheel.
+	-- The wheel's order, and the order the seats stand on the HUD's carousel. The bow first
+	-- because it is the night's own weapon, the staff for what is already too close, then the
+	-- thing that answers a crowd rather than a target. Only the ones in the pack are on the wheel.
 	self._weapons = {
-		Rifle(context, RIFLE),
-		MachineGun(context, MACHINEGUN),
+		Bow(context, BOW),
+		Staff(context, STAFF),
 		Grenades(context, GRENADE)
 	}
 
-	-- Not a weapon of its own: the alternate the right button always reaches, whatever is drawn.
-	self._melee = Melee(context)
+	-- Not a weapon: what the right button always reaches, whatever is drawn.
+	self._spellbook = Spellbook(context)
+	self._casting = false   -- the right button is waiting for the weapon in hand to go down
 
 	-- What the pack said last time it changed: which weapons were in it, and which was drawn.
-	-- Kept so a change can be told apart from the state it changed to -- "the rifle has just
-	-- gone" rather than "there is no rifle" -- which is what the hand-off below runs on.
+	-- Kept so a change can be told apart from the state it changed to -- "the bow has just
+	-- gone" rather than "there is no bow" -- which is what the hand-off below runs on.
 	self._owned = {}
 	self._drawn = nil
 
@@ -174,8 +175,8 @@ function Loadout:_inventoryChanged()
 
 	self:_announce()
 
-	-- Every seat's count, whatever changed: rounds are shared by both firearms, so a crate
-	-- walked over or a belt loaded moves the number on the rifle's seat as well as the gun's.
+	-- Every seat's count, whatever changed: it is cheap, and a weapon's count is whatever the
+	-- pack holds of what it loads.
 	for _, w in ipairs(self._weapons) do
 		w:_pushHud()
 	end
@@ -238,14 +239,15 @@ function Loadout:resolve()
 	for _, w in ipairs(self._weapons) do
 		w:resolve()
 	end
-	self._melee:resolve()
+	self._spellbook:resolve()
 end
 
 function Loadout:reset()
 	for _, w in ipairs(self._weapons) do
 		w:reset()
 	end
-	self._melee:reset()
+	self._spellbook:reset()
+	self._casting = false
 end
 
 -- What every weapon holds of its own, keyed by its item, for the trip to another stage (see
@@ -269,12 +271,24 @@ function Loadout:restore(states)
 	end
 end
 
--- Below Main's freeze returns: cadences, reloads and fuses all stop with the game.
+-- Below Main's freeze returns: cadences, arrows, fuses and spells all stop with the game.
 function Loadout:update(dt)
 	for _, w in ipairs(self._weapons) do
 		w:update(dt)
 	end
-	self._melee:update(dt)
+	self._spellbook:update(dt)
+
+	-- A cast waiting on the weapon in hand goes the moment it is down. Asked again each step, so a
+	-- weapon drawn or taken up meanwhile is put down too.
+	if self._casting then
+		local w < const > = self:current()
+		if w == nil or w:isLowered() then
+			self._casting = false
+			self._spellbook:cast()
+		else
+			w:lower()
+		end
+	end
 end
 
 -- Left button, handed over as both a press and a hold: the drawn weapon decides which of the
@@ -287,19 +301,23 @@ function Loadout:trigger(pressed, held)
 	return w:trigger(pressed, held)
 end
 
--- Right button. Offered to the drawn weapon first -- a weapon with its own alternate says so
--- by overriding it -- and otherwise the shared butt swing.
-function Loadout:altAttack()
+-- Right button: the readied spell, whatever is in hand -- which is lowered first, the spell
+-- leaving once it is down (see :update). Nothing is lowered for a spell that could not go.
+function Loadout:cast()
+	if self._casting or not self._spellbook:ready() then
+		return false
+	end
 	local w < const > = self:current()
-	if w ~= nil and w:altAttack() then
+	if w ~= nil and not w:isLowered() then
+		w:lower()
+		self._casting = true
 		return true
 	end
-	return self._melee:attack()
+	return self._spellbook:cast()
 end
 
--- R. Offered to every weapon owned, the drawn one first: topping up a half-empty rifle with a
--- grenade in hand is exactly the lull the key exists for, and with the two firearms sharing the
--- pack's rounds the one in hand is the one that should get them first.
+-- R. Offered to every weapon owned, the drawn one first, for any that loads from the pack;
+-- neither the bow nor the grenades do, so today it answers nothing.
 function Loadout:reload()
 	local cur < const > = self:current()
 	local any = false
@@ -331,7 +349,8 @@ end
 
 -- The view models: the drawn weapon placed at the eye, every other one put away -- owned or
 -- not. Stowing outright rather than lowering is deliberate: with two weapons on screen there
--- is no telling at a glance what the left button would do.
+-- is no telling at a glance what the left button would do. The readied spell shows in the
+-- left hand.
 function Loadout:place()
 	local cur < const > = self:current()
 	for _, w in ipairs(self._weapons) do
@@ -341,6 +360,7 @@ function Loadout:place()
 			w:stow()
 		end
 	end
+	self._spellbook:place()
 end
 ]]></text>
 </object>

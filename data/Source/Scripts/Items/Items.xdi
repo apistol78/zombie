@@ -11,7 +11,7 @@ import(traktor)
 -- Scripts/Quests/Questing), which reads the same instances.
 --
 -- Lua keeps an item by its key -- the guid as upper-case text, "{D1A10000-...-000000000200}" for
--- the rifle -- wherever it is plain data or a table key: a chest's contents, what a character
+-- the bow -- wherever it is plain data or a table key: a chest's contents, what a character
 -- carries, the books a save is made of. A Guid is neither (two Guids of the same value are equal,
 -- ==, but they are not the same table key). The native side takes an item either way.
 --
@@ -20,7 +20,7 @@ import(traktor)
 --   Items.get(item)                the item's entry (below), or nil
 --   Items.is(a, b)                 whether a and b are the same item, however each was named
 --   Items.all()                    every item, ordered by name
---   Items.describe(item, count)    "RIFLE", "12 ROUNDS"
+--   Items.describe(item, count)    "BOW", "12 ARROWS"
 --
 -- Only what the story lists is an item, so asking about anything else is a plain nil rather than
 -- a failed look-up in the database. A new item is an instance in data/Source/Story/Items and a line
@@ -34,7 +34,8 @@ import(traktor)
 --   heal                       HealTrait: health one restores, eaten or drunk from the pack
 --   use                        HealTrait: what doing so is called, "EAT" or "DRINK"
 --   armor                      ArmorTrait: the share of contact damage taken while worn
---   equip                      EquipTrait: the key of its slot, Items.WEAPON, Items.HAND or Items.BODY
+--   equip                      EquipTrait: the key of its slot, Items.WEAPON, Items.HAND, Items.BODY
+--                              or Items.SPELL
 --   ammo                       WeaponTrait: the key of what it loads from the pack, or nil
 --   event                      EventTrait: what one coming into the pack is called to the
 --                              SpawnOrchestrator (Items.EVENTS)
@@ -58,6 +59,7 @@ local STORY < const > = Guid("\{D1A20000-0000-4000-8000-000000000001}")
 Items.WEAPON = "{D1A10000-0000-4000-8000-000000000600}"   -- Slots/Weapon: drawn
 Items.HAND = "{D1A10000-0000-4000-8000-000000000601}"     -- Slots/Hand: the off hand
 Items.BODY = "{D1A10000-0000-4000-8000-000000000602}"     -- Slots/Body: worn
+Items.SPELL = "{D1A10000-0000-4000-8000-000000000603}"    -- Slots/Spell: readied, cast with right mouse
 
 -- Events of items coming into the pack, by what the SpawnOrchestrator calls them (Config.events).
 Items.EVENTS = {
@@ -188,7 +190,7 @@ function Items.all()
 	return out
 end
 
--- What a count of an item is called: "RIFLE", "12 ROUNDS". Something that is no item answers
+-- What a count of an item is called: "BOW", "12 ARROWS". Something that is no item answers
 -- with what it was called rather than nothing.
 function Items.describe(item, count)
 	local def < const > = Items.get(item)

@@ -16,11 +16,13 @@
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.ItemWaypoint", 0, ItemWaypoint, IWaypoint)
+T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.ItemWaypoint", 1, ItemWaypoint, IWaypoint)
 
 void ItemWaypoint::serialize(ISerializer& s)
 {
 	s >> resource::Member< ItemData >(L"item", m_item);
+	if (s.getVersion< ItemWaypoint >() >= 1)
+		s >> Member< bool >(L"untilFound", m_untilFound);
 }
 
 }

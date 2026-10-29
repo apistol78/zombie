@@ -333,16 +333,21 @@ void StoryWorldComponent::updateWaypoint()
 
 	if (step->getWaypoint() != nullptr)
 		target = resolve(step->getWaypoint(), point, position);
-	else if (auto talkStep = dynamic_type_cast< const TalkStep* >(step))
-		target = findActor(talkStep->getActor());
-	else if (auto reachStep = dynamic_type_cast< const ReachStep* >(step))
-		target = findPlace(reachStep->getPlace());
-	else if (auto fixtureStep = dynamic_type_cast< const FixtureStep* >(step))
-		target = findFixture(fixtureStep->getKind());
-	else if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
+
+	// Where the step's own waypoint has nothing in this world, what the step is about.
+	if (target == nullptr && !point)
 	{
-		if (!questLog->hasFound(findItemStep->getItem()))
-			target = findHolder(findItemStep->getItem());
+		if (auto talkStep = dynamic_type_cast< const TalkStep* >(step))
+			target = findActor(talkStep->getActor());
+		else if (auto reachStep = dynamic_type_cast< const ReachStep* >(step))
+			target = findPlace(reachStep->getPlace());
+		else if (auto fixtureStep = dynamic_type_cast< const FixtureStep* >(step))
+			target = findFixture(fixtureStep->getKind());
+		else if (auto findItemStep = dynamic_type_cast< const FindItemStep* >(step))
+		{
+			if (!questLog->hasFound(findItemStep->getItem()))
+				target = findHolder(findItemStep->getItem());
+		}
 	}
 
 	if (target != nullptr)
@@ -375,7 +380,11 @@ world::Entity* StoryWorldComponent::resolve(const IWaypoint* waypoint, bool& out
 	else if (auto placeWaypoint = dynamic_type_cast< const PlaceWaypoint* >(waypoint))
 		return findPlace(placeWaypoint->getPlace());
 	else if (auto itemWaypoint = dynamic_type_cast< const ItemWaypoint* >(waypoint))
-		return !m_story->getQuestLog()->hasFound(itemWaypoint->getItem()) ? findHolder(itemWaypoint->getItem()) : nullptr;
+	{
+		if (itemWaypoint->isUntilFound() && m_story->getQuestLog()->hasFound(itemWaypoint->getItem()))
+			return nullptr;
+		return findHolder(itemWaypoint->getItem());
+	}
 	else if (auto pointWaypoint = dynamic_type_cast< const PointWaypoint* >(waypoint))
 	{
 		outPoint = true;

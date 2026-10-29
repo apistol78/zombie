@@ -17,7 +17,10 @@
 			<id>{A3F5EDEB-E252-4808-B2E8-F5719EAE274D}</id>
 			<name>light</name>
 			<text><![CDATA[LIGHT EVERY WARD IN THE CIRCLE, ONE RELIC TO EACH]]></text>
-			<waypoint/>
+			<waypoint type="zombie.ItemWaypoint" version="1">
+				<item>{D1A10000-0000-4000-8000-000000000209}</item>
+				<untilFound>false</untilFound>
+			</waypoint>
 			<failWhen/>
 			<onComplete/>
 			<kind>{D1A20000-0000-4000-8000-000000000700}</kind>

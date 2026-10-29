@@ -36,12 +36,18 @@ class T_DLLCLASS ItemWaypoint : public IWaypoint
 public:
 	const resource::Id< ItemData >& getItem() const { return m_item; }
 
+	/*! Points only until the item is found; off to keep pointing at the nearest one left. */
+	bool isUntilFound() const { return m_untilFound; }
+
 	void setItem(const resource::Id< ItemData >& item) { m_item = item; }
+
+	void setUntilFound(bool untilFound) { m_untilFound = untilFound; }
 
 	virtual void serialize(ISerializer& s) override final;
 
 private:
 	resource::Id< ItemData > m_item;
+	bool m_untilFound = true;
 };
 
 }

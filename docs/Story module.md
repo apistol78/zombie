@@ -177,7 +177,7 @@ Waypoints:
 class IWaypoint : public ISerializable;
 class ActorWaypoint   : public IWaypoint { resource::Id< ActorData > m_actor; };
 class PlaceWaypoint   : public IWaypoint { resource::Id< PlaceData > m_place; };
-class ItemWaypoint    : public IWaypoint { resource::Id< ItemData > m_item; };   // pickup, container or carrier
+class ItemWaypoint    : public IWaypoint { resource::Id< ItemData > m_item; bool m_untilFound; };   // pickup, container or carrier
 class PointWaypoint   : public IWaypoint { Vector4 m_position; };
 class FirstOfWaypoint : public IWaypoint { RefArray< IWaypoint > m_candidates; }; // first present in this world
 ```
@@ -516,7 +516,8 @@ Where it differs from the sketch above:
 - shows or hides the pickups of items a quest holds back (`Story::isHeldBack`), whenever the quest log
   moves or the world is indexed again;
 - resolves the followed step's `waypoint` and `talkTarget` each update: the step's own waypoint,
-  else the actor, the place, or the nearest visible pickup or container holding the item.
+  else (or where it finds nothing here) the actor, the place, or the nearest visible pickup or
+  container holding the item.
 
 `Questing` keeps the windows, the HUD markers and the chest-window filtering of held-back items,
 which reads the game's own record of what is left in each chest. The component reads containers'
@@ -658,6 +659,16 @@ find a relic, light every ward, come back):
 - In Zombie, `Main:_saveWorld` books a held back kept item as lying there, since only the story
   hid it. Each ward's `SpentRelic` is only a mesh now, with no pickup or script, so neither the
   story nor the books take it for a relic.
+
+**Waypoints fall back to the step (2026-10-29).** The trail pointed at a ward as soon as the first
+relic was found, because the light step points at wards and an item waypoint stops at "found".
+
+- `ItemWaypoint::untilFound` (version 1) is on by default. Turned off, the waypoint keeps pointing at
+  the nearest pickup or container still holding the item after it has been found.
+- When a step's waypoint finds nothing in this world, the step points at what it is about, as it
+  does with no waypoint at all.
+- "The Ward Circle" light step points at relics with `untilFound` off. It points at the nearest
+  relic left in the world, and at the nearest unlit ward once none are left.
 
 ---
 

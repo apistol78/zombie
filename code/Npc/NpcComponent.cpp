@@ -398,6 +398,8 @@ bool NpcComponent::readStats()
 	m_pushOutGain = settingNumber(enemy, L"pushOutGain", 0.0f);
 	m_pushOutMax = settingNumber(enemy, L"pushOutMax", 0.0f);
 	m_turnCreep = settingNumber(enemy, L"turnCreep", 0.0f);
+	m_wanderAngle = settingNumber(enemy, L"wanderAngle", 0.0f);
+	m_wanderTime = settingNumber(enemy, L"wanderTime", 0.0f);
 	m_closeQuarters = settingNumber(enemy, L"closeQuarters", 0.0f);
 
 	m_hitKnockback = settingNumber(melee, L"knockback", 0.0f);
@@ -751,7 +753,7 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 		}
 	}
 
-	// Push away from nearby characters, measured in three axes so a ledge above is no part of the crowd.
+	// Push away from nearby living characters, measured in three axes so a ledge above is no part of the crowd.
 	float sepX = 0.0f, sepZ = 0.0f;
 	for (const auto& member : m_npcWorld->getCrowd())
 	{
@@ -760,7 +762,7 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 			continue;
 		const float az = pz - member.position.z();
 		const float ay = py - member.position.y();
-		if (ax * ax + az * az + ay * ay > c_crowdRange * c_crowdRange || member.entity == m_owner)
+		if (ax * ax + az * az + ay * ay > c_crowdRange * c_crowdRange || member.entity == m_owner || (member.npc && member.npc->isDead()))
 			continue;
 		const float radius = (member.entity == engaged) ? m_playerSpace : m_avoidRadius;
 		const float d = std::sqrt(ax * ax + az * az);
@@ -797,6 +799,21 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	{
 		targetX = 0.0f;
 		targetZ = 0.0f;
+	}
+
+	// Drift off the steering in a slow random walk, so a crowd in a tight space does not settle into circling.
+	if (m_wanderAngle > 0.0f && m_wanderTime > 0.0f)
+	{
+		const float noise = (m_random.nextFloat() * 2.0f - 1.0f) * 1.7320508f;
+		m_wander += -m_wander * deltaTime / m_wanderTime + m_wanderAngle * std::sqrt(2.0f * deltaTime / m_wanderTime) * noise;
+		if (!duel && tl > 0.001f)
+		{
+			const float c = std::cos(m_wander);
+			const float s = std::sin(m_wander);
+			const float wx = targetX * c + targetZ * s;
+			targetZ = targetZ * c - targetX * s;
+			targetX = wx;
+		}
 	}
 
 	// Inside the player's personal space the inward part of the steering is removed outright.

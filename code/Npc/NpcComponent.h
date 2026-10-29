@@ -206,6 +206,8 @@ protected:
 	float m_pushOutGain = 0.0f;
 	float m_pushOutMax = 0.0f;
 	float m_turnCreep = 0.0f;
+	float m_wanderAngle = 0.0f;
+	float m_wanderTime = 0.0f;
 	float m_closeQuarters = 0.0f;
 	float m_hitKnockback = 0.0f;
 	float m_hitPushTime = 0.0f;
@@ -233,6 +235,7 @@ protected:
 	float m_maxVelocity = -1.0f;
 	bool m_haveHeading = false;
 	float m_heading = 0.0f;
+	float m_wander = 0.0f;
 	float m_repathTimer = 0.0f;
 	Ref< ai::MoveQueryResult > m_pathResult;
 	Ref< ai::MoveQuery > m_pathQuery;

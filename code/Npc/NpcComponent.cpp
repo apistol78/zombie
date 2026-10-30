@@ -126,6 +126,20 @@ float wrapAngle(float angle)
 	return angle;
 }
 
+/*! Distance in the ground plane from p to the leg between waypoints a and b. */
+float legDistanceXZ(const Vector4& p, const Vector4& a, const Vector4& b)
+{
+	const float abx = b.x() - a.x();
+	const float abz = b.z() - a.z();
+	const float apx = p.x() - a.x();
+	const float apz = p.z() - a.z();
+	const float ll = abx * abx + abz * abz;
+	const float t = (ll > 0.0001f) ? clamp((apx * abx + apz * abz) / ll, 0.0f, 1.0f) : 0.0f;
+	const float dx = apx - abx * t;
+	const float dz = apz - abz * t;
+	return std::sqrt(dx * dx + dz * dz);
+}
+
 	}
 
 T_IMPLEMENT_RTTI_CLASS(L"zombie.NpcComponent", NpcComponent, world::IEntityComponent)
@@ -398,8 +412,6 @@ bool NpcComponent::readStats()
 	m_pushOutGain = settingNumber(enemy, L"pushOutGain", 0.0f);
 	m_pushOutMax = settingNumber(enemy, L"pushOutMax", 0.0f);
 	m_turnCreep = settingNumber(enemy, L"turnCreep", 0.0f);
-	m_wanderAngle = settingNumber(enemy, L"wanderAngle", 0.0f);
-	m_wanderTime = settingNumber(enemy, L"wanderTime", 0.0f);
 	m_closeQuarters = settingNumber(enemy, L"closeQuarters", 0.0f);
 
 	m_hitKnockback = settingNumber(melee, L"knockback", 0.0f);
@@ -802,7 +814,10 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	}
 
 	// Drift off the steering in a slow random walk, so a crowd in a tight space does not settle into circling.
-	if (m_wanderAngle > 0.0f && m_wanderTime > 0.0f)
+	/*
+	Causing too much visible jitter; should use a smooth random instead...
+	const bool anySeparation = (std::abs(sepX) + std::abs(sepZ)) > FUZZY_EPSILON;
+	if (anySeparation && m_wanderAngle > 0.0f && m_wanderTime > 0.0f)
 	{
 		const float noise = (m_random.nextFloat() * 2.0f - 1.0f) * 1.7320508f;
 		m_wander += -m_wander * deltaTime / m_wanderTime + m_wanderAngle * std::sqrt(2.0f * deltaTime / m_wanderTime) * noise;
@@ -815,6 +830,7 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 			targetX = wx;
 		}
 	}
+	*/
 
 	// Inside the player's personal space the inward part of the steering is removed outright.
 	float depth = 0.0f;
@@ -882,11 +898,16 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	const float fz = std::cos(m_heading);
 	m_character->setHeadAngle(m_heading);
 
-	// Freshly spawned: keep turning but take no step, and leave the graph in its stand-up state.
-	if (m_spawnDelay > 0.0f)
+	// Freshly spawned: keep turning but take no step, and leave the graph in its stand-up state
+	// until that has played through.
+	if (m_rising)
 	{
-		m_spawnDelay -= deltaTime;
-		return false;
+		// Not evaluated yet, or still in the state it starts in.
+		const animation::RtState* root = m_pose ? m_pose->getRootState() : nullptr;
+		const animation::RtState* current = m_pose ? m_pose->getCurrentState() : nullptr;
+		if (root && (!current || current == root))
+			return false;
+		m_rising = false;
 	}
 
 	// Nothing carried over in a duel, or the two orbit each other.
@@ -1120,9 +1141,17 @@ bool NpcComponent::route()
 		return false;
 	}
 
+	if (route->getMode() == RouteMode::Enclosure && route->getPoints().size() < 3)
+	{
+		log::warning << L"Npc: enclosure " << m_routeId.format() << L" needs at least three points" << Endl;
+		m_routeMissing = true;
+		return false;
+	}
+
 	m_route = route;
 	m_routeDir = 1;
 	m_routeWait = 0.0f;
+	m_haveRoutePoint = false;
 
 	// Joined at the waypoint nearest where the character stands.
 	const AlignedVector< Vector4 >& points = route->getPoints();
@@ -1141,8 +1170,82 @@ bool NpcComponent::route()
 	return true;
 }
 
+void NpcComponent::routeNext(int32_t& index, int32_t& dir) const
+{
+	const int32_t n = (int32_t)m_route->getPoints().size();
+	if (n <= 1)
+		return;
+
+	if (m_route->getLoop())
+		index = (index + 1) % n;
+	else
+	{
+		int32_t next = index + dir;
+		if (next < 0 || next >= n)
+		{
+			dir = -dir;
+			next = index + dir;
+		}
+		index = next;
+	}
+}
+
+void NpcComponent::routeRejoin(const Vector4& position)
+{
+	if (!m_route)
+		return;
+
+	// Anywhere in an enclosure will do; a fresh spot from wherever it ended up, without a pause first.
+	if (m_route->getMode() == RouteMode::Enclosure)
+	{
+		m_haveRoutePoint = false;
+		m_routeWait = 0.0f;
+		return;
+	}
+
+	const AlignedVector< Vector4 >& points = m_route->getPoints();
+	const int32_t n = (int32_t)points.size();
+	if (n <= 1)
+		return;
+
+	// The leg it was walking when called away; none before the first waypoint it joined at.
+	int32_t from = m_routeIndex;
+	if (m_route->getLoop())
+		from = (m_routeIndex + n - 1) % n;
+	else if (m_routeIndex - m_routeDir >= 0 && m_routeIndex - m_routeDir < n)
+		from = m_routeIndex - m_routeDir;
+	float best = legDistanceXZ(position, points[from], points[m_routeIndex]);
+
+	// On along the legs ahead while they come closer; the first that does not ends it, so a route
+	// folding back past where it stands is not cut short.
+	int32_t index = m_routeIndex;
+	int32_t dir = m_routeDir;
+	for (int32_t i = 0; i < n; ++i)
+	{
+		int32_t nextIndex = index;
+		int32_t nextDir = dir;
+		routeNext(nextIndex, nextDir);
+
+		const float d = legDistanceXZ(position, points[index], points[nextIndex]);
+		if (d >= best)
+			break;
+
+		best = d;
+		index = nextIndex;
+		dir = nextDir;
+	}
+
+	// What was left of a pause is not stood out wherever it ended up.
+	m_routeIndex = index;
+	m_routeDir = dir;
+	m_routeWait = 0.0f;
+}
+
 Vector4 NpcComponent::routeStep(const Vector4& position, float deltaTime, bool& outWaiting)
 {
+	if (m_route->getMode() == RouteMode::Enclosure)
+		return enclosureStep(position, deltaTime, outWaiting);
+
 	const AlignedVector< Vector4 >& points = m_route->getPoints();
 	if (m_routeWait > 0.0f)
 	{
@@ -1160,22 +1263,7 @@ Vector4 NpcComponent::routeStep(const Vector4& position, float deltaTime, bool& 
 		return p;
 	}
 
-	const int32_t n = (int32_t)points.size();
-	if (n > 1)
-	{
-		if (m_route->getLoop())
-			m_routeIndex = (m_routeIndex + 1) % n;
-		else
-		{
-			int32_t next = m_routeIndex + m_routeDir;
-			if (next < 0 || next >= n)
-			{
-				m_routeDir = -m_routeDir;
-				next = m_routeIndex + m_routeDir;
-			}
-			m_routeIndex = next;
-		}
-	}
+	routeNext(m_routeIndex, m_routeDir);
 
 	// Drawn per character, so two sharing a route fall out of step.
 	m_routeWait = m_route->getPause() * (0.6f + m_random.nextFloat() * 0.8f);
@@ -1183,6 +1271,75 @@ Vector4 NpcComponent::routeStep(const Vector4& position, float deltaTime, bool& 
 	m_repathTimer = 0.0f;
 	outWaiting = m_routeWait > 0.0f;
 	return points[m_routeIndex];
+}
+
+Vector4 NpcComponent::enclosureStep(const Vector4& position, float deltaTime, bool& outWaiting)
+{
+	if (m_routeWait > 0.0f)
+	{
+		m_routeWait -= deltaTime;
+		outWaiting = true;
+		return m_routePoint;
+	}
+
+	// On to the spot until there, or until it has been at it so long it is likely out of reach.
+	const bool hadPoint = m_haveRoutePoint;
+	if (m_haveRoutePoint)
+	{
+		m_routeGiveUp -= deltaTime;
+		const float dx = m_routePoint.x() - position.x();
+		const float dz = m_routePoint.z() - position.z();
+		if (dx * dx + dz * dz > m_arrive * m_arrive && m_routeGiveUp > 0.0f)
+		{
+			outWaiting = false;
+			return m_routePoint;
+		}
+	}
+
+	m_haveRoutePoint = enclosurePoint(position, m_routePoint);
+	if (!m_haveRoutePoint)
+	{
+		// Asked again in a while rather than every frame.
+		m_routeWait = 1.0f;
+		outWaiting = true;
+		return position;
+	}
+
+	const float dx = m_routePoint.x() - position.x();
+	const float dz = m_routePoint.z() - position.z();
+	m_routeGiveUp = 10.0f + 3.0f * std::sqrt(dx * dx + dz * dz) / std::max(m_walkSpeed, 0.1f);
+
+	// Not paused before the first spot, as it has only just come to the enclosure.
+	m_routeWait = hadPoint ? m_route->getPause() * (0.6f + m_random.nextFloat() * 0.8f) : 0.0f;
+	dropPath();
+	m_repathTimer = 0.0f;
+	outWaiting = m_routeWait > 0.0f;
+	return m_routePoint;
+}
+
+bool NpcComponent::enclosurePoint(const Vector4& position, Vector4& outPoint)
+{
+	for (int32_t i = 0; i < 8; ++i)
+	{
+		float x, z;
+		if (!m_route->pickInside(m_random, x, z))
+			return false;
+
+		Vector4 point;
+		if (!m_navMesh->get()->findClosestPointXZ(Vector4(x, position.y(), z, 1.0f), 0.5f, point))
+			continue;
+
+		// Snapped onto the mesh it might have left the outline; or be up on a tree's crown, which
+		// the mesh covers too but which no one walks to.
+		if (!m_route->inside(point.x(), point.z()))
+			continue;
+		if (point.y() < m_route->getMinY() - 5.0f || point.y() > m_route->getMaxY() + 5.0f)
+			continue;
+
+		outPoint = point;
+		return true;
+	}
+	return false;
 }
 
 void NpcComponent::strike(world::Entity* target, float deltaTime)

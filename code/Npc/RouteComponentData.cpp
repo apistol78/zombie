@@ -12,16 +12,17 @@
 #include "Core/Serialization/AttributeUnit.h"
 #include "Core/Serialization/ISerializer.h"
 #include "Core/Serialization/Member.h"
+#include "Core/Serialization/MemberEnum.h"
 #include "Npc/RouteComponent.h"
 
 namespace zombie
 {
 
-T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.RouteComponentData", 0, RouteComponentData, world::IEntityComponentData)
+T_IMPLEMENT_RTTI_EDIT_CLASS(L"zombie.RouteComponentData", 1, RouteComponentData, world::IEntityComponentData)
 
 Ref< RouteComponent > RouteComponentData::createComponent() const
 {
-	return new RouteComponent(m_loop, m_pause);
+	return new RouteComponent(m_mode, m_pause);
 }
 
 int32_t RouteComponentData::getOrdinal() const
@@ -35,7 +36,22 @@ void RouteComponentData::setTransform(const world::EntityData* owner, const Tran
 
 void RouteComponentData::serialize(ISerializer& s)
 {
-	s >> Member< bool >(L"loop", m_loop);
+	if (s.getVersion< RouteComponentData >() >= 1)
+	{
+		const MemberEnum< RouteMode >::Key c_RouteMode_Keys[] = {
+			{ L"Path", RouteMode::Path },
+			{ L"Loop", RouteMode::Loop },
+			{ L"Enclosure", RouteMode::Enclosure },
+			{ 0 }
+		};
+		s >> MemberEnum< RouteMode >(L"mode", m_mode, c_RouteMode_Keys);
+	}
+	else
+	{
+		bool loop = false;
+		s >> Member< bool >(L"loop", loop);
+		m_mode = loop ? RouteMode::Loop : RouteMode::Path;
+	}
 	s >> Member< float >(L"pause", m_pause, AttributeRange(0.0f) | AttributeUnit(UnitType::Seconds));
 }
 

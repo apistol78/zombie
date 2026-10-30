@@ -296,7 +296,7 @@ void NpcWorldComponent::drawRoutes() const
 			m_debug->line(points[i - 1] + c_routeLift, points[i] + c_routeLift, c_routeWidth, c_routeColor);
 			m_debug->point(points[i] + c_routeLift, c_routeNodeSize, c_routeColor);
 		}
-		if (it.second->getLoop() && points.size() > 2)
+		if (it.second->getMode() != RouteMode::Path && points.size() > 2)
 			m_debug->line(points.back() + c_routeLift, points[0] + c_routeLift, c_routeWidth, c_routeColor);
 	}
 }

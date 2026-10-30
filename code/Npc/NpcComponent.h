@@ -239,7 +239,7 @@ protected:
 	float m_repathTimer = 0.0f;
 	Ref< ai::MoveQueryResult > m_pathResult;
 	Ref< ai::MoveQuery > m_pathQuery;
-	float m_spawnDelay = 0.0f;
+	bool m_rising = false;
 	bool m_haveCoastStep = false;
 	Vector4 m_coastStep = Vector4::zero();
 
@@ -276,6 +276,9 @@ protected:
 	int32_t m_routeIndex = 0;
 	int32_t m_routeDir = 1;
 	float m_routeWait = 0.0f;
+	bool m_haveRoutePoint = false;
+	Vector4 m_routePoint = Vector4::origo();
+	float m_routeGiveUp = 0.0f;
 
 	/*! Read who it is, once; false until the world's settings are there. */
 	bool readStats();
@@ -332,7 +335,7 @@ protected:
 	/*! Velocity which keeps a step on the navigation mesh. */
 	void onMesh(const Vector4& position, float vx, float vz, float& outVx, float& outVz) const;
 
-	/*! Walk one frame; false while held by the spawn delay, outMoving if it moved. */
+	/*! Walk one frame; false while still rising, outMoving if it moved. */
 	bool drive(const Vector4& position, const Vector4& playerPosition, float targetX, float targetZ, float speed, const Vector4* face, float faceRange, world::Entity* engaged, float deltaTime, bool& outMoving);
 
 	void poseState(Pose pose);
@@ -361,8 +364,20 @@ protected:
 	/*! Route given, resolved and joined at its nearest waypoint; false if none. */
 	bool route();
 
+	/*! Waypoint after index, turning back at the ends of a route which does not loop. */
+	void routeNext(int32_t& index, int32_t& dir) const;
+
+	/*! Back on the route after being called away from it, at the nearest waypoint ahead of where it left. */
+	void routeRejoin(const Vector4& position);
+
 	/*! Waypoint walked to, and whether it is waiting at one. */
 	Vector4 routeStep(const Vector4& position, float deltaTime, bool& outWaiting);
+
+	/*! Spot within the enclosure walked to, and whether it is waiting at one. */
+	Vector4 enclosureStep(const Vector4& position, float deltaTime, bool& outWaiting);
+
+	/*! A random spot within the enclosure, on the navigation mesh; false if none was found. */
+	bool enclosurePoint(const Vector4& position, Vector4& outPoint);
 
 	void strike(world::Entity* target, float deltaTime);
 

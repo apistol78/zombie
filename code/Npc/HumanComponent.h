@@ -83,6 +83,7 @@ private:
 	Vector4 m_wanderTarget = Vector4::origo();
 	bool m_havePost = false;
 	Vector4 m_post = Vector4::origo();
+	Vector4 m_fightFrom = Vector4::origo();
 	float m_aheadX = 0.0f;
 	float m_aheadZ = 1.0f;
 	int32_t m_lodPhase = 0;
@@ -115,6 +116,9 @@ private:
 	float m_strikeArc = 0.0f;
 	float m_lodNear = 0.0f;
 	float m_lodFar = 0.0f;
+
+	/*! Too far from where the fight started to chase anything at. */
+	bool strayed(const Vector4& at) const;
 
 	/*! Fight or flee from foe. */
 	void face(world::Entity* foe, float distance, float threat, bool provoked);

@@ -34,6 +34,7 @@ EnemyComponent::EnemyComponent(const Guid& route)
 :	NpcComponent(route)
 {
 	m_defaultClass = L"braindead";
+	m_rising = true;
 }
 
 void EnemyComponent::update(const world::UpdateParams& update)
@@ -319,10 +320,13 @@ void EnemyComponent::readSettings(const PropertyGroup* settings)
 	m_investigateSpeed = settingNumber(enemy, L"investigateSpeed", 0.0f) * pace;
 	m_topSpeed = m_attackSpeed;
 
+	// Only the undead drift off their steering; the living walk where they mean to.
+	m_wanderAngle = settingNumber(enemy, L"wanderAngle", 0.0f);
+	m_wanderTime = settingNumber(enemy, L"wanderTime", 0.0f);
+
 	m_sightRange = settingNumber(enemy, L"sightRange", 0.0f);
 	m_attackMemory = settingNumber(enemy, L"attackMemory", 0.0f);
 	m_spawnHunt = settingNumber(enemy, L"spawnHunt", 0.0f);
-	m_spawnDelay = settingNumber(enemy, L"spawnDelay", 0.0f);
 
 	m_frontDot = settingNumber(enemy, L"frontDot", 0.0f);
 	m_frontReleaseDot = settingNumber(enemy, L"frontReleaseDot", 0.0f);

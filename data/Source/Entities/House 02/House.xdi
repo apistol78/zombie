@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.world.EntityData" version="2">
+<object type="traktor.world.EntityData" version="3">
 	<id>{395A7373-D129-46E0-AFCF-E49E042FCF4E}</id>
 	<name>House</name>
 	<state>
 		<visible>true</visible>
 		<dynamic>false</dynamic>
 		<locked>true</locked>
+		<resident>false</resident>
 	</state>
 	<transform>
 		<translation>0, 0, 0, 0</translation>
@@ -16,7 +17,7 @@
 			<mesh>{89FF1372-7FC9-4D93-A551-F44DDEF38C9E}</mesh>
 		</item>
 		<item type="traktor.physics.RigidBodyComponentData" version="1">
-			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="6">
 				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
 					<localTransform>
 						<translation>0, 0, 0, 0</translation>
@@ -34,34 +35,37 @@
 				<friction>0.75</friction>
 				<restitution>0</restitution>
 				<kinematic>false</kinematic>
+				<walkable>true</walkable>
 			</bodyDesc>
 			<eventCollide/>
 			<transformFilter>0</transformFilter>
 		</item>
 		<item type="traktor.world.GroupComponentData">
 			<entityData>
-				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:3">
 					<id>{82DFA33F-954C-264E-810F-FAD8AD1EE942}</id>
 					<name>Door</name>
 					<state>
 						<visible>true</visible>
 						<dynamic>true</dynamic>
 						<locked>false</locked>
+						<resident>false</resident>
 					</state>
 					<transform>
 						<translation>-1.785121, 1.57, -3.98711, 0</translation>
-						<rotation>0, -1, 0, 0</rotation>
+						<rotation>0, 1, 0, -0</rotation>
 					</transform>
 					<components/>
 					<entityData>{12FBE0E2-89EF-43B0-8782-B166F6C98267}</entityData>
 				</item>
-				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:2">
+				<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:3">
 					<id>{A1BD6F13-33B3-3643-BB56-C81909B18BB7}</id>
 					<name>Door</name>
 					<state>
 						<visible>true</visible>
 						<dynamic>true</dynamic>
 						<locked>false</locked>
+						<resident>false</resident>
 					</state>
 					<transform>
 						<translation>3.010344, 1.592401, 4.020282, 0</translation>

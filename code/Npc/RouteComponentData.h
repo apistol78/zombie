@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Core/Ref.h"
+#include "Npc/RouteComponent.h"
 #include "World/IEntityComponentData.h"
 
 // import/export mechanism.
@@ -24,12 +25,11 @@ namespace zombie
 
 using namespace traktor;
 
-class RouteComponent;
-
 /*! Route component data.
  * \ingroup Zombie
  *
  * Makes the owner entity a route for characters to walk; its waypoints are the children of its group.
+ * As an enclosure the waypoints outline an area instead, in order around it.
  */
 class T_DLLCLASS RouteComponentData : public world::IEntityComponentData
 {
@@ -44,14 +44,13 @@ public:
 
 	virtual void serialize(ISerializer& s) override final;
 
-	/*! Go round from the last point to the first, rather than back again. */
-	bool getLoop() const { return m_loop; }
+	RouteMode getMode() const { return m_mode; }
 
 	/*! Seconds stood at each point. */
 	float getPause() const { return m_pause; }
 
 private:
-	bool m_loop = false;
+	RouteMode m_mode = RouteMode::Path;
 	float m_pause = 0.0f;
 };
 

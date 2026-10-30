@@ -132,24 +132,17 @@ void HumanComponent::update(const world::UpdateParams& update)
 	if (m_random.nextFloat() < chance)
 		perceive(position, playerPosition, pdist);
 
-	// A fight ends when the target is down, forgotten, chased too far from home or a player forgiven.
+	// A fight ends when the target is down, forgotten, chased too far from where it started or a player forgiven.
 	if (m_state == State::Fight)
 	{
 		m_seenTimer -= deltaTime;
-		bool strayed = false;
-		if (m_target)
-		{
-			const Vector4 targetPosition = positionOf(m_target);
-			const float hx = targetPosition.x() - m_post.x();
-			const float hz = targetPosition.z() - m_post.z();
-			strayed = hx * hx + hz * hz > m_chaseLeash * m_chaseLeash;
-		}
-		if (!m_target || m_seenTimer <= 0.0f || strayed || (m_target == m_player && !hatesPlayer()))
+		if (!m_target || m_seenTimer <= 0.0f || strayed(positionOf(m_target)) || (m_target == m_player && !hatesPlayer()))
 		{
 			m_state = State::Routine;
 			m_target = nullptr;
 			m_repathTimer = 0.0f;
 			dropPath();
+			routeRejoin(position);
 		}
 	}
 	else if (m_state == State::Flee)
@@ -162,6 +155,7 @@ void HumanComponent::update(const world::UpdateParams& update)
 			m_haveFleeFrom = false;
 			m_repathTimer = 0.0f;
 			dropPath();
+			routeRejoin(position);
 		}
 	}
 
@@ -339,6 +333,13 @@ void HumanComponent::readSettings(const PropertyGroup* settings)
 	m_lodFar = settingNumber(npc, L"lodFar", 0.0f);
 }
 
+bool HumanComponent::strayed(const Vector4& at) const
+{
+	const float hx = at.x() - m_fightFrom.x();
+	const float hz = at.z() - m_fightFrom.z();
+	return hx * hx + hz * hz > m_chaseLeash * m_chaseLeash;
+}
+
 void HumanComponent::face(world::Entity* foe, float distance, float threat, bool provoked)
 {
 	// The one faced counts whatever its distance.
@@ -364,8 +365,14 @@ void HumanComponent::face(world::Entity* foe, float distance, float threat, bool
 		const bool fighting = m_state == State::Fight && m_target == foe;
 		if (!fighting && !provoked && distance > m_engageRange)
 			return;
+
+		// Not started only to be let go at once; that would drop the path it walks every time it looks.
+		if (!fighting && distance > m_chaseLeash)
+			return;
 		if (!fighting)
 		{
+			// Leashed to where it stands as the fight starts, wherever that is along its day.
+			m_fightFrom = where();
 			setMood(L"angry");
 			m_repathTimer = 0.0f;
 		}

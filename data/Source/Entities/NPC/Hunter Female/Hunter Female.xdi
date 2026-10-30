@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.world.EntityData" version="2">
+<object type="traktor.world.EntityData" version="3">
 	<id>{F7B09B79-2333-4986-B89B-CBC723994CFF}</id>
 	<name>Npc</name>
 	<state>
 		<visible>true</visible>
 		<dynamic>true</dynamic>
 		<locked>false</locked>
+		<resident>false</resident>
 	</state>
 	<transform>
 		<translation>0, 0, 0, 0</translation>
@@ -93,7 +94,7 @@
 				<item>{551BADB9-AF11-41BF-98A9-44A9391D0D30}</item>
 			</traceIgnore>
 			<radius>0.36</radius>
-			<height>2</height>
+			<height>1.78</height>
 			<step>0.6</step>
 			<jumpImpulse>4.5</jumpImpulse>
 			<maxVelocity>3</maxVelocity>

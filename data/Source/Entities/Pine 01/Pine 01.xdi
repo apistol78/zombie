@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.world.EntityData" version="2">
+<object type="traktor.world.EntityData" version="3">
 	<id>{D019FD7F-5576-4F44-8BA2-94A9B694A853}</id>
 	<name>Pine 01</name>
 	<state>
 		<visible>true</visible>
 		<dynamic>false</dynamic>
 		<locked>false</locked>
+		<resident>false</resident>
 	</state>
 	<transform>
 		<translation>0, 0, 0, 0</translation>
@@ -16,7 +17,7 @@
 			<mesh>{33DA0995-B812-443A-B1FC-2A9B874F703E}</mesh>
 		</item>
 		<item type="traktor.physics.RigidBodyComponentData" version="1">
-			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="6">
 				<shape type="traktor.physics.CylinderShapeDesc" version="6,traktor.physics.ShapeDesc:6">
 					<localTransform>
 						<translation>0, 10, 0, 0</translation>
@@ -36,6 +37,7 @@
 				<friction>0.75</friction>
 				<restitution>0</restitution>
 				<kinematic>false</kinematic>
+				<walkable>false</walkable>
 			</bodyDesc>
 			<eventCollide/>
 			<transformFilter>0</transformFilter>

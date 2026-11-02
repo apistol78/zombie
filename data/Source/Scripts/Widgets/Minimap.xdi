@@ -9,7 +9,8 @@ import(traktor)
 --
 -- The map in the top left corner: the ground around the player, north up, out to
 -- RADIUS metres either side, with the player's arrow fixed in the middle and the
--- world moving under it -- a handful of landmarks, and the followed quest's waypoint.
+-- world moving under it -- the world's minimap texture, a handful of landmarks, and
+-- the followed quest's waypoint.
 --
 -- What lies beyond the edge is not drawn, except the quest waypoint, which waits at
 -- the edge in its direction so the map still says which way to go. There is no
@@ -27,6 +28,7 @@ import(traktor)
 -- Depth order comes from creation order, which is why :build() creates in exactly
 -- this sequence and the per-frame setters never create anything:
 --
+--   map           the ground (zombie.MinimapWorldComponent), when the scene has one
 --   landmarks     a pictogram of the building, with its name lettered under it
 --   quest         the followed quest's waypoint (Scripts/Quests), when it has one here
 --   player        on top, so it is never lost under a marker
@@ -55,6 +57,8 @@ local GLYPHS < const > = { "chapel", "tower", "altar", "mark" }
 local GLYPH_DEFAULT < const > = "mark"
 
 local EDGE_INSET < const > = 3       -- how far inside the bezel a clamped quest pin sits
+local PAPER_RULE < const > = 4.5     -- MM_RULE; the sheet's paper fills out to the outer rule
+local MAP_ALPHA < const > = 0.9      -- the map lets a little of the smoke under it through
 
 -- How far the map reaches from the player, to each edge of the face (m). Twice this
 -- across, so 60 shows the village and a little of the forest round it.
@@ -89,13 +93,21 @@ end
 function Minimap:setRadius(r)
 	self._radius = math.max(r, 1.0)
 	self._scale = FACE * 0.5 / self._radius
+	if self._map ~= nil then
+		self:_scaleMap()
+	end
 	return self
 end
 
 -- Instantiate every marker the scene needs, once, in the depth order documented
 -- above. landmarks is a list of { x = , z = , glyph = }; they never move in the
 -- world, but the map moves under them, so :setView places them every frame.
-function Minimap:build(landmarks)
+-- minimap is the world's zombie.MinimapWorldComponent, or nil for markers on smoke.
+function Minimap:build(landmarks, minimap)
+	if minimap ~= nil and minimap.texture ~= nil then
+		self:_buildMap(minimap)
+	end
+
 	for _, l in ipairs(landmarks or {}) do
 		local mc < const > = self:_create("MC_MapLandmark")
 		mc.visible = false
@@ -133,6 +145,12 @@ end
 function Minimap:setView(x, z, heading)
 	self._cx = x
 	self._cz = z
+
+	if self._map ~= nil then
+		local mx, my = self:_project(self._mapX0, self._mapZ1)
+		self._map.X = mx
+		self._map.Y = my
+	end
 
 	for _, l in ipairs(self._landmarks) do
 		local lx, ly = self:_project(l.x, l.z)
@@ -198,12 +216,51 @@ function Minimap:_initialize(parent, mc)
 	self._halign = Widget.ALIGN_LEFT
 	self._valign = Widget.ALIGN_TOP
 
+	self._map = nil
 	self._landmarks = {}
 	self._quest = nil
 	self._player = nil
 	self._cx = 0.0
 	self._cz = 0.0
 	self:setRadius(RADIUS)
+end
+
+-- The ground: the world's minimap texture, north up over its bounds -- U along +X and V
+-- down along -Z, exactly as _project lays the world out, so its top left corner is placed
+-- like any marker and it needs nothing else per frame. It is far larger than the face, so
+-- it is masked to it with a copy of the sheet's paper scaled from the outer rule onto the
+-- face. (Spark masks with the stencil; the markers could be clipped the same way, but each
+-- would need a mask of its own.)
+function Minimap:_buildMap(minimap)
+	local paper < const > = self._mc:getMember("paper")
+	assert(paper ~= nil, "Minimap; no paper on the sheet to mask the map with")
+
+	local k < const > = FACE / (W - PAPER_RULE * 2)
+	local mask < const > = paper:duplicateMovieClip("mapMask", Widget._determineDepth(self._mc, false))
+	mask.cacheAsBitmap = false
+	mask.xScale = k * 100.0
+	mask.yScale = k * 100.0
+	mask.X = BEZEL - PAPER_RULE * k
+	mask.Y = BEZEL - PAPER_RULE * k
+
+	local bitmap < const > = traktor.spark.BitmapTexture(minimap.texture)
+	self._map = Widget._createEmptyResource(self)
+	self._map:attachBitmap(bitmap, 1)
+	self._map.alpha = MAP_ALPHA
+	self._map.mask = mask
+
+	local b < const > = minimap.bounds
+	self._mapX0 = b.min.x
+	self._mapZ1 = b.max.y
+	self._mapTexelX = (b.max.x - b.min.x) / bitmap.width
+	self._mapTexelZ = (b.max.y - b.min.y) / bitmap.height
+	self:_scaleMap()
+end
+
+-- The map's pixels per texel: the face's pixels per metre times the texture's metres per texel.
+function Minimap:_scaleMap()
+	self._map.xScale = self._scale * self._mapTexelX * 100.0
+	self._map.yScale = self._scale * self._mapTexelZ * 100.0
 end
 
 function Minimap:_create(resource)

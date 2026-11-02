@@ -2019,8 +2019,9 @@ function Main:_placeCutsceneCamera()
 	)
 end
 
--- Give the minimap its markers. Once only, off the world. The map is the ground around
--- the player (Scripts/Widgets/Minimap), so there is nothing to fit: only what to draw.
+-- Give the minimap its ground and markers. Once only, off the world. The map is the ground
+-- around the player (Scripts/Widgets/Minimap), so there is nothing to fit: only what to draw.
+-- The ground is the scene's minimap texture (zombie.MinimapWorldComponent), if it has one.
 --
 -- The landmarks are whatever in the world says it is one (zombie.LandmarkComponent): the
 -- chapel, the towers, the altar -- the biggest monument in the cemetery and so the thing to
@@ -2028,8 +2029,8 @@ end
 -- underneath, one child sprite of MC_MapLandmark each (tools/gen_hud_svg.py); a landmark
 -- without one of its own is drawn as a plain mark with no name.
 --
--- Returns false in a scene with nothing to map -- no landmarks -- which leaves the
--- widget hidden and stops _updateMinimap doing anything.
+-- Returns false in a scene with nothing to map -- no minimap texture and no landmarks --
+-- which leaves the widget hidden and stops _updateMinimap doing anything.
 function Main:_buildMinimap(world)
 	local marks = {}
 	local entities < const > = world:getEntities()
@@ -2042,11 +2043,12 @@ function Main:_buildMinimap(world)
 		end
 	end
 
-	if #marks == 0 then
+	local minimap < const > = world:getComponent(zombie.MinimapWorldComponent)
+	if #marks == 0 and minimap == nil then
 		return false
 	end
 
-	self._minimap:build(marks)
+	self._minimap:build(marks, minimap)
 	return true
 end
 

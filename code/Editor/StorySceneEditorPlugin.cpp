@@ -13,6 +13,7 @@
 #include "Editor/StorySceneEditorUIExtension.h"
 #include "Fixtures/FixtureEntityFactory.h"
 #include "Interaction/InteractionEntityFactory.h"
+#include "Minimap/MinimapEntityFactory.h"
 #include "StoryEntityFactory.h"
 #include "StoryResourceFactory.h"
 #include "Ui/Command.h"
@@ -47,6 +48,7 @@ void StorySceneEditorPlugin::createEntityFactories(scene::SceneEditorContext* co
 	outEntityFactories.push_back(new StoryEntityFactory());
 	outEntityFactories.push_back(new InteractionEntityFactory());
 	outEntityFactories.push_back(new FixtureEntityFactory());
+	outEntityFactories.push_back(new MinimapEntityFactory());
 }
 
 void StorySceneEditorPlugin::createEntityRenderers(

@@ -17,6 +17,12 @@
 #	include "Editor/DialogResponseAsset.h"
 #	include "Editor/DialogStartAsset.h"
 #	include "Editor/ItemPipeline.h"
+#	include "Editor/MinimapAttributesEntityComponentData.h"
+#	include "Editor/MinimapAttributesEntityComponentPipeline.h"
+#	include "Editor/MinimapTextureAsset.h"
+#	include "Editor/MinimapTextureAssetEditorPageFactory.h"
+#	include "Editor/MinimapTexturePipeline.h"
+#	include "Editor/MinimapWorldComponentPipeline.h"
 #	include "Editor/QuestClipboardData.h"
 #	include "Editor/QuestEditorPageFactory.h"
 #	include "Editor/StoryComponentPipeline.h"
@@ -37,6 +43,12 @@ extern "C" void __module__Zombie_Editor()
 	T_FORCE_LINK_REF(DialogResponseAsset);
 	T_FORCE_LINK_REF(DialogStartAsset);
 	T_FORCE_LINK_REF(ItemPipeline);
+	T_FORCE_LINK_REF(MinimapAttributesEntityComponentData);
+	T_FORCE_LINK_REF(MinimapAttributesEntityComponentPipeline);
+	T_FORCE_LINK_REF(MinimapTextureAsset);
+	T_FORCE_LINK_REF(MinimapTextureAssetEditorPageFactory);
+	T_FORCE_LINK_REF(MinimapTexturePipeline);
+	T_FORCE_LINK_REF(MinimapWorldComponentPipeline);
 	T_FORCE_LINK_REF(QuestClipboardData);
 	T_FORCE_LINK_REF(QuestEditorPageFactory);
 	T_FORCE_LINK_REF(StoryComponentPipeline);

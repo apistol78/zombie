@@ -43,6 +43,9 @@
 #	include "ItemContainerComponentData.h"
 #	include "ItemData.h"
 #	include "ItemPickupComponentData.h"
+#	include "Minimap/MinimapClassFactory.h"
+#	include "Minimap/MinimapEntityFactory.h"
+#	include "Minimap/MinimapWorldComponentData.h"
 #	include "Npc/NpcClassFactory.h"
 #	include "Npc/NpcComponentData.h"
 #	include "Npc/NpcEntityFactory.h"
@@ -124,6 +127,9 @@ extern "C" void __module__Zombie()
 	T_FORCE_LINK_REF(LandmarkComponentData);
 	T_FORCE_LINK_REF(LeverComponentData);
 	T_FORCE_LINK_REF(LockComponentData);
+	T_FORCE_LINK_REF(MinimapClassFactory);
+	T_FORCE_LINK_REF(MinimapEntityFactory);
+	T_FORCE_LINK_REF(MinimapWorldComponentData);
 	T_FORCE_LINK_REF(NpcClassFactory);
 	T_FORCE_LINK_REF(NpcComponentData);
 	T_FORCE_LINK_REF(NpcEntityFactory);

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object type="traktor.world.EntityData" version="3">
+	<id>{74223C62-68D9-CA43-97F3-7CDF2DE74017}</id>
+	<name>Vine 01</name>
+	<state>
+		<visible>true</visible>
+		<dynamic>false</dynamic>
+		<locked>false</locked>
+		<resident>false</resident>
+	</state>
+	<transform>
+		<translation>0, 0, 0, 0</translation>
+		<rotation>0, 0, 0, 1</rotation>
+	</transform>
+	<components>
+		<item type="traktor.mesh.MeshComponentData" version="1">
+			<mesh>{E99C9EC9-F372-F742-93FD-7FB2E0A46413}</mesh>
+		</item>
+		<item type="traktor.physics.RigidBodyComponentData" version="1">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="6">
+				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
+					<localTransform>
+						<translation>0, 0, 0, 0</translation>
+						<rotation>0, 0, 0, 1</rotation>
+					</localTransform>
+					<collisionGroup>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+					</collisionGroup>
+					<collisionMask>
+						<item>{09CB1141-1924-3349-934A-CEB9728D7A61}</item>
+						<item>{54CA99BF-4F5F-4DD5-97E4-33BB23E1E784}</item>
+						<item>{551BADB9-AF11-41BF-98A9-44A9391D0D30}</item>
+						<item>{F9805131-50C2-504C-9421-13C99E44616C}</item>
+						<item>{FD7626B1-645F-4A36-A534-B4598A1E8A2E}</item>
+					</collisionMask>
+					<material>0</material>
+					<mesh>{00BF2E6B-4D29-1B4A-B863-18AA165E8B78}</mesh>
+				</shape>
+				<friction>0.75</friction>
+				<restitution>0</restitution>
+				<kinematic>false</kinematic>
+				<walkable>true</walkable>
+			</bodyDesc>
+			<eventCollide/>
+			<transformFilter>0</transformFilter>
+		</item>
+	</components>
+</object>

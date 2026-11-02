@@ -27,9 +27,11 @@
 #include "Core/Settings/PropertyString.h"
 #include "Npc/NpcWorldComponent.h"
 #include "Npc/RouteComponent.h"
+#include "Physics/Body.h"
 #include "Physics/PhysicsManager.h"
 #include "Physics/World/Character/AiCharacterComponent.h"
 #include "Physics/World/Character/CharacterComponent.h"
+#include "Physics/World/JointComponent.h"
 #include "Render/Types.h"
 #include "Runtime/Engine/DebugLayer.h"
 #include "World/Entity.h"
@@ -46,12 +48,19 @@ namespace zombie
 	{
 
 const uint32_t c_collisionDefault = 0x00000001;
+const uint32_t c_collisionPushable = 0x00000010;
 
 // How far ahead a step is tested against the navigation mesh (m).
 const float c_navProbe = 0.6f;
 
 // How far round a character the crowd is felt at all (m).
 const float c_crowdRange = 4.0f;
+
+// Room kept between a character and a prop it walks round (m).
+const float c_propClearance = 0.5f;
+
+// A prop entirely this far above a character's feet is walked under (m).
+const float c_propHeight = 1.8f;
 
 // Further from the player than this a head is left alone (m).
 const float c_lookRange = 25.0f;
@@ -449,6 +458,8 @@ bool NpcComponent::readStats()
 	m_faceTurnRate = settingNumber(enemy, L"faceTurnRate", 0.0f);
 	m_avoidRadius = settingNumber(enemy, L"avoidRadius", 0.0f);
 	m_separation = settingNumber(enemy, L"separation", 0.0f);
+	m_propAvoid = settingNumber(enemy, L"propAvoid", 0.0f);
+	m_propRange = settingNumber(enemy, L"propRange", 0.0f);
 	m_playerSpace = settingNumber(enemy, L"playerSpace", 0.0f);
 	m_personalSpace = m_playerSpace * 0.5f;
 	m_overlapSpace = settingNumber(enemy, L"overlapSpace", 0.0f);
@@ -854,6 +865,67 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	{
 		targetX = 0.0f;
 		targetZ = 0.0f;
+	}
+
+	// Round the first pushable prop in the way rather than through it; jointed ones, such as doors, are pushed open.
+	physics::PhysicsManager* physicsManager = m_npcWorld->getPhysicsManager();
+	if (tl > 0.001f && m_propAvoid > 0.0f && m_propRange > 0.0f && physicsManager)
+	{
+		RefArray< physics::Body > props;
+		physicsManager->querySphere(position, m_propRange + c_propClearance, physics::QueryFilter(c_collisionPushable), physics::PhysicsManager::QtDynamic, props);
+
+		float nearest = m_propRange;
+		float dodge = 0.0f;
+		float side = 0.0f;
+		for (auto prop : props)
+		{
+			auto entity = dynamic_type_cast< world::Entity* >(prop->getOwner());
+			if (!entity || entity->getComponent< physics::JointComponent >())
+				continue;
+
+			const Aabb3 bounds = entity->getBoundingBox();
+			if (bounds.empty())
+				continue;
+
+			// Clearance-expanded bounds measured along the steering (f), across it (l) and up (y).
+			Vector4 corners[8];
+			bounds.expand(Scalar(c_propClearance)).getExtents(corners);
+			const Transform transform = prop->getTransform();
+			float f0 = std::numeric_limits< float >::max(), f1 = -f0;
+			float l0 = f0, l1 = -f0;
+			float y0 = f0, y1 = -f0;
+			for (const auto& corner : corners)
+			{
+				const Vector4 c = transform * corner;
+				const float rx = c.x() - px;
+				const float rz = c.z() - pz;
+				const float f = rx * targetX + rz * targetZ;
+				const float l = rx * targetZ - rz * targetX;
+				f0 = std::min(f0, f);
+				f1 = std::max(f1, f);
+				l0 = std::min(l0, l);
+				l1 = std::max(l1, l);
+				y0 = std::min(y0, (float)c.y());
+				y1 = std::max(y1, (float)c.y());
+			}
+			if (f1 <= 0.0f || f0 >= nearest || l0 >= 0.0f || l1 <= 0.0f || y1 <= py || y0 >= py + c_propHeight)
+				continue;
+
+			// Out by the nearer side, harder the closer it is and the more squarely it is met.
+			nearest = f0;
+			side = (l1 < -l0) ? 1.0f : -1.0f;
+			dodge = (1.0f - std::max(f0, 0.0f) / m_propRange) * std::min(l1, -l0) / ((l1 - l0) * 0.5f);
+		}
+
+		if (dodge > 0.0f)
+		{
+			const float k = side * dodge * m_propAvoid;
+			const float ax = targetX + targetZ * k;
+			const float az = targetZ - targetX * k;
+			const float al = std::sqrt(ax * ax + az * az);
+			targetX = ax / al;
+			targetZ = az / al;
+		}
 	}
 
 	// Drift off the steering in a slow random walk, so a crowd in a tight space does not settle into circling.

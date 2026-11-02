@@ -200,6 +200,8 @@ protected:
 	float m_faceTurnRate = 0.0f;
 	float m_avoidRadius = 0.0f;
 	float m_separation = 0.0f;
+	float m_propAvoid = 0.0f;
+	float m_propRange = 0.0f;
 	float m_playerSpace = 0.0f;
 	float m_personalSpace = 0.0f;
 	float m_overlapSpace = 0.0f;

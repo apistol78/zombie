@@ -8,7 +8,6 @@
  */
 #pragma once
 
-#include "Core/Ref.h"
 #include "Core/Serialization/ISerializable.h"
 #include "Resource/Id.h"
 
@@ -22,13 +21,6 @@
 #	define T_DLLCLASS T_DLLIMPORT
 #endif
 
-namespace traktor
-{
-
-class PropertyGroup;
-
-}
-
 namespace zombie
 {
 
@@ -36,7 +28,7 @@ using namespace traktor;
 
 class DialogData;
 
-/*! Actor; a character's identity: its name, dialog and properties for the game.
+/*! Actor; a character's identity: its name, dialog and stats for the game.
  * \ingroup Zombie
  */
 class T_DLLCLASS ActorData : public ISerializable
@@ -44,6 +36,28 @@ class T_DLLCLASS ActorData : public ISerializable
 	T_RTTI_CLASS;
 
 public:
+	enum class Class
+	{
+		Wanderer,
+		Worker,
+		Merchant
+	};
+
+	enum class Faction
+	{
+		Villager,
+		Bandit,
+		Undead
+	};
+
+	enum class Mood
+	{
+		Neutral,
+		Happy,
+		Angry,
+		Scared
+	};
+
 	const std::wstring& getName() const { return m_name; }
 
 	void setName(const std::wstring& name) { m_name = name; }
@@ -53,17 +67,30 @@ public:
 
 	void setDialog(const resource::Id< DialogData >& dialog) { m_dialog = dialog; }
 
-	/*! Properties for the game, null if none. */
-	const PropertyGroup* getProperties() const { return m_properties; }
+	Class getClass() const { return m_class; }
 
-	void setProperties(const PropertyGroup* properties) { m_properties = properties; }
+	int32_t getAge() const { return m_age; }
+
+	/*! Courage, 0 flees at once and 1 never. */
+	float getCourage() const { return m_courage; }
+
+	Faction getFaction() const { return m_faction; }
+
+	float getHealth() const { return m_health; }
+
+	Mood getMood() const { return m_mood; }
 
 	virtual void serialize(ISerializer& s) override final;
 
 private:
 	std::wstring m_name;
 	resource::Id< DialogData > m_dialog;
-	Ref< const PropertyGroup > m_properties;
+	Class m_class = Class::Wanderer;
+	int32_t m_age = 35;
+	float m_courage = 0.5f;
+	Faction m_faction = Faction::Villager;
+	float m_health = 250.0f;
+	Mood m_mood = Mood::Neutral;
 };
 
 }

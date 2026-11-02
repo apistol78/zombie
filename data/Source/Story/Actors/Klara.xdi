@@ -1,21 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="zombie.ActorData" version="1">
+<object type="zombie.ActorData" version="2">
 	<name>KLARA</name>
 	<dialog>{D1A20000-0000-4000-8000-000000000203}</dialog>
-	<properties type="traktor.PropertyGroup">
-		<value>
-			<item>
-				<first>age</first>
-				<second type="traktor.PropertyString">
-					<value>71</value>
-				</second>
-			</item>
-			<item>
-				<first>class</first>
-				<second type="traktor.PropertyString">
-					<value>wanderer</value>
-				</second>
-			</item>
-		</value>
-	</properties>
+	<class>Wanderer</class>
+	<age>71</age>
+	<courage>0.41</courage>
+	<faction>Villager</faction>
+	<health>250</health>
+	<mood>Neutral</mood>
 </object>

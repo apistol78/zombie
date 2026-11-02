@@ -9,6 +9,7 @@
 #include "Npc/NpcComponent.h"
 
 #include "ActorComponent.h"
+#include "ActorData.h"
 #include "Ai/MoveQuery.h"
 #include "Ai/MoveQueryResult.h"
 #include "Ai/NavMesh.h"
@@ -115,6 +116,50 @@ float ageFactor(float age, float youngAge, float oldAge)
 	else if (age > oldAge)
 		return std::min(1.0f, (age - oldAge) / (90.0f - oldAge));
 	return 0.0f;
+}
+
+/*! Name of an actor's class in the settings' "classes" group. */
+const wchar_t* classKey(ActorData::Class clazz)
+{
+	switch (clazz)
+	{
+	case ActorData::Class::Worker:
+		return L"worker";
+	case ActorData::Class::Merchant:
+		return L"merchant";
+	default:
+		return L"wanderer";
+	}
+}
+
+/*! Name of an actor's faction in the settings' "factions" group. */
+const wchar_t* factionKey(ActorData::Faction faction)
+{
+	switch (faction)
+	{
+	case ActorData::Faction::Bandit:
+		return L"bandit";
+	case ActorData::Faction::Undead:
+		return L"undead";
+	default:
+		return L"villager";
+	}
+}
+
+/*! Name of an actor's mood, as the brains and scripts know it. */
+const wchar_t* moodKey(ActorData::Mood mood)
+{
+	switch (mood)
+	{
+	case ActorData::Mood::Happy:
+		return L"happy";
+	case ActorData::Mood::Angry:
+		return L"angry";
+	case ActorData::Mood::Scared:
+		return L"scared";
+	default:
+		return L"neutral";
+	}
 }
 
 float wrapAngle(float angle)
@@ -348,35 +393,33 @@ bool NpcComponent::readStats()
 
 	m_statsRead = true;
 
-	auto clazz = dynamic_type_cast< const PropertyString* >(actorProperty(L"class"));
-	m_class = clazz ? PropertyString::get(clazz) : m_defaultClass;
-	m_faction = statString(npc, L"faction");
-
 	const ActorComponent* actor = m_owner->getComponent< ActorComponent >();
+	const ActorData* actorData = actor ? actor->getActorData() : nullptr;
 	m_name = actor ? actor->getName() : L"";
 
-	bool given;
-	m_maxHealth = statNumber(npc, L"health", given);
+	m_class = actorData ? classKey(actorData->getClass()) : m_defaultClass;
+	m_faction = actorData ? factionKey(actorData->getFaction()) : statString(npc, L"faction");
+
+	m_maxHealth = actorData ? actorData->getHealth() : statNumber(npc, L"health");
 	m_health = m_maxHealth;
 
-	const float aged = ageFactor(statNumber(npc, L"age", given), settingNumber(npc, L"youngAge", 14.0f), settingNumber(npc, L"oldAge", 60.0f));
-	float courage = statNumber(npc, L"courage", given);
-	if (!given)
-		courage -= settingNumber(npc, L"ageCourage", 0.0f) * aged;
+	const float age = actorData ? (float)actorData->getAge() : statNumber(npc, L"age");
+	const float aged = ageFactor(age, settingNumber(npc, L"youngAge", 14.0f), settingNumber(npc, L"oldAge", 60.0f));
+	const float courage = actorData ? actorData->getCourage() : statNumber(npc, L"courage") - settingNumber(npc, L"ageCourage", 0.0f) * aged;
 	m_courage = clamp(courage, 0.0f, 1.0f);
 
-	m_baseMood = statString(npc, L"mood");
+	m_baseMood = actorData ? moodKey(actorData->getMood()) : statString(npc, L"mood");
 	m_mood = m_baseMood;
 	m_moodTimer = 0.0f;
-	m_hostility = statNumber(npc, L"hostility", given);
+	m_hostility = statNumber(npc, L"hostility");
 	m_baseHostility = m_hostility;
 
-	m_reach = statNumber(npc, L"reach", given);
-	m_strikeDamage = statNumber(npc, L"strikeDamage", given);
-	m_strikeInterval = statNumber(npc, L"strikeInterval", given);
+	m_reach = statNumber(npc, L"reach");
+	m_strikeDamage = statNumber(npc, L"strikeDamage");
+	m_strikeInterval = statNumber(npc, L"strikeInterval");
 	const float pace = 1.0f - settingNumber(npc, L"agePace", 0.0f) * aged;
-	m_walkSpeed = statNumber(npc, L"walkSpeed", given) * pace;
-	m_runSpeed = statNumber(npc, L"runSpeed", given) * pace;
+	m_walkSpeed = statNumber(npc, L"walkSpeed") * pace;
+	m_runSpeed = statNumber(npc, L"runSpeed") * pace;
 
 	if (const PropertyGroup* hated = settingGroup(settingGroup(npc, L"factions"), m_faction))
 	{
@@ -1384,37 +1427,15 @@ std::wstring NpcComponent::settingString(const PropertyGroup* group, const std::
 	return value ? PropertyString::get(value) : defaultValue;
 }
 
-const IPropertyValue* NpcComponent::actorProperty(const std::wstring& name) const
-{
-	const ActorComponent* actor = m_owner->getComponent< ActorComponent >();
-	const PropertyGroup* properties = actor ? actor->getProperties() : nullptr;
-	const IPropertyValue* value = settingValue(properties, name);
-	if (auto text = dynamic_type_cast< const PropertyString* >(value))
-	{
-		if (PropertyString::get(text).empty())
-			return nullptr;
-	}
-	return value;
-}
-
-float NpcComponent::statNumber(const PropertyGroup* npc, const std::wstring& name, bool& outGiven) const
+float NpcComponent::statNumber(const PropertyGroup* npc, const std::wstring& name) const
 {
 	const float defaultValue = settingNumber(settingGroup(npc, L"defaults"), name, 0.0f);
-	if (const IPropertyValue* value = actorProperty(name))
-	{
-		outGiven = true;
-		float number;
-		return numberOf(value, number) ? number : defaultValue;
-	}
-	outGiven = false;
 	const PropertyGroup* tune = settingGroup(settingGroup(npc, L"classes"), m_class);
 	return settingNumber(tune, name, defaultValue);
 }
 
 std::wstring NpcComponent::statString(const PropertyGroup* npc, const std::wstring& name) const
 {
-	if (auto value = dynamic_type_cast< const PropertyString* >(actorProperty(name)))
-		return PropertyString::get(value);
 	const std::wstring defaultValue = settingString(settingGroup(npc, L"defaults"), name, L"");
 	const PropertyGroup* tune = settingGroup(settingGroup(npc, L"classes"), m_class);
 	return settingString(tune, name, defaultValue);

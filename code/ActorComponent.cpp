@@ -56,10 +56,4 @@ std::wstring ActorComponent::getName() const
 	return actorData ? actorData->getName() : L"";
 }
 
-const PropertyGroup* ActorComponent::getProperties() const
-{
-	const ActorData* actorData = getActorData();
-	return actorData ? actorData->getProperties() : nullptr;
-}
-
 }

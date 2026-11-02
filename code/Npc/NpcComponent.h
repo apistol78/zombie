@@ -392,9 +392,7 @@ protected:
 	static std::wstring settingString(const PropertyGroup* group, const std::wstring& name, const std::wstring& defaultValue);
 
 private:
-	const IPropertyValue* actorProperty(const std::wstring& name) const;
-
-	float statNumber(const PropertyGroup* npc, const std::wstring& name, bool& outGiven) const;
+	float statNumber(const PropertyGroup* npc, const std::wstring& name) const;
 
 	std::wstring statString(const PropertyGroup* npc, const std::wstring& name) const;
 };

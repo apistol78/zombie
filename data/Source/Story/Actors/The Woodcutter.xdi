@@ -1,33 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="zombie.ActorData" version="1">
+<object type="zombie.ActorData" version="2">
 	<name>THE WOODCUTTER</name>
 	<dialog>{D1A20000-0000-4000-8000-00000000020B}</dialog>
-	<properties type="traktor.PropertyGroup">
-		<value>
-			<item>
-				<first>age</first>
-				<second type="traktor.PropertyString">
-					<value>38</value>
-				</second>
-			</item>
-			<item>
-				<first>class</first>
-				<second type="traktor.PropertyString">
-					<value>worker</value>
-				</second>
-			</item>
-			<item>
-				<first>courage</first>
-				<second type="traktor.PropertyString">
-					<value>0.8</value>
-				</second>
-			</item>
-			<item>
-				<first>health</first>
-				<second type="traktor.PropertyString">
-					<value>300</value>
-				</second>
-			</item>
-		</value>
-	</properties>
+	<class>Worker</class>
+	<age>38</age>
+	<courage>0.8</courage>
+	<faction>Villager</faction>
+	<health>300</health>
+	<mood>Neutral</mood>
 </object>

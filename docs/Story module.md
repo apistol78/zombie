@@ -123,6 +123,12 @@ class T_DLLCLASS ActorData : public ISerializable     // a character's identity,
 	T_RTTI_CLASS;
 	std::wstring m_name;                             // what the HUD calls them
 	resource::Id< DialogData > m_dialog;             // null = the story's default dialog
+	Class m_class;                                   // Wanderer, Worker or Merchant
+	int32_t m_age;
+	float m_courage;
+	Faction m_faction;                               // Villager, Bandit or Undead
+	float m_health;
+	Mood m_mood;                                     // Neutral, Happy, Angry or Scared
 };
 
 class T_DLLCLASS PlaceData : public ISerializable     // somewhere quests can point at
@@ -669,6 +675,17 @@ relic was found, because the light step points at wards and an item waypoint sto
   does with no waypoint at all.
 - "The Ward Circle" light step points at relics with `untilFound` off. It points at the nearest
   relic left in the world, and at the nearest unlit ward once none are left.
+
+**Actor stats are members (2026-11-02).** `ActorData` (version 2) has `class` (an enum: Wanderer,
+Worker, Merchant), `age`, `courage`, `faction` (an enum: Villager, Bandit, Undead), `health` and
+`mood` (an enum: Neutral, Happy, Angry, Scared) instead of the property group.
+
+- Every actor holds real values. The defaults are the settings' `npc.defaults`.
+- An NPC with an actor takes these six from it. The class tuning and `npc.defaults` give its other
+  stats and all stats of NPCs without an actor. `ageCourage` applies only to those.
+- `ActorComponent` no longer has `properties`.
+- The data was converted with the values the actors had in effect, so Klara's and Tomas' courage
+  includes the age penalty they used to get.
 
 ---
 

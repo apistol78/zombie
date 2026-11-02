@@ -502,7 +502,6 @@ void StoryClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classActorComponent->addProperty("owner", &ActorComponent::getOwner);
 	classActorComponent->addProperty("actor", &ActorComponent::getActor);
 	classActorComponent->addProperty("name", &ActorComponent::getName);
-	classActorComponent->addProperty("properties", &ActorComponent::getProperties);
 	registrar->registerClass(classActorComponent);
 
 	auto classStoryWorldComponent = new AutoRuntimeClass< StoryWorldComponent >();

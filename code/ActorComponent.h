@@ -22,13 +22,6 @@
 #	define T_DLLCLASS T_DLLIMPORT
 #endif
 
-namespace traktor
-{
-
-class PropertyGroup;
-
-}
-
 namespace zombie
 {
 
@@ -67,9 +60,6 @@ public:
 
 	/*! The actor's name; the only place an actor's name is defined. Empty if it has none. */
 	std::wstring getName() const;
-
-	/*! The actor's properties for the game, null if none. */
-	const PropertyGroup* getProperties() const;
 
 private:
 	world::Entity* m_owner = nullptr;

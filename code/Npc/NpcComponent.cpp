@@ -14,9 +14,9 @@
 #include "Ai/MoveQueryResult.h"
 #include "Ai/NavMesh.h"
 #include "Ai/NavMeshComponent.h"
-#include "Animation/Animation/AnimationGraphPoseController.h"
 #include "Animation/IK/LookAtComponent.h"
 #include "Animation/SkeletonComponent.h"
+#include "Animation/StateGraph/AnimationGraphPoseController.h"
 #include "Core/Log/Log.h"
 #include "Core/Math/Const.h"
 #include "Core/Math/MathUtils.h"
@@ -44,8 +44,8 @@
 
 namespace zombie
 {
-	namespace
-	{
+namespace
+{
 
 const uint32_t c_collisionDefault = 0x00000001;
 const uint32_t c_collisionPushable = 0x00000010;
@@ -75,8 +75,7 @@ const Vector4 c_pathLift(0.0f, 0.15f, 0.0f, 0.0f);
 const float c_pathWidth = 2.0f;
 const float c_pathNodeSize = 3.0f;
 
-const render::Handle c_handlePoses[] =
-{
+const render::Handle c_handlePoses[] = {
 	render::Handle(L"idle"),
 	render::Handle(L"walk"),
 	render::Handle(L"running"),
@@ -194,13 +193,13 @@ float legDistanceXZ(const Vector4& p, const Vector4& a, const Vector4& b)
 	return std::sqrt(dx * dx + dz * dz);
 }
 
-	}
+}
 
 T_IMPLEMENT_RTTI_CLASS(L"zombie.NpcComponent", NpcComponent, world::IEntityComponent)
 
 NpcComponent::NpcComponent(const Guid& route)
-:	m_random((uint32_t)((uintptr_t)this >> 4))
-,	m_routeId(route)
+	: m_random((uint32_t)((uintptr_t)this >> 4))
+	, m_routeId(route)
 {
 }
 
@@ -1018,8 +1017,8 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	if (m_rising)
 	{
 		// Not evaluated yet, or still in the state it starts in.
-		const animation::RtState* root = m_pose ? m_pose->getRootState() : nullptr;
-		const animation::RtState* current = m_pose ? m_pose->getCurrentState() : nullptr;
+		const animation::RtStateNode* root = m_pose ? m_pose->getRootState() : nullptr;
+		const animation::RtStateNode* current = m_pose ? m_pose->getCurrentState() : nullptr;
 		if (root && (!current || current == root))
 			return false;
 		m_rising = false;

@@ -1580,7 +1580,7 @@ function Main:killEnemy(enemy, point, impulse, whole)
 	end
 	self:_woundEnemy(enemy, point)
 	self._deadEnemies[enemy] = self._corpseLifetime
-	self:_queueImpulse(enemy, point, impulse, whole)
+	self:_impulse(enemy, point, impulse, whole)
 	self:_afterDeath(enemy)
 	return true
 end
@@ -1618,16 +1618,46 @@ function Main:_woundEnemy(enemy, point)
 	hitEvents:raise("hit")
 end
 
--- Book an impulse for a zombie's rag doll. It cannot simply be applied: on the frame a zombie
--- dies its rag doll controller is not active yet -- the state graph has to reach the dead state
--- and reset the limbs into the pose -- so this is held until the pass in update finds a
--- controller to hand it to.
+-- The rag doll controllers driving a zombie right now: empty while it lives, and on the frame it
+-- dies, until the state graph has picked its transition into the dead state.
+function Main:_activeRagDolls(enemy)
+	local skeleton < const > = enemy:getComponent(traktor.animation.SkeletonComponent)
+	if skeleton == nil then
+		return nil
+	end
+	local ragdolls < const > = skeleton:getPoseControllersOf(true, traktor.animation.RagDollPoseController)
+	if ragdolls.size == 0 then
+		return nil
+	end
+	return ragdolls
+end
+
+-- A blast pushes the whole body, a round pushes the limb it hit. See killEnemy for why the two
+-- cannot share one call.
+function Main:_applyImpulse(ragdolls, point, impulse, whole)
+	for i = 0, ragdolls.size - 1 do
+		local ragdoll < const > = ragdolls:get(i)
+		if whole then
+			ragdoll:addImpulse(impulse)
+		else
+			ragdoll:addImpulseAt(point, impulse)
+		end
+	end
+end
+
+-- Hand an impulse to a zombie's rag doll: straight away if it already has one, else booked
+-- until it does. Only the shot that kills lands on a body with no active rag doll yet, and it
+-- cannot be applied early: entering the dead state resets the limbs into the pose and zeroes
+-- their velocity, wiping anything given them before.
 --
--- A list per zombie rather than one record, because impulses arrive in bursts and each is a
--- different force in a different place: a second round into a body still blending into its rag
--- doll, a grenade going off over a corpse that went down the same frame. Keeping only the last
--- silently threw the rest away.
-function Main:_queueImpulse(enemy, point, impulse, whole)
+-- A list per zombie rather than one record, because a body can take more than one force before
+-- its rag doll turns active -- a grenade throwing a zombie that a round dropped the same frame.
+function Main:_impulse(enemy, point, impulse, whole)
+	local ragdolls < const > = self:_activeRagDolls(enemy)
+	if ragdolls ~= nil then
+		self:_applyImpulse(ragdolls, point, impulse, whole)
+		return
+	end
 	local queued = self._pendingImpulse[enemy]
 	if queued == nil then
 		queued = {}
@@ -1656,7 +1686,7 @@ function Main:shoveCorpse(enemy, point, impulse, whole)
 	self:_woundEnemy(enemy, point)
 	-- Wound back, never cut short: a zombie's body with something on it lies longer (_afterDeath).
 	self._deadEnemies[enemy] = math.max(self._deadEnemies[enemy], self._corpseLifetime)
-	self:_queueImpulse(enemy, point, impulse, whole)
+	self:_impulse(enemy, point, impulse, whole)
 	return true
 end
 
@@ -2590,33 +2620,17 @@ function Main:update(info)
 	-- (Scripts/Npc/Characters).
 	self:_applyDamage(dt)
 
-	-- Hand out every booked impulse the moment the zombie's rag doll controller becomes active:
-	-- the knockback of the shot that killed it, and anything that has hit the body since.
-	-- getPoseControllersOf only descends the state graph's *current* state, so the list is
-	-- empty for living zombies and during the blend, and becomes non-empty once the "dead"
-	-- state is current (after reset). That naturally waits for the right frame; we then
-	-- impulse every rag doll controller found and forget the pending entries.
+	-- Hand out the impulses booked by _impulse once the zombie's rag doll turns active, which is
+	-- the frame its state graph picks the transition into the dead state (and resets the limbs).
 	do
 		for e, queued in pairs(self._pendingImpulse) do
-			local skeleton = e:getComponent(traktor.animation.SkeletonComponent)
-			if skeleton ~= nil then
-				local ragdolls = skeleton:getPoseControllersOf(traktor.animation.RagDollPoseController)
-				if ragdolls.size > 0 then
-					for i = 0, ragdolls.size - 1 do
-						local ragdoll < const > = ragdolls:get(i)
-						for k = 1, #queued do
-							-- A blast pushes the whole body, a round pushes the limb it hit.
-							-- See killEnemy for why the two cannot share one call.
-							local rec < const > = queued[k]
-							if rec.whole then
-								ragdoll:addImpulse(rec.impulse)
-							else
-								ragdoll:addImpulseAt(rec.point, rec.impulse)
-							end
-						end
-					end
-					self._pendingImpulse[e] = nil
+			local ragdolls < const > = self:_activeRagDolls(e)
+			if ragdolls ~= nil then
+				for k = 1, #queued do
+					local rec < const > = queued[k]
+					self:_applyImpulse(ragdolls, rec.point, rec.impulse, rec.whole)
 				end
+				self._pendingImpulse[e] = nil
 			end
 		end
 	end

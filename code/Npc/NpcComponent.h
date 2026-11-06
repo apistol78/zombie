@@ -213,6 +213,7 @@ protected:
 	float m_closeQuarters = 0.0f;
 	float m_hitKnockback = 0.0f;
 	float m_hitPushTime = 0.0f;
+	float m_hitPoseTime = 0.0f;
 	float m_hitStun = 0.0f;
 	float m_gaitStart = 0.0f;
 	float m_gaitStop = 0.0f;
@@ -249,6 +250,7 @@ protected:
 	bool m_dead = false;
 	float m_hitTimer = 0.0f;
 	float m_pushTimer = 0.0f;
+	float m_hitPoseTimer = 0.0f;
 	float m_pushLeft = 0.0f;
 	float m_hitX = 0.0f;
 	float m_hitZ = 0.0f;

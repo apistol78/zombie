@@ -327,6 +327,7 @@ bool NpcComponent::hit(float dirX, float dirZ)
 	m_hitZ = dirZ / len;
 	m_hitTimer = m_hitStun;
 	m_pushTimer = m_hitPushTime;
+	m_hitPoseTimer = m_hitPoseTime;
 	m_pushLeft = m_hitKnockback;
 	return true;
 }
@@ -337,7 +338,8 @@ void NpcComponent::flinch()
 		return;
 	readStats();
 	m_hitTimer = (m_flinchTime >= 0.0f) ? m_flinchTime : m_hitStun;
-	m_pushTimer = m_hitPushTime;
+	m_pushTimer = 0.0f;
+	m_hitPoseTimer = m_hitPoseTime;
 	m_pushLeft = 0.0f;
 }
 
@@ -469,6 +471,7 @@ bool NpcComponent::readStats()
 
 	m_hitKnockback = settingNumber(melee, L"knockback", 0.0f);
 	m_hitPushTime = settingNumber(melee, L"pushTime", 0.0f);
+	m_hitPoseTime = settingNumber(melee, L"poseTime", 0.0f);
 	m_hitStun = settingNumber(melee, L"stun", 0.0f);
 
 	m_gaitStart = settingNumber(npc, L"gaitStart", 0.0f);
@@ -551,16 +554,19 @@ void NpcComponent::stagger(float deltaTime)
 	m_gaitSpeed = 0.0f;
 	m_gaitMoving = false;
 
-	const bool pulsing = m_pushTimer > 0.0f;
+	// The Hit flag is a short trigger of its own; held past the clip's blend-out it restarts the clip.
 	if (m_pose)
 	{
 		if (m_reelPose != Pose::None)
 			poseState(m_reelPose);
 		else
-			poseState(pulsing ? Pose::Hit : Pose::None);
+			poseState(m_hitPoseTimer > 0.0f ? Pose::Hit : Pose::None);
 		if (m_usesWork)
 			poseWork(false);
 	}
+	m_hitPoseTimer -= deltaTime;
+
+	const bool pulsing = m_pushTimer > 0.0f;
 	if (!pulsing)
 		return;
 	if (m_pushLeft <= 0.0f)

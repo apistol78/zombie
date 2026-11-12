@@ -41,7 +41,6 @@ namespace traktor::ai
 
 class MoveQuery;
 class MoveQueryResult;
-class NavMesh;
 class NavMeshComponent;
 
 }

@@ -41,7 +41,7 @@ class T_DLLCLASS InteractionWorldComponent : public world::IWorldComponent
 public:
 	virtual void destroy() override final;
 
-	virtual void update(world::World* world, const world::UpdateParams& update) override final;
+	virtual void update(const world::UpdateParams& update) override final;
 
 	void add(InteractableComponent* interactable);
 

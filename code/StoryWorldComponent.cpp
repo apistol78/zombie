@@ -57,12 +57,19 @@ void StoryWorldComponent::destroy()
 	m_talkTarget = nullptr;
 }
 
-void StoryWorldComponent::update(world::World* world, const world::UpdateParams& update)
+void StoryWorldComponent::setWorld(world::World* world)
 {
+	m_world = world;
+	index(m_world);
+}
+
+void StoryWorldComponent::update(const world::UpdateParams& update)
+{
+	// Streamed cells come and go, so the world is looked through again now and then.
 	m_untilRefresh -= (float)update.deltaTime;
-	if (m_untilRefresh <= 0.0f || world != m_world)
+	if (m_untilRefresh <= 0.0f)
 	{
-		index(world);
+		index(m_world);
 		m_untilRefresh = m_refreshInterval;
 	}
 
@@ -109,6 +116,7 @@ void StoryWorldComponent::setPlayer(world::Entity* player)
 
 void StoryWorldComponent::refresh()
 {
+	index(m_world);
 	m_untilRefresh = 0.0f;
 }
 

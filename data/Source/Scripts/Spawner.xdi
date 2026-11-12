@@ -206,10 +206,7 @@ function Spawner:update(context, totalTime, deltaTime)
 
 	-- Resolve (once) the nav mesh and the world layer used to spawn entities.
 	if self._navMesh == nil then
-		local navComponent = self.world:getComponent(traktor.ai.NavMeshComponent)
-		if navComponent ~= nil then
-			self._navMesh = navComponent:get()
-		end
+		self._navMesh = self.world:getComponent(traktor.ai.NavMeshComponent)
 	end
 	if self._navMesh == nil then
 		return

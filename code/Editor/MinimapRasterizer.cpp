@@ -27,8 +27,8 @@
 #include "Editor/MinimapAttributesEntityComponentData.h"
 #include "Editor/MinimapTextureAsset.h"
 #include "Heightfield/Editor/HeightfieldAsset.h"
+#include "Heightfield/Editor/TileStorage.h"
 #include "Heightfield/Heightfield.h"
-#include "Heightfield/HeightfieldFormat.h"
 #include "Model/Model.h"
 #include "Model/Operations/Triangulate.h"
 #include "Render/Editor/Texture/TextureAsset.h"
@@ -284,13 +284,7 @@ Ref< hf::Heightfield > readHeightfield(editor::IPipelineCommon* pipelineCommon, 
 	if (!heightfieldAsset)
 		return nullptr;
 
-	Ref< IStream > stream = heightfieldInstance->readData(L"Data");
-	if (!stream)
-		return nullptr;
-
-	Ref< hf::Heightfield > heightfield = hf::HeightfieldFormat().read(stream, heightfieldAsset->getWorldExtent());
-	stream->close();
-	return heightfield;
+	return hf::TileStorage(heightfieldAsset->getTileCount()).readHeightfieldOverview(heightfieldInstance, heightfieldAsset->getWorldExtent());
 }
 
 float terrainHeight(const AlignedVector< float >& terrainHeights, int32_t size, int32_t x, int32_t y, float fallback)

@@ -117,7 +117,7 @@ end
 function Main:_trailNavMesh()
 	local world < const > = (self.world ~= nil) and self.world.world or nil
 	local component < const > = (world ~= nil) and world:getComponent(traktor.ai.NavMeshComponent) or nil
-	return (component ~= nil) and component:get() or nil
+	return component
 end
 
 -- ---- Every frame ----

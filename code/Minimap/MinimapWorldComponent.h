@@ -46,7 +46,7 @@ public:
 
 	virtual void destroy() override final;
 
-	virtual void update(world::World* world, const world::UpdateParams& update) override final;
+	virtual void update(const world::UpdateParams& update) override final;
 
 	render::ITexture* getTexture() const;
 

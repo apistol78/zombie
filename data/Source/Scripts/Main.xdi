@@ -6,7 +6,6 @@
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 #using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
-#using \{5E1A4C77-2B90-4D36-9F41-7C8A2D0E6B15}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{6E9AD100-0000-4000-8000-000000000010}
@@ -54,10 +53,6 @@
 -- compass and the map that point the way -- more of this class, in a script of its own.
 #using \{D1A10000-0000-4000-8000-000000000006}
 
--- Scripts/StreamHold: the stage held still behind a LOADING panel until the world around the
--- player has streamed in.
-#using \{A1BC462F-A3FB-42F4-AFDD-0B0D098E4440}
-
 import(traktor)
 
 -- Main
@@ -101,14 +96,9 @@ local PEOPLE_PRIORITY < const > = Config.npc.interactPriority
 -- is already pointing at; see Main:_lockObjective.
 local MARKER_SWITCH_MARGIN < const > = Config.relic.markerSwitchMargin
 
--- Where the minimap sits: its own corner, clear of the prompt line in the middle and
--- the HUD row along the bottom. The frame lays out at 1280x720 whatever
--- it is constructed with, so these are that space's pixels (see the Frame gotcha in
--- Main:new), and they match the frame's own 24/20 layout margins.
-local MAP_X < const > = 24
-local MAP_Y < const > = 20
-
--- ...and the HUD's margins, the same: the compass strip hangs off the top one, the health bar
+-- The HUD's margins. The frame lays out at 1280x720 whatever it is constructed with, so
+-- these are that space's pixels (see the Frame gotcha in Main:new), and they match the
+-- frame's own 24/20 layout margins: the compass strip hangs off the top one, the health bar
 -- and the weapon tile stand on the bottom one.
 local HUD_MARGIN_X < const > = 24
 local HUD_MARGIN_Y < const > = 20
@@ -285,22 +275,6 @@ function Main:new(params, environment)
 	self._crosshair = Crosshair(self._frame)
 	self._crosshair.__layout = ILayout.FLOAT
 	self._crosshairShown = nil   -- nil so the first _updateCrosshair forces the state
-
-	-- Minimap, top left. FLOAT for the same reason as the crosshair -- it belongs in
-	-- a corner, not in either of the frame's two rows -- but unlike the crosshair its
-	-- place never moves, so it is set here once rather than every frame: a FLOAT child
-	-- is skipped by TableLayout, so nothing else will disturb it. Built empty; it gets
-	-- its markers in resolve, once the world is there to count them off.
-	self._minimap = Minimap(self._frame)
-	self._minimap.__layout = ILayout.FLOAT
-	local mapSize < const > = self._minimap:getPreferredSize()
-	self._minimap:place(MAP_X, MAP_Y, mapSize.width, mapSize.height)
-	-- Hidden until it has been given its markers, so a stage with nothing to map
-	-- (Scene 1 has none of the landmarks) never shows an
-	-- empty plate, and Scene 2 never flashes one on the frame before resolve runs.
-	self._minimap:setVisible(false)
-	self._minimapBuilt = false   -- resolve has dealt with it
-	self._minimapMapped = false  -- ...and found something worth drawing
 
 	-- Game Over menu: the "GAME OVER" banner over its buttons, as a modal Dialog
 	-- auto-centered over the HUD. Not built until the player dies (_showGameOver), because
@@ -593,9 +567,66 @@ function Main:new(params, environment)
 
 	environment.input.inputSystem:setExclusive(true)
 	environment.render.renderView:hideCursor()
+end
 
-	-- Held until the ground under the player is there (Scripts/StreamHold).
-	self:_initStreamHold()
+-- Where the eye will be, looking the way it will, once resolve() has stood the player where
+-- they arrive: where a saved night left them, else on the place they come in at, else wherever
+-- the scene stands its Humanoid (a new night). Nil in a world with none of them.
+function Main:_arrivalEye(world)
+	local pl < const > = self._arrivalPlace
+	if pl ~= nil then
+		return Transform(
+			Vector4(pl.x, pl.y, pl.z, 1.0) + EYE_OFFSET,
+			Quaternion.fromEulerAngles(pl.heading or 0.0, 0.0, 0.0)
+		)
+	end
+	local at = nil
+	if self._arrival ~= nil then
+		-- Before any update the story world has not looked through the world yet.
+		local storyWorld < const > = world:getComponent(zombie.StoryWorldComponent)
+		if storyWorld ~= nil then
+			storyWorld:refresh()
+			at = storyWorld:findPlace(self._arrival)
+		end
+	end
+	at = at or world:getEntity("Humanoid")
+	if at == nil then
+		return nil
+	end
+	local t < const > = at.transform
+	return Transform(t.translation.xyz1 + EYE_OFFSET, t.rotation)
+end
+
+-- The layers are there and nothing has updated yet: load the cells around where the player
+-- arrives, all at once, before anything is asked to stand on them.
+--
+-- The camera is put at the eye here already, and its position is what is loaded around. The
+-- layer streams around the camera from its first update on, while resolve() only stands the
+-- player where they arrive -- and postUpdate the camera at their eye -- an update later; left
+-- where the scene has it, the cells just loaded would start going again for an arrival far
+-- from there.
+function Main:create()
+	local world < const > = self.world.world
+	local streaming < const > = (world ~= nil) and world:getComponent(traktor.world.EntityStreamingComponent) or nil
+	if streaming == nil then
+		return
+	end
+
+	local focus = self:_arrivalEye(world)
+	local camera < const > = world:getEntity("Camera0")
+	if camera ~= nil then
+		if focus ~= nil then
+			camera.transform = focus
+		end
+		focus = camera.transform
+	end
+	if focus == nil then
+		return
+	end
+
+	print("Block loading cells...")
+	streaming:load(focus.translation.xyz1)
+	print("Done")
 end
 
 -- Write the cheat line: one row naming whatever is currently on, and blank when nothing is.
@@ -619,11 +650,10 @@ end
 
 -- Show or hide the HUD as a whole.
 --
--- Two of it are missing from here on purpose, and both because they already decide
--- for themselves on every frame -- including the frames of a paused game, since both
--- run above Main:update's freeze returns. The crosshair reads _paused in
--- _updateCrosshair, and the minimap in _updateMinimap; hiding either from here would
--- last exactly one frame.
+-- The crosshair is missing from here on purpose, because it already decides for itself
+-- on every frame -- including the frames of a paused game, since it runs above
+-- Main:update's freeze returns. It reads _paused in _updateCrosshair; hiding it from here
+-- would last exactly one frame.
 --
 -- Hiding the container hides everything in it: the compass, the health bar and the weapon
 -- carousel are its children, and Spark visibility is inherited.
@@ -1171,15 +1201,6 @@ function Main:resolve()
 	-- view models -- so a new weapon adds nothing here. Called every frame, exactly as the rest of
 	-- this function is, and cheap once each of them has what it wants (Weapon:resolve).
 	self._loadout:resolve()
-
-	-- Last, once the world is there to read the landmarks off and the player is in it.
-	-- Survives a hot reload untouched: _minimapBuilt is plain data on the stage and the
-	-- widget keeps the marker clips it already made, so this must not run a second time
-	-- and double them up.
-	if not self._minimapBuilt and self._humanoid ~= nil then
-		self._minimapBuilt = true
-		self._minimapMapped = self:_buildMinimap(world)
-	end
 end
 
 -- ---- What a weapon is given ----
@@ -2049,39 +2070,6 @@ function Main:_placeCutsceneCamera()
 	)
 end
 
--- Give the minimap its ground and markers. Once only, off the world. The map is the ground
--- around the player (Scripts/Widgets/Minimap), so there is nothing to fit: only what to draw.
--- The ground is the scene's minimap texture (zombie.MinimapWorldComponent), if it has one.
---
--- The landmarks are whatever in the world says it is one (zombie.LandmarkComponent): the
--- chapel, the towers, the altar -- the biggest monument in the cemetery and so the thing to
--- navigate by. Its glyph names the drawing the map gives it -- a pictogram with the name lettered
--- underneath, one child sprite of MC_MapLandmark each (tools/gen_hud_svg.py); a landmark
--- without one of its own is drawn as a plain mark with no name.
---
--- Returns false in a scene with nothing to map -- no minimap texture and no landmarks --
--- which leaves the widget hidden and stops _updateMinimap doing anything.
-function Main:_buildMinimap(world)
-	local marks = {}
-	local entities < const > = world:getEntities()
-	for i = 0, entities.size - 1 do
-		local e < const > = entities:get(i)
-		local landmark < const > = e:getComponent(zombie.LandmarkComponent)
-		if landmark ~= nil then
-			local p < const > = e.transform.translation
-			table.insert(marks, { x = p.x, z = p.z, glyph = landmark.glyph })
-		end
-	end
-
-	local minimap < const > = world:getComponent(zombie.MinimapWorldComponent)
-	if #marks == 0 and minimap == nil then
-		return false
-	end
-
-	self._minimap:build(marks, minimap)
-	return true
-end
-
 -- Place the aiming crosshair at the centre of the screen, and show it only while the
 -- player is actually sighting down a weapon: not on the run, not with nothing in hand
 -- to aim, and not while the game is paused or lost. A relic in the off hand has no
@@ -2324,14 +2312,10 @@ function Main:update(info)
 	-- on the last frame still finishes its flash once the game is paused or over.
 	self._healthBar:update(dt)
 	self._loadout:updateHud(dt)
-	-- The quests, their windows and the waypoint the compass and the map show next.
+	-- The quests, their windows and the waypoint the compass shows next.
 	self:_updateQuests(dt)
 	-- Ticks the compass widget itself, as well as re-aiming it.
 	self:_updateMarker(dt)
-
-	-- The map. Also above the early-returns, so it stays correct behind a pause and
-	-- can take itself off screen the moment the night is decided.
-	self:_updateMinimap()
 
 	-- Objective and prompt. Also above the early-returns, so the banner stays put
 	-- and correctly centred through a pause or a window resize.
@@ -2369,11 +2353,6 @@ function Main:update(info)
 			end
 			self._loader = nil
 		end
-		return
-	end
-
-	-- Arriving: nothing moves until the world around the player has streamed in.
-	if self:_updateStreamHold(dt) then
 		return
 	end
 
@@ -2680,11 +2659,6 @@ function Main:postUpdate(info)
 	self._worldUpdated = true
 	self:_updateNameTags(info.simulationDeltaTime)   -- Scripts/Npc/Characters
 	self:_updateQuestBeacon(info.simulationDeltaTime) -- Scripts/Quests/Questing
-
-	-- Arriving: only the camera, at the eye, which is what the world streams around.
-	if self:_postUpdateStreamHold(info.simulationDeltaTime) then
-		return
-	end
 
 	if self._gameOver or self._paused then
 		return

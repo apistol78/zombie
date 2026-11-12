@@ -180,6 +180,10 @@ function Startup:new(params, environment)
 	environment.input.inputSystem:setExclusive(false)
 end
 
+function Startup:create()
+	print("HERE!")
+end
+
 -- Enter the Loading stage, which is what actually streams in the gameplay stage
 -- named by "target" (one of Stages/Loading's own transitions) and shows a loading
 -- panel while it does. This stage's only transition is LOADING; the Loading stage

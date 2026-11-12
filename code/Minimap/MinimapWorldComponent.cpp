@@ -26,7 +26,7 @@ void MinimapWorldComponent::destroy()
 	m_texture.clear();
 }
 
-void MinimapWorldComponent::update(world::World* world, const world::UpdateParams& update)
+void MinimapWorldComponent::update(const world::UpdateParams& update)
 {
 }
 

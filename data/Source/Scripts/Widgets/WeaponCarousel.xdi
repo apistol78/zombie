@@ -54,7 +54,7 @@ import(traktor)
 -- rotating one swings it away from that origin, hence the helpers below, which
 -- translate back so a chosen pivot stays put. The seats are all authored on one
 -- shared point (SEAT_X, SEAT_Y) for exactly that reason: placing one is then a
--- single scale and offset, the same trick the minimap plays with its markers.
+-- single scale and offset.
 
 WeaponCarousel = WeaponCarousel or class("WeaponCarousel", Widget)
 

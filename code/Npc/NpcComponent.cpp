@@ -12,7 +12,6 @@
 #include "ActorData.h"
 #include "Ai/MoveQuery.h"
 #include "Ai/MoveQueryResult.h"
-#include "Ai/NavMesh.h"
 #include "Ai/NavMeshComponent.h"
 #include "Animation/IK/LookAtComponent.h"
 #include "Animation/SkeletonComponent.h"
@@ -676,7 +675,7 @@ bool NpcComponent::resolve()
 	if (!m_playerCharacter && m_player)
 		m_playerCharacter = m_player->getComponent< physics::CharacterComponent >();
 
-	if (!m_character || !m_navMesh || !m_navMesh->get() || !m_player)
+	if (!m_character || !m_navMesh || !m_player)
 		return false;
 
 	if (!m_haveHeading)
@@ -730,21 +729,21 @@ bool NpcComponent::canPath() const
 void NpcComponent::requestPath(const Vector4& from, const Vector4& to)
 {
 	if (!m_pathResult)
-		m_pathResult = m_navMesh->get()->createMoveQuery(from.xyz1(), to.xyz1());
+		m_pathResult = m_navMesh->createMoveQuery(from.xyz1(), to.xyz1());
 }
 
 Vector4 NpcComponent::ground(float x, float z, float fromY) const
 {
 	const Vector4 from(x, fromY, z, 1.0f);
 	Vector4 point;
-	if (m_navMesh->get()->findClosestPointXZ(from, 4.0f, point))
+	if (m_navMesh->findClosestPointXZ(from, 4.0f, point))
 		return point;
 	return from;
 }
 
 bool NpcComponent::randomPoint(const Vector4& center, float radius, Vector4& outPoint) const
 {
-	return m_navMesh->get()->findRandomPoint(center.xyz1(), radius, outPoint);
+	return m_navMesh->findRandomPoint(center.xyz1(), radius, outPoint);
 }
 
 void NpcComponent::steer(const Vector4& position, float& outX, float& outZ)
@@ -1446,7 +1445,7 @@ bool NpcComponent::enclosurePoint(const Vector4& position, Vector4& outPoint)
 			return false;
 
 		Vector4 point;
-		if (!m_navMesh->get()->findClosestPointXZ(Vector4(x, position.y(), z, 1.0f), 0.5f, point))
+		if (!m_navMesh->findClosestPointXZ(Vector4(x, position.y(), z, 1.0f), 0.5f, point))
 			continue;
 
 		// Snapped onto the mesh it might have left the outline; or be up on a tree's crown, which

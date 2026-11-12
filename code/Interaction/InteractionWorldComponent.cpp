@@ -26,7 +26,7 @@ void InteractionWorldComponent::destroy()
 	m_interactables.clear();
 }
 
-void InteractionWorldComponent::update(world::World* world, const world::UpdateParams& update)
+void InteractionWorldComponent::update(const world::UpdateParams& update)
 {
 }
 

@@ -470,44 +470,11 @@ function Main:_updateQuestBeacon(dt)
 	mc.visible = alpha > 0.0
 end
 
--- ---- The compass and the map ----
+-- ---- The compass ----
 --
--- Moved here out of Main with the quest waypoint added to both: the night's own objective keeps
--- the compass's gold needle; the followed quest's step
--- gets a marker of its own on each (Scripts/Widgets/ObjectiveMarker:setQuest, Minimap:setQuest).
-
--- Push the map's moving parts: where the player is, which the whole map is drawn
--- around, then the followed quest's waypoint.
-function Main:_updateMinimap()
-	if not self._minimapMapped then
-		return
-	end
-
-	-- Hidden once the player is dead, so the Game Over menu has no map sitting in
-	-- the corner behind it -- and while paused, with
-	-- the rest of the HUD. Widget:setVisible is already a no-op when the state has
-	-- not changed, so this needs no latch.
-	--
-	-- The pause flag belongs here rather than in _showHud because this runs above the
-	-- freeze returns: anything hidden from outside would be shown again by the very
-	-- next frame of a paused game.
-	local show < const > = not self._gameOver and not self._paused
-		and self._humanoid ~= nil
-	self._minimap:setVisible(show)
-	if not show then
-		return
-	end
-
-	local p < const > = self._humanoid.transform.translation
-	self._minimap:setView(p.x, p.z, self._heading)
-
-	local q < const > = self._questWaypoint
-	if q ~= nil then
-		self._minimap:setQuest(q[1], q[3])
-	else
-		self._minimap:setQuest(nil)
-	end
-end
+-- Moved here out of Main with the quest waypoint added: the night's own objective keeps
+-- the compass's gold needle; the followed quest's step gets a marker of its own
+-- (Scripts/Widgets/ObjectiveMarker:setQuest).
 
 -- Aim the objective compass at wherever the player should be walking: the nearest lock
 -- the pack holds what it spends -- a still-dark ward while there is a relic in it, a locked

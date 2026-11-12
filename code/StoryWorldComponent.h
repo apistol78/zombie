@@ -53,7 +53,9 @@ public:
 
 	virtual void destroy() override final;
 
-	virtual void update(world::World* world, const world::UpdateParams& update) override final;
+	virtual void setWorld(world::World* world) override final;
+
+	virtual void update(const world::UpdateParams& update) override final;
 
 	void setStory(Story* story);
 
@@ -63,7 +65,7 @@ public:
 
 	world::Entity* getPlayer() const { return m_player; }
 
-	/*! Look through the world again on the next update. */
+	/*! Look through the world again now, and work out the waypoint on the next update. */
 	void refresh();
 
 	/*! Position the followed quest's current step points at, false if none in this world. */

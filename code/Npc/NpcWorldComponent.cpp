@@ -61,11 +61,15 @@ void NpcWorldComponent::destroy()
 	m_routes.clear();
 }
 
-void NpcWorldComponent::update(world::World* world, const world::UpdateParams& update)
+void NpcWorldComponent::setWorld(world::World* world)
 {
 	m_world = world;
+}
+
+void NpcWorldComponent::update(const world::UpdateParams& update)
+{
 	if (!m_player)
-		m_player = world->getEntity(L"Humanoid");
+		m_player = m_world->getEntity(L"Humanoid");
 
 	// Before the characters update, and outside of it, as the handler is script.
 	dealBlows();

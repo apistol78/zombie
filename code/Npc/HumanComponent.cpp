@@ -9,6 +9,7 @@
 #include "Npc/HumanComponent.h"
 
 #include "Ai/MoveQuery.h"
+#include "Animation/SkeletonComponent.h"
 #include "Core/Math/Const.h"
 #include "Core/Math/MathUtils.h"
 #include "Core/Settings/PropertyGroup.h"
@@ -702,7 +703,21 @@ void HumanComponent::hold(float deltaTime)
 	if (m_dead || !m_haveHeading || !m_character)
 		return;
 
-	applyRootMotion(deltaTime);
+	// Only a clip being played out travels; a walk or run is stopped where it is, else its root motion carries on.
+	if (m_swing.active || m_turn.active)
+		applyRootMotion(deltaTime);
+	else
+	{
+		if (m_skeleton)
+			m_skeleton->consumeRootMotion();
+		const Vector4 velocity = m_character->getVelocity();
+		m_character->setVelocity(Vector4(0.0f, velocity.y(), 0.0f, 0.0f));
+		if (m_poseNow == Pose::Walk || m_poseNow == Pose::Running)
+			poseState(Pose::Idle);
+		m_haveGaitPos = false;
+		m_gaitSpeed = 0.0f;
+		m_gaitMoving = false;
+	}
 
 	const Vector4 position = m_owner->getTransform().translation().xyz1();
 	if (m_swing.active)

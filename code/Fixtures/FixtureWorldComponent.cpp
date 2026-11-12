@@ -22,7 +22,7 @@ void FixtureWorldComponent::destroy()
 	m_fixtures.clear();
 }
 
-void FixtureWorldComponent::update(world::World* world, const world::UpdateParams& update)
+void FixtureWorldComponent::update(const world::UpdateParams& update)
 {
 }
 

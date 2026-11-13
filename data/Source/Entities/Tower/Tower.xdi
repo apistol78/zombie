@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.world.EntityData" version="2">
+<object type="traktor.world.EntityData" version="3">
 	<id>{07A8C34A-67EB-4C38-BD18-98291E434D97}</id>
 	<name>Tower</name>
 	<state>
 		<visible>true</visible>
 		<dynamic>false</dynamic>
 		<locked>false</locked>
+		<resident>false</resident>
 	</state>
 	<transform>
 		<translation>6.1682, 22.3225, 7.0658, 0</translation>
@@ -16,7 +17,7 @@
 			<mesh>{5B1E7C09-2D64-4F8A-9C31-D0A47E58B6F1}</mesh>
 		</item>
 		<item type="traktor.physics.RigidBodyComponentData" version="1">
-			<bodyDesc type="traktor.physics.StaticBodyDesc" version="5">
+			<bodyDesc type="traktor.physics.StaticBodyDesc" version="6">
 				<shape type="traktor.physics.MeshShapeDesc" version="6,traktor.physics.ShapeDesc:6">
 					<localTransform>
 						<translation>0, 0, 0, 0</translation>
@@ -34,6 +35,7 @@
 				<friction>0.75</friction>
 				<restitution>0</restitution>
 				<kinematic>false</kinematic>
+				<walkable>true</walkable>
 			</bodyDesc>
 			<eventCollide/>
 			<transformFilter>0</transformFilter>
@@ -43,6 +45,13 @@
 		</item>
 		<item type="zombie.LandmarkComponentData">
 			<glyph>tower</glyph>
+		</item>
+		<item type="traktor.scene.EntityStreamingHLODComponentData">
+			<angles>8</angles>
+			<elevations>1</elevations>
+			<elevationFrom>0</elevationFrom>
+			<elevationTo>0</elevationTo>
+			<tileSize>256</tileSize>
 		</item>
 	</components>
 </object>

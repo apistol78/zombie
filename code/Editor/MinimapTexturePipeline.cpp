@@ -10,9 +10,11 @@
 
 #include "Core/Log/Log.h"
 #include "Core/Misc/SafeDestroy.h"
+#include "Core/Settings/PropertyBoolean.h"
 #include "Drawing/Image.h"
 #include "Editor/IPipelineBuilder.h"
 #include "Editor/IPipelineDepends.h"
+#include "Editor/IPipelineSettings.h"
 #include "Editor/MinimapRasterizer.h"
 #include "Editor/MinimapTextureAsset.h"
 #include "Render/Editor/Texture/TextureOutput.h"
@@ -31,6 +33,9 @@ bool MinimapTexturePipeline::create(const editor::IPipelineSettings* settings, d
 {
 	if (!editor::DefaultPipeline::create(settings, database))
 		return false;
+
+	if (settings->getPropertyIncludeHash< bool >(L"Pipeline.TargetEditor", false))
+		return true;
 
 	m_rasterizer = new MinimapRasterizer();
 	return m_rasterizer->create(settings);
@@ -60,6 +65,9 @@ bool MinimapTexturePipeline::buildDependencies(
 	const Guid& outputGuid
 ) const
 {
+	if (!m_rasterizer)
+		return true;
+
 	const MinimapTextureAsset* asset = mandatory_non_null_type_cast< const MinimapTextureAsset* >(sourceAsset);
 	pipelineDepends->addDependency(asset->m_source, editor::PdfUse);
 	pipelineDepends->addDependency< render::TextureOutput >();
@@ -106,6 +114,9 @@ bool MinimapTexturePipeline::buildOutput(
 	uint32_t reason
 ) const
 {
+	if (!m_rasterizer)
+		return true;
+
 	const MinimapTextureAsset* asset = mandatory_non_null_type_cast< const MinimapTextureAsset* >(sourceAsset);
 
 	MinimapRasterizer::Statistics statistics;

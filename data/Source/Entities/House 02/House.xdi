@@ -53,7 +53,7 @@
 					</state>
 					<transform>
 						<translation>-1.785121, 1.57, -3.98711, 0</translation>
-						<rotation>0, 1, 0, -0</rotation>
+						<rotation>0, -1, 0, 0</rotation>
 					</transform>
 					<components/>
 					<entityData>{12FBE0E2-89EF-43B0-8782-B166F6C98267}</entityData>
@@ -75,6 +75,13 @@
 					<entityData>{12FBE0E2-89EF-43B0-8782-B166F6C98267}</entityData>
 				</item>
 			</entityData>
+		</item>
+		<item type="traktor.scene.EntityStreamingHLODComponentData">
+			<angles>8</angles>
+			<elevations>1</elevations>
+			<elevationFrom>0</elevationFrom>
+			<elevationTo>0</elevationTo>
+			<tileSize>256</tileSize>
 		</item>
 	</components>
 </object>

@@ -284,7 +284,7 @@ Ref< hf::Heightfield > readHeightfield(editor::IPipelineCommon* pipelineCommon, 
 	if (!heightfieldAsset)
 		return nullptr;
 
-	return hf::TileStorage(heightfieldAsset->getTileCount()).readHeightfieldOverview(heightfieldInstance, heightfieldAsset->getWorldExtent());
+	return hf::TileStorage(heightfieldInstance, heightfieldAsset->getTileCount()).readHeightfieldOverview(heightfieldAsset->getWorldExtent());
 }
 
 float terrainHeight(const AlignedVector< float >& terrainHeights, int32_t size, int32_t x, int32_t y, float fallback)

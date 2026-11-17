@@ -125,11 +125,6 @@ public:
 
 	const Vector4& getAim() const { return m_aim; }
 
-	/*! Last shot fired; seq counts up with every shot. */
-	void setGunshot(float x, float z, int32_t seq);
-
-	bool getGunshot(float& outX, float& outZ, int32_t& outSeq) const;
-
 	/*! Characters and the routes they walk are drawn into debug, if any. */
 	void setDebug(runtime::DebugLayer* debug);
 
@@ -182,10 +177,6 @@ private:
 	bool m_haveEye = false;
 	Vector4 m_eye = Vector4::origo();
 	Vector4 m_aim = Vector4(0.0f, 0.0f, 1.0f, 0.0f);
-	bool m_haveGunshot = false;
-	float m_gunshotX = 0.0f;
-	float m_gunshotZ = 0.0f;
-	int32_t m_gunshotSeq = 0;
 	Ref< runtime::DebugLayer > m_debug;
 	Ref< IRuntimeDelegate > m_damageHandler;
 	AlignedVector< Blow > m_blows;

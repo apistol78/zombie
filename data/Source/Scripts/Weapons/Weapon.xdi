@@ -36,7 +36,6 @@ import(traktor)
 --   context:isEnemyDead(e)         ...and whether it already has
 --   context:shoveCorpse(...)       ...and what hitting one that already has does
 --   context:knockbackImpulse(dir)  what a corpse is shoved with
---   context:reportGunshot(x, z)    published to the horde, which comes to look
 --   context:kickCrosshair()        recoil bloom on the reticle
 --   context:raisePlayerEffect(...) a puff of dust where a round landed
 --   context.world                  the WorldLayer, for building and removing entities

@@ -149,22 +149,6 @@ bool NpcWorldComponent::getEye(Vector4& outEye) const
 	return m_haveEye;
 }
 
-void NpcWorldComponent::setGunshot(float x, float z, int32_t seq)
-{
-	m_haveGunshot = true;
-	m_gunshotX = x;
-	m_gunshotZ = z;
-	m_gunshotSeq = seq;
-}
-
-bool NpcWorldComponent::getGunshot(float& outX, float& outZ, int32_t& outSeq) const
-{
-	outX = m_gunshotX;
-	outZ = m_gunshotZ;
-	outSeq = m_gunshotSeq;
-	return m_haveGunshot;
-}
-
 void NpcWorldComponent::setDebug(runtime::DebugLayer* debug)
 {
 	m_debug = debug;

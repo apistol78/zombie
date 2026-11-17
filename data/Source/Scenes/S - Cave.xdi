@@ -193,6 +193,54 @@
 								</item>
 							</components>
 						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:3">
+							<id>{8CD0630F-96F6-194A-8B09-2778F05D3F89}</id>
+							<name>Barrel</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+								<resident>false</resident>
+							</state>
+							<transform>
+								<translation>32.164707, -0.038777, 6.856765, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{47133658-78E5-4B9E-8D06-C9E9D057F180}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:3">
+							<id>{4CA4BC3B-D090-7141-A0A4-96983F3D2A0B}</id>
+							<name>Barrel</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+								<resident>false</resident>
+							</state>
+							<transform>
+								<translation>77.98481, 3.969364, -3.61347, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{47133658-78E5-4B9E-8D06-C9E9D057F180}</entityData>
+						</item>
+						<item type="traktor.world.ExternalEntityData" version="1,traktor.world.EntityData:3">
+							<id>{214E35CE-5A22-814E-BDCA-406476C28393}</id>
+							<name>Vine 01</name>
+							<state>
+								<visible>true</visible>
+								<dynamic>false</dynamic>
+								<locked>false</locked>
+								<resident>false</resident>
+							</state>
+							<transform>
+								<translation>82.53067, 0.144556, -3.844074, 0</translation>
+								<rotation>0, 0, 0, 1</rotation>
+							</transform>
+							<components/>
+							<entityData>{7D2EF460-5B1E-DC41-A14B-86774A810354}</entityData>
+						</item>
 					</entityData>
 				</item>
 			</components>
@@ -6208,10 +6256,12 @@
 			<analyticalLightAttenuation>1</analyticalLightAttenuation>
 			<ambientOcclusionFactor>0</ambientOcclusionFactor>
 		</item>
-		<item type="traktor.scene.EntityStreamingOperationData" version="2">
+		<item type="traktor.scene.EntityStreamingOperationData" version="3">
 			<cellSize>64</cellSize>
 			<loadDistance>50</loadDistance>
 			<unloadDistance>70</unloadDistance>
+			<hlodLoadDistance>600</hlodLoadDistance>
+			<hlodUnloadDistance>650</hlodUnloadDistance>
 		</item>
 	</operationData>
 </object>

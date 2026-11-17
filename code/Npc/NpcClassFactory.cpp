@@ -59,7 +59,6 @@ void NpcClassFactory::createClasses(IRuntimeClassRegistrar* registrar) const
 	classNpcWorldComponent->addMethod("clearCutscene", &NpcWorldComponent::clearCutscene);
 	classNpcWorldComponent->addMethod("setEye", &NpcWorldComponent::setEye);
 	classNpcWorldComponent->addMethod("setAim", &NpcWorldComponent::setAim);
-	classNpcWorldComponent->addMethod("setGunshot", &NpcWorldComponent::setGunshot);
 	classNpcWorldComponent->addMethod("setDebug", &NpcWorldComponent::setDebug);
 	classNpcWorldComponent->addMethod("setDamageHandler", &NpcWorldComponent::setDamageHandler);
 	classNpcWorldComponent->addMethod("consumePlayerDamage", &NpcWorldComponent::consumePlayerDamage);

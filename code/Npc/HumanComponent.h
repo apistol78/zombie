@@ -76,8 +76,6 @@ private:
 	bool m_noticing = false;
 	float m_noticeTimer = 0.0f;
 	bool m_noticeTired = false;
-	bool m_haveHeardShot = false;
-	int32_t m_heardShot = 0;
 	float m_wanderWait = 0.0f;
 	bool m_haveWanderTarget = false;
 	Vector4 m_wanderTarget = Vector4::origo();

@@ -104,10 +104,6 @@ function Main:_updateCharacters()
 	end
 	npcs:setEye(self:eye())
 	npcs:setAim(self:aimDirection())
-	local shot < const > = self._gunshot
-	if shot ~= nil then
-		npcs:setGunshot(shot.x, shot.z, shot.seq)
-	end
 	npcs:setDebug(self.debug)
 	self:hurtPlayer(npcs:consumePlayerDamage())
 end

@@ -122,34 +122,6 @@ void EnemyComponent::update(const world::UpdateParams& update)
 				m_repathTimer = 0.0f;
 			}
 		}
-
-		// Hearing; every shot is read off the counter, whether or not it was in a position to care.
-		float shotX, shotZ;
-		int32_t shotSeq;
-		if (m_npcWorld->getGunshot(shotX, shotZ, shotSeq) && (!m_haveHeardShot || shotSeq != m_heardShot))
-		{
-			m_heardShot = shotSeq;
-			m_haveHeardShot = true;
-
-			const float hx = shotX - ex;
-			const float hz = shotZ - ez;
-			const float hd = std::sqrt(hx * hx + hz * hz);
-			if (m_state == State::Attack)
-			{
-				if (hd < m_hearRange && !spotted && !m_relentless)
-				{
-					m_lostTimer = m_attackMemory;
-					m_repathTimer = 0.0f;
-				}
-			}
-			else if (hd < m_hearRange)
-			{
-				const float spread = m_hearSpread + hd * m_hearSpreadPerM;
-				const float gx = shotX + (m_random.nextFloat() * 2.0f - 1.0f) * spread;
-				const float gz = shotZ + (m_random.nextFloat() * 2.0f - 1.0f) * spread;
-				investigate(gx, gz);
-			}
-		}
 	}
 
 	m_debugColor = debugColor();

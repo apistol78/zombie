@@ -62,8 +62,6 @@ private:
 	bool m_relentless = false;
 	bool m_havePatrolTarget = false;
 	Vector4 m_patrolTarget = Vector4::origo();
-	bool m_haveHeardShot = false;
-	int32_t m_heardShot = 0;
 	bool m_haveInvestigateTarget = false;
 	float m_investigateX = 0.0f;
 	float m_investigateZ = 0.0f;

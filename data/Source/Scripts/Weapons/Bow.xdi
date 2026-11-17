@@ -20,9 +20,6 @@ import(traktor)
 -- segment exactly as a round was. One that hits the world stays stuck in it for a while; one
 -- that hits a character is spent in it.
 --
--- It is quiet. Nothing here reports a shot to the horde (Main:reportGunshot), which is the
--- other half of what the bow is for.
---
 -- It is held in the right hand, which leaves the left for the readied spell
 -- (Scripts/Spells/Spellbook). Left alone for Config.bow.lowerAfter seconds it is lowered out of
 -- the way, and it is lowered before a spell is cast (Weapon:lower); drawing brings it back up.

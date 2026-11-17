@@ -6,6 +6,7 @@
 #using \{EDC0B8AE-497C-4963-A2F1-5B3A6937790C}
 #using \{8DF61FC9-C1FD-48B2-B12B-806D60830E91}
 #using \{B7E4C1A9-3D62-4F08-9A15-6C2E8B0D4F73}
+#using \{5E1A4C77-2B90-4D36-9F41-7C8A2D0E6B15}
 #using \{355F68E1-93F8-3A48-BA4D-90185A04F57C}
 #using \{A47C0E92-3B15-4D68-9E24-5F80C6B1D739}
 #using \{6E9AD100-0000-4000-8000-000000000010}
@@ -276,6 +277,22 @@ function Main:new(params, environment)
 	self._crosshair.__layout = ILayout.FLOAT
 	self._crosshairShown = nil   -- nil so the first _updateCrosshair forces the state
 
+	-- Minimap, top left in the HUD's margins. FLOAT for the same reason as the crosshair --
+	-- it belongs in a corner, not in either of the frame's two rows -- but unlike the
+	-- crosshair its place never moves, so it is set here once rather than every frame: a
+	-- FLOAT child is skipped by TableLayout, so nothing else will disturb it. Built empty;
+	-- resolve gives it its ground (Main:_buildMinimap, Scripts/Quests/Questing).
+	self._minimap = Minimap(self._frame)
+	self._minimap.__layout = ILayout.FLOAT
+	local mapSize < const > = self._minimap:getPreferredSize()
+	self._minimap:place(HUD_MARGIN_X, HUD_MARGIN_Y, mapSize.width, mapSize.height)
+	-- Hidden until it has been built, so a stage with nothing to map (only the caves have a
+	-- minimap texture) never shows an empty plate, and a cave never flashes one on the frame
+	-- before resolve runs.
+	self._minimap:setVisible(false)
+	self._minimapBuilt = false   -- resolve has dealt with it
+	self._minimapMapped = false  -- ...and found a map to draw
+
 	-- Game Over menu: the "GAME OVER" banner over its buttons, as a modal Dialog
 	-- auto-centered over the HUD. Not built until the player dies (_showGameOver), because
 	-- which buttons it has is only known then: Load Last Save heads them when there is a
@@ -363,13 +380,6 @@ function Main:new(params, environment)
 	-- patrolling zombie near enough to hear it walks over to have a look -- see the
 	-- hearing block there for what "near enough" and "have a look" mean.
 	--
-	-- One table for the whole night, rewritten per shot rather than replaced, and nil
-	-- only until the first round leaves the barrel. seq is what the controllers actually
-	-- read: it counts up forever and each zombie bookmarks the last value it saw, so a
-	-- shot is heard exactly once by each of them and no clock has to be shared between
-	-- the stage and thirty controllers to decide whether it is still news.
-	self._gunshot = nil
-
 	-- The off hand. What is in it is the pack's to say -- a relic equipped there (Inventory:
 	-- equipped("hand")) -- and this is only the entity being shown in it: the first relic in
 	-- the pack, posed in the left hand every frame (postUpdate) while one is equipped. The
@@ -650,10 +660,11 @@ end
 
 -- Show or hide the HUD as a whole.
 --
--- The crosshair is missing from here on purpose, because it already decides for itself
--- on every frame -- including the frames of a paused game, since it runs above
--- Main:update's freeze returns. It reads _paused in _updateCrosshair; hiding it from here
--- would last exactly one frame.
+-- Two of it are missing from here on purpose, and both because they already decide
+-- for themselves on every frame -- including the frames of a paused game, since both
+-- run above Main:update's freeze returns. The crosshair reads _paused in
+-- _updateCrosshair, and the minimap in _updateMinimap; hiding either from here would
+-- last exactly one frame.
 --
 -- Hiding the container hides everything in it: the compass, the health bar and the weapon
 -- carousel are its children, and Spark visibility is inherited.
@@ -1201,6 +1212,15 @@ function Main:resolve()
 	-- view models -- so a new weapon adds nothing here. Called every frame, exactly as the rest of
 	-- this function is, and cheap once each of them has what it wants (Weapon:resolve).
 	self._loadout:resolve()
+
+	-- Last, once the world is there to read the map off and the player is in it.
+	-- Survives a hot reload untouched: _minimapBuilt is plain data on the stage and the
+	-- widget keeps the clips it already made, so this must not run a second time and
+	-- double them up.
+	if not self._minimapBuilt and self._humanoid ~= nil then
+		self._minimapBuilt = true
+		self._minimapMapped = self:_buildMinimap(world)
+	end
 end
 
 -- ---- What a weapon is given ----
@@ -1290,20 +1310,6 @@ end
 -- blast is the exception and says so itself -- it falls off with distance (Grenades:_explode).
 function Main:knockbackImpulse(dir)
 	return dir * self._knockback + Vector4(0.0, self._knockbackLift, 0.0, 0.0)
-end
-
--- A shot was heard, here. Published for zombie.EnemyComponent: a patrolling zombie near
--- enough walks over to have a look. Mutated rather than replaced, and seq counts up forever
--- -- see _gunshot in :new for why both matter.
-function Main:reportGunshot(x, z)
-	local shot = self._gunshot
-	if shot == nil then
-		shot = { seq = 0 }
-		self._gunshot = shot
-	end
-	shot.x = x
-	shot.z = z
-	shot.seq = shot.seq + 1
 end
 
 -- Recoil bloom on the reticle. Called by anything that goes off, hit or miss -- on a miss it
@@ -2312,10 +2318,14 @@ function Main:update(info)
 	-- on the last frame still finishes its flash once the game is paused or over.
 	self._healthBar:update(dt)
 	self._loadout:updateHud(dt)
-	-- The quests, their windows and the waypoint the compass shows next.
+	-- The quests, their windows and the waypoint the compass and the map show next.
 	self:_updateQuests(dt)
 	-- Ticks the compass widget itself, as well as re-aiming it.
 	self:_updateMarker(dt)
+
+	-- The map. Also above the early-returns, so it stays correct behind a pause and
+	-- can take itself off screen the moment the night is decided.
+	self:_updateMinimap()
 
 	-- Objective and prompt. Also above the early-returns, so the banner stays put
 	-- and correctly centred through a pause or a window resize.

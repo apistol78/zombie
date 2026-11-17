@@ -415,33 +415,6 @@ void HumanComponent::perceive(const Vector4& position, const Vector4& playerPosi
 	// Nothing new to go for, but the one it is after is still in view.
 	if (m_state == State::Fight && m_target && m_target != foe && sees(position, positionOf(m_target)))
 		m_seenTimer = m_forgetTime;
-
-	// A shot nearby is frightening, if it is not busy with something worse.
-	float shotX, shotZ;
-	int32_t shotSeq;
-	if (m_npcWorld->getGunshot(shotX, shotZ, shotSeq) && (!m_haveHeardShot || shotSeq != m_heardShot))
-	{
-		m_heardShot = shotSeq;
-		m_haveHeardShot = true;
-
-		const float hx = shotX - position.x();
-		const float hz = shotZ - position.z();
-		if (m_state == State::Routine && hx * hx + hz * hz < m_hearRange * m_hearRange)
-		{
-			if (m_mood != L"angry")
-				setMood(L"scared");
-			if (m_courage < c_shotFleeCourage)
-			{
-				m_state = State::Flee;
-				m_fleeFrom = Vector4(shotX, position.y(), shotZ, 1.0f);
-				m_haveFleeFrom = true;
-				m_calmTimer = m_calmTime;
-				m_attend = 0.0f;
-				m_repathTimer = 0.0f;
-				dropPath();
-			}
-		}
-	}
 }
 
 bool HumanComponent::lookedAt(const Vector4& position, float pdist)

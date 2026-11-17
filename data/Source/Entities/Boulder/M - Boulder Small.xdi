@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.mesh.MeshAsset" version="28">
-	<fileName>Entities/Boulder/Boulder Small.gltf</fileName>
+<object type="traktor.mesh.MeshAsset" version="29">
+	<fileName>Entities/Boulder/Boulder Small.blend</fileName>
 	<importFilter/>
 	<meshType>MtInstance</meshType>
 	<materialShaders/>
@@ -21,6 +21,7 @@
 	<grounded>false</grounded>
 	<decalResponse>true</decalResponse>
 	<enableRaytracing>true</enableRaytracing>
+	<enableDeform>true</enableDeform>
 	<reduce>1</reduce>
 	<raytracingReduce>1</raytracingReduce>
 	<previewAngle>0</previewAngle>

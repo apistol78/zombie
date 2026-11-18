@@ -467,6 +467,8 @@ bool NpcComponent::readStats()
 	m_pushOutMax = settingNumber(enemy, L"pushOutMax", 0.0f);
 	m_turnCreep = settingNumber(enemy, L"turnCreep", 0.0f);
 	m_closeQuarters = settingNumber(enemy, L"closeQuarters", 0.0f);
+	m_duelTurnRate = settingNumber(enemy, L"duelTurnRate", m_faceTurnRate);
+	m_duelArc = settingNumber(enemy, L"duelArc", 0.0f);
 
 	m_hitKnockback = settingNumber(melee, L"knockback", 0.0f);
 	m_hitPushTime = settingNumber(melee, L"pushTime", 0.0f);
@@ -951,41 +953,56 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	}
 	*/
 
-	// Inside the player's personal space the inward part of the steering is removed outright.
+	// Inside the personal space of the player, or of a character it is fighting, the inward part of the
+	// steering is removed outright; characters pass through each other, so nothing else keeps them apart.
 	float depth = 0.0f;
 	float outX = 0.0f, outZ = 0.0f;
+	const auto keepOut = [&](float ox, float oz, float coincident)
 	{
-		const float ox = px - qx;
-		const float oz = pz - qz;
 		const float od = std::sqrt(ox * ox + oz * oz);
 		if (od <= 0.001f)
 		{
-			depth = m_overlapSpace;
-			outX = std::sin(m_heading);
-			outZ = std::cos(m_heading);
-		}
-		else if (od < m_personalSpace)
-		{
-			outX = ox / od;
-			outZ = oz / od;
-			if (od < m_overlapSpace)
-				depth = m_overlapSpace - od;
-
-			const float inward = -(targetX * outX + targetZ * outZ);
-			if (inward > 0.0f)
+			if (m_overlapSpace > depth)
 			{
-				targetX += outX * inward;
-				targetZ += outZ * inward;
-				const float dl = std::sqrt(targetX * targetX + targetZ * targetZ);
-				if (dl > 0.001f)
-				{
-					targetX /= dl;
-					targetZ /= dl;
-				}
-				else
-					tl = 0.0f;
+				depth = m_overlapSpace;
+				outX = std::sin(m_heading) * coincident;
+				outZ = std::cos(m_heading) * coincident;
 			}
+			return;
 		}
+		if (od >= m_personalSpace)
+			return;
+
+		const float nx = ox / od;
+		const float nz = oz / od;
+		if (od < m_overlapSpace && m_overlapSpace - od > depth)
+		{
+			depth = m_overlapSpace - od;
+			outX = nx;
+			outZ = nz;
+		}
+
+		const float inward = -(targetX * nx + targetZ * nz);
+		if (inward > 0.0f)
+		{
+			targetX += nx * inward;
+			targetZ += nz * inward;
+			const float dl = std::sqrt(targetX * targetX + targetZ * targetZ);
+			if (dl > 0.001f)
+			{
+				targetX /= dl;
+				targetZ /= dl;
+			}
+			else
+				tl = 0.0f;
+		}
+	};
+	keepOut(px - qx, pz - qz, 1.0f);
+	if (engaged && engaged != m_player)
+	{
+		// Right on top of its foe it backs off, rather than through and out the far side.
+		const Vector4 foe = positionOf(engaged);
+		keepOut(px - foe.x(), pz - foe.z(), -1.0f);
 	}
 
 	// Face the steering, or what it is after once that is within reach.
@@ -1003,14 +1020,20 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 	}
 	const float fl = std::sqrt(faceX * faceX + faceZ * faceZ);
 
-	// Turn at a limited rate, the shortest way round.
+	// Turn at a limited rate, the shortest way round; quicker squaring up to a foe in a duel.
+	bool squaring = false;
 	if (fl > 0.001f)
 	{
 		const float desired = std::atan2(faceX, faceZ);
 		float delta = wrapAngle(desired - m_heading);
-		const float maxStep = (facing ? m_faceTurnRate : m_turnRate) * deltaTime;
-		delta = clamp(delta, -maxStep, maxStep);
-		m_heading += delta;
+		const bool dueling = duel && facing;
+		const float rate = dueling ? m_duelTurnRate : (facing ? m_faceTurnRate : m_turnRate);
+		const float maxStep = rate * deltaTime;
+		const float turned = clamp(delta, -maxStep, maxStep);
+		m_heading += turned;
+
+		// Still out of line with the foe: turn where it stands rather than run an arc round it.
+		squaring = dueling && m_duelArc > 0.0f && std::abs(delta - turned) > m_duelArc;
 	}
 
 	const float fx = std::sin(m_heading);
@@ -1047,7 +1070,7 @@ bool NpcComponent::drive(const Vector4& position, const Vector4& playerPosition,
 		m_character->move(Vector4(vx, 0.0f, vz, 0.0f), false);
 		outMoving = true;
 	}
-	else if (tl > 0.001f)
+	else if (tl > 0.001f && !squaring)
 	{
 		// A turning character keeps some ground going by, unless what it faces is a target.
 		float align = fx * targetX + fz * targetZ;

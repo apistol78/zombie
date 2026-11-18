@@ -210,6 +210,8 @@ protected:
 	float m_wanderAngle = 0.0f;
 	float m_wanderTime = 0.0f;
 	float m_closeQuarters = 0.0f;
+	float m_duelTurnRate = 0.0f;
+	float m_duelArc = 0.0f;
 	float m_hitKnockback = 0.0f;
 	float m_hitPushTime = 0.0f;
 	float m_hitPoseTime = 0.0f;

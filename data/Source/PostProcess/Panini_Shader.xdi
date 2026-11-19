@@ -5,8 +5,8 @@
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B811}</id>
 			<comment/>
 			<position>
-				<first>-40</first>
-				<second>260</second>
+				<first>-45</first>
+				<second>219</second>
 			</position>
 			<fragmentGuid>{6DE0FC81-3E61-0D45-81F4-8FB4B950B941}</fragmentGuid>
 			<inputPins/>
@@ -29,8 +29,8 @@
 
 			]]></comment>
 			<position>
-				<first>-40</first>
-				<second>330</second>
+				<first>-125</first>
+				<second>363</second>
 			</position>
 			<parameterDeclaration>{3E3E9AB5-18C7-1D4A-B02F-71C6FC00F817}</parameterDeclaration>
 		</item>
@@ -42,8 +42,8 @@ Panini distance; 0 is plain perspective, 1 the classic "Pannini" look.
 
 			]]></comment>
 			<position>
-				<first>-40</first>
-				<second>400</second>
+				<first>-117</first>
+				<second>463</second>
 			</position>
 			<value>0.05</value>
 		</item>
@@ -155,8 +155,8 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B817}</id>
 			<comment/>
 			<position>
-				<first>701</first>
-				<second>339</second>
+				<first>712</first>
+				<second>382</second>
 			</position>
 			<minFilter>Linear</minFilter>
 			<mipFilter>Linear</mipFilter>
@@ -218,12 +218,7 @@ $Output = vec4(p.x * 0.5f + 0.5f, 0.5f - p.y * 0.5f, 0.0f, 0.0f);
 		</item>
 		<item type="traktor.render.Scalar" version="traktor.render.Node:1">
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B819}</id>
-			<comment><![CDATA[
-
-Vignette strength; how far the corners are taken down, 0 for none. At 0.22 they
-sit at about four fifths, which reads as the lens rather than as an effect.
-
-			]]></comment>
+			<comment/>
 			<position>
 				<first>1458</first>
 				<second>429</second>
@@ -314,8 +309,8 @@ The gbuffer, whose red channel is view depth in metres. Bound by the pass as
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81C}</id>
 			<comment/>
 			<position>
-				<first>860</first>
-				<second>110</second>
+				<first>813</first>
+				<second>169</second>
 			</position>
 			<minFilter>Point</minFilter>
 			<mipFilter>Point</mipFilter>
@@ -332,8 +327,8 @@ The gbuffer, whose red channel is view depth in metres. Bound by the pass as
 			<id>{3F0A21D7-5C64-4B18-9E52-6D1A70C4B81D}</id>
 			<comment/>
 			<position>
-				<first>860</first>
-				<second>180</second>
+				<first>813</first>
+				<second>126</second>
 			</position>
 			<minFilter>Linear</minFilter>
 			<mipFilter>Linear</mipFilter>
@@ -356,8 +351,8 @@ turned and would need a frame of history to damp.
 
 			]]></comment>
 			<position>
-				<first>860</first>
-				<second>480</second>
+				<first>766</first>
+				<second>530</second>
 			</position>
 			<value>500</value>
 		</item>
@@ -372,8 +367,8 @@ out of focus. Widen this and the far ramp moves out with it.
 
 			]]></comment>
 			<position>
-				<first>860</first>
-				<second>550</second>
+				<first>770</first>
+				<second>626</second>
 			</position>
 			<value>12</value>
 		</item>
@@ -388,8 +383,8 @@ reason given in the script -- the near field cannot spread the way it should.
 
 			]]></comment>
 			<position>
-				<first>860</first>
-				<second>620</second>
+				<first>769</first>
+				<second>728</second>
 			</position>
 			<value>0</value>
 		</item>
@@ -403,8 +398,8 @@ blur waiting until the fog has finished and having nothing left to soften.
 
 			]]></comment>
 			<position>
-				<first>860</first>
-				<second>690</second>
+				<first>767</first>
+				<second>835</second>
 			</position>
 			<value>0</value>
 		</item>

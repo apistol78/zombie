@@ -1,5 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<object type="traktor.hf.HeightfieldAsset" version="10">
+<object type="traktor.hf.HeightfieldAsset" version="13">
 	<worldExtent>6656, 2048, 6656, 0</worldExtent>
 	<tileCount>13</tileCount>
+	<nextLayerId>4</nextLayerId>
+	<layers>
+		<item type="traktor.hf.EditLayer">
+			<id>0</id>
+			<name>Base</name>
+		</item>
+		<item type="traktor.hf.ErosionLayer">
+			<id>1</id>
+			<name>Layer 1</name>
+			<iterations>2000000</iterations>
+			<resolution>0.25</resolution>
+		</item>
+		<item type="traktor.hf.SplatLayer">
+			<id>3</id>
+			<name>Layer 2</name>
+			<rules>
+				<item>
+					<channel>2</channel>
+					<minHeight>350</minHeight>
+					<maxHeight>10000</maxHeight>
+					<heightBlend>200</heightBlend>
+					<minSlope>45</minSlope>
+					<maxSlope>70</maxSlope>
+					<slopeBlend>1</slopeBlend>
+				</item>
+			</rules>
+		</item>
+	</layers>
 </object>

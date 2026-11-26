@@ -2,17 +2,35 @@
 <object type="traktor.hf.HeightfieldAsset" version="13">
 	<worldExtent>6656, 2048, 6656, 0</worldExtent>
 	<tileCount>13</tileCount>
-	<nextLayerId>4</nextLayerId>
+	<nextLayerId>6</nextLayerId>
 	<layers>
 		<item type="traktor.hf.EditLayer">
 			<id>0</id>
 			<name>Base</name>
 		</item>
-		<item type="traktor.hf.ErosionLayer">
+		<item type="traktor.hf.TerraceLayer" version="1">
+			<id>5</id>
+			<name>Layer 3</name>
+			<stepHeight>80</stepHeight>
+			<offset>0</offset>
+			<sharpness>0.75</sharpness>
+			<noise>50</noise>
+			<noiseScale>250</noiseScale>
+			<minHeight>100</minHeight>
+			<maxHeight>250</maxHeight>
+		</item>
+		<item type="traktor.hf.ErosionLayer" version="1">
 			<id>1</id>
 			<name>Layer 1</name>
-			<iterations>2000000</iterations>
+			<iterations>2000</iterations>
 			<resolution>0.25</resolution>
+			<capacity>10</capacity>
+			<minSlope>0.05</minSlope>
+			<evaporation>0.001</evaporation>
+			<erosion>0.45</erosion>
+			<deposition>0.02</deposition>
+			<inertia>0.1</inertia>
+			<gravity>30</gravity>
 		</item>
 		<item type="traktor.hf.SplatLayer">
 			<id>3</id>
@@ -26,6 +44,15 @@
 					<minSlope>45</minSlope>
 					<maxSlope>70</maxSlope>
 					<slopeBlend>1</slopeBlend>
+				</item>
+				<item>
+					<channel>3</channel>
+					<minHeight>100</minHeight>
+					<maxHeight>10000</maxHeight>
+					<heightBlend>100</heightBlend>
+					<minSlope>0</minSlope>
+					<maxSlope>90</maxSlope>
+					<slopeBlend>5</slopeBlend>
 				</item>
 			</rules>
 		</item>

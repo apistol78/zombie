@@ -2,39 +2,61 @@
 <object type="traktor.hf.HeightfieldAsset" version="13">
 	<worldExtent>6656, 2048, 6656, 0</worldExtent>
 	<tileCount>13</tileCount>
-	<nextLayerId>6</nextLayerId>
+	<nextLayerId>10</nextLayerId>
 	<layers>
-		<item type="traktor.hf.EditLayer">
-			<id>0</id>
-			<name>Base</name>
+		<item type="traktor.hf.NoiseLayer">
+			<id>7</id>
+			<name>Land</name>
+			<seed>37</seed>
+			<scale>500</scale>
+			<octaves>4</octaves>
+			<amplitude>5</amplitude>
+			<offset>24</offset>
 		</item>
-		<item type="traktor.hf.TerraceLayer" version="1">
-			<id>5</id>
-			<name>Layer 3</name>
-			<stepHeight>80</stepHeight>
-			<offset>0</offset>
-			<sharpness>0.75</sharpness>
-			<noise>50</noise>
-			<noiseScale>250</noiseScale>
-			<minHeight>100</minHeight>
-			<maxHeight>250</maxHeight>
+		<item type="traktor.hf.NoiseLayer">
+			<id>8</id>
+			<name>Hills</name>
+			<seed>53</seed>
+			<scale>450</scale>
+			<octaves>6</octaves>
+			<amplitude>100</amplitude>
+			<offset>10</offset>
+		</item>
+		<item type="traktor.hf.MountainLayer">
+			<id>9</id>
+			<name>Mountains</name>
+			<seed>97</seed>
+			<scale>1100</scale>
+			<octaves>6</octaves>
+			<height>900</height>
+			<coverageSeed>71</coverageSeed>
+			<coverageScale>2000</coverageScale>
+			<coverage>0.6</coverage>
+			<coverageVariation>0.4</coverageVariation>
+			<capHeight>700</capHeight>
+			<capSoftness>150</capSoftness>
+		</item>
+		<item type="traktor.hf.EditLayer" version="1">
+			<id>6</id>
+			<name>Base</name>
+			<delta>true</delta>
 		</item>
 		<item type="traktor.hf.ErosionLayer" version="1">
 			<id>1</id>
-			<name>Layer 1</name>
+			<name>Erosion</name>
 			<iterations>2000</iterations>
 			<resolution>0.25</resolution>
-			<capacity>10</capacity>
+			<capacity>6</capacity>
 			<minSlope>0.05</minSlope>
 			<evaporation>0.001</evaporation>
-			<erosion>0.45</erosion>
-			<deposition>0.02</deposition>
+			<erosion>0.25</erosion>
+			<deposition>0.01</deposition>
 			<inertia>0.1</inertia>
 			<gravity>30</gravity>
 		</item>
 		<item type="traktor.hf.SplatLayer">
 			<id>3</id>
-			<name>Layer 2</name>
+			<name>Materials</name>
 			<rules>
 				<item>
 					<channel>2</channel>
